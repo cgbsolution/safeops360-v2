@@ -1,0 +1,2136 @@
+[
+  {
+    "id": "comp_hse_foundation",
+    "code": "HSE-FOUNDATION",
+    "name": "HSE Foundation Awareness",
+    "category": "safety_critical",
+    "subcategory": "general_hse",
+    "description": "Foundational HSE awareness covering site safety rules, emergency procedures, hazard recognition, PPE usage, and personal responsibility. Mandatory for all persons entering operational areas.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true,
+        "weight": 0.5
+      },
+      {
+        "method": "written_assessment",
+        "is_mandatory": true,
+        "weight": 0.5,
+        "minimum_score": 80
+      }
+    ],
+    "related_training_program_ids": [
+      "training_induction",
+      "training_hse_basics"
+    ],
+    "default_validity_months": 24,
+    "pre_expiry_warning_days": 90,
+    "grace_period_days": 30,
+    "regulatory_references": [
+      {
+        "regulation": "Factories Act 1948",
+        "section": "Section 111A",
+        "requirement": "Worker information on hazards and precautions"
+      },
+      {
+        "regulation": "ISO 45001:2018",
+        "section": "Clause 7.3",
+        "requirement": "Awareness"
+      }
+    ],
+    "enables_role_ids": [
+      "all_operational_roles"
+    ],
+    "re_validation_workflow": "training_only",
+    "is_global": true
+  },
+  {
+    "id": "comp_cs_entrant_l1",
+    "code": "CS-ENTRANT-L1",
+    "name": "Confined Space Entrant - Level 1",
+    "category": "safety_critical",
+    "subcategory": "confined_space",
+    "description": "Authorized to enter routine confined spaces under permit. Covers atmospheric testing awareness, escape procedures, communication protocols, and PPE for confined space entry.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "medical_fitness",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true,
+        "minimum_score": 85
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 3
+      }
+    ],
+    "prerequisite_competency_ids": [
+      "comp_hse_foundation"
+    ],
+    "default_validity_months": 24,
+    "pre_expiry_warning_days": 90,
+    "grace_period_days": 30,
+    "regulatory_references": [
+      {
+        "regulation": "Factories Act 1948",
+        "section": "Section 36",
+        "requirement": "Confined space entry precautions"
+      },
+      {
+        "regulation": "IS 5572",
+        "section": "Full standard",
+        "requirement": "Confined space entry procedures"
+      }
+    ],
+    "enables_permit_types": [
+      "confined_space"
+    ],
+    "enables_activity_types": [
+      "confined_space_entry"
+    ],
+    "re_validation_workflow": "assessment_required"
+  },
+  {
+    "id": "comp_cs_entrant_l2",
+    "code": "CS-ENTRANT-L2",
+    "name": "Confined Space Entrant - Level 2 (High Hazard)",
+    "category": "safety_critical",
+    "subcategory": "confined_space",
+    "description": "Authorized to enter high-hazard confined spaces including IDLH atmospheres, requires SCBA proficiency and rescue capability.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "medical_fitness",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true,
+        "minimum_score": 90
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 5
+      }
+    ],
+    "prerequisite_competency_ids": [
+      "comp_cs_entrant_l1"
+    ],
+    "default_validity_months": 12,
+    "pre_expiry_warning_days": 60,
+    "grace_period_days": 15,
+    "enables_permit_types": [
+      "confined_space_high_hazard"
+    ]
+  },
+  {
+    "id": "comp_cs_attendant",
+    "code": "CS-ATTENDANT",
+    "name": "Confined Space Attendant",
+    "category": "safety_critical",
+    "subcategory": "confined_space",
+    "description": "Authorized to serve as attendant for confined space entries. Covers continuous monitoring, communication, emergency response activation, and standby rescue.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 3
+      }
+    ],
+    "prerequisite_competency_ids": [
+      "comp_cs_entrant_l1"
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_hot_work_smaw",
+    "code": "HOT-WORK-WELDER-SMAW",
+    "name": "Hot Work - SMAW Welder",
+    "category": "safety_critical",
+    "subcategory": "hot_work",
+    "description": "Authorized to perform Shielded Metal Arc Welding (SMAW/Stick) under PTW. Covers technique proficiency, fire safety in hot work, and welding-specific PPE.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "external_certification",
+        "is_mandatory": false,
+        "weight": 0.3
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true,
+        "minimum_score": 80
+      }
+    ],
+    "default_validity_months": 24,
+    "regulatory_references": [
+      {
+        "regulation": "Factories Act 1948",
+        "section": "Section 38",
+        "requirement": "Fire precautions during hot work"
+      }
+    ],
+    "enables_permit_types": [
+      "hot_work"
+    ]
+  },
+  {
+    "id": "comp_hot_work_gmaw",
+    "code": "HOT-WORK-WELDER-GMAW",
+    "name": "Hot Work - GMAW Welder",
+    "category": "safety_critical",
+    "subcategory": "hot_work",
+    "description": "Authorized to perform Gas Metal Arc Welding (MIG/MAG).",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true,
+        "minimum_score": 80
+      }
+    ],
+    "default_validity_months": 24,
+    "enables_permit_types": [
+      "hot_work"
+    ]
+  },
+  {
+    "id": "comp_hot_work_gtaw",
+    "code": "HOT-WORK-WELDER-GTAW",
+    "name": "Hot Work - GTAW Welder",
+    "category": "safety_critical",
+    "subcategory": "hot_work",
+    "description": "Authorized to perform Gas Tungsten Arc Welding (TIG). Higher precision welding for stainless steel, aluminum, and critical applications.",
+    "default_validity_months": 24,
+    "enables_permit_types": [
+      "hot_work"
+    ]
+  },
+  {
+    "id": "comp_hot_work_cutting",
+    "code": "HOT-WORK-CUTTING",
+    "name": "Hot Work - Oxy-Fuel Cutting",
+    "category": "safety_critical",
+    "subcategory": "hot_work",
+    "description": "Authorized to perform oxy-acetylene/LPG cutting. Covers gas cylinder handling, regulator setup, flame adjustment.",
+    "default_validity_months": 24,
+    "enables_permit_types": [
+      "hot_work"
+    ]
+  },
+  {
+    "id": "comp_work_height_l1",
+    "code": "WORK-HEIGHT-L1",
+    "name": "Work at Height - Basic",
+    "category": "safety_critical",
+    "subcategory": "work_at_height",
+    "description": "Authorized for routine work at heights between 2-10 meters. Covers harness usage, anchor point identification, ladder safety.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "medical_fitness",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "prerequisite_competency_ids": [
+      "comp_hse_foundation"
+    ],
+    "default_validity_months": 24,
+    "regulatory_references": [
+      {
+        "regulation": "Factories Act 1948",
+        "section": "Section 33",
+        "requirement": "Pits, sumps, openings in floors"
+      },
+      {
+        "regulation": "IS 3696",
+        "section": "Full standard",
+        "requirement": "Scaffolding safety"
+      }
+    ],
+    "enables_permit_types": [
+      "work_at_height"
+    ]
+  },
+  {
+    "id": "comp_work_height_l2",
+    "code": "WORK-HEIGHT-L2",
+    "name": "Work at Height - Advanced (Rope Access)",
+    "category": "safety_critical",
+    "subcategory": "work_at_height",
+    "description": "Authorized for work at heights >10m, work over edges, rope access. Industrial rope access technician (IRATA Level 1 equivalent).",
+    "prerequisite_competency_ids": [
+      "comp_work_height_l1"
+    ],
+    "default_validity_months": 12,
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ]
+  },
+  {
+    "id": "comp_elec_auth_lv",
+    "code": "ELEC-AUTH-LV",
+    "name": "Electrical Authorized Person - Low Voltage",
+    "category": "safety_critical",
+    "subcategory": "electrical",
+    "description": "Authorized to work on electrical systems up to 1000V AC / 1500V DC. Covers LOTO, electrical PPE, arc flash awareness.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "written_assessment",
+        "is_mandatory": true,
+        "minimum_score": 85
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24,
+    "regulatory_references": [
+      {
+        "regulation": "Indian Electricity Rules 1956",
+        "section": "Rule 3",
+        "requirement": "Competency for electrical work"
+      },
+      {
+        "regulation": "Factories Act 1948",
+        "section": "Section 32",
+        "requirement": "Electrical apparatus precautions"
+      }
+    ],
+    "enables_permit_types": [
+      "electrical"
+    ]
+  },
+  {
+    "id": "comp_elec_auth_ht",
+    "code": "ELEC-AUTH-HT",
+    "name": "Electrical Authorized Person - High Tension",
+    "category": "safety_critical",
+    "subcategory": "electrical",
+    "description": "Authorized to work on HT systems >1000V. Requires Electrical Supervisor Certificate of Competency under state Electrical Inspectorate.",
+    "prerequisite_competency_ids": [
+      "comp_elec_auth_lv"
+    ],
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24,
+    "enables_permit_types": [
+      "electrical_ht"
+    ]
+  },
+  {
+    "id": "comp_loto_auth",
+    "code": "LOTO-AUTH",
+    "name": "Lockout-Tagout Authorized Person",
+    "category": "safety_critical",
+    "subcategory": "loto",
+    "description": "Authorized to apply and remove locks/tags on energy isolation devices.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24,
+    "enables_permit_types": [
+      "loto",
+      "maintenance"
+    ]
+  },
+  {
+    "id": "comp_rigging_l1",
+    "code": "RIGGING-L1",
+    "name": "Rigging - Basic",
+    "category": "safety_critical",
+    "subcategory": "lifting",
+    "description": "Authorized for basic rigging of loads up to 5MT. Covers sling selection, hitch types, load calculation, communication with crane operator.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_rigging_l2",
+    "code": "RIGGING-L2",
+    "name": "Rigging - Advanced (Critical Lifts)",
+    "category": "safety_critical",
+    "subcategory": "lifting",
+    "description": "Authorized for critical lifts including multi-crane lifts, lifts >50MT, lifts near energized equipment.",
+    "prerequisite_competency_ids": [
+      "comp_rigging_l1"
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_crane_op_mobile",
+    "code": "CRANE-OP-MOBILE",
+    "name": "Mobile Crane Operator",
+    "category": "safety_critical",
+    "subcategory": "lifting",
+    "description": "Authorized to operate mobile/truck-mounted cranes.",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true,
+        "minimum_duration_months": 1
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      },
+      {
+        "method": "medical_fitness",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_crane_op_overhead",
+    "code": "CRANE-OP-OVERHEAD",
+    "name": "Overhead/EOT Crane Operator",
+    "category": "safety_critical",
+    "subcategory": "lifting",
+    "description": "Authorized to operate overhead and EOT cranes from cabin or floor controls.",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_forklift_op",
+    "code": "FORKLIFT-OP",
+    "name": "Forklift Operator",
+    "category": "safety_critical",
+    "subcategory": "material_handling",
+    "description": "Authorized to operate counterbalance forklifts.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      },
+      {
+        "method": "medical_fitness",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_mewp_op",
+    "code": "MEWP-OP",
+    "name": "Mobile Elevating Work Platform Operator",
+    "category": "safety_critical",
+    "subcategory": "work_at_height",
+    "description": "Authorized to operate scissor lifts, boom lifts, articulating MEWPs.",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_fire_warden",
+    "code": "FIRE-WARDEN",
+    "name": "Fire Warden",
+    "category": "safety_critical",
+    "subcategory": "emergency_response",
+    "description": "Authorized to lead floor/area evacuation during fire emergencies. Covers evacuation procedures, head count, communication with Fire Marshal.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_first_aider",
+    "code": "FIRST-AIDER",
+    "name": "First Aider",
+    "category": "safety_critical",
+    "subcategory": "emergency_response",
+    "description": "Authorized to provide first aid in the workplace. St. John Ambulance Standard First Aid certification or equivalent.",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 36,
+    "regulatory_references": [
+      {
+        "regulation": "Factories Act 1948",
+        "section": "Section 45",
+        "requirement": "First-aid appliances"
+      }
+    ]
+  },
+  {
+    "id": "comp_rescue_team",
+    "code": "RESCUE-TEAM",
+    "name": "Emergency Rescue Team Member",
+    "category": "safety_critical",
+    "subcategory": "emergency_response",
+    "description": "Trained for confined space rescue, height rescue, fire rescue. Member of plant emergency rescue team.",
+    "prerequisite_competency_ids": [
+      "comp_first_aider",
+      "comp_cs_entrant_l1"
+    ],
+    "default_validity_months": 12,
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true,
+        "minimum_score": 90
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 4
+      }
+    ]
+  },
+  {
+    "id": "comp_gas_test",
+    "code": "GAS-TEST",
+    "name": "Gas Tester",
+    "category": "safety_critical",
+    "subcategory": "atmospheric_testing",
+    "description": "Authorized to perform pre-entry and continuous atmospheric testing for O2, LEL, H2S, CO. Covers calibration, bump testing, interpretation.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24,
+    "enables_permit_types": [
+      "confined_space",
+      "hot_work"
+    ]
+  },
+  {
+    "id": "comp_permit_issuer",
+    "code": "PERMIT-ISSUER",
+    "name": "Permit to Work Issuer",
+    "category": "safety_critical",
+    "subcategory": "permit_to_work",
+    "description": "Authorized to issue permits to work after risk review. Covers PTW procedure, JSA review, hazard recognition, control verification.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "written_assessment",
+        "is_mandatory": true,
+        "minimum_score": 90
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 10
+      }
+    ],
+    "prerequisite_competency_ids": [
+      "comp_hse_foundation"
+    ],
+    "default_validity_months": 24,
+    "enables_role_ids": [
+      "role_permit_issuer",
+      "role_safety_officer",
+      "role_hse_manager"
+    ]
+  },
+  {
+    "id": "comp_permit_authorizer",
+    "code": "PERMIT-AUTHORIZER",
+    "name": "Permit to Work Authorizer (High-Risk)",
+    "category": "safety_critical",
+    "subcategory": "permit_to_work",
+    "description": "Authorized to authorize high-risk permits (confined space high-hazard, HT electrical, hot work in process areas).",
+    "prerequisite_competency_ids": [
+      "comp_permit_issuer"
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_incident_investigator",
+    "code": "INCIDENT-INVESTIGATION",
+    "name": "Incident Investigator",
+    "category": "safety_critical",
+    "subcategory": "incident_management",
+    "description": "Authorized to conduct incident investigations including evidence gathering, witness interviews, RCA facilitation.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 3
+      }
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_rca_methods",
+    "code": "RCA-METHODS",
+    "name": "Root Cause Analysis Methods",
+    "category": "safety_critical",
+    "subcategory": "incident_management",
+    "description": "Proficient in multiple RCA methodologies: 5-Why, Fishbone, FTA, Bowtie, TapRoot, 8D.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "practical_assessment",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_hira_facilitator",
+    "code": "HIRA-FACILITATOR",
+    "name": "HIRA Study Facilitator",
+    "category": "safety_critical",
+    "subcategory": "risk_assessment",
+    "description": "Authorized to lead HIRA studies. Covers methodology rigor, team facilitation, control hierarchy enforcement.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 2
+      }
+    ],
+    "prerequisite_competency_ids": [
+      "comp_rca_methods"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_iso_45001_internal_auditor",
+    "code": "ISO-45001-INTERNAL-AUDITOR",
+    "name": "ISO 45001 Internal Auditor",
+    "category": "safety_critical",
+    "subcategory": "audit",
+    "description": "Qualified to conduct internal audits of OH&S management system per ISO 45001:2018.",
+    "validation_methods": [
+      {
+        "method": "training_completion",
+        "is_mandatory": true
+      },
+      {
+        "method": "supervised_performance",
+        "is_mandatory": true,
+        "minimum_supervised_instances": 2
+      }
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_iso_45001_lead_auditor",
+    "code": "ISO-45001-LEAD-AUDITOR",
+    "name": "ISO 45001 Lead Auditor",
+    "category": "safety_critical",
+    "subcategory": "audit",
+    "description": "Lead auditor qualification per IRCA or equivalent body. Authorized to lead third-party or major internal audits.",
+    "prerequisite_competency_ids": [
+      "comp_iso_45001_internal_auditor"
+    ],
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_emergency_response_mgt",
+    "code": "EMERGENCY-RESPONSE-MGT",
+    "name": "Emergency Response Management",
+    "category": "safety_critical",
+    "subcategory": "emergency_response",
+    "description": "Authorized to manage on-site emergency response. Covers ICS, evacuation management, regulator notification, crisis communication.",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_radiation_safety",
+    "code": "RADIATION-SAFETY",
+    "name": "Radiation Safety Officer (RSO)",
+    "category": "safety_critical",
+    "subcategory": "radiation",
+    "description": "AERB-licensed RSO for facilities using ionizing radiation (radiography, density gauges).",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 60,
+    "regulatory_references": [
+      {
+        "regulation": "AERB Safety Code",
+        "section": "RSO appointment",
+        "requirement": "Licensed RSO mandatory"
+      }
+    ]
+  },
+  {
+    "id": "comp_chemical_handling",
+    "code": "CHEMICAL-HANDLING",
+    "name": "Hazardous Chemical Handling",
+    "category": "safety_critical",
+    "subcategory": "chemical",
+    "description": "Authorized to handle hazardous chemicals. Covers SDS interpretation, PPE selection, spill response, decontamination.",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_diving_industrial",
+    "code": "DIVING-INDUSTRIAL",
+    "name": "Industrial Diver",
+    "category": "safety_critical",
+    "subcategory": "specialized",
+    "description": "Commercial/industrial diving operations including underwater inspection, salvage.",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      },
+      {
+        "method": "medical_fitness",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 12
+  },
+  {
+    "id": "comp_demolition",
+    "code": "DEMOLITION-SUPERVISOR",
+    "name": "Demolition Supervisor",
+    "category": "safety_critical",
+    "subcategory": "specialized",
+    "description": "Authorized to supervise demolition work including structural assessment, sequencing, dust suppression.",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_kiln_op",
+    "code": "KILN-OP",
+    "name": "Lime Kiln Operator",
+    "category": "operational",
+    "subcategory": "production_cement",
+    "description": "Authorized to operate the recausticizing lime kiln including burner management, lime mud feed control, draft management, and stack emission monitoring.",
+    "default_validity_months": 36,
+    "prerequisite_competency_ids": [
+      "comp_hse_foundation"
+    ]
+  },
+  {
+    "id": "comp_kiln_op_senior",
+    "code": "KILN-OP-SENIOR",
+    "name": "Senior Lime Kiln Operator",
+    "category": "operational",
+    "subcategory": "production_cement",
+    "prerequisite_competency_ids": [
+      "comp_kiln_op"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_mill_op_raw",
+    "code": "MILL-OP-RAW",
+    "name": "Pulp Digester Operator",
+    "category": "operational",
+    "subcategory": "production_cement",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_mill_op_cement",
+    "code": "MILL-OP-CEMENT",
+    "name": "Paper Machine Operator",
+    "category": "operational",
+    "subcategory": "production_cement",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_crusher_op",
+    "code": "CRUSHER-OP",
+    "name": "Wood Chipper Operator",
+    "category": "operational",
+    "subcategory": "production",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_packer_op",
+    "code": "PACKER-OP",
+    "name": "Reel & Ream Packing Operator",
+    "category": "operational",
+    "subcategory": "production_cement",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ccr_op",
+    "code": "CCR-OP",
+    "name": "Central Control Room Operator",
+    "category": "operational",
+    "subcategory": "control_room",
+    "description": "DCS/control room operations including alarm management, process trending, plant startup/shutdown sequences.",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ccr_op_senior",
+    "code": "CCR-OP-SENIOR",
+    "name": "Senior CCR Operator / Shift Engineer",
+    "category": "operational",
+    "subcategory": "control_room",
+    "prerequisite_competency_ids": [
+      "comp_ccr_op"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_boiler_op",
+    "code": "BOILER-OP",
+    "name": "Boiler Operator",
+    "category": "operational",
+    "subcategory": "utilities",
+    "description": "Authorized to operate boilers per Indian Boilers Act. Boiler Attendant Certificate required.",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 60,
+    "regulatory_references": [
+      {
+        "regulation": "Indian Boilers Act 1923",
+        "section": "Section 11",
+        "requirement": "Boiler Attendant Certificate of Proficiency"
+      }
+    ]
+  },
+  {
+    "id": "comp_turbine_op",
+    "code": "TURBINE-OP",
+    "name": "Turbine Operator",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_generator_op",
+    "code": "GENERATOR-OP",
+    "name": "Generator/Genset Operator",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_compressor_op",
+    "code": "COMPRESSOR-OP",
+    "name": "Compressor Operator",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_water_treat",
+    "code": "WATER-TREATMENT-OP",
+    "name": "Water Treatment Plant Operator",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_etp_op",
+    "code": "ETP-OP",
+    "name": "Effluent Treatment Plant Operator",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_mech",
+    "code": "MAINT-MECH",
+    "name": "Mechanical Maintenance Technician",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_mech_senior",
+    "code": "MAINT-MECH-SENIOR",
+    "name": "Senior Mechanical Maintenance Technician",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "prerequisite_competency_ids": [
+      "comp_maint_mech"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_elec",
+    "code": "MAINT-ELEC",
+    "name": "Electrical Maintenance Technician",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "default_validity_months": 36,
+    "prerequisite_competency_ids": [
+      "comp_elec_auth_lv"
+    ]
+  },
+  {
+    "id": "comp_maint_instr",
+    "code": "MAINT-INSTR",
+    "name": "Instrumentation Maintenance Technician",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_refractory",
+    "code": "MAINT-REFRACTORY",
+    "name": "Refractory Maintenance Technician",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_lubrication",
+    "code": "MAINT-LUBRICATION",
+    "name": "Lubrication Technician",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_vibration",
+    "code": "MAINT-VIBRATION",
+    "name": "Vibration Analyst",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_thermography",
+    "code": "MAINT-THERMOGRAPHY",
+    "name": "Infrared Thermography Technician",
+    "category": "operational",
+    "subcategory": "maintenance",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_quarry_op",
+    "code": "QUARRY-OP",
+    "name": "Wood Yard Operator",
+    "category": "operational",
+    "subcategory": "mining",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_blasting",
+    "code": "BLASTING-FOREMAN",
+    "name": "Blasting Foreman",
+    "category": "operational",
+    "subcategory": "mining",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 36,
+    "regulatory_references": [
+      {
+        "regulation": "Explosives Rules 2008",
+        "section": "Schedule III",
+        "requirement": "Blasting Foreman certificate"
+      }
+    ]
+  },
+  {
+    "id": "comp_drilling",
+    "code": "DRILLING-OPERATOR",
+    "name": "Debarking Drum Operator",
+    "category": "operational",
+    "subcategory": "mining",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_haul_truck",
+    "code": "HAUL-TRUCK-OP",
+    "name": "Wood & Bale Tipper Truck Operator",
+    "category": "operational",
+    "subcategory": "mining",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_dozer_op",
+    "code": "DOZER-OP",
+    "name": "Chip Pile Dozer Operator",
+    "category": "operational",
+    "subcategory": "mining",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_excavator_op",
+    "code": "EXCAVATOR-OP",
+    "name": "Log Grab Crane Operator",
+    "category": "operational",
+    "subcategory": "mining",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_loader_op",
+    "code": "LOADER-OP",
+    "name": "Bale & Fibre Loader Operator",
+    "category": "operational",
+    "subcategory": "mining",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_truck_driver",
+    "code": "TRUCK-DRIVER",
+    "name": "Heavy Vehicle Driver",
+    "category": "operational",
+    "subcategory": "logistics",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_packing_supervisor",
+    "code": "PACKING-SUPERVISOR",
+    "name": "Finishing & Packing Line Supervisor",
+    "category": "operational",
+    "subcategory": "production_cement",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_dispatch_supervisor",
+    "code": "DISPATCH-SUPERVISOR",
+    "name": "Dispatch Supervisor",
+    "category": "operational",
+    "subcategory": "logistics",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_warehouse_op",
+    "code": "WAREHOUSE-OP",
+    "name": "Warehouse Operator",
+    "category": "operational",
+    "subcategory": "logistics",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_security_op",
+    "code": "SECURITY-OP",
+    "name": "Security Operations",
+    "category": "operational",
+    "subcategory": "support",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_canteen_food_safety",
+    "code": "CANTEEN-FOOD-SAFETY",
+    "name": "Canteen Food Safety",
+    "category": "operational",
+    "subcategory": "support",
+    "default_validity_months": 24,
+    "regulatory_references": [
+      {
+        "regulation": "FSSAI",
+        "section": "Schedule 4",
+        "requirement": "Food safety training"
+      }
+    ]
+  },
+  {
+    "id": "comp_horticulture",
+    "code": "HORTICULTURE",
+    "name": "Horticulture/Greenbelt Maintenance",
+    "category": "operational",
+    "subcategory": "support",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_housekeeping_industrial",
+    "code": "HOUSEKEEPING-INDUSTRIAL",
+    "name": "Industrial Housekeeping",
+    "category": "operational",
+    "subcategory": "support",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_steam_handling",
+    "code": "STEAM-HANDLING",
+    "name": "Steam System Operations",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_cooling_tower",
+    "code": "COOLING-TOWER-OP",
+    "name": "Cooling Tower Operations",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_dosing",
+    "code": "CHEMICAL-DOSING-OP",
+    "name": "Chemical Dosing Operations",
+    "category": "operational",
+    "subcategory": "utilities",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ndt_visual",
+    "code": "NDT-VISUAL",
+    "name": "NDT - Visual Inspection (VT) Level II",
+    "category": "technical",
+    "subcategory": "ndt",
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_ndt_ut",
+    "code": "NDT-UT",
+    "name": "NDT - Ultrasonic Testing Level II",
+    "category": "technical",
+    "subcategory": "ndt",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_ndt_rt",
+    "code": "NDT-RT",
+    "name": "NDT - Radiographic Testing Level II",
+    "category": "technical",
+    "subcategory": "ndt",
+    "prerequisite_competency_ids": [
+      "comp_radiation_safety"
+    ],
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_ndt_mt",
+    "code": "NDT-MT",
+    "name": "NDT - Magnetic Particle Testing Level II",
+    "category": "technical",
+    "subcategory": "ndt",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_ndt_pt",
+    "code": "NDT-PT",
+    "name": "NDT - Liquid Penetrant Testing Level II",
+    "category": "technical",
+    "subcategory": "ndt",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_dimensional_inspection",
+    "code": "DIMENSIONAL-INSPECTION",
+    "name": "Dimensional Inspection",
+    "category": "technical",
+    "subcategory": "inspection",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_metallurgy_basic",
+    "code": "METALLURGY-BASIC",
+    "name": "Metallurgy - Basic",
+    "category": "technical",
+    "subcategory": "materials",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_painting_industrial",
+    "code": "PAINTING-INDUSTRIAL",
+    "name": "Industrial Painting / Coating Inspector",
+    "category": "technical",
+    "subcategory": "coatings",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_insulation",
+    "code": "INSULATION-APPLICATION",
+    "name": "Industrial Insulation Application",
+    "category": "technical",
+    "subcategory": "thermal",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_hvac",
+    "code": "HVAC-MAINTENANCE",
+    "name": "HVAC Maintenance Technician",
+    "category": "technical",
+    "subcategory": "hvac",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_plumbing",
+    "code": "PLUMBING",
+    "name": "Industrial Plumbing",
+    "category": "technical",
+    "subcategory": "mechanical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_fabrication",
+    "code": "FABRICATION",
+    "name": "Sheet Metal / Structural Fabrication",
+    "category": "technical",
+    "subcategory": "mechanical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_machining_lathe",
+    "code": "MACHINING-LATHE",
+    "name": "Lathe Machining",
+    "category": "technical",
+    "subcategory": "machining",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_machining_milling",
+    "code": "MACHINING-MILLING",
+    "name": "Milling Machine Operation",
+    "category": "technical",
+    "subcategory": "machining",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_pneumatics",
+    "code": "PNEUMATICS",
+    "name": "Pneumatic Systems",
+    "category": "technical",
+    "subcategory": "mechanical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_hydraulics",
+    "code": "HYDRAULICS",
+    "name": "Hydraulic Systems",
+    "category": "technical",
+    "subcategory": "mechanical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_plc_basic",
+    "code": "PLC-BASIC",
+    "name": "PLC Operation - Basic",
+    "category": "technical",
+    "subcategory": "automation",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_plc_programming",
+    "code": "PLC-PROGRAMMING",
+    "name": "PLC Programming",
+    "category": "technical",
+    "subcategory": "automation",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_scada",
+    "code": "SCADA-OPERATIONS",
+    "name": "SCADA System Operations",
+    "category": "technical",
+    "subcategory": "automation",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_dcs_basic",
+    "code": "DCS-BASIC",
+    "name": "DCS Operations - Basic",
+    "category": "technical",
+    "subcategory": "automation",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_dcs_advanced",
+    "code": "DCS-ADVANCED",
+    "name": "DCS Operations - Advanced",
+    "category": "technical",
+    "subcategory": "automation",
+    "prerequisite_competency_ids": [
+      "comp_dcs_basic"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_calibration_pressure",
+    "code": "CALIBRATION-PRESSURE",
+    "name": "Pressure Instrument Calibration",
+    "category": "technical",
+    "subcategory": "calibration",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_calibration_temp",
+    "code": "CALIBRATION-TEMP",
+    "name": "Temperature Instrument Calibration",
+    "category": "technical",
+    "subcategory": "calibration",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_calibration_flow",
+    "code": "CALIBRATION-FLOW",
+    "name": "Flow Instrument Calibration",
+    "category": "technical",
+    "subcategory": "calibration",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_calibration_weighing",
+    "code": "CALIBRATION-WEIGHING",
+    "name": "Weighing System Calibration",
+    "category": "technical",
+    "subcategory": "calibration",
+    "default_validity_months": 24,
+    "regulatory_references": [
+      {
+        "regulation": "Legal Metrology Act 2009",
+        "section": "Section 5",
+        "requirement": "Certified weighing systems"
+      }
+    ]
+  },
+  {
+    "id": "comp_lab_titration",
+    "code": "LAB-TITRATION",
+    "name": "Lab Analysis - Titration",
+    "category": "technical",
+    "subcategory": "laboratory",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_lab_xrf",
+    "code": "LAB-XRF",
+    "name": "Lab Analysis - XRF",
+    "category": "technical",
+    "subcategory": "laboratory",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_lab_xrd",
+    "code": "LAB-XRD",
+    "name": "Lab Analysis - XRD",
+    "category": "technical",
+    "subcategory": "laboratory",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_lab_chromatography",
+    "code": "LAB-CHROMATOGRAPHY",
+    "name": "Lab Analysis - Chromatography",
+    "category": "technical",
+    "subcategory": "laboratory",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_sampling_techniques",
+    "code": "SAMPLING-TECHNIQUES",
+    "name": "Sampling Techniques for QC",
+    "category": "technical",
+    "subcategory": "laboratory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_cad_design",
+    "code": "CAD-DESIGN",
+    "name": "CAD/Drafting",
+    "category": "technical",
+    "subcategory": "engineering",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_root_cause_8d",
+    "code": "RCA-8D",
+    "name": "8D Problem Solving",
+    "category": "technical",
+    "subcategory": "problem_solving",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_spc",
+    "code": "SPC",
+    "name": "Statistical Process Control",
+    "category": "technical",
+    "subcategory": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_six_sigma_yellow",
+    "code": "SIX-SIGMA-YELLOW",
+    "name": "Six Sigma Yellow Belt",
+    "category": "technical",
+    "subcategory": "quality",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_six_sigma_green",
+    "code": "SIX-SIGMA-GREEN",
+    "name": "Six Sigma Green Belt",
+    "category": "technical",
+    "subcategory": "quality",
+    "prerequisite_competency_ids": [
+      "comp_six_sigma_yellow"
+    ],
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_qms_iso9001_aware",
+    "code": "ISO-9001-AWARENESS",
+    "name": "ISO 9001 Awareness",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_qms_iso9001_internal_audit",
+    "code": "ISO-9001-INTERNAL-AUDITOR",
+    "name": "ISO 9001 Internal Auditor",
+    "category": "quality",
+    "prerequisite_competency_ids": [
+      "comp_qms_iso9001_aware"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_qms_iso9001_lead_audit",
+    "code": "ISO-9001-LEAD-AUDITOR",
+    "name": "ISO 9001 Lead Auditor",
+    "category": "quality",
+    "prerequisite_competency_ids": [
+      "comp_qms_iso9001_internal_audit"
+    ],
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_iatf_aware",
+    "code": "IATF-16949-AWARENESS",
+    "name": "IATF 16949 Awareness",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_iatf_internal_audit",
+    "code": "IATF-16949-INTERNAL-AUDITOR",
+    "name": "IATF 16949 Internal Auditor",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_fmea_facilitator",
+    "code": "FMEA-FACILITATOR",
+    "name": "FMEA Facilitator (PFMEA/DFMEA)",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_apqp",
+    "code": "APQP",
+    "name": "APQP (Advanced Product Quality Planning)",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ppap",
+    "code": "PPAP",
+    "name": "PPAP (Production Part Approval Process)",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_msa",
+    "code": "MSA",
+    "name": "MSA (Measurement System Analysis)",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_control_plan",
+    "code": "CONTROL-PLAN",
+    "name": "Control Plan Development",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_quality_inspection",
+    "code": "QUALITY-INSPECTION",
+    "name": "Quality Inspection Techniques",
+    "category": "quality",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_customer_complaint",
+    "code": "CUSTOMER-COMPLAINT-HANDLING",
+    "name": "Customer Complaint Handling",
+    "category": "quality",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_supplier_audit",
+    "code": "SUPPLIER-AUDIT",
+    "name": "Supplier Audit Capability",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_document_control",
+    "code": "DOCUMENT-CONTROL",
+    "name": "Document Control",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_calibration_program",
+    "code": "CALIBRATION-PROGRAM",
+    "name": "Calibration Program Management",
+    "category": "quality",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ems_iso14001_aware",
+    "code": "ISO-14001-AWARENESS",
+    "name": "ISO 14001 Awareness",
+    "category": "environmental",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ems_iso14001_internal_audit",
+    "code": "ISO-14001-INTERNAL-AUDITOR",
+    "name": "ISO 14001 Internal Auditor",
+    "category": "environmental",
+    "prerequisite_competency_ids": [
+      "comp_ems_iso14001_aware"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ems_iso14001_lead_audit",
+    "code": "ISO-14001-LEAD-AUDITOR",
+    "name": "ISO 14001 Lead Auditor",
+    "category": "environmental",
+    "prerequisite_competency_ids": [
+      "comp_ems_iso14001_internal_audit"
+    ],
+    "validation_methods": [
+      {
+        "method": "external_certification",
+        "is_mandatory": true
+      }
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_emission_monitoring",
+    "code": "EMISSION-MONITORING",
+    "name": "Stack Emission Monitoring",
+    "category": "environmental",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_effluent_monitoring",
+    "code": "EFFLUENT-MONITORING",
+    "name": "Effluent Monitoring",
+    "category": "environmental",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_waste_management",
+    "code": "WASTE-MANAGEMENT",
+    "name": "Hazardous Waste Management",
+    "category": "environmental",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_carbon_accounting",
+    "code": "CARBON-ACCOUNTING",
+    "name": "GHG Inventory / Carbon Accounting",
+    "category": "environmental",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_sustainability_reporting",
+    "code": "SUSTAINABILITY-REPORTING",
+    "name": "BRSR / Sustainability Reporting",
+    "category": "environmental",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_eai_facilitator",
+    "code": "EAI-FACILITATOR",
+    "name": "EAI Study Facilitator",
+    "category": "environmental",
+    "prerequisite_competency_ids": [
+      "comp_ems_iso14001_aware"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_env_incident_response",
+    "code": "ENV-INCIDENT-RESPONSE",
+    "name": "Environmental Incident Response",
+    "category": "environmental",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_factories_act_knowledge",
+    "code": "FACTORIES-ACT-KNOWLEDGE",
+    "name": "Factories Act 1948 Working Knowledge",
+    "category": "regulatory",
+    "default_validity_months": 36,
+    "regulatory_references": [
+      {
+        "regulation": "Factories Act 1948",
+        "section": "Full Act",
+        "requirement": "Operational awareness for occupier/manager nominees"
+      }
+    ]
+  },
+  {
+    "id": "comp_osh_code",
+    "code": "OSH-CODE-KNOWLEDGE",
+    "name": "OSH Code 2020 Working Knowledge",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_dgms_regulations",
+    "code": "DGMS-REGULATIONS",
+    "name": "DGMS Regulations (Mining)",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_mah_rules",
+    "code": "MAH-RULES",
+    "name": "MAH Rules Working Knowledge",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_cpcb_compliance",
+    "code": "CPCB-COMPLIANCE",
+    "name": "CPCB Compliance for Industry",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_brsr_disclosures",
+    "code": "BRSR-DISCLOSURES",
+    "name": "BRSR Disclosure Requirements",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_legal_metrology",
+    "code": "LEGAL-METROLOGY",
+    "name": "Legal Metrology Compliance",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_explosives_act",
+    "code": "EXPLOSIVES-ACT",
+    "name": "Explosives Act Compliance",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_petroleum_rules",
+    "code": "PETROLEUM-RULES",
+    "name": "Petroleum Rules Compliance",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_pcb_consents",
+    "code": "PCB-CONSENTS-MANAGEMENT",
+    "name": "Pollution Control Board Consent Management",
+    "category": "regulatory",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_leadership_frontline",
+    "code": "LEADERSHIP-FRONTLINE",
+    "name": "Frontline Supervisor Leadership",
+    "category": "leadership",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_leadership_dept",
+    "code": "LEADERSHIP-DEPARTMENT",
+    "name": "Department Management",
+    "category": "leadership",
+    "prerequisite_competency_ids": [
+      "comp_leadership_frontline"
+    ],
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_leadership_plant",
+    "code": "LEADERSHIP-PLANT",
+    "name": "Plant Leadership",
+    "category": "leadership",
+    "prerequisite_competency_ids": [
+      "comp_leadership_dept"
+    ],
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_project_mgmt",
+    "code": "PROJECT-MANAGEMENT",
+    "name": "Project Management",
+    "category": "leadership",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_change_mgmt",
+    "code": "CHANGE-MANAGEMENT",
+    "name": "Change Management",
+    "category": "leadership",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_safety_leadership",
+    "code": "SAFETY-LEADERSHIP",
+    "name": "Safety Leadership for Managers",
+    "category": "leadership",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_coaching_mentoring",
+    "code": "COACHING-MENTORING",
+    "name": "Coaching and Mentoring",
+    "category": "leadership",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_cross_functional",
+    "code": "CROSS-FUNCTIONAL-LEADERSHIP",
+    "name": "Cross-Functional Leadership",
+    "category": "leadership",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_strategic_thinking",
+    "code": "STRATEGIC-THINKING",
+    "name": "Strategic Thinking",
+    "category": "leadership",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_decision_making",
+    "code": "EXECUTIVE-DECISION-MAKING",
+    "name": "Executive Decision Making",
+    "category": "leadership",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_communication_effective",
+    "code": "COMMUNICATION-EFFECTIVE",
+    "name": "Effective Workplace Communication",
+    "category": "behavioral",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_communication_written",
+    "code": "COMMUNICATION-WRITTEN",
+    "name": "Written Business Communication",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_conflict_resolution",
+    "code": "CONFLICT-RESOLUTION",
+    "name": "Conflict Resolution",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_teamwork",
+    "code": "TEAMWORK",
+    "name": "Teamwork and Collaboration",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_problem_solving_struct",
+    "code": "PROBLEM-SOLVING-STRUCTURED",
+    "name": "Structured Problem Solving",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_continuous_improvement",
+    "code": "CONTINUOUS-IMPROVEMENT-MINDSET",
+    "name": "Continuous Improvement Mindset",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_customer_orientation",
+    "code": "CUSTOMER-ORIENTATION",
+    "name": "Customer Orientation",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_accountability",
+    "code": "ACCOUNTABILITY",
+    "name": "Personal Accountability",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_adaptability",
+    "code": "ADAPTABILITY",
+    "name": "Adaptability and Resilience",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_time_management",
+    "code": "TIME-MANAGEMENT",
+    "name": "Time Management and Prioritization",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_safety_observation_skill",
+    "code": "SAFETY-OBSERVATION-SKILL",
+    "name": "Safety Observation Skill",
+    "category": "behavioral",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_speak_up_culture",
+    "code": "SPEAK-UP-CULTURE",
+    "name": "Speak Up / Stop Work Authority",
+    "category": "behavioral",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_cultural_sensitivity",
+    "code": "CULTURAL-SENSITIVITY",
+    "name": "Cultural Sensitivity and Inclusion",
+    "category": "behavioral",
+    "default_validity_months": 60
+  },
+  {
+    "id": "comp_stress_management",
+    "code": "STRESS-MANAGEMENT",
+    "name": "Stress and Fatigue Management",
+    "category": "behavioral",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ethical_conduct",
+    "code": "ETHICAL-CONDUCT",
+    "name": "Ethical Conduct and Anti-Corruption",
+    "category": "behavioral",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_process_op_l1",
+    "code": "PROCESS-OP-L1",
+    "name": "Process Operator \u00e2\u20ac\u201d Level 1 (Basic Operations)",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_process_op_l2",
+    "code": "PROCESS-OP-L2",
+    "name": "Process Operator \u00e2\u20ac\u201d Level 2 (Advanced / Senior)",
+    "category": "operational",
+    "prerequisite_competency_ids": [
+      "comp_process_op_l1"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_ccr_op",
+    "code": "CCR-OP-ADV",
+    "name": "Central Control Room Operator (Advanced)",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_shift_incharge",
+    "code": "SHIFT-INCHARGE",
+    "name": "Shift In-Charge / Shift Supervisor",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_utility_op",
+    "code": "UTILITY-OP",
+    "name": "Utilities Operator (Boiler, Compressor, Cooling)",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_etp_op",
+    "code": "ETP-OP-SR",
+    "name": "Effluent Treatment Plant Operator (Senior)",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_mech_l1",
+    "code": "MAINT-MECH-L1",
+    "name": "Mechanical Maintenance Technician \u00e2\u20ac\u201d Level 1",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_mech_l2",
+    "code": "MAINT-MECH-L2",
+    "name": "Mechanical Maintenance Technician \u00e2\u20ac\u201d Level 2 (Senior)",
+    "category": "operational",
+    "prerequisite_competency_ids": [
+      "comp_maint_mech_l1"
+    ],
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_elec_l1",
+    "code": "MAINT-ELEC-L1",
+    "name": "Electrical Maintenance Technician \u00e2\u20ac\u201d Level 1",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_maint_instr",
+    "code": "INSTR-CONTROL-TECH",
+    "name": "Instrumentation & Control Technician",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_qc_analyst",
+    "code": "QC-ANALYST",
+    "name": "Quality Control Analyst / Lab Technician",
+    "category": "operational",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_warehouse_op",
+    "code": "WAREHOUSE-STORES",
+    "name": "Warehouse Operator / Stores",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_dispatch_op",
+    "code": "DISPATCH-OP",
+    "name": "Dispatch / Logistics Operator",
+    "category": "operational",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_dcs_operation",
+    "code": "DCS-OPERATION",
+    "name": "DCS System Operations",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_plc_operation",
+    "code": "PLC-OPERATION",
+    "name": "PLC Operation and Monitoring",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_scada_operation",
+    "code": "SCADA-OPERATION",
+    "name": "SCADA System Operations",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_vibration_analyst",
+    "code": "VIBRATION-ANALYST",
+    "name": "Vibration Analysis \u00e2\u20ac\u201d Basic",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_thermography",
+    "code": "THERMOGRAPHY",
+    "name": "Infrared Thermography",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_alignment_balancing",
+    "code": "ALIGNMENT-BALANCING",
+    "name": "Shaft Alignment and Dynamic Balancing",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_pump_maintenance",
+    "code": "PUMP-MAINTENANCE",
+    "name": "Centrifugal Pump Maintenance",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_valve_maintenance",
+    "code": "VALVE-MAINTENANCE",
+    "name": "Control Valve and Manual Valve Maintenance",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_pressure_vessel_insp",
+    "code": "PRESSURE-VESSEL-INSP",
+    "name": "Pressure Vessel and Piping Inspection",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_hydraulics_tech",
+    "code": "HYDRAULICS-TECH",
+    "name": "Hydraulic Systems Maintenance",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_pneumatics_tech",
+    "code": "PNEUMATICS-TECH",
+    "name": "Pneumatic Systems Maintenance",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_sample_collection",
+    "code": "SAMPLE-COLLECTION",
+    "name": "Representative Sampling Techniques",
+    "category": "technical",
+    "default_validity_months": 24
+  },
+  {
+    "id": "comp_root_cause_8d",
+    "code": "ROOT-CAUSE-8D",
+    "name": "8D Problem Solving Methodology",
+    "category": "technical",
+    "default_validity_months": 36
+  },
+  {
+    "id": "comp_spc_basic",
+    "code": "SPC-BASIC",
+    "name": "Statistical Process Control \u00e2\u20ac\u201d Basic",
+    "category": "technical",
+    "default_validity_months": 36
+  }
+]

@@ -1,0 +1,258 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 263 70% 35%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 263 70% 95%;
+    --accent-foreground: 263 70% 25%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 263 70% 50%;
+    --radius: 0.5rem;
+
+    /* shadcn Sidebar tokens — brand-purple variant so the official
+       Sidebar component family adopts SafeOps colors. */
+    --sidebar-background: 263 70% 22%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 263 70% 25%;
+    --sidebar-accent: 263 60% 32%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 263 60% 30%;
+    --sidebar-ring: 263 70% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html, body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .kpi-card {
+    @apply rounded-xl border bg-card p-5 shadow-sm transition hover:shadow-md;
+  }
+  .chip {
+    @apply inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium;
+  }
+  .table-row-hover {
+    @apply hover:bg-slate-50 transition;
+  }
+  .nav-link {
+    @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-primary-800/50 hover:text-white;
+  }
+  .nav-link-active {
+    @apply bg-primary-800/70 text-white;
+  }
+
+  /* ── Form controls ─────────────────────────────────────────────────
+     Consistent input / select / textarea styling. Used by every form
+     in the app via `.form-input`, `.form-select`, `.form-textarea`.
+     Without these defined the controls fall through to browser
+     defaults, which look broken (no border, weird focus rings, the
+     dotted outline visible in the HIRA new-study form). */
+  .form-input {
+    @apply flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400
+           shadow-sm transition
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+           disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-50;
+  }
+  .form-select {
+    @apply flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900
+           shadow-sm transition cursor-pointer appearance-none
+           bg-no-repeat bg-[length:16px_16px] bg-[position:right_0.5rem_center]
+           pr-8
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+           disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-50;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  }
+  /* When .form-input is applied to a <textarea>, restore its multi-line
+     nature — the h-10 from form-input collapses it to one row otherwise. */
+  textarea.form-input {
+    @apply h-auto min-h-[5rem] py-2 leading-snug resize-y;
+  }
+  .form-textarea {
+    @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400
+           shadow-sm transition resize-y min-h-[5rem]
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500
+           disabled:cursor-not-allowed disabled:opacity-60 disabled:bg-slate-50;
+  }
+  .form-label {
+    @apply block text-xs font-medium uppercase tracking-wider text-slate-600 mb-1.5;
+  }
+  .form-help {
+    @apply mt-1 text-xs text-slate-500;
+  }
+  .form-error {
+    @apply mt-1 text-xs text-rose-600 font-medium;
+  }
+}
+
+/* ── Design system typography ──────────────────────────────────────
+   Tabular numerals for every data figure so columns of KPI values
+   stay vertically aligned regardless of which digits they contain.
+   Apply via `font-numeric` (preferred) or the legacy `tabular-nums`
+   utility. */
+@layer utilities {
+  .font-numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "lnum" 1;
+  }
+}
+
+/* Type scale — every dashboard surface picks from this ladder. Sizes
+   pixel-locked so a designer can verify against Figma without
+   wrestling with rem math. Letter-spacing tightens at larger sizes
+   (display) and opens at the smallest (overline) to give the chrome
+   that "professional SaaS dashboard" feel. */
+@layer components {
+  .text-display-1 {
+    font-size: 48px;
+    line-height: 56px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .text-display-2 {
+    font-size: 36px;
+    line-height: 44px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  .text-heading-1 {
+    font-size: 24px;
+    line-height: 32px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .text-heading-2 {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+  .text-heading-3 {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 600;
+  }
+  .text-body {
+    font-size: 14px;
+    line-height: 20px;
+    font-weight: 400;
+  }
+  .text-caption {
+    font-size: 12px;
+    line-height: 16px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .text-overline {
+    font-size: 11px;
+    line-height: 16px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+}
+
+/* ── Elevation ladder ──────────────────────────────────────────────
+   The shadow scale Tailwind ships is too loud for an info-dense
+   dashboard. These tokens are subtle by design — Linear/Stripe levels.
+   Boxes lift gently on hover via `hover:shadow-elev-hover`. */
+@layer utilities {
+  .elevation-0 {
+    box-shadow: none;
+  }
+  .elevation-1 {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  .elevation-2 {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+  .elevation-hover {
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.04), 0 4px 6px rgba(0, 0, 0, 0.05);
+  }
+}
+
+/* ── Skeleton shimmer ──────────────────────────────────────────────
+   Used by loading states to convey "data is on the way" without the
+   harsh on/off flicker of solid pulses. Mounted on a wrapper element;
+   children stay structurally identical to the post-load layout to
+   prevent CLS. */
+@layer utilities {
+  .skeleton-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(226, 232, 240, 0.5) 0%,
+      rgba(241, 245, 249, 0.9) 50%,
+      rgba(226, 232, 240, 0.5) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.6s ease-in-out infinite;
+  }
+}
+
+/* Subtle scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── Print styles ── used by audit-grade PDF export (browser Print → Save as PDF). */
+@media print {
+  /* Hide UI chrome that doesn't belong on paper */
+  nav, aside, [data-sidebar] { display: none !important; }
+  .print\:hidden { display: none !important; }
+  .print\:block { display: block !important; }
+
+  /* Force light, ink-friendly colours */
+  body {
+    background: #fff !important;
+    color: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  [class*="bg-slate-50"], [class*="bg-emerald-50"], [class*="bg-rose-50"], [class*="bg-amber-50"], [class*="bg-violet-50"], [class*="bg-blue-50"] {
+    background: #fff !important;
+  }
+
+  /* Stack the 2-column grid vertically */
+  .grid { display: block !important; }
+  .grid > * { width: 100% !important; margin-bottom: 8mm; }
+  .lg\:col-span-2 { width: 100% !important; }
+  .max-w-3xl, .max-w-5xl, .max-w-7xl { max-width: 100% !important; }
+
+  /* Card spacing tightened for paper */
+  [class*="shadow"] { box-shadow: none !important; }
+
+  /* Page breaks */
+  [class*="rounded-md"][class*="border"], li, tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+
+  /* Hide buttons and interactive widgets — record is read-only on paper */
+  button { display: none !important; }
+
+  @page { margin: 14mm; }
+}

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx prisma *)",
+      "Bash(echo \"exit=$?\")",
+      "Read(//c/Users/Deepak/Desktop/code-files/safeops_360_bakend/**)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app/routers/observations.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+    ]
+  }
+}

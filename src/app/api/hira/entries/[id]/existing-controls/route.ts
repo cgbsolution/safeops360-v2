@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from "next/server";
+import { backendFetch, BackendError } from "@/lib/backend/fetch";
+
+export const dynamic = "force-dynamic";
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const result = await backendFetch(`/api/hira/entries/${id}/existing-controls`, {
+      method: "PUT",
+      body
+    });
+    return NextResponse.json(result);
+  } catch (e: unknown) {
+    if (e instanceof BackendError) {
+      return NextResponse.json({ error: e.message }, { status: e.status });
+    }
+    return NextResponse.json({ error: (e as Error).message ?? "Save failed" }, { status: 500 });
+  }
+}

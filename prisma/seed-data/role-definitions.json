@@ -1,0 +1,24 @@
+[
+  {
+    "id": "role_def_worker",
+    "role_name": "Worker",
+    "applies_to_departments": ["all"],
+    "applies_to_plants": ["all"],
+    "required_competencies": [
+      { "competency_code": "HSE-FOUNDATION", "requirement_type": "mandatory", "grace_period_for_new_hires_days": 7, "rationale": "All workers must have HSE awareness before entering operational areas" },
+      { "competency_code": "SAFETY-OBSERVATION-SKILL", "requirement_type": "preferred", "rationale": "Encourages safety observation culture" },
+      { "competency_code": "SPEAK-UP-CULTURE", "requirement_type": "mandatory", "grace_period_for_new_hires_days": 30, "rationale": "Worker stop-work authority foundational to safety culture" }
+    ],
+    "minimum_experience": { "overall_industry_months": 0, "similar_role_months": 0 }
+  },
+  {
+    "id": "role_def_contractor_workman",
+    "role_name": "Contractor Workman",
+    "applies_to_departments": ["all"],
+    "applies_to_plants": ["all"],
+    "required_competencies": [
+      { "competency_code": "HSE-FOUNDATION", "requirement_type": "mandatory", "grace_period_for_new_hires_days": 0, "rationale": "Contractor workers must have HSE awareness before any site access" },
+      { "competency_code": "SPEAK-UP-CULTURE", "requirement_type": "mandatory", "grace_period_for_new_hires_days": 7, "rationale": "Stop-work authority for contractor crew" }
+    ]
+  }
+]

@@ -1,0 +1,242 @@
+[
+  {
+    "id": "cmq42hdj0001c1358bmlohci6",
+    "email": "contractor-workman.it.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "CONTRACTOR_WORKMAN"
+  },
+  {
+    "id": "cmq42he0p001e1358ms6allfm",
+    "email": "supervisor.it.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "SUPERVISOR"
+  },
+  {
+    "id": "cmq42he9g001g1358go3o8bza",
+    "email": "dept-head.it.nw@safeops360.in",
+    "oldRole": "PLANT_HEAD",
+    "newRole": "DEPARTMENT_HEAD"
+  },
+  {
+    "id": "cmq42hee1001i1358q1rx4zwj",
+    "email": "permit-issuer.it.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "PERMIT_ISSUER"
+  },
+  {
+    "id": "cmq42heim001k1358iqqywpfn",
+    "email": "safety-officer.it.nw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "SAFETY_OFFICER"
+  },
+  {
+    "id": "cmq42hewf001q1358mowfzv0y",
+    "email": "maintenance-head.it.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "MAINTENANCE_HEAD"
+  },
+  {
+    "id": "cmq42hf24001s1358k9qy7o0l",
+    "email": "trainer.it.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "TRAINER"
+  },
+  {
+    "id": "cmq42hfd4001u1358fygr86hl",
+    "email": "ld-manager.it.nw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "LD_MANAGER"
+  },
+  {
+    "id": "cmq42hgbm00261358geyn3cob",
+    "email": "corporate-hse.it.nw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "CORPORATE_HSE"
+  },
+  {
+    "id": "cmq42hgkh002a1358cryxh4xf",
+    "email": "system-admin.it.nw@safeops360.in",
+    "oldRole": "ADMIN",
+    "newRole": "SYSTEM_ADMIN"
+  },
+  {
+    "id": "cmq42hgxb002e13585csfjcg2",
+    "email": "contractor-workman.hr.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "CONTRACTOR_WORKMAN"
+  },
+  {
+    "id": "cmq42hh2n002g1358jtovaba9",
+    "email": "supervisor.hr.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "SUPERVISOR"
+  },
+  {
+    "id": "cmq42hh6s002i1358pqjb967v",
+    "email": "dept-head.hr.nw@safeops360.in",
+    "oldRole": "PLANT_HEAD",
+    "newRole": "DEPARTMENT_HEAD"
+  },
+  {
+    "id": "cmq42hhaz002k1358dw4axcek",
+    "email": "permit-issuer.hr.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "PERMIT_ISSUER"
+  },
+  {
+    "id": "cmq42hhfe002m1358fz385chp",
+    "email": "safety-officer.hr.nw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "SAFETY_OFFICER"
+  },
+  {
+    "id": "cmq42hhsr002s1358euwv98sg",
+    "email": "maintenance-head.hr.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "MAINTENANCE_HEAD"
+  },
+  {
+    "id": "cmq42hhxe002u1358dnhil4l7",
+    "email": "trainer.hr.nw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "TRAINER"
+  },
+  {
+    "id": "cmq42hi1b002w1358nm2gjqst",
+    "email": "ld-manager.hr.nw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "LD_MANAGER"
+  },
+  {
+    "id": "cmq42hj1500381358vel59tfi",
+    "email": "corporate-hse.hr.nw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "CORPORATE_HSE"
+  },
+  {
+    "id": "cmq42hjgx003c13584v4d3a62",
+    "email": "system-admin.hr.nw@safeops360.in",
+    "oldRole": "ADMIN",
+    "newRole": "SYSTEM_ADMIN"
+  },
+  {
+    "id": "cmq42hjvd003g1358sh3fguui",
+    "email": "contractor-workman.it.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "CONTRACTOR_WORKMAN"
+  },
+  {
+    "id": "cmq42hjzi003i1358khx1taoo",
+    "email": "supervisor.it.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "SUPERVISOR"
+  },
+  {
+    "id": "cmq42hk6n003k1358hzj3fulv",
+    "email": "dept-head.it.sw@safeops360.in",
+    "oldRole": "PLANT_HEAD",
+    "newRole": "DEPARTMENT_HEAD"
+  },
+  {
+    "id": "cmq42hkat003m1358hzvu2a52",
+    "email": "permit-issuer.it.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "PERMIT_ISSUER"
+  },
+  {
+    "id": "cmq42hker003o1358r6citkpo",
+    "email": "safety-officer.it.sw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "SAFETY_OFFICER"
+  },
+  {
+    "id": "cmq42hkqc003u1358a0aq4ghp",
+    "email": "maintenance-head.it.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "MAINTENANCE_HEAD"
+  },
+  {
+    "id": "cmq42hku6003w1358u6ayu61z",
+    "email": "trainer.it.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "TRAINER"
+  },
+  {
+    "id": "cmq42hky7003y13582kzowwbi",
+    "email": "ld-manager.it.sw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "LD_MANAGER"
+  },
+  {
+    "id": "cmq42hluz004a13583zmd20li",
+    "email": "corporate-hse.it.sw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "CORPORATE_HSE"
+  },
+  {
+    "id": "cmq42hm43004e13589y2wxu9e",
+    "email": "system-admin.it.sw@safeops360.in",
+    "oldRole": "ADMIN",
+    "newRole": "SYSTEM_ADMIN"
+  },
+  {
+    "id": "cmq42hmdl004i1358lak42jl2",
+    "email": "contractor-workman.hr.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "CONTRACTOR_WORKMAN"
+  },
+  {
+    "id": "cmq42hmm7004k1358um4i8luj",
+    "email": "supervisor.hr.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "SUPERVISOR"
+  },
+  {
+    "id": "cmq42hmx2004m1358j3i1bp2w",
+    "email": "dept-head.hr.sw@safeops360.in",
+    "oldRole": "PLANT_HEAD",
+    "newRole": "DEPARTMENT_HEAD"
+  },
+  {
+    "id": "cmq42hn1n004o13584xq5ujhk",
+    "email": "permit-issuer.hr.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "PERMIT_ISSUER"
+  },
+  {
+    "id": "cmq42hn5r004q1358vy9vwehf",
+    "email": "safety-officer.hr.sw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "SAFETY_OFFICER"
+  },
+  {
+    "id": "cmq42hnp6004w1358to8k6k2w",
+    "email": "maintenance-head.hr.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "MAINTENANCE_HEAD"
+  },
+  {
+    "id": "cmq42hntb004y1358ikt2y6af",
+    "email": "trainer.hr.sw@safeops360.in",
+    "oldRole": "WORKER",
+    "newRole": "TRAINER"
+  },
+  {
+    "id": "cmq42hnx800501358mrk2kmb7",
+    "email": "ld-manager.hr.sw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "LD_MANAGER"
+  },
+  {
+    "id": "cmq42hopy005c1358635mrzkr",
+    "email": "corporate-hse.hr.sw@safeops360.in",
+    "oldRole": "HSE_MANAGER",
+    "newRole": "CORPORATE_HSE"
+  },
+  {
+    "id": "cmq42hoy1005g1358zsm31bu8",
+    "email": "system-admin.hr.sw@safeops360.in",
+    "oldRole": "ADMIN",
+    "newRole": "SYSTEM_ADMIN"
+  }
+]
