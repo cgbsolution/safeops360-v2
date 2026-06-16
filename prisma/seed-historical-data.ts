@@ -77,29 +77,29 @@ const OBS_STATUSES_RECENT = ["OPEN", "IN_PROGRESS", "ASSIGNED", "CLOSED", "CLOSE
 const OBS_STATUSES_OLD    = ["CLOSED", "CLOSED", "CLOSED", "CLOSED", "IN_PROGRESS"] as const;
 
 const OBS_DESCS = [
-  "Worker not wearing required PPE near paper machine dryer section. Corrected on site.",
-  "Pulp slurry spill on floor creating slip hazard near stock pump. Cleaned and barricaded.",
-  "Working at height on recovery boiler platform without fall arrest equipment. Work stopped and PPE issued.",
-  "Electrical panel door open near paper machine drive. Secured by maintenance team.",
-  "Chemical handling at bleach plant observed without splash protection. PPE issued and task re-briefed.",
-  "Emergency exit in finishing house partially obstructed by stacked reels. Obstruction removed immediately.",
-  "Hot work under way on digester pipework without fire watch in position. Work suspended pending compliance.",
-  "Confined space entry to stock chest attempted without gas test or standby person. Entry stopped.",
-  "Fire extinguisher in paper machine hall beyond its last inspection date. Replacement raised as urgent action.",
-  "Unsafe stacking of paper reels in warehouse bay creating topple risk. Restacked to safe height.",
+  "Sewing operator not wearing required finger guard / needle-guard near single-needle lockstitch machine. Corrected on site.",
+  "Spinning-oil spill on floor creating slip hazard near circular knitting machine. Cleaned and barricaded.",
+  "Working at height on dye-house stenter platform without fall arrest equipment. Work stopped and PPE issued.",
+  "Electrical panel door open near sewing line drive motor. Secured by maintenance team.",
+  "Chemical handling at dye house observed without splash protection. PPE issued and task re-briefed.",
+  "Emergency exit in finished goods warehouse partially obstructed by stacked fabric rolls. Obstruction removed immediately.",
+  "Hot work under way on boiler steam pipework without fire watch in position. Work suspended pending compliance.",
+  "Confined space entry to dye vessel attempted without gas test or standby person. Entry stopped.",
+  "Fire extinguisher in cutting section beyond its last inspection date. Replacement raised as urgent action.",
+  "Unsafe stacking of fabric rolls in warehouse bay creating topple risk. Restacked to safe height.",
   "Correct PPE worn and toolbox talk completed before high-risk task. Positive observation noted.",
-  "Loose handrail on access staircase to recovery boiler mezzanine. Maintenance work order raised.",
+  "Loose handrail on access staircase to boiler house mezzanine. Maintenance work order raised.",
 ] as const;
 
 const NM_DESCS = [
-  "Reel-handling clamp truck reversed into pedestrian zone in finishing house. No injury. Exclusion zone and signage reinforced.",
-  "Slip hazard from black-liquor leak on walkway narrowly avoided by shift operator.",
-  "Dropped object from elevated work on recovery boiler narrowly missed worker below. Exclusion zone re-established.",
-  "Digester blow valve operated incorrectly releasing minor pulp stock. No injury. Procedure reviewed.",
-  "Near miss during paper machine drive panel work — LOTO had not been verified before opening panel.",
-  "Rigging load of press roll shifted unexpectedly during lift. Near miss — no personnel struck.",
-  "Forklift reversed into marked pedestrian crossing zone near reel warehouse. Physical bollards installed as corrective.",
-  "Chlorine dioxide drip onto walkway in bleach plant — operator slipped but caught self on handrail without injury.",
+  "Fabric-roll clamp truck reversed into pedestrian zone in finished goods warehouse. No injury. Exclusion zone and signage reinforced.",
+  "Slip hazard from dye-bath effluent leak on walkway narrowly avoided by shift operator.",
+  "Dropped object from elevated work on dye-house stenter narrowly missed worker below. Exclusion zone re-established.",
+  "Dye-vessel drain valve operated incorrectly releasing minor hot dye liquor. No injury. Procedure reviewed.",
+  "Near miss during sewing line drive panel work — LOTO had not been verified before opening panel.",
+  "Rigging load of knitting-machine cylinder shifted unexpectedly during lift. Near miss — no personnel struck.",
+  "Forklift reversed into marked pedestrian crossing zone near fabric store. Physical bollards installed as corrective.",
+  "Reactive-dye chemical drip onto walkway in dye house — operator slipped but caught self on handrail without injury.",
 ] as const;
 
 const NM_SEV_OPTS = ["MEDIUM", "HIGH", "HIGH", "CRITICAL", "MEDIUM", "HIGH"] as const;
@@ -111,31 +111,31 @@ const PTW_TYPES = [
 ] as const;
 
 const PTW_SCOPE_ITEMS = [
-  "Welding repair on digester pipework in pulp mill. Gas test and firewatch in place.",
-  "Confined space entry into stock chest for internal inspection. Gas test and attendant stationed.",
-  "Elevated work on recovery boiler platform. Full-body harness and MEWP in use.",
-  "Paper machine drive panel maintenance under full electrical LOTO. Test-before-touch confirmed.",
-  "General maintenance task in finishing house. Isolations and PPE applied.",
+  "Welding repair on steam pipework in boiler house. Gas test and firewatch in place.",
+  "Confined space entry into dye vessel for internal inspection. Gas test and attendant stationed.",
+  "Elevated work on dye-house stenter platform. Full-body harness and MEWP in use.",
+  "Sewing line drive panel maintenance under full electrical LOTO. Test-before-touch confirmed.",
+  "General maintenance task in checking & finishing area. Isolations and PPE applied.",
   "Excavation for effluent line installation. Ground surveyed and utilities located by CAT scan.",
-  "Pipe flange work on bleach plant line under hot work conditions. Continuous gas monitoring in place.",
-  "Annual lime kiln inspection involving confined space. BA on standby.",
-  "Cable tray installation at 5 m height in paper machine hall. Working platform and safety harness in use.",
-  "Stock pump overhaul under full electrical LOTO. Isolation verified before work.",
-  "Chlorine dioxide line maintenance under cold work permit. Double-block-and-bleed isolation.",
-  "Structural inspection of chimney stack at height using erected scaffolding. Pre-use inspection complete.",
+  "Pipe flange work on dye-house chemical dosing line under hot work conditions. Continuous gas monitoring in place.",
+  "Annual boiler inspection involving confined space. BA on standby.",
+  "Cable tray installation at 5 m height in knitting hall. Working platform and safety harness in use.",
+  "Dye-circulation pump overhaul under full electrical LOTO. Isolation verified before work.",
+  "Reactive-dye dosing line maintenance under cold work permit. Double-block-and-bleed isolation.",
+  "Structural inspection of boiler chimney stack at height using erected scaffolding. Pre-use inspection complete.",
 ] as const;
 
 const FLRA_JOBS = [
-  "Routine paper machine maintenance with slip, trip, and manual handling hazards.",
-  "Elevated work on recovery boiler requiring fall protection and MEWP operation.",
-  "Hot work on digester pipework involving welding or grinding — fire and fume hazards.",
-  "Paper machine drive electrical work under LOTO — shock and arc flash hazards.",
-  "Bleach plant chemical handling with chlorine dioxide splash and inhalation hazards.",
-  "Stock chest confined space inspection — O2 deficiency and toxic gas hazards.",
-  "Digester mechanical isolation — stored energy and steam/pressure release hazards.",
-  "Reel and bale handling — manual and mechanical lift with crush hazards.",
+  "Routine circular knitting machine maintenance with slip, trip, and manual handling hazards.",
+  "Elevated work on dye-house stenter requiring fall protection and MEWP operation.",
+  "Hot work on boiler steam pipework involving welding or grinding — fire and fume hazards.",
+  "Sewing line drive electrical work under LOTO — shock and arc flash hazards.",
+  "Dye house chemical handling with reactive-dye splash and inhalation hazards.",
+  "Dye-vessel confined space inspection — O2 deficiency and toxic gas hazards.",
+  "Dye-vessel mechanical isolation — stored energy and steam/pressure release hazards.",
+  "Fabric roll and carton handling — manual and mechanical lift with crush hazards.",
   "Effluent line excavation work — underground utilities and trench collapse hazards.",
-  "Recovery boiler pressure-part maintenance — residual pressure and height hazards.",
+  "Boiler pressure-part maintenance — residual pressure and height hazards.",
 ] as const;
 
 const FLRA_HAZARDS = JSON.stringify([
@@ -166,13 +166,13 @@ const INC_SEVS = ["LOW", "LOW", "MEDIUM", "LOW", "MEDIUM", "LOW", "LOW"] as cons
 const INC_STATUSES_RECENT = ["REPORTED", "INVESTIGATION", "CAPA_ASSIGNED", "CLOSED"] as const;
 
 const INC_DESCS = [
-  "Minor laceration sustained while clearing a sheet break on the paper machine. First aid treatment given on site.",
-  "Sprain from slip on wet floor near couch pit. Medical treatment obtained. Restricted duty 3 days.",
-  "Eye irritation from paper dust during reel slitting. Eye wash applied; no lasting injury.",
-  "Back strain during manual handling of a heavy pulp bale. Restricted duty 5 days.",
-  "Clamp truck contact with structural column during reel maneuvering. No injury — property damage only.",
-  "Minor steam burn from incidental contact with dryer cylinder surface. First aid treatment given.",
-  "Bruising from falling reel core striking arm. X-ray confirmed — no fracture.",
+  "Minor needle-stick puncture sustained while clearing a thread jam on a sewing machine. First aid treatment given on site.",
+  "Sprain from slip on wet floor near dye-house drain pit. Medical treatment obtained. Restricted duty 3 days.",
+  "Eye irritation from cotton lint dust during fabric inspection. Eye wash applied; no lasting injury.",
+  "Back strain during manual handling of a heavy fabric roll. Restricted duty 5 days.",
+  "Clamp truck contact with structural column during fabric-roll maneuvering. No injury — property damage only.",
+  "Minor steam burn from incidental contact with steam-press platen surface. First aid treatment given.",
+  "Bruising from falling fabric roll striking arm. X-ray confirmed — no fracture.",
 ] as const;
 
 // ── Seed one plant ────────────────────────────────────────────────────────

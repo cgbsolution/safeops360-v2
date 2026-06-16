@@ -79,7 +79,7 @@ async function main() {
   console.log("║  FILE 20 — Page Industries Demo Loading Sequence  ║");
   console.log("╚═══════════════════════════════════════════════════════╝");
   console.log("  Demo tenant   : Page Industries Limited");
-  console.log("  Plants        : NW (North Paper Mill) + SW (South Kraft & Board Mill)");
+  console.log("  Plants        : NW (North Garment Unit) + SW (South Garment Unit)");
   console.log("  Primary login : priya.nair@safeops360.in / demo123");
   console.log("  QA target     : 28 days since LTI | LTIFR 0.34 | 2 active permits");
   console.log();

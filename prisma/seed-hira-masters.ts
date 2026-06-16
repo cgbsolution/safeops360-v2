@@ -274,7 +274,7 @@ const HAZARDS = [
       { hierarchy: "ADMINISTRATIVE", description: "Hot work permit + fire watch + 11m clearance" }
     ]},
   { code: "FIRE_DUST_EXPLOSION", category: "fire_explosion", subcategory: "dust", name: "Combustible dust explosion",
-    description: "Accumulated combustible dust (paper dust, wood/chip fines, lime, coal) ignited by spark or flame.",
+    description: "Accumulated combustible dust (cotton lint, fabric fly, yarn fibre fines) ignited by spark or flame.",
     typicalHarmPotential: ["blast_injury", "fatality"],
     typicalAffectedPersons: ["operator", "occupants"],
     energyForm: "chemical",
@@ -324,7 +324,7 @@ const HAZARDS = [
       { hierarchy: "PPE", description: "Hearing protection with NRR matched to exposure" }
     ]},
   { code: "THERMAL_HOT_SURFACE", category: "thermal", subcategory: "hot", name: "Contact with hot surface (> 60°C)",
-    description: "Skin contact with steam pipes, paper-machine dryers, lime kiln shell.",
+    description: "Skin contact with steam pipes, fusing-machine plates, steam-press / ironing surfaces.",
     typicalHarmPotential: ["burn_thermal"],
     typicalAffectedPersons: ["operator", "maintenance"],
     energyForm: "thermal",
@@ -455,13 +455,13 @@ const HAZARDS = [
       { hierarchy: "ENGINEERING", description: "Gas detection with auto-shutoff valve" },
       { hierarchy: "ADMINISTRATIVE", description: "Monthly leak test of gas piping" }
     ]},
-  { code: "FIRE_MOLTEN_METAL", category: "fire_explosion", subcategory: "molten_metal", name: "Molten smelt splash / smelt-water explosion (recovery boiler)",
-    description: "Splash or runover of molten smelt from the recovery boiler, or smelt-water explosion when molten smelt contacts water during tapping or dissolving-tank operations.",
+  { code: "FIRE_MOLTEN_METAL", category: "fire_explosion", subcategory: "molten_metal", name: "Fabric / lint flash fire on the production floor (high fire load)",
+    description: "Rapid flame spread through accumulated cotton lint, stacked fabric rolls, and finished-garment stock when ignited by a spark, hot iron, or electrical fault on the sewing / finishing floor.",
     typicalHarmPotential: ["burn_thermal", "fatality"],
     typicalAffectedPersons: ["operator", "bystander"],
     energyForm: "thermal",
     typicalControlsSuggested: [
-      { hierarchy: "ENGINEERING", description: "Smelt-spout shatter jets + dissolving-tank splash containment" },
+      { hierarchy: "ENGINEERING", description: "Automatic sprinklers over the production floor + lint extraction at machines" },
       { hierarchy: "PPE", description: "Aluminised heat-resistant suit + visor" }
     ]},
 
@@ -569,7 +569,7 @@ const HAZARDS = [
       { hierarchy: "ENGINEERING", description: "Lux-level survey; supplemental task lighting" }
     ]},
   { code: "ENV_DUST_AIRBORNE", category: "environmental", subcategory: "dust", name: "Airborne respirable dust",
-    description: "Respirable dust (paper dust, lime, fly ash) exceeding occupational exposure limits.",
+    description: "Respirable dust (cotton dust, fabric lint, fibre fly) exceeding occupational exposure limits.",
     typicalHarmPotential: ["respiratory_illness", "silicosis", "pneumoconiosis"],
     typicalAffectedPersons: ["operator", "maintenance"],
     energyForm: "chemical",
@@ -1025,7 +1025,7 @@ const HAZARDS = [
     typicalHarmPotential: ["burn_chemical", "environmental_damage"], typicalAffectedPersons: ["driver", "bystander"], energyForm: "chemical",
     typicalControlsSuggested: [{ hierarchy: "ADMINISTRATIVE", description: "Containers capped and secured during transport; spill kit on vehicle" }] },
   { code: "CHEM-011", category: "health", subcategory: "respirable_dust", name: "Respirable dust — prolonged inhalation causing occupational disease",
-    description: "Long-term inhalation of respirable dust (paper dust, lime, fly ash) above OEL.",
+    description: "Long-term inhalation of respirable cotton dust / fabric lint (byssinosis risk) above OEL.",
     typicalHarmPotential: ["pneumoconiosis", "chronic_health_effect"], typicalAffectedPersons: ["operator", "maintenance"], energyForm: "chemical",
     typicalControlsSuggested: [{ hierarchy: "ENGINEERING", description: "Wet suppression; LEV; sealed conveyors" }, { hierarchy: "PPE", description: "FFP3/P3 respirator; health surveillance programme" }] },
   { code: "CHEM-012", category: "health", subcategory: "asbestos", name: "Asbestos exposure — legacy insulation or lagging disturbance",

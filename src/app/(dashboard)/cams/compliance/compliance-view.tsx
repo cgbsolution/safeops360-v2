@@ -72,8 +72,10 @@ export function ComplianceView({
               tracker.rows.map((o) => (
                 <tr key={o.obligationId} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
                   <td className="max-w-[260px] px-3 py-2.5">
-                    <div className="font-medium text-slate-800">{o.obligationCode}</div>
-                    <div className="text-xs text-slate-500">{o.title}</div>
+                    <Link href={`/erm/compliance/${o.obligationId}`} className="group block" title="Open obligation">
+                      <div className="font-medium text-slate-800 group-hover:text-primary-700 group-hover:underline">{o.obligationCode}</div>
+                      <div className="text-xs text-slate-500">{o.title}</div>
+                    </Link>
                   </td>
                   <td className="px-3 py-2.5 text-xs text-slate-600">{o.regulatorName || "—"}</td>
                   <td className="px-3 py-2.5 text-xs text-slate-600">{o.siteName ?? "Corporate"}</td>

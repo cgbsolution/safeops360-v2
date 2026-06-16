@@ -802,10 +802,10 @@
   {
     "id": "comp_kiln_op",
     "code": "KILN-OP",
-    "name": "Lime Kiln Operator",
+    "name": "Stenter Operator",
     "category": "operational",
     "subcategory": "production_cement",
-    "description": "Authorized to operate the recausticizing lime kiln including burner management, lime mud feed control, draft management, and stack emission monitoring.",
+    "description": "Authorized to operate the fabric stenter (heat-setting & finishing range) including chamber temperature control, overfeed and width setting, chemical pad-bath management, and exhaust emission monitoring.",
     "default_validity_months": 36,
     "prerequisite_competency_ids": [
       "comp_hse_foundation"
@@ -814,7 +814,7 @@
   {
     "id": "comp_kiln_op_senior",
     "code": "KILN-OP-SENIOR",
-    "name": "Senior Lime Kiln Operator",
+    "name": "Senior Stenter Operator",
     "category": "operational",
     "subcategory": "production_cement",
     "prerequisite_competency_ids": [
@@ -825,7 +825,7 @@
   {
     "id": "comp_mill_op_raw",
     "code": "MILL-OP-RAW",
-    "name": "Pulp Digester Operator",
+    "name": "Dyeing Machine Operator",
     "category": "operational",
     "subcategory": "production_cement",
     "default_validity_months": 36
@@ -833,7 +833,7 @@
   {
     "id": "comp_mill_op_cement",
     "code": "MILL-OP-CEMENT",
-    "name": "Paper Machine Operator",
+    "name": "Sewing Machine Operator",
     "category": "operational",
     "subcategory": "production_cement",
     "default_validity_months": 36
@@ -841,7 +841,7 @@
   {
     "id": "comp_crusher_op",
     "code": "CRUSHER-OP",
-    "name": "Wood Chipper Operator",
+    "name": "Knitting Machine Operator",
     "category": "operational",
     "subcategory": "production",
     "default_validity_months": 36
@@ -849,7 +849,7 @@
   {
     "id": "comp_packer_op",
     "code": "PACKER-OP",
-    "name": "Reel & Ream Packing Operator",
+    "name": "Pressing & Packing Operator",
     "category": "operational",
     "subcategory": "production_cement",
     "default_validity_months": 36
@@ -1009,7 +1009,7 @@
   {
     "id": "comp_quarry_op",
     "code": "QUARRY-OP",
-    "name": "Wood Yard Operator",
+    "name": "Yarn & Fabric Store Operator",
     "category": "operational",
     "subcategory": "mining",
     "default_validity_months": 36
@@ -1038,7 +1038,7 @@
   {
     "id": "comp_drilling",
     "code": "DRILLING-OPERATOR",
-    "name": "Debarking Drum Operator",
+    "name": "Fabric Spreading Machine Operator",
     "category": "operational",
     "subcategory": "mining",
     "default_validity_months": 36
@@ -1046,7 +1046,7 @@
   {
     "id": "comp_haul_truck",
     "code": "HAUL-TRUCK-OP",
-    "name": "Wood & Bale Tipper Truck Operator",
+    "name": "Fabric Roll & Bale Truck Operator",
     "category": "operational",
     "subcategory": "mining",
     "default_validity_months": 24
@@ -1054,7 +1054,7 @@
   {
     "id": "comp_dozer_op",
     "code": "DOZER-OP",
-    "name": "Chip Pile Dozer Operator",
+    "name": "Cutting Master / Band-Knife Operator",
     "category": "operational",
     "subcategory": "mining",
     "default_validity_months": 24
@@ -1062,7 +1062,7 @@
   {
     "id": "comp_excavator_op",
     "code": "EXCAVATOR-OP",
-    "name": "Log Grab Crane Operator",
+    "name": "Fabric Roll Handling Crane Operator",
     "category": "operational",
     "subcategory": "mining",
     "default_validity_months": 24
@@ -1070,7 +1070,7 @@
   {
     "id": "comp_loader_op",
     "code": "LOADER-OP",
-    "name": "Bale & Fibre Loader Operator",
+    "name": "Bale & Yarn Loader Operator",
     "category": "operational",
     "subcategory": "mining",
     "default_validity_months": 24
@@ -1092,7 +1092,7 @@
   {
     "id": "comp_packing_supervisor",
     "code": "PACKING-SUPERVISOR",
-    "name": "Finishing & Packing Line Supervisor",
+    "name": "Checking & AQL Quality Inspector",
     "category": "operational",
     "subcategory": "production_cement",
     "default_validity_months": 36

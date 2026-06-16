@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/auth/permissions";
 import type { ComplianceTracker, EngagementListResponse, FindingListResponse } from "../lib-cams";
 import { ComplianceView } from "./compliance-view";
+import { NewObligationButton } from "../../erm/compliance/register/new-obligation";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,7 @@ export default async function ComplianceTrackerPage() {
   const session = await getServerSession(authOptions);
   const uid = (session?.user as any)?.id as string | undefined;
   const canLink = uid ? (await can(uid, "CAMS.FINDING_MANAGE")).allowed : false;
+  const canCreateObligation = uid ? (await can(uid, "COMPLIANCE.MANAGE")).allowed : false;
 
   return (
     <div>
@@ -36,6 +38,7 @@ export default async function ComplianceTrackerPage() {
         title="Compliance Tracker"
         description="Of every statutory obligation, how many are verified by an audit in the last 12 months — and how many carry an open non-conformance. The question a regulator and a certification body actually ask."
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Compliance Tracker" }]}
+        action={canCreateObligation ? <NewObligationButton /> : undefined}
       />
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>

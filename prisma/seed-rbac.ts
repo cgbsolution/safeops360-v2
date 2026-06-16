@@ -577,6 +577,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Audit & Compliance ──────────────────────────────────────────
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"],                    scope: "OWN_PLANT" },
     { module: "AUDIT",        actions: ["VIEW"],                                                                                              scope: "OWN_PLANT" },
+    // Statutory obligations register — HSE managers own plant statutory compliance.
+    { module: "COMPLIANCE",   actions: ["READ", "MANAGE"],                                                                                    scope: "OWN_PLANT" },
     // ── PPE ──────────────────────────────────────────────────────────
     { module: "PPE",          actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "ISSUE", "INSPECT", "CATALOG_MANAGE", "RETIRE_APPROVE", "RECALL_MANAGE"], scope: "OWN_PLANT" },
     // ── Training & Competency ────────────────────────────────────────
@@ -597,6 +599,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // ════════════════════════════════════════════════════════════════════
   PLANT_HEAD: [
     { module: "MOC", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"], scope: "OWN_PLANT" }, // MOC — full, up to critical
+    { module: "COMPLIANCE", actions: ["READ", "MANAGE"], scope: "OWN_PLANT" }, // Statutory obligations register — plant-wide oversight
     { module: "SKILL_MATRIX", actions: ["READ", "APPROVE_OVERRIDE", "RECERT_CYCLE", "EXPORT", "COMPETENCY_CONFIGURE", "ROLE_DEF_CONFIGURE", "ASSESS", "SUSPEND", "CROSS_PERSON_VIEW", "VERSION_VIEW"], scope: "OWN_PLANT" }, // Skill Matrix §8.1 (full, own plant)
     // Observation
     { module: "OBSERVATION", actions: ["CREATE"],                            scope: "ALL_PLANTS" },

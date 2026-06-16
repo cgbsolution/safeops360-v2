@@ -55,7 +55,7 @@ async function main() {
   void EMERG_NW;
 
   // HIRA entries — produced by prisma/seed-risk-management.ts for plant NW.
-  //   Study 001  number = HIRA-2026-NW-DEMO-001  (Bleach Plant ClO₂ dosing)
+  //   Study 001  number = HIRA-2026-NW-DEMO-001  (Dye House reactive-dye dosing)
   //   Study 002  number = HIRA-2026-NW-DEMO-002  (Hot Work operations)
   // Each entry's sequenceNumber is deterministic (eIdx + 1), so (studyNumber, sequenceNumber)
   // is a stable lookup key. We verify against a distinctive activityDescription substring,
@@ -87,10 +87,10 @@ async function main() {
     return fb.id;
   }
 
-  const HIRA_ENTRY_1 = resolveEntry(entries001, "unloading chlorine", 0); // Unloading chlorine / ClO₂ precursor cylinders at bleach plant
-  const HIRA_ENTRY_2 = resolveEntry(entries001, "storage in bleach plant chlorine cylinder cage", 1); // Storage in bleach plant chlorine cylinder cage
-  const HIRA_ENTRY_3 = resolveEntry(entries001, "connecting cylinder to bleaching-stage dosing line", 2); // Connecting cylinder to bleaching-stage dosing line
-  const HIRA_ENTRY_4 = resolveEntry(entries001, "routine dosing into bleaching towers", 3); // Routine dosing into bleaching towers
+  const HIRA_ENTRY_1 = resolveEntry(entries001, "unloading dye chemicals", 0); // Unloading dye chemicals / reactive-dye drums at dye house
+  const HIRA_ENTRY_2 = resolveEntry(entries001, "storage in dye house dye-chemical store cage", 1); // Storage in dye house dye-chemical store cage
+  const HIRA_ENTRY_3 = resolveEntry(entries001, "connecting drum to dye-bath dosing line", 2); // Connecting drum to dye-bath dosing line
+  const HIRA_ENTRY_4 = resolveEntry(entries001, "routine dosing into dyeing vessels", 3); // Routine dosing into dyeing vessels
   const HIRA_ENTRY_5 = resolveEntry(entries002, "gas cutting and oxy-acetylene welding", 0); // Gas cutting and oxy-acetylene welding
   const HIRA_ENTRY_6 = resolveEntry(entries002, "arc welding in maintenance workshop bay", 1); // Arc welding in maintenance workshop bay
 
@@ -99,7 +99,7 @@ async function main() {
     number: "HCAPA-DEMO-2026-0001",
     entryId: HIRA_ENTRY_1,
     description:
-      "Install fixed automatic shut-off valve (ASOv) on the bleach plant chlorine cylinder header, pneumatically fail-safe closed, operated from control room and activated by gas detection alarm. Includes cylinder cage ventilation upgrade to 15 ACH.",
+      "Install fixed automatic shut-off valve (ASOv) on the dye house dye-chemical dosing header, pneumatically fail-safe closed, operated from control room and activated by vapour detection alarm. Includes dye-chemical store ventilation upgrade to 15 ACH.",
     controlHierarchy: "ENGINEERING",
     ownerId: DEPT_HEAD_NW,
     targetDate: daysFromNow(30),
@@ -115,7 +115,7 @@ async function main() {
     number: "HCAPA-DEMO-2026-0002",
     entryId: HIRA_ENTRY_1,
     description:
-      "Develop and implement a formal written procedure (SOP) for bleach plant chlorine cylinder unloading, including mandatory pre-delivery checklist, supplier coordination protocol, and emergency communication plan with local fire station.",
+      "Develop and implement a formal written procedure (SOP) for dye house dye-chemical drum unloading, including mandatory pre-delivery checklist, supplier coordination protocol, and emergency communication plan with local fire station.",
     controlHierarchy: "ADMINISTRATIVE",
     ownerId: HSE_MGR_NW,
     targetDate: daysFromNow(14),
@@ -132,7 +132,7 @@ async function main() {
     number: "HCAPA-DEMO-2026-0003",
     entryId: HIRA_ENTRY_2,
     description:
-      "Commission fixed continuous gas detection system in the bleach plant chlorine cylinder storage cage: 3-point detection at 0.5 ppm alarm threshold, 1 ppm shutdown threshold. Integrate with building management system for automatic ventilation increase on alarm.",
+      "Commission fixed continuous vapour detection system in the dye house dye-chemical store cage: 3-point detection at 0.5 ppm alarm threshold, 1 ppm shutdown threshold. Integrate with building management system for automatic ventilation increase on alarm.",
     controlHierarchy: "ENGINEERING",
     ownerId: DEPT_HEAD_NW,
     targetDate: daysAgo(10),
@@ -149,7 +149,7 @@ async function main() {
     number: "HCAPA-DEMO-2026-0004",
     entryId: HIRA_ENTRY_3,
     description:
-      "Introduce mandatory PPE pre-check station at the entrance to the bleach plant chlorine dosing area: visual checklist board, SCBA donning demonstration poster, and 2-minute minimum pre-entry check requirement enforced by permit-to-work.",
+      "Introduce mandatory PPE pre-check station at the entrance to the dye house dye-chemical dosing area: visual checklist board, SCBA donning demonstration poster, and 2-minute minimum pre-entry check requirement enforced by permit-to-work.",
     controlHierarchy: "ADMINISTRATIVE",
     ownerId: HSE_MGR_NW,
     targetDate: daysAgo(30),

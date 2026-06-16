@@ -77,7 +77,7 @@ async function main() {
       module: "OBSERVATION",
       plantId: NW_PLANT,
       category: "UNSAFE_ACT",
-      area: "Pulp Mill — Digester House & Confined Space Zones",
+      area: "Knitting Section — Circular Knitting Hall & Confined Space Zones",
       severity: "CRITICAL",
       signalData: {
         window: "2026-W22",
@@ -88,7 +88,7 @@ async function main() {
         baselinePeriodWeeks: 12,
       },
       description:
-        "Frequency spike detected: 18 UNSAFE_ACT observations in the Pulp Mill this week vs. 6.2 expected (z-score 4.7). HSE Manager alerted.",
+        "Frequency spike detected: 18 UNSAFE_ACT observations in the Knitting Section this week vs. 6.2 expected (z-score 4.7). HSE Manager alerted.",
       contributingRecordIds: [
         "cmq4upzpk0001d9agaveadyt7",
         "cmq4upzuh0003d9agvkdiir8v",
@@ -107,7 +107,7 @@ async function main() {
       module: "OBSERVATION",
       plantId: NW_PLANT,
       category: "UNSAFE_CONDITION",
-      area: "Power & Steam Plant (Boiler House)",
+      area: "Boiler House & Utilities (Steam, Compressors)",
       severity: "WARNING",
       signalData: {
         window: "2026-04 to 2026-06",
@@ -118,7 +118,7 @@ async function main() {
         pValue: 0.03,
       },
       description:
-        "Severity drift in Power & Steam Plant: average observation severity has risen from 2.1 to 3.4 over 6 weeks. Statistically significant (p=0.03).",
+        "Severity drift in Boiler House & Utilities: average observation severity has risen from 2.1 to 3.4 over 6 weeks. Statistically significant (p=0.03).",
       contributingRecordIds: ["cmq4uq0470007d9agtofep99u"],
       status: "ACKNOWLEDGED",
       reviewerId: HSE_MGR_NW,
@@ -132,7 +132,7 @@ async function main() {
       detectorId: "HOTSPOT_CLUSTER",
       module: "OBSERVATION",
       plantId: NW_PLANT,
-      area: "Chemical Storage & Handling Area",
+      area: "Chemical & Dye Store",
       severity: "CRITICAL",
       signalData: {
         clusterRadius: "15m",
@@ -143,7 +143,7 @@ async function main() {
         topCategory: "UNSAFE_CONDITION",
       },
       description:
-        "Hotspot cluster: 9 observations within 15 m of Chemical Storage main bay in 30 days (expected 2). Risk of ClO₂ / caustic soda exposure event is elevated.",
+        "Hotspot cluster: 9 observations within 15 m of Chemical & Dye Store main bay in 30 days (expected 2). Risk of reactive-dye / dye-bath chemical exposure event is elevated.",
       contributingRecordIds: [
         "cmq4upzpk0001d9agaveadyt7",
         "cmq4upzuh0003d9agvkdiir8v",
@@ -204,7 +204,7 @@ async function main() {
       module: "OBSERVATION",
       plantId: SW_PLANT,
       category: "UNSAFE_ACT",
-      area: "Paper Machine Hall (PM-1 & PM-2)",
+      area: "Sewing / Stitching Lines (Lines L-1 & L-2)",
       severity: "WARNING",
       signalData: {
         window: "2026-W23",
@@ -215,7 +215,7 @@ async function main() {
         baselinePeriodWeeks: 12,
       },
       description:
-        "Frequency spike in SW Paper Machine Hall: 11 UNSAFE_ACT observations this week vs. 5.8 expected (z-score 2.9).",
+        "Frequency spike in SW Sewing / Stitching Lines: 11 UNSAFE_ACT observations this week vs. 5.8 expected (z-score 2.9).",
       contributingRecordIds: [],
       status: "PENDING_REVIEW",
       fingerprint: "ANOM-SW-FREQ-SPIKE-01",
@@ -227,7 +227,7 @@ async function main() {
       module: "OBSERVATION",
       plantId: SW_PLANT,
       category: "NEAR_MISS",
-      area: "Power & Steam Plant (Boiler House)",
+      area: "Boiler House & Utilities (Steam, Compressors)",
       severity: "CRITICAL",
       signalData: {
         window: "2026-03 to 2026-06",
@@ -238,7 +238,7 @@ async function main() {
         pValue: 0.01,
       },
       description:
-        "Severity drift in SW Power & Steam Plant: average severity 4.1 vs. baseline 2.3 over 10 weeks (p=0.01). Escalated to Plant Head.",
+        "Severity drift in SW Boiler House & Utilities: average severity 4.1 vs. baseline 2.3 over 10 weeks (p=0.01). Escalated to Plant Head.",
       contributingRecordIds: [],
       status: "CONFIRMED",
       reviewerId: HSE_MGR_SW,
@@ -252,7 +252,7 @@ async function main() {
       detectorId: "HOTSPOT_CLUSTER",
       module: "OBSERVATION",
       plantId: SW_PLANT,
-      area: "Reel & Ream Warehouse",
+      area: "Finished Goods Warehouse & Dispatch",
       severity: "WARNING",
       signalData: {
         clusterRadius: "20m",
@@ -263,7 +263,7 @@ async function main() {
         topCategory: "UNSAFE_CONDITION",
       },
       description:
-        "Hotspot cluster at SW Reel & Ream Warehouse: 6 observations in 30 days within 20 m radius (expected 1.5). Forklift / reel-handling interaction risk elevated.",
+        "Hotspot cluster at SW Finished Goods Warehouse: 6 observations in 30 days within 20 m radius (expected 1.5). Forklift / carton-handling interaction risk elevated.",
       contributingRecordIds: [],
       status: "ACKNOWLEDGED",
       reviewerId: HSE_MGR_SW,
@@ -298,7 +298,7 @@ async function main() {
       detectorId: "CROSS_CORRELATION",
       module: "OBSERVATION",
       plantId: SW_PLANT,
-      area: "Confined Space Zones (Digesters, Chests, Tanks, Pits)",
+      area: "Confined Space Zones (Dye Vessels, ETP Tanks, Pits)",
       severity: "CRITICAL",
       signalData: {
         correlationPair: ["OBSERVATION:UNSAFE_CONDITION:CONFINED_SPACE", "INCIDENT:ASPHYXIATION"],

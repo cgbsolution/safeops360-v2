@@ -2,7 +2,7 @@
 // Step 26 — EAI (Environmental Aspect & Impact) Study Data
 //
 // Per plant (NW + SW): 2 EAI studies with 4 entries each + sub-records:
-//   Study 1 (ACTIVE): Bleach Plant & Chemical Dosing — 4 entries
+//   Study 1 (ACTIVE): Dye House & Chemical Dosing — 4 entries
 //   Study 2 (APPROVED): Boiler / Utilities Operations — 4 entries
 //
 // Each EaiEntry has:
@@ -91,7 +91,7 @@ async function seedPlant(
     regAir: REG_AIR,
     regWater: REG_WATER,
   } = m;
-  // Study 1 — Chlorination & Chemical Dosing (ACTIVE)
+  // Study 1 — Dye-House Chemical Dosing (ACTIVE)
   const study1Number = `EAI-2026-${code}-DEMO-001`;
   const study1 = await prisma.eaiStudy.create({
     data: {
@@ -99,9 +99,9 @@ async function seedPlant(
       plantId,
       areaId: areaChem,
       scopeType: "AREA",
-      title: `Bleach Plant & Chemical Dosing — ${code} Environmental Impact Study`,
+      title: `Dye House & Chemical Dosing — ${code} Environmental Impact Study`,
       description:
-        "Comprehensive environmental aspect and impact register for all bleach-plant chlorine-dioxide and chemical dosing activities including storage, handling, dosing line operations, and emergency response.",
+        "Comprehensive environmental aspect and impact register for all dye-house dye/chemical dosing activities including storage, handling, dosing line operations, and emergency response.",
       impactMatrixId: MATRIX_5X5,
       teamLeaderId: envMgr,
       status: "ACTIVE",
@@ -143,31 +143,31 @@ async function seedPlant(
   const entries1 = [
     {
       seq: 1,
-      groupLabel: "Bleach Plant Chlorine Handling",
-      activity: "Unloading and storage of chlorine gas cylinders from tanker",
+      groupLabel: "Dye Store Chemical Handling",
+      activity: "Unloading and storage of dye-bath chemical drums from tanker",
       areaId: areaChem,
-      subLocation: "Bleach plant chlorine cylinder cage, unloading bay",
+      subLocation: "Chemical & dye store drum cage, unloading bay",
       occurrence: "ABNORMAL",
       frequency: "WEEKLY",
       duration: 120,
-      initLhId: LH_UNLIKELY, initLhScore: 2, initLhRationale: "Cylinder integrity controlled by supplier; double-valve protection",
-      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Chlorine gas leak could cause significant air quality impact and community risk",
+      initLhId: LH_UNLIKELY, initLhScore: 2, initLhRationale: "Drum integrity controlled by supplier; double-bund protection",
+      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Chemical vapour release could cause significant air quality impact and community risk",
       initImpactScore: 8, initImpactLevel: "MODERATE",
-      resLhId: LH_RARE, resLhScore: 1, resLhRationale: "Buddy system + SCBA mandatory; checklist completed at each delivery",
-      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Mitigation through leak detection and rapid ERP activation",
+      resLhId: LH_RARE, resLhScore: 1, resLhRationale: "Buddy system + respirator mandatory; checklist completed at each delivery",
+      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Mitigation through vapour detection and rapid ERP activation",
       resImpactScore: 3, resImpactLevel: "LOW",
       resAcceptable: true,
       significant: true,
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "AIR",
-      impactDesc: "Atmospheric chlorine gas release to ambient air, potential toxicity to nearby communities and wildlife",
+      impactDesc: "Atmospheric chemical vapour release to ambient air, potential toxicity to nearby communities and wildlife",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "LOCAL",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Gas-tight cylinder cage with ventilation, fixed gas detection with audible alarm threshold at 0.5 ppm, SCBA station at entry",
+      controlDesc: "Bunded chemical store with ventilation, fixed vapour detection with audible alarm threshold, respirator station at entry",
       controlHierarchy2: "ADMINISTRATIVE",
       controlDesc2: "Mandatory pre-delivery inspection checklist, permit required, authorised personnel only, buddy system enforced",
       regId: REG_AIR,
@@ -176,48 +176,48 @@ async function seedPlant(
     },
     {
       seq: 2,
-      groupLabel: "Bleaching Chemical Dosing Operations",
-      activity: "Continuous chlorine-dioxide dosing via metering pumps into pulp stock",
+      groupLabel: "Dye Dosing Operations",
+      activity: "Continuous dye and auxiliary chemical dosing via metering pumps into soft-flow dyeing machines",
       areaId: areaProcessA,
-      subLocation: "Pulp mill bleaching dosing room, chemical dosing skid",
+      subLocation: "Dye house dosing room, chemical dosing skid",
       occurrence: "NORMAL",
       frequency: "CONTINUOUS",
       duration: 1440,
       initLhId: LH_POSSIBLE, initLhScore: 3, initLhRationale: "Pressurised dosing line; minor leaks possible at connections",
-      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Controlled indoor environment; diluted chlorine concentrations",
+      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Controlled indoor environment; diluted chemical concentrations",
       initImpactScore: 6, initImpactLevel: "MODERATE",
       resLhId: LH_UNLIKELY, resLhScore: 2, resLhRationale: "Monthly connection inspection and torque verification",
-      resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Indoor ventilation and gas detection minimise escape",
+      resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Indoor ventilation and vapour detection minimise escape",
       resImpactScore: 4, resImpactLevel: "LOW",
       resAcceptable: true,
       significant: false,
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "AIR",
-      impactDesc: "Fugitive chlorine emission inside dosing room affecting indoor air quality and operator health",
+      impactDesc: "Fugitive chemical vapour emission inside dosing room affecting indoor air quality and operator health",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "SITE",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Continuous gas monitoring with 0.5 ppm alarm, forced ventilation at 10 ACH, eyewash station within 10 m",
+      controlDesc: "Continuous vapour monitoring with alarm, forced ventilation at 10 ACH, eyewash station within 10 m",
       controlHierarchy2: "PPE",
-      controlDesc2: "Half-mask respirator with chlorine cartridge mandatory during maintenance; SCBA available for emergency",
+      controlDesc2: "Half-mask respirator with chemical cartridge mandatory during maintenance; SCBA available for emergency",
       regId: REG_AIR,
       regCode: "AIR_ACT_1981",
       status: "ACTIVE" as const,
     },
     {
       seq: 3,
-      groupLabel: "Bleach Plant Effluent to ETP",
-      activity: "Bleach-plant effluent discharge to ETP after bleaching stages",
+      groupLabel: "Dye House Effluent to ETP",
+      activity: "Dye-house effluent discharge to ETP after dyeing and rinsing stages",
       areaId: areaUtil,
       subLocation: "Effluent Treatment Plant inlet channel",
       occurrence: "NORMAL",
       frequency: "CONTINUOUS",
       duration: 1440,
       initLhId: LH_LIKELY, initLhScore: 4, initLhRationale: "Process always running; discharge is continuous",
-      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Treatment step prior to ETP; COD/AOX/colour levels within consent",
+      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Treatment step prior to ETP; colour/COD/TDS levels within consent",
       initImpactScore: 8, initImpactLevel: "MODERATE",
       resLhId: LH_POSSIBLE, resLhScore: 3, resLhRationale: "Continuous online COD/colour monitoring at discharge point",
       resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Tertiary + biological treatment provides adequate buffer",
@@ -227,13 +227,13 @@ async function seedPlant(
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "SURFACE_WATER",
-      impactDesc: "Bleach-plant effluent (COD, BOD, AOX, colour) causing aquatic toxicity in receiving water body if treatment failure occurs",
+      impactDesc: "Dye-house effluent (colour, COD, BOD, TDS, pH, residual dye chemicals/heavy metals) causing aquatic toxicity in receiving water body if treatment failure occurs",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "LOCAL",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Elemental-chlorine-free (ECF) bleaching with ClO2 substitution, online COD/colour analyser with high-alarm shutdown interlock",
+      controlDesc: "Low-liquor-ratio soft-flow dyeing with dye-bath reuse, online COD/colour analyser with high-alarm shutdown interlock",
       controlHierarchy2: "ADMINISTRATIVE",
       controlDesc2: "Daily effluent sampling and lab analysis, monthly third-party compliance test per consent conditions",
       regId: REG_WATER,
@@ -242,31 +242,31 @@ async function seedPlant(
     },
     {
       seq: 4,
-      groupLabel: "Bleach Plant Chemical Spill / Emergency Response",
-      activity: "Chlorine gas leak — emergency shutdown and ERP activation",
+      groupLabel: "Dye House Chemical Spill / Emergency Response",
+      activity: "Dye chemical spill — emergency shutdown and ERP activation",
       areaId: areaChem,
-      subLocation: "Any point in bleach plant chlorine system",
+      subLocation: "Any point in chemical & dye store system",
       occurrence: "EMERGENCY",
       frequency: "RARE",
       duration: 180,
       initLhId: LH_RARE, initLhScore: 1, initLhRationale: "Multiple barriers; formal ERP with drilled response",
-      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Full cylinder release to atmosphere — significant community impact",
+      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Full drum release to drainage — significant community impact",
       initImpactScore: 4, initImpactLevel: "LOW",
       resLhId: LH_RARE, resLhScore: 1, resLhRationale: "Annual ERP drill; automatic shutdown valve tested quarterly",
-      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Rapid isolation + wind dispersion modelling limits plume extent",
+      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Rapid isolation + bunded containment limits spill extent",
       resImpactScore: 3, resImpactLevel: "LOW",
       resAcceptable: true,
       significant: false,
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "AIR",
-      impactDesc: "Acute chlorine plume impacting on-site workers, neighbouring community, and ambient air quality",
+      impactDesc: "Acute chemical vapour and spill impacting on-site workers, neighbouring community, and ambient air quality",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "REGIONAL",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Automatic shut-off valve (ASOv) on cylinder header, pneumatically operated from control room; water curtain at boundary fence",
+      controlDesc: "Automatic shut-off valve (ASOv) on dosing header, pneumatically operated from control room; bunded containment at store boundary",
       controlHierarchy2: "ADMINISTRATIVE",
       controlDesc2: "Documented emergency response plan, community notification protocol, annual full-scale drill with evacuation exercise",
       regId: REG_EPA,
@@ -287,8 +287,8 @@ async function seedPlant(
         occurrence: e.occurrence,
         frequency: e.frequency,
         typicalDurationMin: e.duration,
-        materialsUsed: ["Chlorine / chlorine-dioxide", "Caustic soda (NaOH)"],
-        processInputs: ["Pulp stock & process water", "Electricity"],
+        materialsUsed: ["Reactive / disperse dyes", "Dye-bath chemicals (NaOH, soda ash)"],
+        processInputs: ["Greige fabric & process water", "Electricity"],
         initialLikelihoodId: e.initLhId,
         initialLikelihoodScore: e.initLhScore,
         initialLikelihoodRationale: e.initLhRationale,
@@ -671,12 +671,12 @@ async function main() {
   const ENV_MGR_SW = await resolveUser(SW, "ENVIRONMENT_MANAGER");
   const HSE_MGR_SW = await resolveUser(SW, "HSE_MANAGER");
 
-  const AREA_NW_CHEM = await resolveArea(NW, "Chemical Storage");
-  const AREA_NW_UTIL = await resolveArea(NW, "Power & Steam Plant");
-  const AREA_NW_PROCESS_A = await resolveArea(NW, "Pulp Mill");
-  const AREA_SW_CHEM = await resolveArea(SW, "Chemical Storage");
-  const AREA_SW_UTIL = await resolveArea(SW, "Power & Steam Plant");
-  const AREA_SW_PROCESS_A = await resolveArea(SW, "Pulp Mill");
+  const AREA_NW_CHEM = await resolveArea(NW, "Chemical");
+  const AREA_NW_UTIL = await resolveArea(NW, "Boiler House");
+  const AREA_NW_PROCESS_A = await resolveArea(NW, "Dye House");
+  const AREA_SW_CHEM = await resolveArea(SW, "Chemical");
+  const AREA_SW_UTIL = await resolveArea(SW, "Boiler House");
+  const AREA_SW_PROCESS_A = await resolveArea(SW, "Dye House");
 
   await seedPlant(NW, "NW", ENV_MGR_NW, HSE_MGR_NW, AREA_NW_CHEM, AREA_NW_UTIL, AREA_NW_PROCESS_A, masters);
   await seedPlant(SW, "SW", ENV_MGR_SW, HSE_MGR_SW, AREA_SW_CHEM, AREA_SW_UTIL, AREA_SW_PROCESS_A, masters);

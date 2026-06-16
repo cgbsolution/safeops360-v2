@@ -143,7 +143,7 @@ async function seedPlantPromo(plantCode: "NW" | "SW") {
     where: { code: P },
     include: { areas: true },
   });
-  const processArea = plant.areas.find((a) => a.name.includes("Bleaching Plant")) ?? plant.areas[0];
+  const processArea = plant.areas.find((a) => a.name.includes("Dye")) ?? plant.areas[0];
   const chemArea    = plant.areas.find((a) => a.name.includes("Chemical")) ?? plant.areas[1];
 
   const nmDate  = daysAgo(P === "NW" ? 18 : 14);
@@ -157,26 +157,26 @@ async function seedPlantPromo(plantCode: "NW" | "SW") {
     P === "NW"
       ? {
           nmDesc:
-            "Chlorine dioxide gas detector CL-MONITOR-04 in the Bleaching Plant alarmed at 2.8 ppm (action level 1.0 ppm) during a shift change. All personnel evacuated per ERP. Investigation revealed a cracked gland on ClO₂ dosing pump P-204A — the same pump model as P-204B which failed 3 months ago. Had the crack propagated to full failure, estimated release: 18 kg ClO₂ with a toxic footprint extending beyond the site boundary under prevailing wind conditions. Potential for multiple fatalities.",
-          nmActivity: "ClO₂ dosing — routine bleach-plant operation during shift change",
+            "Chlorine gas detector CL-MONITOR-04 in the Dye House alarmed at 2.8 ppm (action level 1.0 ppm) during a shift change near the bleaching-agent dosing skid. All personnel evacuated per ERP. Investigation revealed a cracked gland on sodium-hypochlorite dosing pump P-204A — the same pump model as P-204B which failed 3 months ago. Had the crack propagated to full failure, estimated release: 18 kg chlorine gas with a toxic footprint extending beyond the site boundary under prevailing wind conditions. Potential for multiple fatalities.",
+          nmActivity: "Hypochlorite bleaching-agent dosing — routine dye-house operation during shift change",
           nmImmediateAction:
-            "Plant evacuated to muster point 2. SCBA-equipped response team identified and isolated pump P-204A. Dosing switched to standby pump P-204C. All ClO₂ dosing pumps (P-204A/B/C) quarantined for gland inspection.",
+            "Dye House evacuated to muster point 2. SCBA-equipped response team identified and isolated pump P-204A. Dosing switched to standby pump P-204C. All hypochlorite dosing pumps (P-204A/B/C) quarantined for gland inspection.",
           nmRootCause: "EQUIPMENT",
           nmRootCauseDetail:
-            "Gland material specification for both P-204A and P-204C found to be standard PTFE-40 rather than ClO₂-grade PTFE-75. CMMS BOM had incorrect material code — same defect as P-204B incident. Corrective action from P-204B was not propagated to sibling pumps.",
+            "Gland material specification for both P-204A and P-204C found to be standard PTFE-40 rather than chemical-grade PTFE-75. CMMS BOM had incorrect material code — same defect as P-204B incident. Corrective action from P-204B was not propagated to sibling pumps.",
           nmCorrectiveActions:
-            "1. All 3 ClO₂ dosing pumps glands replaced with certified PTFE-75 ClO₂-grade material. 2. CMMS BOM corrected for all 3 pumps. 3. Critical service register updated with mandatory approval gate for material substitution on ClO₂-wetted components.",
+            "1. All 3 hypochlorite dosing pumps glands replaced with certified PTFE-75 chemical-grade material. 2. CMMS BOM corrected for all 3 pumps. 3. Critical service register updated with mandatory approval gate for material substitution on chemical-wetted components.",
           incType: "PROCESS_SAFETY" as const,
           incDesc:
-            "[Promoted from NM-" + P + "-PROMO-001] Chlorine dioxide gas release event requiring full plant evacuation. CL-MONITOR-04 alarmed at 2.8 ppm during shift change — three times the action level. Cause identified as cracked ClO₂-grade gland on dosing pump P-204A. Gland failure mechanism identical to P-204B failure 3 months prior; corrective actions from that event were not propagated to sibling pumps P-204A and P-204C.",
-          incLocation: "Bleaching Plant — ClO₂ dosing skid, pump P-204A",
+            "[Promoted from NM-" + P + "-PROMO-001] Chlorine gas release event requiring full dye-house evacuation. CL-MONITOR-04 alarmed at 2.8 ppm during shift change — three times the action level. Cause identified as cracked chemical-grade gland on hypochlorite dosing pump P-204A. Gland failure mechanism identical to P-204B failure 3 months prior; corrective actions from that event were not propagated to sibling pumps P-204A and P-204C.",
+          incLocation: "Dye House — hypochlorite dosing skid, pump P-204A",
           incImmediateCause:
-            "Cracked PTFE gland on ClO₂ dosing pump P-204A. Gland was non-ClO₂-grade PTFE-40 (specified as PTFE-75 ClO₂-grade in design basis).",
+            "Cracked PTFE gland on hypochlorite dosing pump P-204A. Gland was non-chemical-grade PTFE-40 (specified as PTFE-75 chemical-grade in design basis).",
           incRootCause:
             "Corrective action closure process failed to propagate the P-204B gland material fix to the two sibling pump units in the same dosing skid.",
           incCorrectiveActions:
-            "1. All ClO₂ dosing pump glands replaced and verified ClO₂-grade. 2. CMMS BOM corrections raised and approved. 3. Incident investigation report submitted to CPCB as per consent conditions.",
-          incImmediateCauses: ["Cracked pump gland — wrong material grade in service", "ClO₂ release exceeded fixed gas detector action level"],
+            "1. All hypochlorite dosing pump glands replaced and verified chemical-grade. 2. CMMS BOM corrections raised and approved. 3. Incident investigation report submitted to CPCB as per consent conditions.",
+          incImmediateCauses: ["Cracked pump gland — wrong material grade in service", "Chlorine release exceeded fixed gas detector action level"],
           incUnderlyingCauses: ["CMMS BOM had incorrect PTFE grade specification for all 3 pumps in the skid", "Previous corrective action for P-204B was closed without verifying sibling pumps"],
           incRootCauses: ["CAPA closure process does not require verification of fix applied to all similar equipment in the same system"],
           incContributing: ["Multiple shifts between pump failures reducing institutional memory", "CMMS material field not validated against approved material register"],
@@ -245,7 +245,7 @@ async function seedPlantPromo(plantCode: "NW" | "SW") {
           : "Worker was at stand-off distance. Cat 2 PPE prevented burn injury despite being below rated energy.",
       recommendedActions:
         P === "NW"
-          ? "Audit all ClO₂-wetted pump seals for correct material grade. Add CMMS BOM approval gate for critical service materials. Propagate fix to all sibling units when CAPA is closed."
+          ? "Audit all hypochlorite-wetted pump seals for correct material grade. Add CMMS BOM approval gate for critical service materials. Propagate fix to all sibling units when CAPA is closed."
           : "Implement mandatory personal LOTO padlock for all LV panel maintenance. Commission arc flash study for full MCC fleet. Revise PPE selection matrix.",
       suggestedActionOwnerId: supervisor.id,
       rootCauseCategory: scenario.nmRootCause,
