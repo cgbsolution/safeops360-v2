@@ -138,7 +138,13 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
     }
   });
 
-  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && t.status === "PENDING");
+  // Match the assignee's task whether it's still PENDING or has gone OVERDUE /
+  // ESCALATED past its due date — same active statuses the pendingTasks query
+  // fetches. (Previously this was PENDING-only, so once a task went overdue the
+  // assignee kept seeing "Awaiting Action" but lost the action panel.)
+  const myTask = instance?.pendingTasks.find(
+    (t) => t.assignedToId === userId && ["PENDING", "OVERDUE", "ESCALATED"].includes(t.status),
+  );
   const isInitiator = !!instance && instance.initiatedById === userId;
   const isClosed = instance?.status === "COMPLETED" || i.status === "CLOSED";
   const showResubmit = !!instance && instance.status === "REJECTED" && isInitiator;
@@ -148,6 +154,15 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
 
   return (
     <div className="print:bg-white">
+      {/* TEMP DEBUG — remove after diagnosis */}
+      <div className="mb-4 rounded border-2 border-amber-500 bg-amber-50 p-3 text-[11px] font-mono leading-relaxed print:hidden">
+        <div><b>DEBUG</b> userId(session) = <b>{userId || "(empty)"}</b></div>
+        <div>instance = {instance ? `${instance.status}` : "NONE"} | myTask = {myTask ? `${myTask.stepName} · type=${(myTask as any).taskType} · status=${myTask.status}` : "NULL (no match)"}</div>
+        <div>pendingTasks ({instance?.pendingTasks.length ?? 0}):</div>
+        {instance?.pendingTasks.map((t) => (
+          <div key={t.id}>· assignedToId={t.assignedToId} {t.assignedToId === userId ? "✓MATCH" : "✗ no-match"} · status={t.status} · type={(t as any).taskType} · step="{t.stepName}"</div>
+        ))}
+      </div>
       <PageHeader
         title={i.number}
         description={`${humanize(i.type)} · ${i.plant.name}`}
