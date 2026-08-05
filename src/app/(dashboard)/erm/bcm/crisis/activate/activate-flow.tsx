@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, Siren } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { SEVERITY_LABEL } from "@/app/(dashboard)/erm/lib-p3";
 
 export type ActivatablePlan = {
@@ -105,10 +109,10 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Crisis title</label>
-            <input
+            <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="min-h-12 w-full rounded-xl border border-slate-300 px-4 text-base"
+              className="min-h-12 rounded-xl px-4 text-base"
               placeholder="e.g. Chlorine leak — North Works Unit 2"
               autoFocus
             />
@@ -116,16 +120,16 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
 
           <div>
             <label className="mb-1.5 block text-sm font-medium text-slate-700">Affected site</label>
-            <select
+            <Select
               value={siteId}
               onChange={(e) => { setSiteId(e.target.value); setPlanIds([]); }}
-              className="min-h-12 w-full rounded-xl border border-slate-300 px-3 text-base"
+              className="min-h-12 rounded-xl px-3 text-base"
             >
               <option value="">Corporate (no single site)</option>
               {sites.map((s) => (
                 <option key={s.id} value={s.id}>{s.name}</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
@@ -141,14 +145,15 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
                 {visiblePlans.map((p) => {
                   const on = planIds.includes(p.id);
                   return (
-                    <button
+                    <Button
                       key={p.id}
                       type="button"
+                      variant="ghost"
                       onClick={() => togglePlan(p.id)}
-                      className={
-                        "w-full rounded-xl border-2 p-3 text-left transition-colors " +
-                        (on ? "border-rose-500 bg-rose-50" : "border-slate-200 bg-white hover:border-slate-300")
-                      }
+                      className={cn(
+                        "flex h-auto w-full flex-col items-stretch gap-0 whitespace-normal rounded-xl border-2 p-3 text-left transition-colors",
+                        on ? "border-rose-500 bg-rose-50" : "border-slate-200 bg-white hover:border-slate-300"
+                      )}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
@@ -174,7 +179,7 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
                           ))}
                         </ul>
                       )}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -182,13 +187,13 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
           </div>
 
           <StickyBar>
-            <button
+            <Button
               disabled={!step1Valid}
               onClick={() => setStep(2)}
-              className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-700 text-base font-semibold text-white hover:bg-primary-800 disabled:opacity-50"
+              className="flex min-h-12 w-full gap-2 rounded-xl text-base font-semibold"
             >
               Next: severity <ArrowRight size={18} />
-            </button>
+            </Button>
             {!step1Valid && <p className="mt-1 text-center text-[11px] text-slate-400">A title of at least 3 characters is required.</p>}
           </StickyBar>
         </div>
@@ -206,14 +211,15 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
             {[1, 2, 3].map((lvl) => {
               const on = severity === lvl;
               return (
-                <button
+                <Button
                   key={lvl}
                   type="button"
+                  variant="ghost"
                   onClick={() => setSeverity(lvl as 1 | 2 | 3)}
-                  className={
-                    "flex min-h-16 w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-colors " +
-                    (on ? "border-rose-600 bg-rose-50" : "border-slate-200 bg-white hover:border-slate-300")
-                  }
+                  className={cn(
+                    "h-auto flex min-h-16 w-full gap-4 rounded-2xl border-2 p-4 text-left transition-colors",
+                    on ? "border-rose-600 bg-rose-50" : "border-slate-200 bg-white hover:border-slate-300"
+                  )}
                 >
                   <span className={"flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-xl font-extrabold " + (on ? "bg-rose-600 text-white" : "bg-slate-100 text-slate-600")}>
                     {lvl}
@@ -222,7 +228,7 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
                     <span className="block text-base font-bold text-slate-900">{SEVERITY_LABEL[lvl]}</span>
                     <span className="block text-sm text-slate-500">{SEVERITY_DESC[lvl]}</span>
                   </span>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -234,16 +240,16 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
 
           <StickyBar>
             <div className="flex gap-2">
-              <button onClick={() => setStep(1)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-700">
+              <Button variant="outline" onClick={() => setStep(1)} className="flex min-h-12 gap-2 rounded-xl text-base text-slate-700">
                 <ArrowLeft size={18} /> Back
-              </button>
-              <button
+              </Button>
+              <Button
                 disabled={!step2Valid}
                 onClick={() => setStep(3)}
-                className="flex min-h-12 flex-1 items-center justify-center gap-2 rounded-xl bg-primary-700 text-base font-semibold text-white hover:bg-primary-800 disabled:opacity-50"
+                className="flex min-h-12 flex-1 gap-2 rounded-xl text-base font-semibold"
               >
                 Review <ArrowRight size={18} />
-              </button>
+              </Button>
             </div>
           </StickyBar>
         </div>
@@ -283,17 +289,18 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
 
           <StickyBar>
             <div className="flex gap-2">
-              <button onClick={() => setStep(2)} disabled={busy} className="flex min-h-14 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-base font-medium text-slate-700 disabled:opacity-50">
+              <Button variant="outline" onClick={() => setStep(2)} disabled={busy} className="flex min-h-14 gap-2 rounded-xl text-base text-slate-700">
                 <ArrowLeft size={18} /> Back
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 onClick={activate}
                 disabled={busy}
-                className="flex min-h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 text-base font-extrabold uppercase tracking-wide text-white hover:bg-rose-700 disabled:opacity-50"
+                className="flex min-h-14 flex-1 gap-2 rounded-xl text-base font-extrabold uppercase tracking-wide"
               >
                 {busy ? <Loader2 size={20} className="animate-spin" /> : <Siren size={20} />}
                 {busy ? "Activating…" : "Activate crisis"}
-              </button>
+              </Button>
             </div>
           </StickyBar>
         </div>

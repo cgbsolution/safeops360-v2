@@ -1,0 +1,66 @@
+name: CI
+
+# Static-analysis gate for the FastAPI backend. It deliberately does NOT run
+# pytest yet: the suite currently binds to whatever DATABASE_URL is configured,
+# which per the project's own notes is the LIVE production Supabase database.
+# Enable the pytest job below only after test-DB isolation (a TEST_DATABASE_URL
+# branch in app/core/db.py + a SAVEPOINT-rollback conftest) lands — see the
+# audit's Testing-2 finding.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-backend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install package + tooling
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . || pip install .
+          pip install ruff mypy
+
+      - name: Syntax gate (blocking)
+        run: python -m compileall -q app
+
+      - name: Ruff lint (non-blocking until lint debt is cleared)
+        run: ruff check .
+        continue-on-error: true
+
+      - name: Mypy (non-blocking until typing is completed)
+        run: mypy app
+        continue-on-error: true
+
+  # pytest:
+  #   runs-on: ubuntu-latest
+  #   services:
+  #     postgres:
+  #       image: postgres:16
+  #       env: { POSTGRES_PASSWORD: postgres, POSTGRES_DB: safeops_test }
+  #       ports: ["5432:5432"]
+  #       options: >-
+  #         --health-cmd pg_isready --health-interval 10s
+  #         --health-timeout 5s --health-retries 5
+  #   env:
+  #     TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/safeops_test
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with: { python-version: "3.12", cache: pip }
+  #     - run: pip install -e . && pip install pytest pytest-asyncio
+  #     # - run: apply hand-DDL to the ephemeral CI DB here
+  #     - run: pytest -q

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { ArrowLeft, Loader2, HardHat } from "lucide-react";
 
 const TRADE_CATEGORIES = [
@@ -189,17 +191,17 @@ export default function NewContractorPage() {
             </div>
             <div>
               <Label htmlFor="sizeCategory">Company Size</Label>
-              <select
+              <Select
                 id="sizeCategory"
                 value={form.sizeCategory}
                 onChange={(e) => set("sizeCategory", e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select size...</option>
                 {SIZE_CATEGORIES.map((s) => (
                   <option key={s.value} value={s.value}>{s.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
         </div>
@@ -212,18 +214,20 @@ export default function NewContractorPage() {
             {TRADE_CATEGORIES.map((trade) => {
               const selected = form.tradeCategories.includes(trade);
               return (
-                <button
+                <Button
                   key={trade}
                   type="button"
+                  variant="ghost"
                   onClick={() => toggleTrade(trade)}
-                  className={`rounded-lg border px-3 py-2 text-sm font-medium transition-all text-left ${
+                  className={cn(
+                    "h-auto rounded-lg border px-3 py-2 text-sm font-medium transition-all text-left",
                     selected
                       ? "bg-cyan-600 border-cyan-600 text-white shadow-sm"
                       : "bg-white border-slate-200 text-slate-700 hover:border-cyan-400 hover:bg-cyan-50"
-                  }`}
+                  )}
                 >
                   {trade}
-                </button>
+                </Button>
               );
             })}
           </div>

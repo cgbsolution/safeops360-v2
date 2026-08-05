@@ -28,8 +28,16 @@ export async function ObservationAnalyticsStrip({ userId }: { userId: string }) 
     const { now, startOfMonth, startOfLastMonth } = monthBounds();
     const buckets = last12Months(now);
     const twelveMonthsAgo = buckets[0].start;
+    // Cycle-time windows: trailing 90 days for the avg, the 90d before that for
+    // its trend, and a like-for-like "same point last month" window for the
+    // Closed-MTD delta. One fetch (floor = 180d back) covers all three.
+    const startOf90 = new Date(now.getTime() - 90 * 86_400_000);
+    const startOf180 = new Date(now.getTime() - 180 * 86_400_000);
+    const samePointLastMonthEnd = new Date(
+      startOfLastMonth.getTime() + (now.getTime() - startOfMonth.getTime())
+    );
 
-    const [openRows, trendRows, closedThisMonth, closedLastMonth] = await Promise.all([
+    const [openRows, trendRows, closedRecent] = await Promise.all([
       // Open backlog (any non-closed status). Drives the headline count
       // plus the overdue / high-severity alert chips — all derived in JS
       // from one fetch instead of three separate count queries.
@@ -44,16 +52,24 @@ export async function ObservationAnalyticsStrip({ userId }: { userId: string }) 
         select: { date: true },
         take: 5000,
       }),
-      // Closed this month — count + on-time% + avg-days-to-close.
+      // Records closed in the last 180 days — powers Closed-MTD + avg-to-close.
+      // `closedAt` is set on workflow closure, but seed-closed rows can have it
+      // null; fall back to `updatedAt` so the metrics don't silently under-count
+      // (that null was the "Closed MTD = 0" bug on the demo tenant).
       prisma.observation.findMany({
-        where: { AND: [scope, { status: "CLOSED", closedAt: { gte: startOfMonth } }] },
-        select: { date: true, closedAt: true, targetDate: true },
-        take: 5000,
-      }),
-      // Closed last month — for the closed-volume + cycle-time deltas.
-      prisma.observation.findMany({
-        where: { AND: [scope, { status: "CLOSED", closedAt: { gte: startOfLastMonth, lt: startOfMonth } }] },
-        select: { date: true, closedAt: true },
+        where: {
+          AND: [
+            scope,
+            { status: "CLOSED" },
+            {
+              OR: [
+                { closedAt: { gte: startOf180 } },
+                { AND: [{ closedAt: null }, { updatedAt: { gte: startOf180 } }] },
+              ],
+            },
+          ],
+        },
+        select: { date: true, closedAt: true, updatedAt: true, targetDate: true },
         take: 5000,
       }),
     ]);
@@ -66,19 +82,30 @@ export async function ObservationAnalyticsStrip({ userId }: { userId: string }) 
     const trendCounts = bucketCounts(trendRows.map((r) => r.date), buckets);
     const openedThisMonth = trendCounts[11];
 
-    const closedMTD = closedThisMonth.length;
-    const closedPrev = closedLastMonth.length;
+    // Effective closure date: closedAt when set, else updatedAt (see fetch note).
+    const closedEff = closedRecent.map((r) => ({
+      date: r.date,
+      closed: (r.closedAt ?? r.updatedAt) as Date,
+      targetDate: r.targetDate,
+    }));
 
-    const avgThisMonth = avgDaysBetween(
-      closedThisMonth.filter((r) => r.closedAt).map((r) => ({ from: r.date, to: r.closedAt as Date }))
-    );
-    const avgLastMonth = avgDaysBetween(
-      closedLastMonth.filter((r) => r.closedAt).map((r) => ({ from: r.date, to: r.closedAt as Date }))
-    );
+    const closedMTD = closedEff.filter((r) => r.closed >= startOfMonth).length;
+    // Compare to the SAME elapsed slice of last month, not the whole month — a
+    // mid-month MTD vs a full prior month always reads as a false ↓100%.
+    const closedPrevSamePoint = closedEff.filter(
+      (r) => r.closed >= startOfLastMonth && r.closed < samePointLastMonthEnd
+    ).length;
+
+    // Avg days to close over the trailing 90 days (+ prior 90d for the trend).
+    const closedLast90 = closedEff.filter((r) => r.closed >= startOf90);
+    const closedPrev90 = closedEff.filter((r) => r.closed >= startOf180 && r.closed < startOf90);
+    const avg90 = avgDaysBetween(closedLast90.map((r) => ({ from: r.date, to: r.closed })));
+    const avgPrev90 = avgDaysBetween(closedPrev90.map((r) => ({ from: r.date, to: r.closed })));
 
     // On-time closure rate (closed within target date) for the MTD tile chip.
-    const withTarget = closedThisMonth.filter((r) => r.targetDate);
-    const onTime = withTarget.filter((r) => r.closedAt && r.targetDate && r.closedAt <= r.targetDate).length;
+    const mtdClosed = closedEff.filter((r) => r.closed >= startOfMonth);
+    const withTarget = mtdClosed.filter((r) => r.targetDate);
+    const onTime = withTarget.filter((r) => r.targetDate && r.closed <= (r.targetDate as Date)).length;
     const onTimePct = withTarget.length ? Math.round((onTime / withTarget.length) * 100) : null;
 
     const data: AnalyticsStripData = {
@@ -95,7 +122,9 @@ export async function ObservationAnalyticsStrip({ userId }: { userId: string }) 
           label: "Closed MTD",
           value: closedMTD,
           href: "/observations?status=CLOSED",
-          delta: percentDelta(closedMTD, closedPrev, true),
+          // Like-for-like vs the same day-range of last month; the delta text +
+          // tooltip name the window so the comparison can't be misread.
+          delta: percentDelta(closedMTD, closedPrevSamePoint, true, "vs same pt last mo"),
           badge:
             onTimePct === null
               ? null
@@ -106,10 +135,13 @@ export async function ObservationAnalyticsStrip({ userId }: { userId: string }) 
         },
         {
           label: "Avg Days to Close",
-          value: avgThisMonth ?? "—",
+          // Trailing-90d cycle time; explicit "None" no-data state, never a bare
+          // dash. The 90d badge names the window.
+          value: avg90 !== null ? avg90 : "None",
+          badge: { text: "90d", tone: "neutral" },
           delta:
-            avgThisMonth !== null && avgLastMonth !== null
-              ? percentDelta(avgThisMonth, avgLastMonth, false)
+            avg90 !== null && avgPrev90 !== null
+              ? percentDelta(avg90, avgPrev90, false, "vs prior 90d")
               : null,
         },
       ],

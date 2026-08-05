@@ -18,49 +18,31 @@ const TODAY = new Date("2026-06-07T08:00:00.000Z");
 function daysAgo(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() - n); return d; }
 function daysFromNow(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() + n); return d; }
 
-// ── Dynamic ID resolution ────────────────────────────────────────────────────
-// Hardcoded CUIDs from an earlier seed run go stale after a fresh re-seed (the
-// FK targets no longer exist → P2003 on PpeType/PpeItem/PpeBatch). Resolve every
-// id at runtime from stable business keys instead: Plant.code (unique),
-// User.role + plantId, and PpeType.code (unique).
+// Users
+const HSE_MGR_NW    = "cmq42hhjw002o1358mzpjpr5i";
+const HSE_MGR_SW    = "cmq42hn9y004s13582w1z3yaf";
+const WORKER_NW     = "cmq42hgxb002e13585csfjcg2";  // contractor-workman.hr.nw
+const WORKER_SW     = "cmq42hmdl004i1358lak42jl2";  // contractor-workman.hr.sw
+const DEPT_HEAD_NW  = "cmq42hh6s002i1358pqjb967v";
+const DEPT_HEAD_SW  = "cmq42hmx2004m1358j3i1bp2w";
 
-// PPE Type IDs are resolved once (PpeType is a plant-independent global library)
-// and shared across plants, keyed by their unique `code`.
-type PpeTypeIds = {
-  HARNESS: string; SCBA: string; ARC_FLASH: string; ELEC_GLOVE: string;
-  GOGGLES: string; GAS_DET: string; COVERALL: string;
-};
+// Plant IDs
+const NW = "cmq42hc7b000913589h1l7q23";
+const SW = "cmq42hch7000p1358qc91ieav";
 
-async function resolvePpeTypeIds(): Promise<PpeTypeIds> {
-  const byCode = async (code: string) =>
-    (await prisma.ppeType.findFirstOrThrow({ where: { code } })).id;
-  return {
-    HARNESS:    await byCode("HARNESS-FULLBODY-EN361"),
-    SCBA:       await byCode("SCBA-POSITIVEPRESSURE"),
-    ARC_FLASH:  await byCode("ARC-FLASH-SUIT"),
-    ELEC_GLOVE: await byCode("GLOVES-ELEC-HT"),
-    GOGGLES:    await byCode("GOGGLES-CHEM"),
-    GAS_DET:    await byCode("GAS-DETECTOR-4GAS"),
-    COVERALL:   await byCode("COVERALL-FR"),
-  };
-}
+// PPE Type IDs
+const TYPE_HARNESS    = "0f71df30ea2948268b05d4b2fd9f5908";
+const TYPE_SCBA       = "0f807f49bda6433d9c9e51c373b498c2";
+const TYPE_EARMUFF    = "1289c34d17d8408982ce316fa403837b";
+const TYPE_ARC_FLASH  = "1566f0d292284f919e5c8e1b45ef258e";
+const TYPE_ELEC_GLOVE = "1eeb0135c12b446faaff43540043554b";
+const TYPE_LANYARD    = "23e7bf912f7343dc97ac95fa2f5df375";
+const TYPE_GOGGLES    = "2684d39d104e4a0b8521cd428d9c5cc5";
+const TYPE_GAS_DET    = "28ba2fe6110d44dc9a32df4a067aaabf";
+const TYPE_COVERALL   = "296272bfeb924460b627b2476399c548";
+const TYPE_SRL        = "26f23ddc4f214007998b267553cb24f9";
 
-// Resolve a plant's user for a given role; fall back to any user in the plant.
-async function resolveUser(plantId: string, role: string): Promise<string> {
-  const byRole = await prisma.user.findFirst({ where: { role, plantId } });
-  if (byRole) return byRole.id;
-  return (await prisma.user.findFirstOrThrow({ where: { plantId } })).id;
-}
-
-async function seedPlant(plantId: string, code: "NW" | "SW", hseMgr: string, worker: string, deptHead: string, types: PpeTypeIds) {
-  const TYPE_HARNESS    = types.HARNESS;
-  const TYPE_SCBA       = types.SCBA;
-  const TYPE_ARC_FLASH  = types.ARC_FLASH;
-  const TYPE_ELEC_GLOVE = types.ELEC_GLOVE;
-  const TYPE_GOGGLES    = types.GOGGLES;
-  const TYPE_GAS_DET    = types.GAS_DET;
-  const TYPE_COVERALL   = types.COVERALL;
-
+async function seedPlant(plantId: string, code: "NW" | "SW", hseMgr: string, worker: string, deptHead: string) {
   type ItemSpec = {
     itemNumber: string; serial: string; typeId: string; typeCode: string; typeName: string;
     mfr: string; model: string; batch: string; mfgDate: Date; purchaseDate: Date; cost: number;
@@ -109,13 +91,13 @@ async function seedPlant(plantId: string, code: "NW" | "SW", hseMgr: string, wor
     // ── SCBA (under_inspection — recall batch) ──
     { itemNumber: `DEMO-${code}-SCBA-001`, serial: `MSA-SCBA-${code}-001`, typeId: TYPE_SCBA, typeCode: "SCBA-POSITIVEPRESSURE", typeName: "SCBA — Positive Pressure", mfr: "MSA Safety", model: "G1 SCBA", batch: batchSCBA.batchLotNumber, mfgDate: new Date("2024-04-01"), purchaseDate: new Date("2024-05-20"), cost: 95000, status: "quarantined", condition: "needs_inspection", storageLocation: `${code} Quarantine Cage` },
     // ── Gas Detector (issued + nearing expiry) ──
-    { itemNumber: `DEMO-${code}-GASDET-001`, serial: `BW-4G-${code}-001`, typeId: TYPE_GAS_DET, typeCode: "GAS-DETECTOR-4GAS", typeName: "Portable 4-Gas Detector", mfr: "BW Technologies (Honeywell)", model: "GasAlertMicro5 IR", batch: `GD-STD-2022`, mfgDate: new Date("2022-02-01"), purchaseDate: new Date("2022-03-10"), cost: 28000, status: "issued", condition: "fair", storageLocation: `${code} Dye House Control Room`, currentHolderUserId: deptHead, issuedSince: daysAgo(180) },
+    { itemNumber: `DEMO-${code}-GASDET-001`, serial: `BW-4G-${code}-001`, typeId: TYPE_GAS_DET, typeCode: "GAS-DETECTOR-4GAS", typeName: "Portable 4-Gas Detector", mfr: "BW Technologies (Honeywell)", model: "GasAlertMicro5 IR", batch: `GD-STD-2022`, mfgDate: new Date("2022-02-01"), purchaseDate: new Date("2022-03-10"), cost: 28000, status: "issued", condition: "fair", storageLocation: `${code} Process Control Room`, currentHolderUserId: deptHead, issuedSince: daysAgo(180) },
     // ── Arc Flash Suit (in_stock) ──
     { itemNumber: `DEMO-${code}-ARCFLASH-001`, serial: `HD-AFS-${code}-001`, typeId: TYPE_ARC_FLASH, typeCode: "ARC-FLASH-SUIT", typeName: "Arc Flash Suit", mfr: "Honeywell", model: "Salisbury ArcPro 12 cal/cm²", batch: `AFS-2023-Q1`, mfgDate: new Date("2023-01-15"), purchaseDate: new Date("2023-02-01"), cost: 45000, status: "in_stock", condition: "good", storageLocation: `${code} Electrical Workshop Store` },
     // ── Elec Gloves (in_stock) ──
     { itemNumber: `DEMO-${code}-ELECGLV-001`, serial: `BM-EG-${code}-001`, typeId: TYPE_ELEC_GLOVE, typeCode: "GLOVES-ELEC-HT", typeName: "Electrical Insulating Gloves — HT", mfr: "Biname", model: "Class 4 — 36kV", batch: `EG-2025-Q2`, mfgDate: new Date("2025-04-01"), purchaseDate: new Date("2025-04-20"), cost: 6200, status: "in_stock", condition: "new", storageLocation: `${code} Electrical Workshop Store` },
     // ── Chemical Goggles (issued) ──
-    { itemNumber: `DEMO-${code}-GOGGLES-001`, serial: `3M-GG-${code}-001`, typeId: TYPE_GOGGLES, typeCode: "GOGGLES-CHEM", typeName: "Chemical Splash Goggles", mfr: "3M", model: "Virtua CCS Protective Eyewear", batch: `GG-2024-Q4`, mfgDate: new Date("2024-10-01"), purchaseDate: new Date("2024-11-01"), cost: 1800, status: "issued", condition: "good", storageLocation: `${code} Dye House — Dye Chemical Dosing`, currentHolderUserId: hseMgr, issuedSince: daysAgo(60) },
+    { itemNumber: `DEMO-${code}-GOGGLES-001`, serial: `3M-GG-${code}-001`, typeId: TYPE_GOGGLES, typeCode: "GOGGLES-CHEM", typeName: "Chemical Splash Goggles", mfr: "3M", model: "Virtua CCS Protective Eyewear", batch: `GG-2024-Q4`, mfgDate: new Date("2024-10-01"), purchaseDate: new Date("2024-11-01"), cost: 1800, status: "issued", condition: "good", storageLocation: `${code} Chemical Lab`, currentHolderUserId: hseMgr, issuedSince: daysAgo(60) },
     // ── FR Coverall (retired) ──
     { itemNumber: `DEMO-${code}-COVERALL-001`, serial: `DU-FR-${code}-001`, typeId: TYPE_COVERALL, typeCode: "COVERALL-FR", typeName: "Flame-Resistant Coverall", mfr: "DuPont", model: "Nomex IIIA", batch: `FR-2019-Q3`, mfgDate: new Date("2019-08-01"), purchaseDate: new Date("2019-09-01"), cost: 4200, status: "retired", condition: "unserviceable", storageLocation: `${code} Disposal Bay` },
   ];
@@ -287,22 +269,8 @@ async function main() {
   await prisma.ppeItem.deleteMany({ where: { itemNumber: { contains: "DEMO" } } });
   await prisma.ppeBatch.deleteMany({ where: { batchLotNumber: { contains: "DEMO" } } });
 
-  // Resolve all ids dynamically from stable business keys (avoids stale CUIDs).
-  const nw = await prisma.plant.findFirstOrThrow({ where: { code: "NW" } });
-  const sw = await prisma.plant.findFirstOrThrow({ where: { code: "SW" } });
-
-  const HSE_MGR_NW   = await resolveUser(nw.id, "HSE_MANAGER");
-  const WORKER_NW    = await resolveUser(nw.id, "CONTRACTOR_WORKMAN");
-  const DEPT_HEAD_NW = await resolveUser(nw.id, "DEPARTMENT_HEAD");
-
-  const HSE_MGR_SW   = await resolveUser(sw.id, "HSE_MANAGER");
-  const WORKER_SW    = await resolveUser(sw.id, "CONTRACTOR_WORKMAN");
-  const DEPT_HEAD_SW = await resolveUser(sw.id, "DEPARTMENT_HEAD");
-
-  const types = await resolvePpeTypeIds();
-
-  await seedPlant(nw.id, "NW", HSE_MGR_NW, WORKER_NW, DEPT_HEAD_NW, types);
-  await seedPlant(sw.id, "SW", HSE_MGR_SW, WORKER_SW, DEPT_HEAD_SW, types);
+  await seedPlant(NW, "NW", HSE_MGR_NW, WORKER_NW, DEPT_HEAD_NW);
+  await seedPlant(SW, "SW", HSE_MGR_SW, WORKER_SW, DEPT_HEAD_SW);
 
   const totals = {
     items: await prisma.ppeItem.count({ where: { itemNumber: { contains: "DEMO" } } }),

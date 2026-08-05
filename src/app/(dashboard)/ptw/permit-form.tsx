@@ -17,7 +17,7 @@
 // POST /api/ptw with the structured payload (Pydantic schema in
 // safeops_360_bakend/app/schemas/permit.py).
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,7 +31,7 @@ import { GpsCaptureStatus } from "@/components/ui/gps-capture";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { readApiError } from "@/lib/client-errors";
 import {
-  AlertCircle, ChevronLeft, ChevronRight, Check, MapPin, Trash2, Clock, Flame, Wrench, Users, ShieldAlert, ClipboardCheck, Zap, HardHat, Pickaxe, Hammer
+  AlertCircle, ChevronLeft, ChevronRight, Check, MapPin, Trash2, Clock, Flame, Wrench, Users, ShieldAlert, ClipboardCheck, Zap, HardHat, Pickaxe, Hammer, Anchor
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +45,7 @@ const TYPES = [
   { value: "WORK_AT_HEIGHT", label: "Work at Height", icon: HardHat, maxHours: 72, requiresGasTest: false, requiresFireWatch: false, requiresStandby: false, requiresRescue: true },
   { value: "EXCAVATION", label: "Excavation", icon: Pickaxe, maxHours: 72, requiresGasTest: false, requiresFireWatch: false, requiresStandby: false, requiresRescue: false },
   { value: "ELECTRICAL_LOTO", label: "Electrical / LOTO", icon: Zap, maxHours: 72, requiresGasTest: false, requiresFireWatch: false, requiresStandby: false, requiresRescue: false },
+  { value: "LIFTING", label: "Lifting Operations", icon: Anchor, maxHours: 72, requiresGasTest: false, requiresFireWatch: false, requiresStandby: true, requiresRescue: false },
   { value: "GENERAL_COLD", label: "General Cold Work", icon: Hammer, maxHours: 72, requiresGasTest: false, requiresFireWatch: false, requiresStandby: false, requiresRescue: false }
 ] as const;
 
@@ -56,6 +57,7 @@ const PPE_DEFAULTS: Record<string, string[]> = {
   WORK_AT_HEIGHT: ["helmet", "shoes", "harness", "lanyard"],
   EXCAVATION: ["helmet", "shoes", "high_vis"],
   ELECTRICAL_LOTO: ["helmet", "shoes", "insulated_gloves", "arc_flash_suit"],
+  LIFTING: ["helmet", "shoes", "high_vis", "gloves"],
   GENERAL_COLD: ["helmet", "shoes"]
 };
 
@@ -110,7 +112,32 @@ const STEPS = [
   { id: 8, label: "Review", icon: ClipboardCheck }
 ];
 
-export function PermitForm({ plants }: { plants: Plant[] }) {
+/** Context handed over when the wizard is opened from a HIRA hazard row that
+ *  the hazard library flags as permit-requiring. Everything here is a starting
+ *  point the originator can change — only the two ids are carried verbatim. */
+export type HiraPrefill = {
+  hiraEntryId: string;
+  hiraEntryHazardId: string;
+  plantId: string | null;
+  areaId: string | null;
+  location: string | null;
+  specificLocation: string | null;
+  scopeOfWork: string | null;
+  suggestedPermitType: string | null;
+  hazardName: string | null;
+  studyNumber: string | null;
+  residualRiskLevel: string | null;
+};
+
+export function PermitForm({
+  plants,
+  defaultPlantId,
+  hiraPrefill
+}: {
+  plants: Plant[];
+  defaultPlantId?: string | null;
+  hiraPrefill?: HiraPrefill | null;
+}) {
   const router = useRouter();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
@@ -118,7 +145,13 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
   const [submitting, setSubmitting] = useState(false);
 
   // ─── Step 1 — type + validity ───
-  const [type, setType] = useState<string>("HOT_WORK");
+  // A HIRA-driven permit opens on the type the hazard implies rather than the
+  // generic Hot Work default.
+  const [type, setType] = useState<string>(
+    hiraPrefill?.suggestedPermitType && TYPES.some((t) => t.value === hiraPrefill.suggestedPermitType)
+      ? hiraPrefill.suggestedPermitType
+      : "HOT_WORK"
+  );
   const typeMeta = useMemo<TypeMeta>(() => TYPES.find((t) => t.value === type) ?? TYPES[0], [type]);
   const nowLocal = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
   const defaultEnd = new Date(Date.now() + 4 * 3_600_000 - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
@@ -132,12 +165,27 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
   }, [validFrom, validTo]);
 
   // ─── Step 2 — location ───
-  const [plantId, setPlantId] = useState(plants[0]?.id ?? "");
+  // Default to the originator's own plant — that's where the issuers, crew and
+  // equipment that match the permit actually live. Falling back to plants[0]
+  // (alphabetical) used to land the wizard on a plant with no PERMIT_ISSUER /
+  // equipment, leaving the Step-3 pickers empty and the user unable to proceed.
+  // A HIRA prefill wins over the session plant: the permit has to be raised
+  // against the plant the assessed activity actually sits in.
+  const initialPlantId =
+    (hiraPrefill?.plantId && plants.some((p) => p.id === hiraPrefill.plantId)
+      ? hiraPrefill.plantId
+      : null) ??
+    (defaultPlantId && plants.some((p) => p.id === defaultPlantId) ? defaultPlantId : null) ??
+    plants[0]?.id ??
+    "";
+  const [plantId, setPlantId] = useState(initialPlantId);
   const [departmentId, setDepartmentId] = useState("");
-  const [areaId, setAreaId] = useState("");
-  const [specificLocation, setSpecificLocation] = useState("");
-  const [scopeOfWork, setScopeOfWork] = useState("");
+  const [areaId, setAreaId] = useState(hiraPrefill?.areaId ?? "");
+  const [specificLocation, setSpecificLocation] = useState(hiraPrefill?.specificLocation ?? "");
+  const [scopeOfWork, setScopeOfWork] = useState(hiraPrefill?.scopeOfWork ?? "");
   const [workOrderNumber, setWorkOrderNumber] = useState("");
+  const [contractorCompanyId, setContractorCompanyId] = useState("");
+  const [contractors, setContractors] = useState<{ id: string; name: string }[]>([]);
   const { coords: gps, status: gpsStatus, error: gpsError, request: requestGps } = useGeolocation();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentRow[]>([]);
@@ -170,6 +218,9 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
   const [weatherConditions, setWeatherConditions] = useState("");
   const [windSpeedKmh, setWindSpeedKmh] = useState("");
   const [adjacentNotificationIds, setAdjacentNotificationIds] = useState<string[]>([]);
+  // FLRA policy override (closed-loop rebuild): "" = follow site policy,
+  // "yes"/"no" send an explicit boolean the backend snapshots per permit.
+  const [flraOverride, setFlraOverride] = useState<"" | "yes" | "no">("");
 
   // When type changes, refresh defaults that depend on it
   function onTypeChange(newType: string) {
@@ -189,8 +240,13 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
     }
   }
 
-  // Load departments + equipment when plant changes
-  useMemo(() => {
+  // Load departments + equipment when plant changes.
+  // NB: this MUST be an effect, not a useMemo — fetching is a side-effect.
+  // useMemo is for derived values; React may skip it or discard the cleanup
+  // it returns, so the old useMemo version could silently fail to refresh the
+  // masters (and never run its cleanup), which is part of why the dropdowns
+  // looked stuck/empty.
+  useEffect(() => {
     if (!plantId) {
       setDepartments([]); setEquipmentList([]);
       return;
@@ -213,6 +269,16 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
     })();
     return () => { cancelled = true; };
   }, [plantId]);
+
+  // Contractor companies (plant-agnostic master) — fetch once.
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/near-miss/masters/contractors")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => { if (alive && Array.isArray(rows)) setContractors(rows); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   // ─── Step validation ─────────────────────────────────────────────
   function validateStep(n: number): string | null {
@@ -308,9 +374,17 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
       receiverId,
       departmentId: departmentId || null,
       specificLocation: specificLocation || null,
+      contractorCompanyId: contractorCompanyId || null,
+      // Keep the legacy free-text field populated from the picked company.
+      contractorName: contractors.find((c) => c.id === contractorCompanyId)?.name || null,
       gpsLatitude: gps?.lat ?? null,
       gpsLongitude: gps?.lng ?? null,
       workOrderNumber: workOrderNumber || null,
+      // HIRA provenance — present only when this wizard was opened from a
+      // hazard row's Create-PTW prompt. Carried through so the finished permit
+      // is traceable back to the assessment that called for it.
+      hiraEntryId: hiraPrefill?.hiraEntryId ?? null,
+      hiraEntryHazardId: hiraPrefill?.hiraEntryHazardId ?? null,
       workCrew: crew.map((c) => ({ userId: c.userId, role: c.role })),
       fireWatchPersonId: fireWatchPersonId || null,
       standbyPersonId: standbyPersonId || null,
@@ -343,7 +417,9 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
       rescuePlan: typeMeta.requiresRescue ? rescuePlan : (rescuePlan || null),
       weatherConditionsAtIssue: weatherConditions || null,
       windSpeedKmh: windSpeedKmh ? Number(windSpeedKmh) : null,
-      adjacentAreaNotifications: adjacentNotificationIds.length > 0 ? { userIds: adjacentNotificationIds } : null
+      adjacentAreaNotifications: adjacentNotificationIds.length > 0 ? { userIds: adjacentNotificationIds } : null,
+      // null → backend resolves from PTW_FLRA_REQUIRED_* site policy.
+      flraRequired: flraOverride === "" ? null : flraOverride === "yes"
     };
     try {
       const res = await fetch("/api/ptw", {
@@ -436,6 +512,25 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
           </ol>
         </CardContent>
       </Card>
+
+      {/* Provenance banner — this permit was called for by a HIRA hazard row.
+          Shown on every step so the originator keeps the context in view. */}
+      {hiraPrefill && (
+        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="font-medium">
+            Raised from HIRA{hiraPrefill.studyNumber ? ` ${hiraPrefill.studyNumber}` : ""}
+            {hiraPrefill.hazardName ? ` — ${hiraPrefill.hazardName}` : ""}
+          </div>
+          <div className="text-xs mt-0.5">
+            The hazard library flags this hazard as permit-requiring. Type, plant, area and scope
+            are pre-filled from the assessment — adjust anything that does not match the actual
+            job. The finished permit stays linked to the HIRA entry.
+            {hiraPrefill.residualRiskLevel
+              ? ` Assessed residual risk: ${hiraPrefill.residualRiskLevel}.`
+              : ""}
+          </div>
+        </div>
+      )}
 
       {/* Step content */}
       {step === 1 && (
@@ -578,6 +673,13 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
                 <Input value={specificLocation} onChange={(e) => setSpecificLocation(e.target.value)}
                   placeholder="e.g. Cement Mill #2 gearbox bay" />
               </div>
+              <div>
+                <Label>Contractor (if applicable)</Label>
+                <Select value={contractorCompanyId} onChange={(e) => setContractorCompanyId(e.target.value)}>
+                  <option value="">— None (own employee) —</option>
+                  {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+              </div>
               <div className="sm:col-span-2">
                 <Label>Scope of Work <span className="text-rose-600">*</span></Label>
                 <Textarea rows={3} value={scopeOfWork} onChange={(e) => setScopeOfWork(e.target.value)}
@@ -610,7 +712,10 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
               <div>
                 <Label>Issuer <span className="text-rose-600">*</span></Label>
                 <UserPicker value={issuerId} onChange={(id) => setIssuerId(id)}
-                  filter={{ plantId, role: "PERMIT_ISSUER" }} placeholder="Search & select issuer…" required />
+                  filter={{ plantId, role: "PERMIT_ISSUER", roleFallback: true }} placeholder="Search & select issuer…" required />
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Lists this plant's designated Permit Issuers. If none are configured, any plant user can be picked.
+                </p>
               </div>
               <div>
                 <Label>Receiver <span className="text-rose-600">*</span></Label>
@@ -883,6 +988,22 @@ export function PermitForm({ plants }: { plants: Plant[] }) {
                   <p className="text-xs text-rose-700 mt-0.5">⚠ Wind &gt; 25 km/h — outdoor hot work not recommended.</p>
                 )}
               </div>
+            </div>
+            <div>
+              <Label>Field-Level Risk Assessment (FLRA)</Label>
+              <select
+                value={flraOverride}
+                onChange={(e) => setFlraOverride(e.target.value as "" | "yes" | "no")}
+                className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
+              >
+                <option value="">Follow site policy (default)</option>
+                <option value="yes">Required — crew must complete &amp; sign an FLRA before activation</option>
+                <option value="no">Not required for this permit</option>
+              </select>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Controls whether the FLRA sub-flow gates the receiver's acceptance.
+                The choice is snapshotted on the permit for audit.
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -9,6 +9,12 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle2, XCircle, UserMinus, Clock, AlertCircle } from "lucide-react";
 import { daysBetween, formatDateTime, cn } from "@/lib/utils";
 import { UserPicker } from "@/components/ui/user-picker";
+import {
+  EvidenceCapture,
+  evidenceComplete,
+  evidencePayload,
+  useEvidenceCapture,
+} from "@/components/ptw/evidence-capture";
 
 type Task = {
   id: string;
@@ -23,7 +29,8 @@ export function ApprovalPanel({
   recordData,
   needsResponsiblePerson,
   plantId,
-  eligibleRoles
+  eligibleRoles,
+  ptwEvidence
 }: {
   task: Task;
   recordData?: Record<string, any>;
@@ -37,6 +44,9 @@ export function ApprovalPanel({
       permission to act on it (which would just result in "Missing
       permission" later). */
   eligibleRoles?: string[];
+  /** PTW closed-loop: when set, approvals must carry field evidence
+      (GPS + signature + photo per policy) — validated server-side too. */
+  ptwEvidence?: { permitId: string; requirePhoto: boolean };
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<"idle" | "approve" | "reject" | "reassign">("idle");
@@ -45,8 +55,15 @@ export function ApprovalPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [responsiblePersonId, setResponsiblePersonId] = useState<string | null>(null);
+  const evidenceState = useEvidenceCapture();
 
   const slaBadge = computeSlaBadge(task.dueAt);
+  const evidenceReady =
+    !ptwEvidence ||
+    evidenceComplete(evidenceState, {
+      requirePhoto: ptwEvidence.requirePhoto,
+      requireDeclaration: false,
+    });
 
   async function submit(action: "approve" | "reject") {
     if (action === "reject" && !reason.trim()) {
@@ -55,6 +72,10 @@ export function ApprovalPanel({
     }
     if (action === "approve" && needsResponsiblePerson && !responsiblePersonId) {
       setError("Please select a Responsible Person before approving.");
+      return;
+    }
+    if (action === "approve" && ptwEvidence && !evidenceReady) {
+      setError("Field evidence is required: GPS fix, signature" + (ptwEvidence.requirePhoto ? " and an onsite photo." : "."));
       return;
     }
     setBusy(true);
@@ -72,7 +93,10 @@ export function ApprovalPanel({
         taskId: task.id,
         comments: comments || undefined,
         reason: action === "reject" ? reason : undefined,
-        recordData: augmentedRecordData
+        recordData: augmentedRecordData,
+        // PTW: evidence rides along on approve (mandatory) and reject
+        // (best-effort — whatever the device could capture).
+        evidence: ptwEvidence ? evidencePayload(evidenceState) : undefined
       })
     });
     setBusy(false);
@@ -82,6 +106,9 @@ export function ApprovalPanel({
       // FastAPI returns errors as {detail}; legacy Node returned {error}.
       const e = await res.json().catch(() => ({}));
       setError(e.error ?? e.detail ?? `Action failed (${res.status})`);
+      // A failed approve used to leave the panel button-less (mode stuck on
+      // "approve") — return to idle so the user can fix the issue and retry.
+      if (action === "approve") setMode("idle");
     }
   }
 
@@ -132,12 +159,25 @@ export function ApprovalPanel({
           />
         </div>
 
+        {ptwEvidence && (
+          <EvidenceCapture
+            permitId={ptwEvidence.permitId}
+            requirePhoto={ptwEvidence.requirePhoto}
+            state={evidenceState}
+          />
+        )}
+
         {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
 
         <div className="flex flex-wrap gap-2">
           {mode === "idle" && (
             <>
-              <Button onClick={() => { setMode("approve"); submit("approve"); }} disabled={busy} variant="success">
+              <Button
+                onClick={() => { setMode("approve"); submit("approve"); }}
+                disabled={busy || (!!ptwEvidence && !evidenceReady)}
+                variant="success"
+                title={ptwEvidence && !evidenceReady ? "Capture GPS, signature and photo first" : undefined}
+              >
                 <CheckCircle2 size={16} /> Approve
               </Button>
               <Button onClick={() => setMode("reject")} disabled={busy} variant="destructive">

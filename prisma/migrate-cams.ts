@@ -261,15 +261,6 @@ async function main() {
     console.log(`\n  Unmapped (${report.unmapped.length}):`);
     for (const u of report.unmapped) console.log(`    • ${u}`);
   }
-  // Analytics history recompute (§9.5 / TC-20). Snapshots + repeat-finding flags
-  // are computed by the Python engine, so after a real run the migrated
-  // engagements/findings must be folded into the analytics history continuously:
-  if (RUN) {
-    console.log("\n  Analytics recompute — run the engine pass so trends stay continuous:");
-    console.log("    (backend) venv/Scripts/python.exe scripts/seed_cams_snapshots.py");
-    console.log("    → detect_repeat_findings() re-flags recurrences incl. migrated findings,");
-    console.log("      precompute_snapshot() rebuilds FY26-Q3/Q4/FY27-Q1 from the merged set.");
-  }
   if (!RUN) console.log("\n  DRY-RUN — nothing written. Re-run with --run to apply, or --revert to undo a prior run.");
   else console.log("\n  Migration applied. Re-run is idempotent; use --revert to undo.");
 }

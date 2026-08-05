@@ -16,6 +16,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 type Site = { id: string; siteName: string; siteCode: string };
 
@@ -225,17 +234,17 @@ export default function GateClearancePage() {
       {/* Site selector */}
       <div className="mb-4">
         <Label htmlFor="site-select" className="text-xs text-slate-600 font-medium">Select Site</Label>
-        <select
+        <Select
           id="site-select"
           value={selectedSiteId}
           onChange={(e) => { setSelectedSiteId(e.target.value); handleClear(); }}
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-cyan-600"
+          className="mt-1 font-medium"
         >
           <option value="">— Select a site —</option>
           {sites.map((s) => (
             <option key={s.id} value={s.id}>{s.siteName} ({s.siteCode})</option>
           ))}
-        </select>
+        </Select>
       </div>
 
       {/* Search form */}
@@ -243,14 +252,14 @@ export default function GateClearancePage() {
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
+            <Input
               ref={inputRef}
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Enter worker code or name..."
               disabled={!selectedSiteId || checking}
-              className="w-full rounded-lg border border-slate-300 bg-white pl-10 pr-4 py-3.5 text-base font-medium focus:outline-none focus:ring-2 focus:ring-cyan-600 disabled:opacity-50 disabled:bg-slate-50"
+              className="pl-10 pr-4 text-base font-medium disabled:bg-slate-50"
             />
           </div>
           <Button
@@ -418,17 +427,17 @@ export default function GateClearancePage() {
             No gate activity today for this site.
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                <th className="px-4 py-2.5">Time</th>
-                <th className="px-4 py-2.5">Worker</th>
-                <th className="px-4 py-2.5">Code</th>
-                <th className="px-4 py-2.5">Result</th>
-                <th className="px-4 py-2.5">Pass No.</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="text-sm">
+            <TableHeader>
+              <TableRow className="bg-slate-50 text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
+                <TableHead>Time</TableHead>
+                <TableHead>Worker</TableHead>
+                <TableHead>Code</TableHead>
+                <TableHead>Result</TableHead>
+                <TableHead>Pass No.</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {gateLog.map((entry) => {
                 const r = entry.result.toLowerCase();
                 const cls =
@@ -436,21 +445,21 @@ export default function GateClearancePage() {
                   : r === "cleared_with_warnings" ? "bg-amber-100 text-amber-800 border-amber-200"
                   : "bg-rose-100 text-rose-800 border-rose-200";
                 return (
-                  <tr key={entry.id} className="border-b last:border-0 hover:bg-slate-50">
-                    <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{fmtDateTime(entry.checkedAt)}</td>
-                    <td className="px-4 py-2.5 font-medium text-slate-900">{entry.workerName}</td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{entry.workerCode}</td>
-                    <td className="px-4 py-2.5">
+                  <TableRow key={entry.id}>
+                    <TableCell className="text-xs text-slate-500 whitespace-nowrap">{fmtDateTime(entry.checkedAt)}</TableCell>
+                    <TableCell className="font-medium text-slate-900">{entry.workerName}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-500">{entry.workerCode}</TableCell>
+                    <TableCell>
                       <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
                         {humanizeStatus(entry.result)}
                       </span>
-                    </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{entry.gatePassNumber ?? "—"}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="font-mono text-xs text-slate-500">{entry.gatePassNumber ?? "—"}</TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </div>
     </div>

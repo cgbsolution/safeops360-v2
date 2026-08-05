@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Archive, FileDown, Plus } from "lucide-react";
 import { statusColor, humanize } from "@/lib/utils";
 import { WorkflowEngine } from "@/lib/workflow/engine";
 import { Can } from "@/components/auth/can";
@@ -20,6 +20,7 @@ const PERMIT_TYPE_COLORS: Record<string, string> = {
   WORK_AT_HEIGHT: "bg-blue-100 text-blue-800 border-blue-200",
   EXCAVATION: "bg-amber-100 text-amber-800 border-amber-200",
   ELECTRICAL_LOTO: "bg-yellow-100 text-yellow-800 border-yellow-200",
+  LIFTING: "bg-teal-100 text-teal-800 border-teal-200",
   GENERAL_COLD: "bg-slate-100 text-slate-800 border-slate-200"
 };
 
@@ -29,6 +30,7 @@ const TYPE_OPTIONS = [
   { code: "WORK_AT_HEIGHT", label: "Work at Height" },
   { code: "EXCAVATION", label: "Excavation" },
   { code: "ELECTRICAL_LOTO", label: "Electrical / LOTO" },
+  { code: "LIFTING", label: "Lifting Operations" },
   { code: "GENERAL_COLD", label: "Cold Work" }
 ];
 
@@ -56,7 +58,7 @@ function permitWorkflowColor(workflowStatus: string | undefined, permitStatus: s
   return statusColor(permitStatus);
 }
 
-export default async function PTWPage(props: { searchParams: Promise<{ type?: string; status?: string }> }) {
+export default async function PTWPage(props: { searchParams: Promise<{ type?: string; status?: string; archived?: string }> }) {
   const searchParams = await props.searchParams;
 
   // Lazy auto-expiry sweep — flips permits whose validTo has passed to EXPIRED
@@ -67,7 +69,13 @@ export default async function PTWPage(props: { searchParams: Promise<{ type?: st
     console.error("PTW expiry sweep failed:", e);
   }
 
-  const where: any = {};
+  // Hide soft-deleted permits (governed-entity delete). The backend filters
+  // these out of its API reads; the frontend reads via Prisma directly, so we
+  // exclude them here in the list + the type/status counts.
+  // Archived permits (closed-loop retention flag) are hidden from the default
+  // register; ?archived=1 shows only the archived ones.
+  const showArchived = searchParams.archived === "1";
+  const where: any = { isDeleted: false, isArchived: showArchived };
   if (searchParams.type) where.type = searchParams.type;
   if (searchParams.status) where.status = searchParams.status;
 
@@ -89,8 +97,8 @@ export default async function PTWPage(props: { searchParams: Promise<{ type?: st
       orderBy: { createdAt: "desc" },
       take: 80
     }),
-    prisma.permit.groupBy({ by: ["type"], _count: true }),
-    prisma.permit.groupBy({ by: ["status"], _count: true })
+    prisma.permit.groupBy({ by: ["type"], where: { isDeleted: false }, _count: true }),
+    prisma.permit.groupBy({ by: ["status"], where: { isDeleted: false }, _count: true })
   ]);
 
   const typeCountMap: Record<string, number> = {};
@@ -142,13 +150,25 @@ export default async function PTWPage(props: { searchParams: Promise<{ type?: st
         title="Permit to Work"
         description="High-risk work authorization with structured approvals and FLRA"
         action={
-          <Can permission="PTW.CREATE">
-            <Button asChild>
-              <Link href="/ptw/new">
-                <Plus size={16} /> New Permit
+          <div className="flex items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <a href="/api/ptw/export/register" target="_blank" rel="noreferrer">
+                <FileDown size={14} /> Export Register
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href={showArchived ? "/ptw" : "/ptw?archived=1"}>
+                <Archive size={14} /> {showArchived ? "Live Permits" : "Archived"}
               </Link>
             </Button>
-          </Can>
+            <Can permission="PTW.CREATE">
+              <Button asChild>
+                <Link href="/ptw/new">
+                  <Plus size={16} /> New Permit
+                </Link>
+              </Button>
+            </Can>
+          </div>
         }
       />
 

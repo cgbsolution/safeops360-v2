@@ -72,7 +72,7 @@ export function fmtInr(v: number | null | undefined): string {
 export type KriOut = {
   id: string; kriCode: string; name: string; description: string;
   categoryId: string; categoryCode: string | null; categoryName: string | null; categoryColor: string | null;
-  linkedRiskIds: string[]; linkedRiskCount: number; unit: string; direction: string; frequency: string;
+  linkedRiskIds: string[]; linkedRiskCount: number; unit: string; direction: string; indicatorType?: string; frequency: string;
   feedType: string; metricProviderKey: string | null; thresholdGreen: number; thresholdAmber: number;
   ownerId: string; ownerName: string | null; isActive: boolean; graceDays: number;
   currentStatus: string; currentValue: number | null; apiToken: string | null;

@@ -81,7 +81,20 @@ const ADDITIONAL_ROLES: { code: string; name: string; description: string; isSys
   // ─── ERM Tier 3 — Controls / Vendor / Insurance specialist roles ─────────
   { code: "CONTROLS_TESTER",     name: "Controls Tester",       description: "Internal-audit / controls function: control library, risk-control mapping, control testing (cannot test own-owned controls), deficiency management.", isSystem: false, sortOrder: 30, defaultLanding: "/erm/controls" },
   { code: "VENDOR_RISK_MANAGER", name: "Vendor Risk Manager",   description: "Owns third-party / vendor risk: onboarding, dual-lens (risk + ESG) assessments, vendor register + ESG portfolio.", isSystem: false, sortOrder: 31, defaultLanding: "/erm/vendors" },
-  { code: "INSURANCE_MANAGER",   name: "Insurance Manager",     description: "Owns insurance & risk transfer: policies, renewals, claims, coverage-gap analysis.", isSystem: false, sortOrder: 32, defaultLanding: "/erm/insurance" }
+  { code: "INSURANCE_MANAGER",   name: "Insurance Manager",     description: "Owns insurance & risk transfer: policies, renewals, claims, coverage-gap analysis.", isSystem: false, sortOrder: 32, defaultLanding: "/erm/insurance" },
+
+  // ─── Facilities — Factory Profile Master & Consolidated Dashboard (§5) ────
+  // Group Compliance Manager (Mervyn's persona) sees ALL factories and edits any
+  // profile. Factory Manager is scoped strictly to their own factory across
+  // every screen (the dashboard auto-filters to their site).
+  { code: "FACILITIES_MANAGER", name: "Group Compliance Manager", description: "Group / facilities compliance leadership. Sees all factory profiles, the consolidated dashboard and benchmarking; creates and edits any profile, buildings, workforce, certifications and contacts.", isSystem: false, sortOrder: 3,  defaultLanding: "/facilities" },
+  { code: "FACTORY_MANAGER",    name: "Factory Manager",          description: "Owns one factory's profile — buildings, workforce, certifications and contacts for their own site only. Dashboard auto-scopes to their factory.", isSystem: false, sortOrder: 34, defaultLanding: "/facilities" },
+
+  // ─── Guided Field Capture — low-literacy field persona ───────────────────
+  // Lands directly on the icon-first capture wizard; sees only their own
+  // reports. Officers triage via CAPTURE.TRIAGE (granted to SAFETY_OFFICER /
+  // HSE_MANAGER below).
+  { code: "FIELD_TECHNICIAN", name: "Field Technician", description: "Field worker persona for the guided capture wizard (icon-first, voice-first, offline-capable). Submits observations / near-misses / unsafe conditions; sees own reports only.", isSystem: false, sortOrder: 108, defaultLanding: "/capture" }
 ];
 
 // ─── Permission catalogue ───────────────────────────────────────────────
@@ -123,7 +136,12 @@ const OPERATIONAL_MODULES = [
   // EXPORT = reports/board pack data. The non-CRUD codes (ASSESS, TREAT,
   // ACCEPT, REVIEW, LINK, BOARD_PACK, TAXONOMY_ADMIN, MATRIX_ADMIN,
   // ROLLUP_ADMIN) are in EXTRA_PERMISSIONS.
-  "ERM"
+  "ERM",
+  // RCA — Cross-Domain Root Cause Analysis (ERM sub-module). CREATE = open an
+  // RCA (event/risk/loss) + edit/submit. READ = register/workspace/analytics/
+  // maps. APPROVE = approve an RCA. The non-CRUD codes (TAG = tag causes / link
+  // risks; TAXONOMY_ADMIN = manage the cause taxonomy) are in EXTRA_PERMISSIONS.
+  "RCA"
 ] as const;
 const OPERATIONAL_ACTIONS = ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"] as const;
 
@@ -133,6 +151,7 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "CONFIGURATION.USERS",       module: "CONFIGURATION", action: "USERS",       description: "Create / edit / disable user accounts" },
   { code: "CONFIGURATION.PERMISSIONS", module: "CONFIGURATION", action: "PERMISSIONS", description: "Edit role × permission matrix" },
   { code: "CONFIGURATION.ROLES",       module: "CONFIGURATION", action: "ROLES",       description: "Create / edit roles and assign role membership" },
+  { code: "LICENSING.MANAGE",          module: "LICENSING",     action: "MANAGE",      description: "View licence diagnostics, upload/renew the licence file, view installation id" },
   { code: "AUDIT.VIEW",                module: "AUDIT",         action: "VIEW",        description: "Read audit log" },
 
   // Inspection masters & finding lifecycle (production-depth refactor)
@@ -166,6 +185,7 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "HIRA.THRESHOLDS_CONFIGURE", module: "HIRA", action: "THRESHOLDS_CONFIGURE", description: "Edit acceptable residual risk thresholds per routine/non-routine/emergency" },
   { code: "HIRA.REVIEW_TRIGGER",    module: "HIRA", action: "REVIEW_TRIGGER",    description: "Manually trigger a review cycle on a HIRA entry" },
   { code: "HIRA.VERSION_VIEW",      module: "HIRA", action: "VERSION_VIEW",      description: "View immutable HiraVersion history and diffs" },
+  { code: "HIRA.OVERRIDE_UNACCEPTABLE", module: "HIRA", action: "OVERRIDE_UNACCEPTABLE", description: "Authorise approval of an Unacceptable (ALARP) residual risk via a time-bounded override — Plant Head / Corporate HSE tier" },
 
   // ─── EAI admin / configuration permissions (HIRA Phase 2) ────────────────
   // CRUD on studies + entries comes free from OPERATIONAL_MODULES.EAI.
@@ -192,6 +212,23 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "CAPA.MASTERS_CONFIGURE",   module: "CAPA", action: "MASTERS_CONFIGURE",   description: "Edit CapaSourceCategory, CapaSubCategory, CapaVerificationMethod, CapaSlaProfile masters" },
   { code: "CAPA.RECURRENCE_CHECK",    module: "CAPA", action: "RECURRENCE_CHECK",    description: "Run / complete the post-closure recurrence check on a CAPA" },
   { code: "CAPA.REASSIGN",            module: "CAPA", action: "REASSIGN",            description: "Reassign primary owner or action owners on a CAPA" },
+
+  // ─── Facilities — Factory Profile Master & Consolidated Dashboard ────────
+  // CRUD on factory profiles + buildings, plus the custom actions that gate the
+  // later-phase tabs (workforce / certifications / contacts), the comparison
+  // view, and the 1:1 site-link configuration. READ also gates the consolidated
+  // dashboard, the per-factory profile, and the live Compliance & Audit tab.
+  { code: "FACILITY.READ",             module: "FACILITY", action: "READ",             description: "View the consolidated facilities dashboard, factory profiles, buildings and the live Compliance & Audit tab" },
+  { code: "FACILITY.CREATE",           module: "FACILITY", action: "CREATE",           description: "Create a factory profile (1:1 with a Site)" },
+  { code: "FACILITY.UPDATE",           module: "FACILITY", action: "UPDATE",           description: "Edit a factory profile and manage its building register" },
+  { code: "FACILITY.DELETE",           module: "FACILITY", action: "DELETE",           description: "Archive a factory profile (soft delete)" },
+  { code: "FACILITY.EXPORT",           module: "FACILITY", action: "EXPORT",           description: "Export facilities reports (factory master, building / workforce / certification registers)" },
+  { code: "FACILITY.WORKFORCE_UPDATE", module: "FACILITY", action: "WORKFORCE_UPDATE", description: "Update workforce composition (permanent/contract split + SA8000 gender lens + child-labour evidence)" },
+  { code: "FACILITY.SOCIAL_UPDATE",     module: "FACILITY", action: "SOCIAL_UPDATE",     description: "Edit the social-compliance (SA8000) profile — wages, working hours, freedom of association, grievance & training" },
+  { code: "FACILITY.CERT_MANAGE",      module: "FACILITY", action: "CERT_MANAGE",      description: "Manage factory certifications (SA8000, WRAP, ISO, SMETA, …) and expiry tracking" },
+  { code: "FACILITY.CONTACT_MANAGE",   module: "FACILITY", action: "CONTACT_MANAGE",   description: "Manage factory contacts (factory manager, safety / compliance / HR officers)" },
+  { code: "FACILITY.COMPARE",          module: "FACILITY", action: "COMPARE",          description: "Use factory comparison / benchmarking" },
+  { code: "FACILITY.SITE_LINK",        module: "FACILITY", action: "SITE_LINK",        description: "Configure the 1:1 Site link and profile review settings" },
 
   // ─── User-initiated AI agent platform (Commit 1) ──────────────────────
   // One INVOKE permission per agent so RBAC can restrict pilots to specific
@@ -235,6 +272,10 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "ERM.TAXONOMY_ADMIN", module: "ERM", action: "TAXONOMY_ADMIN", description: "Manage risk categories + sub-categories (taxonomy admin)" },
   { code: "ERM.MATRIX_ADMIN",   module: "ERM", action: "MATRIX_ADMIN",   description: "Edit the scoring matrix — labels, descriptors, band thresholds" },
   { code: "ERM.ROLLUP_ADMIN",   module: "ERM", action: "ROLLUP_ADMIN",   description: "Manage HSE rollup rules and run aggregation" },
+  // RCA — Cross-Domain Root Cause Analysis & Causal Intelligence (CRUD/APPROVE
+  // come free from OPERATIONAL_MODULES.RCA). These are the non-CRUD codes.
+  { code: "RCA.TAG",            module: "RCA", action: "TAG",            description: "Tag identified causes against the taxonomy + link RCAs to risk(s); raise CAPA" },
+  { code: "RCA.TAXONOMY_ADMIN", module: "RCA", action: "TAXONOMY_ADMIN", description: "Manage the two-layer root-cause taxonomy (categories + sub-causes)" },
 
   // ─── ERM Phase 2 — KRI / Appetite / Compliance / Loss ───────────────────
   { code: "KRI.READ",          module: "KRI", action: "READ",   description: "View KRI dashboards, definitions, readings, breaches" },
@@ -255,6 +296,11 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "LOSS.CLOSE",        module: "LOSS", action: "CLOSE",  description: "Close quantified loss events" },
 
   // ─── CAMS — Compliance & Audit Management System (centralised engine) ────
+  // Raising an audit, split out from AUDIT_COMPLIANCE.CREATE so that "who may
+  // schedule" is its own admin-managed switch. CREATE still gates checkpoint
+  // library import and template custom-checkpoint authoring; restricting
+  // scheduling by revoking CREATE would silently take those away too.
+  { code: "AUDIT_COMPLIANCE.SCHEDULE", module: "AUDIT_COMPLIANCE", action: "SCHEDULE", description: "Schedule (raise) an audit — the Schedule Audit action" },
   { code: "CAMS.READ",             module: "CAMS", action: "READ",             description: "View CAMS engagements, templates, findings, command centre" },
   { code: "CAMS.TYPE_CONFIG",      module: "CAMS", action: "TYPE_CONFIG",      description: "Configure audit types + recurrence rules" },
   { code: "CAMS.TEMPLATE_AUTHOR",  module: "CAMS", action: "TEMPLATE_AUTHOR",  description: "Author / edit / clone checklist templates" },
@@ -294,7 +340,16 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "INSURANCE.READ",     module: "INSURANCE", action: "READ",     description: "View policies, claims, coverage gap, insurance dashboard" },
   { code: "INSURANCE.WRITE",    module: "INSURANCE", action: "WRITE",    description: "Manage policies + renewals" },
   { code: "INSURANCE.CLAIM",    module: "INSURANCE", action: "CLAIM",    description: "Manage insurance claims + loss-event reconciliation" },
-  { code: "INSURANCE.GAP",      module: "INSURANCE", action: "GAP",      description: "Run coverage-gap assessments; raise transfer treatments" }
+  { code: "INSURANCE.GAP",      module: "INSURANCE", action: "GAP",      description: "Run coverage-gap assessments; raise transfer treatments" },
+
+  // ─── Guided Field Capture (low-literacy wizard) + Daily Alert Brief ─────
+  { code: "CAPTURE.CREATE",  module: "CAPTURE", action: "CREATE",  description: "Submit guided field reports (observation / near-miss / unsafe condition / incident) from the capture wizard" },
+  { code: "CAPTURE.READ",    module: "CAPTURE", action: "READ",    description: "View field-report submissions (triage queue / own history by scope)" },
+  { code: "CAPTURE.TRIAGE",  module: "CAPTURE", action: "TRIAGE",  description: "Triage field reports onto the 5x5 matrix; convert to Observation / Near Miss / Incident; reject" },
+  { code: "CAPTURE.UNMASK",  module: "CAPTURE", action: "UNMASK",  description: "Reveal the reporter of an anonymous field report (writes a READ_SENSITIVE audit entry)" },
+  { code: "ALERT.READ",      module: "ALERT",   action: "READ",    description: "View the daily alert brief feed (/dashboard/daily)" },
+  { code: "ALERT.ACK",       module: "ALERT",   action: "ACK",     description: "Acknowledge alert cards (audited)" },
+  { code: "ALERT.MUTE",      module: "ALERT",   action: "MUTE",    description: "Mute non-critical alert cards for 24h" }
 ];
 
 // Default role-permission matrix. scope picks one of:
@@ -349,6 +404,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // acknowledge their own training records.
   // ════════════════════════════════════════════════════════════════════
   WORKER: [
+    // Guided Field Capture — anyone-can-report, same culture as observations
+    { module: "CAPTURE", actions: ["CREATE"], scope: "ALL_PLANTS" },
+    { module: "CAPTURE", actions: ["READ"], scope: "OWN_RECORDS" },
     { module: "MOC", actions: ["READ"], scope: "OWN_DEPARTMENT" }, // MOC §8.1 (view dept changes)
     { module: "SKILL_MATRIX", actions: ["READ"], scope: "OWN_RECORDS" }, // Skill Matrix §8.1 (view own)
     // Observation: C=ALL, R/U/EX=OWN
@@ -375,6 +433,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // the worker's department. The READ permission with OWN_DEPARTMENT
     // scope is the closest fit.
     { module: "HIRA",        actions: ["READ"],                              scope: "OWN_DEPARTMENT" },
+    // Audit & Compliance — auditee: read audits with checkpoints routed to
+    // them and respond on their own checkpoints (audit lifecycle A-05/A-06).
+    { module: "AUDIT_COMPLIANCE", actions: ["READ", "UPDATE"],              scope: "OWN_RECORDS" },
     { module: "AGENT",       actions: ["RCA_INVOKE"],                       scope: "OWN_RECORDS" }
   ],
   CONTRACTOR_WORKMAN: [
@@ -394,6 +455,14 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // Supervisor — frontline; raises FLRA + low-risk PTW; approves
   // observations within own department.
   // ════════════════════════════════════════════════════════════════════
+  // ════════════════════════════════════════════════════════════════════
+  // Field Technician — the low-literacy capture persona. Wizard + own
+  // history only; no triage, no dashboards.
+  // ════════════════════════════════════════════════════════════════════
+  FIELD_TECHNICIAN: [
+    { module: "CAPTURE", actions: ["CREATE"], scope: "OWN_PLANT" },
+    { module: "CAPTURE", actions: ["READ"], scope: "OWN_RECORDS" },
+  ],
   SUPERVISOR: [
     { module: "MOC", actions: ["CREATE", "READ", "UPDATE"], scope: "OWN_DEPARTMENT" }, // MOC — raise minor changes
     { module: "SKILL_MATRIX", actions: ["READ", "ASSESS", "EXECUTE"], scope: "OWN_DEPARTMENT" }, // Skill Matrix §8.1
@@ -428,6 +497,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "HIRA",        actions: ["READ"],                              scope: "OWN_DEPARTMENT" },
     { module: "HIRA",        actions: ["UPDATE"],                            scope: "OWN_RECORDS" },
     { module: "HIRA",        actions: ["REVIEW_TRIGGER"],                    scope: "OWN_DEPARTMENT" },
+    // Audit & Compliance — auditee: respond on own checkpoints.
+    { module: "AUDIT_COMPLIANCE", actions: ["READ", "UPDATE"],              scope: "OWN_RECORDS" },
     { module: "AGENT",       actions: ["RCA_INVOKE", "PERMIT_REVIEW_INVOKE", "TRIAGE_INVOKE", "HIRA_INVOKE", "CAPA_INVOKE"], scope: "OWN_PLANT" }
   ],
   // ════════════════════════════════════════════════════════════════════
@@ -464,6 +535,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // Safety Officer — Safety step approver + final close on PTW.
   // ════════════════════════════════════════════════════════════════════
   SAFETY_OFFICER: [
+    // Guided Field Capture triage + Daily Alert Brief
+    { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "OWN_PLANT" },
+    { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },
     // Observation: C=ALL, R/AP/VR/EXP=PLANT, U/EX=OWN
     { module: "OBSERVATION", actions: ["CREATE"],                            scope: "ALL_PLANTS" },
     { module: "OBSERVATION", actions: ["READ", "APPROVE", "VERIFY", "EXPORT"], scope: "OWN_PLANT" },
@@ -501,7 +575,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // lets them add tenant-specific hazards/controls for their plant.
     { module: "HIRA",        actions: ["CREATE", "READ", "EXPORT"],          scope: "OWN_PLANT" },
     { module: "HIRA",        actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
-    { module: "HIRA",        actions: ["REVIEW_TRIGGER", "VERSION_VIEW", "LIBRARY_MANAGE"], scope: "OWN_PLANT" }
+    { module: "HIRA",        actions: ["REVIEW_TRIGGER", "VERSION_VIEW", "LIBRARY_MANAGE"], scope: "OWN_PLANT" },
+    // Audit & Compliance — Safety Officer is a frequent auditee; reads routed
+    // audits and responds on own checkpoints.
+    { module: "AUDIT_COMPLIANCE", actions: ["READ", "UPDATE"],              scope: "OWN_RECORDS" }
   ],
   // ════════════════════════════════════════════════════════════════════
   // Department Head — department-scoped approval authority.
@@ -533,6 +610,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // can close low-severity, approve action plans for own-dept CAPAs.
     { module: "CAPA",        actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "APPROVE", "EXPORT"], scope: "OWN_DEPARTMENT" },
     { module: "CAPA",        actions: ["CLOSE"],                             scope: "OWN_DEPARTMENT" },
+    // Audit & Compliance — Department Head is an auditee for their area; reads
+    // routed audits and responds on own checkpoints.
+    { module: "AUDIT_COMPLIANCE", actions: ["READ", "UPDATE"],              scope: "OWN_RECORDS" },
     { module: "AGENT",       actions: ["RCA_INVOKE", "PERMIT_REVIEW_INVOKE", "TRIAGE_INVOKE", "HIRA_INVOKE", "CAPA_INVOKE"], scope: "OWN_DEPARTMENT" }
   ],
   // ════════════════════════════════════════════════════════════════════
@@ -547,15 +627,25 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // records at any plant during site visits; all other actions are OWN_PLANT.
   // ════════════════════════════════════════════════════════════════════
   HSE_MANAGER: [
+    // Guided Field Capture triage + Daily Alert Brief
+    { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "OWN_PLANT" },
+    { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },
     // ── Operational Safety ──────────────────────────────────────────
-    { module: "OBSERVATION",  actions: ["CREATE"],                                                                                             scope: "ALL_PLANTS" },
-    { module: "OBSERVATION",  actions: ["READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],                       scope: "OWN_PLANT" },
-    { module: "NEAR_MISS",    actions: ["CREATE"],                                                                                             scope: "ALL_PLANTS" },
-    { module: "NEAR_MISS",    actions: ["READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],                       scope: "OWN_PLANT" },
-    { module: "INCIDENT",     actions: ["CREATE"],                                                                                             scope: "ALL_PLANTS" },
-    { module: "INCIDENT",     actions: ["READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],                       scope: "OWN_PLANT" },
-    { module: "PTW",          actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],              scope: "OWN_PLANT" },
-    { module: "FLRA",         actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],              scope: "OWN_PLANT" },
+    // View / edit / delete of raised records are elevated to ALL_PLANTS so HSE
+    // leadership can act on any originator's record group-wide (any plant).
+    // CREATE on OBS/NM/INCIDENT is already ALL_PLANTS (site-visit reporting).
+    // Approve/execute/verify/close/export stay OWN_PLANT — cross-plant workflow
+    // ownership sits with CORPORATE_HSE.
+    { module: "OBSERVATION",  actions: ["CREATE", "READ", "UPDATE", "DELETE"],                                                                 scope: "ALL_PLANTS" },
+    { module: "OBSERVATION",  actions: ["APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"],                                                    scope: "OWN_PLANT" },
+    { module: "NEAR_MISS",    actions: ["CREATE", "READ", "UPDATE", "DELETE"],                                                                 scope: "ALL_PLANTS" },
+    { module: "NEAR_MISS",    actions: ["APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"],                                                    scope: "OWN_PLANT" },
+    { module: "INCIDENT",     actions: ["CREATE", "READ", "UPDATE", "DELETE"],                                                                 scope: "ALL_PLANTS" },
+    { module: "INCIDENT",     actions: ["APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"],                                                    scope: "OWN_PLANT" },
+    { module: "PTW",          actions: ["READ", "UPDATE", "DELETE"],                                                                           scope: "ALL_PLANTS" },
+    { module: "PTW",          actions: ["CREATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"],                                          scope: "OWN_PLANT" },
+    { module: "FLRA",         actions: ["READ", "UPDATE", "DELETE"],                                                                           scope: "ALL_PLANTS" },
+    { module: "FLRA",         actions: ["CREATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"],                                          scope: "OWN_PLANT" },
     { module: "EPC",          actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "GATE_OVERRIDE", "INDUCTION_CONDUCT", "MOBILIZATION_APPROVE", "PREQUALIFY"], scope: "OWN_PLANT" },
     // ── Inspection ──────────────────────────────────────────────────
     { module: "INSPECTION",         actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT", "SCHEDULE", "REASSIGN"], scope: "OWN_PLANT" },
@@ -566,6 +656,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Risk Management ─────────────────────────────────────────────
     { module: "HIRA",         actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],              scope: "OWN_PLANT" },
     { module: "HIRA",         actions: ["LIBRARY_MANAGE", "MATRIX_CONFIGURE", "THRESHOLDS_CONFIGURE", "REVIEW_TRIGGER", "VERSION_VIEW"],       scope: "OWN_PLANT" },
+    // Cross-Domain RCA — HSE investigator exposes/tags/approves operational
+    // (event-derived) RCAs at own plant; reads analytics across the enterprise.
+    { module: "RCA",          actions: ["READ"],                                                                                              scope: "ALL_PLANTS" },
+    { module: "RCA",          actions: ["CREATE", "UPDATE", "APPROVE", "EXPORT", "TAG"],                                                       scope: "OWN_PLANT" },
     { module: "EAI",          actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],              scope: "OWN_PLANT" },
     { module: "EAI",          actions: ["REVIEW_TRIGGER", "VERSION_VIEW", "COMPLIANCE_REPORT", "LIBRARY_MANAGE", "MATRIX_CONFIGURE", "SIGNIFICANCE_CONFIGURE", "FEATURE_FLAG_TOGGLE"], scope: "OWN_PLANT" },
     { module: "RISK",         actions: ["COMBINED_VIEW", "DASHBOARD_VIEW", "DASHBOARD_EXPORT"],                                                scope: "OWN_PLANT" },
@@ -575,10 +669,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Change Management ────────────────────────────────────────────
     { module: "MOC",          actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],              scope: "OWN_PLANT" },
     // ── Audit & Compliance ──────────────────────────────────────────
-    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"],                    scope: "OWN_PLANT" },
+    // SCHEDULE is currently held ONLY by HSE Manager + ADMIN / SYSTEM_ADMIN.
+    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "SCHEDULE"],        scope: "OWN_PLANT" },
     { module: "AUDIT",        actions: ["VIEW"],                                                                                              scope: "OWN_PLANT" },
-    // Statutory obligations register — HSE managers own plant statutory compliance.
-    { module: "COMPLIANCE",   actions: ["READ", "MANAGE"],                                                                                    scope: "OWN_PLANT" },
     // ── PPE ──────────────────────────────────────────────────────────
     { module: "PPE",          actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "ISSUE", "INSPECT", "CATALOG_MANAGE", "RETIRE_APPROVE", "RECALL_MANAGE"], scope: "OWN_PLANT" },
     // ── Training & Competency ────────────────────────────────────────
@@ -590,6 +683,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "AGENT",        actions: ["RCA_INVOKE", "PERMIT_REVIEW_INVOKE", "TRIAGE_INVOKE", "HIRA_INVOKE", "CAPA_INVOKE", "AUDIT_VIEW", "PROMPT_EDIT", "RCA_CONFIGURE"], scope: "OWN_PLANT" },
     // ── CAMS — HSE managers conduct audits & inspections on the central engine ──
     { module: "CAMS",         actions: ["READ", "TEMPLATE_AUTHOR", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" },
+    // ── Facilities — full factory-level data entry + the consolidated estate.
+    // ALL_PLANTS because the consolidated dashboard is inherently group-level
+    // (factories live on their own Sites/plants, not the user's home plant).
+    { module: "FACILITY",     actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "SITE_LINK"], scope: "ALL_PLANTS" },
   ],
   // ════════════════════════════════════════════════════════════════════
   // Plant Head — plant-wide oversight + final approver on high-risk.
@@ -598,8 +695,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // this as "—" for clarity; OWN_RECORDS is the operational equivalent.
   // ════════════════════════════════════════════════════════════════════
   PLANT_HEAD: [
+    // Field-report visibility + Daily Alert Brief
+    { module: "CAPTURE", actions: ["READ"], scope: "OWN_PLANT" },
+    { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },
     { module: "MOC", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"], scope: "OWN_PLANT" }, // MOC — full, up to critical
-    { module: "COMPLIANCE", actions: ["READ", "MANAGE"], scope: "OWN_PLANT" }, // Statutory obligations register — plant-wide oversight
     { module: "SKILL_MATRIX", actions: ["READ", "APPROVE_OVERRIDE", "RECERT_CYCLE", "EXPORT", "COMPETENCY_CONFIGURE", "ROLE_DEF_CONFIGURE", "ASSESS", "SUSPEND", "CROSS_PERSON_VIEW", "VERSION_VIEW"], scope: "OWN_PLANT" }, // Skill Matrix §8.1 (full, own plant)
     // Observation
     { module: "OBSERVATION", actions: ["CREATE"],                            scope: "ALL_PLANTS" },
@@ -629,7 +728,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // HIRA — Plant Head is the final approver on plant-scope studies.
     // R/U/AP/CL/EXP=PLANT; REVIEW_TRIGGER+VERSION_VIEW=PLANT.
     { module: "HIRA",        actions: ["READ", "UPDATE", "APPROVE", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
-    { module: "HIRA",        actions: ["REVIEW_TRIGGER", "VERSION_VIEW"],    scope: "OWN_PLANT" },
+    { module: "HIRA",        actions: ["REVIEW_TRIGGER", "VERSION_VIEW", "OVERRIDE_UNACCEPTABLE"], scope: "OWN_PLANT" },
     // CAPA — Plant Head closes high/critical CAPAs across all sources at
     // their plant. Has cross-source view by default.
     { module: "CAPA",        actions: ["READ", "UPDATE", "APPROVE", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
@@ -644,7 +743,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // CLOSE); can also schedule / conduct on own plant.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "APPROVE", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
     // ── CAMS — Plant Head: oversight + schedule/close on own plant ──
-    { module: "CAMS",        actions: ["READ", "SCHEDULE", "CLOSE", "ANALYTICS"], scope: "OWN_PLANT" }
+    { module: "CAMS",        actions: ["READ", "SCHEDULE", "CLOSE", "ANALYTICS"], scope: "OWN_PLANT" },
+    // ── Facilities — consolidated estate view + full profile management.
+    // ALL_PLANTS so the group dashboard populates (factories sit on their own Sites).
+    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "SITE_LINK"], scope: "ALL_PLANTS" }
   ],
   // ════════════════════════════════════════════════════════════════════
   // Corporate HSE — cross-plant governance. Per matrix: never EXECUTES
@@ -652,6 +754,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // Inspection/Manhours. Has DELETE on Observation + Near Miss only.
   // ════════════════════════════════════════════════════════════════════
   CORPORATE_HSE: [
+    // Field-report visibility + Daily Alert Brief (multi-site rollup)
+    { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "ALL_PLANTS" },
+    { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "ALL_PLANTS" },
     { module: "MOC", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"], scope: "ALL_PLANTS" }, // MOC — all plants, critical authority
     { module: "SKILL_MATRIX", actions: ["READ", "APPROVE_OVERRIDE", "RECERT_CYCLE", "EXPORT", "COMPETENCY_CONFIGURE", "ROLE_DEF_CONFIGURE", "ASSESS", "SUSPEND", "CROSS_PERSON_VIEW", "VERSION_VIEW"], scope: "ALL_PLANTS" }, // Skill Matrix §8.1 (full, all plants)
     // Observation: ALL except EX
@@ -686,7 +791,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // configure matrices and hazard library across all plants, view all
     // versions.
     { module: "HIRA",        actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"], scope: "ALL_PLANTS" },
-    { module: "HIRA",        actions: ["MATRIX_CONFIGURE", "LIBRARY_MANAGE", "THRESHOLDS_CONFIGURE", "REVIEW_TRIGGER", "VERSION_VIEW"], scope: "ALL_PLANTS" },
+    { module: "HIRA",        actions: ["MATRIX_CONFIGURE", "LIBRARY_MANAGE", "THRESHOLDS_CONFIGURE", "REVIEW_TRIGGER", "VERSION_VIEW", "OVERRIDE_UNACCEPTABLE"], scope: "ALL_PLANTS" },
     // CAPA — cross-plant governance. Owns master configuration cross-plant.
     { module: "CAPA",        actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"], scope: "ALL_PLANTS" },
     { module: "CAPA",        actions: ["CROSS_SOURCE_VIEW", "PATTERN_LINK", "MASTERS_CONFIGURE", "RECURRENCE_CHECK", "REASSIGN"], scope: "ALL_PLANTS" },
@@ -815,6 +920,12 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // ════════════════════════════════════════════════════════════════════
   ADMIN: [
     ...OPERATIONAL_MODULES.map((m) => ({ module: m, actions: [...OPERATIONAL_ACTIONS], scope: "ALL_PLANTS" as Scope })),
+    // Guided Field Capture + Daily Alert Brief (UNMASK is admin-only per spec)
+    { module: "CAPTURE", actions: ["CREATE", "READ", "TRIAGE", "UNMASK"], scope: "ALL_PLANTS" },
+    { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "ALL_PLANTS" },
+    // AUDIT_COMPLIANCE.SCHEDULE is an EXTRA permission, so the
+    // OPERATIONAL_ACTIONS spread above does not cover it — grant it explicitly.
+    { module: "AUDIT_COMPLIANCE", actions: ["SCHEDULE"], scope: "ALL_PLANTS" },
     // Skill Matrix non-CRUD (CRUD comes from the spread above)
     { module: "SKILL_MATRIX", actions: ["COMPETENCY_CONFIGURE", "ROLE_DEF_CONFIGURE", "ASSESS", "SUSPEND", "APPROVE_OVERRIDE", "RECERT_CYCLE", "CROSS_PERSON_VIEW", "VERSION_VIEW"], scope: "ALL_PLANTS" },
     { module: "INSPECTION",         actions: ["SCHEDULE", "REASSIGN"],                          scope: "ALL_PLANTS" },
@@ -823,11 +934,14 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "EQUIPMENT_MASTER",   actions: ["CREATE", "READ", "UPDATE", "DELETE"],            scope: "ALL_PLANTS" },
     { module: "INSPECTION_FINDING", actions: ["READ", "UPDATE", "CLOSE", "VERIFY", "DEFER"],    scope: "ALL_PLANTS" },
     { module: "CONFIGURATION", actions: ["MASTERS", "WORKFLOWS", "USERS", "PERMISSIONS", "ROLES"], scope: "ALL_PLANTS" },
+    { module: "LICENSING",   actions: ["MANAGE"], scope: "ALL_PLANTS" },
     { module: "AUDIT",       actions: ["VIEW"], scope: "ALL_PLANTS" },
     { module: "AGENT",       actions: ["RCA_INVOKE", "PERMIT_REVIEW_INVOKE", "TRIAGE_INVOKE", "HIRA_INVOKE", "CAPA_INVOKE", "RCA_CONFIGURE", "AUDIT_VIEW", "PROMPT_EDIT"], scope: "ALL_PLANTS" },
-    { module: "HIRA",        actions: ["MATRIX_CONFIGURE", "LIBRARY_MANAGE", "THRESHOLDS_CONFIGURE", "REVIEW_TRIGGER", "VERSION_VIEW"], scope: "ALL_PLANTS" },
+    { module: "HIRA",        actions: ["MATRIX_CONFIGURE", "LIBRARY_MANAGE", "THRESHOLDS_CONFIGURE", "REVIEW_TRIGGER", "VERSION_VIEW", "OVERRIDE_UNACCEPTABLE"], scope: "ALL_PLANTS" },
     { module: "CAPA",        actions: ["CROSS_SOURCE_VIEW", "PATTERN_LINK", "MASTERS_CONFIGURE", "RECURRENCE_CHECK", "REASSIGN"], scope: "ALL_PLANTS" },
     { module: "ERM",         actions: ["ASSESS", "TREAT", "ACCEPT", "REVIEW", "LINK", "BOARD_PACK", "TAXONOMY_ADMIN", "MATRIX_ADMIN", "ROLLUP_ADMIN"], scope: "ALL_PLANTS" },
+    // RCA non-CRUD (CRUD/APPROVE come from the OPERATIONAL_MODULES spread above)
+    { module: "RCA",         actions: ["TAG", "TAXONOMY_ADMIN"], scope: "ALL_PLANTS" },
     { module: "KRI",         actions: ["READ", "ADMIN", "ENTER", "ACK"], scope: "ALL_PLANTS" },
     { module: "APPETITE",    actions: ["READ"], scope: "ALL_PLANTS" },
     { module: "COMPLIANCE",  actions: ["READ", "MANAGE"], scope: "ALL_PLANTS" },
@@ -835,7 +949,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "BCM",         actions: ["READ"], scope: "ALL_PLANTS" },
     { module: "CRISIS",      actions: ["ADMIN"], scope: "ALL_PLANTS" },
     // CAMS — full audit/inspection authority cross-site.
-    { module: "CAMS",        actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" }
+    { module: "CAMS",        actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
+    // Facilities — full factory-profile authority cross-site.
+    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK"], scope: "ALL_PLANTS" }
   ],
   // ════════════════════════════════════════════════════════════════════
   // CAPA generalization — 6 new roles. Each is source-scoped by default
@@ -891,12 +1007,19 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   ],
   SYSTEM_ADMIN: [
     ...OPERATIONAL_MODULES.map((m) => ({ module: m, actions: [...OPERATIONAL_ACTIONS], scope: "ALL_PLANTS" as Scope })),
+    // Guided Field Capture + Daily Alert Brief (UNMASK is admin-only per spec)
+    { module: "CAPTURE", actions: ["CREATE", "READ", "TRIAGE", "UNMASK"], scope: "ALL_PLANTS" },
+    { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "ALL_PLANTS" },
+    // AUDIT_COMPLIANCE.SCHEDULE is an EXTRA permission, so the
+    // OPERATIONAL_ACTIONS spread above does not cover it — grant it explicitly.
+    { module: "AUDIT_COMPLIANCE", actions: ["SCHEDULE"], scope: "ALL_PLANTS" },
     { module: "INSPECTION",         actions: ["SCHEDULE", "REASSIGN"],                          scope: "ALL_PLANTS" },
     { module: "INSPECTION_TYPE",    actions: ["CREATE", "READ", "UPDATE", "DELETE"],            scope: "ALL_PLANTS" },
     { module: "CHECKLIST_TEMPLATE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "DELETE"], scope: "ALL_PLANTS" },
     { module: "EQUIPMENT_MASTER",   actions: ["CREATE", "READ", "UPDATE", "DELETE"],            scope: "ALL_PLANTS" },
     { module: "INSPECTION_FINDING", actions: ["READ", "UPDATE", "CLOSE", "VERIFY", "DEFER"],    scope: "ALL_PLANTS" },
     { module: "CONFIGURATION", actions: ["MASTERS", "WORKFLOWS", "USERS", "PERMISSIONS", "ROLES"], scope: "ALL_PLANTS" },
+    { module: "LICENSING",   actions: ["MANAGE"], scope: "ALL_PLANTS" },
     { module: "AUDIT",       actions: ["VIEW"], scope: "ALL_PLANTS" },
     { module: "AGENT",       actions: ["RCA_INVOKE", "PERMIT_REVIEW_INVOKE", "TRIAGE_INVOKE", "HIRA_INVOKE", "CAPA_INVOKE", "RCA_CONFIGURE", "AUDIT_VIEW", "PROMPT_EDIT"], scope: "ALL_PLANTS" },
     // EAI + Risk admin (HIRA Phase 2)
@@ -904,6 +1027,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "RISK",        actions: ["COMBINED_VIEW", "DASHBOARD_VIEW", "DASHBOARD_EXPORT"], scope: "ALL_PLANTS" },
     // ERM admin — taxonomy / matrix / rollup configuration (CRUD comes from the spread above)
     { module: "ERM",         actions: ["ASSESS", "TREAT", "ACCEPT", "REVIEW", "LINK", "BOARD_PACK", "TAXONOMY_ADMIN", "MATRIX_ADMIN", "ROLLUP_ADMIN"], scope: "ALL_PLANTS" },
+    // RCA non-CRUD (CRUD/APPROVE come from the OPERATIONAL_MODULES spread above)
+    { module: "RCA",         actions: ["TAG", "TAXONOMY_ADMIN"], scope: "ALL_PLANTS" },
     // Phase 2/3 admin — KRI admin + reads, BCM dashboards + crisis team admin
     { module: "KRI",         actions: ["READ", "ADMIN", "ENTER", "ACK"], scope: "ALL_PLANTS" },
     { module: "APPETITE",    actions: ["READ"], scope: "ALL_PLANTS" },
@@ -917,7 +1042,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "INSURANCE",   actions: ["READ"], scope: "ALL_PLANTS" },
     // Skill Matrix governance (config only; no ASSESS/SUSPEND — admin governs, doesn't operate)
     { module: "SKILL_MATRIX", actions: ["COMPETENCY_CONFIGURE", "ROLE_DEF_CONFIGURE", "ASSESS", "SUSPEND", "APPROVE_OVERRIDE", "RECERT_CYCLE", "CROSS_PERSON_VIEW", "VERSION_VIEW"], scope: "ALL_PLANTS" },
-    { module: "CAMS",        actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" }
+    { module: "CAMS",        actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
+    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK"], scope: "ALL_PLANTS" }
   ],
   // ════════════════════════════════════════════════════════════════════
   // Skill Matrix — 2 new roles (Phase 1 IMS). Grants per spec §8.1.
@@ -944,6 +1070,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // ════════════════════════════════════════════════════════════════════
   CRO: [
     { module: "ERM",  actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "CLOSE", "EXPORT", "ASSESS", "TREAT", "ACCEPT", "REVIEW", "LINK", "BOARD_PACK", "TAXONOMY_ADMIN", "MATRIX_ADMIN", "ROLLUP_ADMIN"], scope: "ALL_PLANTS" },
+    // Cross-Domain RCA — full authority incl. approval + taxonomy admin (committee/CRO governs the cause taxonomy + cross-domain analytics).
+    { module: "RCA",  actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXPORT", "TAG", "TAXONOMY_ADMIN"], scope: "ALL_PLANTS" },
     // Phase 2 — full KRI/appetite governance; manages+attests compliance (not verify/waive); full loss lifecycle
     { module: "KRI",        actions: ["READ", "ADMIN", "ENTER", "ACK"], scope: "ALL_PLANTS" },
     { module: "APPETITE",   actions: ["READ", "AUTHOR", "APPROVE", "DECIDE"], scope: "ALL_PLANTS" },
@@ -972,6 +1100,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   ],
   RISK_CHAMPION: [
     { module: "ERM",  actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXPORT", "ASSESS", "TREAT", "REVIEW", "LINK", "BOARD_PACK"], scope: "ALL_PLANTS" },
+    // Cross-Domain RCA — analyst/facilitator: opens RCAs, tags causes, links risks, views analytics (no approve / no taxonomy admin).
+    { module: "RCA",  actions: ["CREATE", "READ", "UPDATE", "EXPORT", "TAG"], scope: "ALL_PLANTS" },
     // Phase 2 — KRI admin + entry + ack; drafts appetite; reads compliance; full loss create/close
     { module: "KRI",        actions: ["READ", "ADMIN", "ENTER", "ACK"], scope: "ALL_PLANTS" },
     { module: "APPETITE",   actions: ["READ", "AUTHOR"], scope: "ALL_PLANTS" },
@@ -998,6 +1128,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "ERM",  actions: ["CREATE"], scope: "ALL_PLANTS" },
     { module: "ERM",  actions: ["READ"], scope: "OWN_PLANT" },
     { module: "ERM",  actions: ["UPDATE", "ASSESS", "TREAT", "REVIEW", "LINK"], scope: "OWN_RECORDS" },
+    // Cross-Domain RCA — owner opens risk/loss RCAs on their risks, tags + links, approves; reads analytics across the enterprise.
+    { module: "RCA",  actions: ["READ"], scope: "ALL_PLANTS" },
+    { module: "RCA",  actions: ["CREATE", "UPDATE", "APPROVE", "EXPORT", "TAG"], scope: "ALL_PLANTS" },
     { module: "RISK", actions: ["DASHBOARD_VIEW"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXECUTE"], scope: "OWN_PLANT" },
     // Phase 2 — KRI read + own readings/ack; reads appetite; attests own compliance; own loss create
@@ -1012,6 +1145,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   EXECUTIVE_VIEWER: [
     // Board persona — read-only dashboards, heat maps, published board packs.
     { module: "ERM",  actions: ["READ", "EXPORT"], scope: "ALL_PLANTS" },
+    // Cross-Domain RCA — read-only causal analytics + maps for the board view.
+    { module: "RCA",  actions: ["READ", "EXPORT"], scope: "ALL_PLANTS" },
     { module: "RISK", actions: ["COMBINED_VIEW", "DASHBOARD_VIEW"], scope: "ALL_PLANTS" },
     // Phase 2 — read-only across KRI/appetite/compliance/loss
     { module: "KRI",        actions: ["READ"], scope: "ALL_PLANTS" },
@@ -1053,6 +1188,9 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "LOSS",       actions: ["READ"], scope: "ALL_PLANTS" },
     { module: "ERM",        actions: ["READ"], scope: "ALL_PLANTS" },
     { module: "CAPA",       actions: ["CREATE", "READ"], scope: "ALL_PLANTS" },
+    // Cross-Domain RCA — compliance lead opens/tags/approves compliance RCAs;
+    // analytics are domain-scoped to COMPLIANCE in the router (RCA-T16).
+    { module: "RCA",        actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXPORT", "TAG"], scope: "ALL_PLANTS" },
     // CAMS — compliance-assurance view: reads audit programme + analytics.
     { module: "CAMS",       actions: ["READ", "ANALYTICS"], scope: "ALL_PLANTS" },
     // Tier 3 — assesses vendors on the ESG lens (value-chain ESG); reads the vendor register
@@ -1097,26 +1235,66 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // CAMS — Compliance & Audit Management System. §7 RBAC matrix. CAPA on
   // the AUDIT source flows through the universal CAPA engine (CAPA.CREATE).
   // ════════════════════════════════════════════════════════════════════
+  // NOTE: audits under CAMS run on the ComplianceAudit engine (/cams/audits),
+  // which is gated on AUDIT_COMPLIANCE.* — NOT on CAMS.*. CAMS.* only covers
+  // the inspection engine, templates, programme and analytics. So every
+  // auditor-class role needs BOTH module grants or it 403s on the audit
+  // register, the conduct screen and my-checkpoints (and the sidebar hides
+  // "Audits" / "My Checkpoints", which gate on AUDIT_COMPLIANCE.READ).
   CAMS_ADMIN: [
     { module: "CAMS", actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT", "CROSS_SOURCE_VIEW"], scope: "ALL_PLANTS" },
     { module: "COMPLIANCE", actions: ["READ"], scope: "ALL_PLANTS" }
   ],
   AUDIT_MANAGER: [
     // Owns the audit programme cross-site; authors + approves templates; benchmarking.
     { module: "CAMS", actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT", "CROSS_SOURCE_VIEW"], scope: "ALL_PLANTS" },
     { module: "COMPLIANCE", actions: ["READ"], scope: "ALL_PLANTS" }
   ],
   LEAD_AUDITOR: [
     // Own-site engagements (router/own-plant scope); authors templates; raises CAPAs.
     { module: "CAMS", actions: ["READ", "TEMPLATE_AUTHOR", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" },
+    // Audit engine: schedules (CREATE), allocates checkpoints + adds disciplines
+    // (UPDATE), conducts (EXECUTE), closes own engagements (CLOSE), issues
+    // reports (EXPORT). No APPROVE — plant-manager review of auditee responses
+    // is the segregation-of-duties counterparty, not the lead auditor.
+    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT"], scope: "OWN_PLANT" }
   ],
   AUDITOR: [
     // Executes assigned engagements; records findings; raises CAPAs; own-audit analytics.
     { module: "CAMS", actions: ["READ", "EXECUTE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" },
+    // Conducts only — no scheduling, no close. The per-audit record guard
+    // (_auditor_record) still restricts EXECUTE to audits they are on.
+    { module: "AUDIT_COMPLIANCE", actions: ["READ", "EXECUTE", "EXPORT"], scope: "OWN_PLANT" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE"], scope: "OWN_PLANT" }
+  ],
+  // ════════════════════════════════════════════════════════════════════
+  // Facilities — Factory Profile Master & Consolidated Dashboard. §5 RBAC
+  // matrix. The consolidated dashboard reads live operational data per site
+  // from the existing engines, so the personas also hold scoped READ on
+  // CAMS / CAPA / AUDIT_COMPLIANCE / INCIDENT for the Compliance & Audit tab.
+  // ════════════════════════════════════════════════════════════════════
+  FACILITIES_MANAGER: [
+    // Group view — sees and edits every factory cross-site.
+    { module: "FACILITY",         actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK"], scope: "ALL_PLANTS" },
+    // Live drill-down into the operational engines (read-only).
+    { module: "CAMS",             actions: ["READ", "ANALYTICS"], scope: "ALL_PLANTS" },
+    { module: "CAPA",             actions: ["READ"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["READ"], scope: "ALL_PLANTS" },
+    { module: "INCIDENT",         actions: ["READ"], scope: "ALL_PLANTS" },
+    { module: "COMPLIANCE",       actions: ["READ"], scope: "ALL_PLANTS" }
+  ],
+  FACTORY_MANAGER: [
+    // Strictly own factory across every screen (dashboard auto-scopes to site).
+    { module: "FACILITY",         actions: ["READ", "CREATE", "UPDATE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE"], scope: "OWN_PLANT" },
+    { module: "CAMS",             actions: ["READ"], scope: "OWN_PLANT" },
+    { module: "CAPA",             actions: ["READ"], scope: "OWN_PLANT" },
+    { module: "AUDIT_COMPLIANCE", actions: ["READ"], scope: "OWN_PLANT" },
+    { module: "INCIDENT",         actions: ["READ"], scope: "OWN_PLANT" }
   ]
 };
 
@@ -1239,9 +1417,9 @@ async function main() {
     }
   }
 
-  // Cross-plant UserRole entries for Page Industries (NW + SW).
+  // Cross-plant UserRole entries for Meridian Manufacturing (NW + SW).
   // NW users get a role entry for SW and vice-versa so getAccessiblePlantIds()
-  // returns both plants for any Page Industries user (HSE Manager, Plant Head, etc.),
+  // returns both plants for any Meridian user (HSE Manager, Plant Head, etc.),
   // while industry-tenant users keep single-plant scope.
   const nwPlant = await prisma.plant.findUnique({ where: { code: "NW" } });
   const swPlant = await prisma.plant.findUnique({ where: { code: "SW" } });

@@ -56,7 +56,7 @@ function cp(c: Checkpoint): Checkpoint {
   };
 }
 
-// ── APPAREL / GARMENT library ───────────────────────────────────────────
+// ── GARMENTS / TEXTILE library ──────────────────────────────────────────
 const GARMENTS_CATEGORIES: Category[] = [
   {
     category_code: "FIRE-LIFE-SAFETY",
@@ -72,7 +72,7 @@ const GARMENTS_CATEGORIES: Category[] = [
       cp({ code: "GT-FS-005", question: "Have all workers received fire safety training in the last 12 months?", linked_safeops_module: "training", criticality: "major" }),
       cp({ code: "GT-FS-006", question: "Has a fire evacuation drill been conducted in the last 6 months?", criticality: "major" }),
       cp({ code: "GT-FS-007", question: "Are muster points clearly identified and known to all workers?", criticality: "major" }),
-      cp({ code: "GT-FS-008", question: "Is storage of finished garments, fabric rolls, lint and other combustible materials compliant with spacing and stacking requirements?", criticality: "critical" }),
+      cp({ code: "GT-FS-008", question: "Is storage of fabric and flammable materials compliant with spacing and stacking requirements?", criticality: "critical" }),
       cp({ code: "GT-FS-009", question: "Are electrical panels free from combustible materials within 1 metre?", criticality: "major" }),
       cp({ code: "GT-FS-010", question: "Is emergency lighting functional in all exit routes?", criticality: "major" }),
       cp({ code: "GT-FS-011", question: "Are fire hose reels accessible, unobstructed, and in working condition?", criticality: "major" }),
@@ -109,17 +109,17 @@ const GARMENTS_CATEGORIES: Category[] = [
     category_icon: "cog",
     sequence: 3,
     checkpoints: [
-      cp({ code: "GT-MS-001", question: "Are all machine guards (needle guards, pulley guards, coupling and belt covers) in place and functional on the sewing machines and knitting machines?", requirement_reference: "Factories Act §21-27, ISO 45001 Cl.8.1", criticality: "critical" }),
-      cp({ code: "GT-MS-002", question: "Are emergency stop buttons and pull-cords accessible and functional along the sewing lines, knitting machines and conveyors?", criticality: "critical" }),
-      cp({ code: "GT-MS-003", question: "Are band-knife and straight-knife cutters equipped with anti-contact devices and is cut-resistant PPE (metal mesh gloves) provided?", criticality: "critical" }),
+      cp({ code: "GT-MS-001", question: "Are all machine guards (needle guards, belt guards, flywheel covers) in place and functional?", requirement_reference: "Factories Act §21-27, ISO 45001 Cl.8.1", criticality: "critical" }),
+      cp({ code: "GT-MS-002", question: "Are emergency stop buttons accessible and functional on all sewing and cutting machines?", criticality: "critical" }),
+      cp({ code: "GT-MS-003", question: "Are cutting machines (straight knife, band knife) equipped with anti-contact devices and PPE provided?", criticality: "critical" }),
       cp({ code: "GT-MS-004", question: "Is LOTO (Lockout/Tagout) procedure followed during maintenance activities?", linked_safeops_module: "ptw", criticality: "major" }),
       cp({ code: "GT-MS-005", question: "Are machine operators trained for the specific machines they operate?", linked_safeops_module: "skill_matrix", criticality: "major" }),
-      cp({ code: "GT-MS-006", question: "Are the steam boiler and thermic-fluid heater certified and inspected per the Indian Boilers Act (IBR)?", criticality: "critical" }),
-      cp({ code: "GT-MS-007", question: "Are dyeing-machine rotors, stenter chains and calender/compactor rolls free from exposed moving parts without guards?", criticality: "major" }),
+      cp({ code: "GT-MS-006", question: "Is the boiler / steam press equipment certified and inspected per Indian Boilers Act?", criticality: "critical" }),
+      cp({ code: "GT-MS-007", question: "Are overlock and flatlock machines free from exposed moving parts without guards?", criticality: "major" }),
       cp({ code: "GT-MS-008", question: "Are compressor air lines and pressure vessels within inspection validity?", linked_safeops_module: "inspection", criticality: "major" }),
-      cp({ code: "GT-MS-009", question: "Are fabric-jam and thread-break clearance procedures followed safely at the knitting and sewing machines?", criticality: "major" }),
+      cp({ code: "GT-MS-009", question: "Are needle detection and broken-needle log procedures followed?", criticality: "major" }),
       cp({ code: "GT-MS-010", question: "Is machine maintenance on schedule and records available?", linked_safeops_module: "inspection", criticality: "minor" }),
-      cp({ code: "GT-MS-011", question: "Are fabric-bale presses and roll-handling clamps fitted with two-hand controls / interlocked guards?", criticality: "major" }),
+      cp({ code: "GT-MS-011", question: "Are fusing machines and heat presses fitted with two-hand controls / guards?", criticality: "major" }),
     ],
   },
   {
@@ -148,7 +148,7 @@ const GARMENTS_CATEGORIES: Category[] = [
     sequence: 5,
     checkpoints: [
       cp({ code: "GT-CH-001", question: "Are Safety Data Sheets (SDS) available in local language at each chemical storage/use location?", requirement_reference: "Factories Act §41-B, GHS", criticality: "major" }),
-      cp({ code: "GT-CH-002", question: "Are caustic soda, reactive dyes, bleaching/scouring agents and other process chemicals stored in designated areas with secondary containment?", criticality: "major" }),
+      cp({ code: "GT-CH-002", question: "Are dyes, solvents, and adhesives stored in designated areas with secondary containment?", criticality: "major" }),
       cp({ code: "GT-CH-003", question: "Are workers handling chemicals trained on hazards, PPE, and emergency response?", linked_safeops_module: "training", criticality: "major" }),
       cp({ code: "GT-CH-004", question: "Are chemical containers labelled with GHS-compliant labels?", criticality: "major" }),
       cp({ code: "GT-CH-005", question: "Are spill kits available at chemical-use locations and workers trained in spill response?", criticality: "major" }),
@@ -167,8 +167,8 @@ const GARMENTS_CATEGORIES: Category[] = [
       cp({ code: "GT-PP-002", question: "Is PPE being worn correctly by workers at all required workstations during the audit?", requires_photo_always: true, criticality: "major" }),
       cp({ code: "GT-PP-003", question: "Is PPE in good condition — no damaged gloves, torn coveralls, or defective ear protection?", criticality: "major" }),
       cp({ code: "GT-PP-004", question: "Have all workers received PPE usage training?", linked_safeops_module: "training", criticality: "minor" }),
-      cp({ code: "GT-PP-005", question: "Are eye-wash stations and safety showers functional and accessible in the dye house and chemical-handling areas?", criticality: "major" }),
-      cp({ code: "GT-PP-006", question: "Are cut-resistant gloves provided and used at band-knife and straight-knife cutting workstations?", linked_safeops_module: "ppe", criticality: "major" }),
+      cp({ code: "GT-PP-005", question: "Are eye-wash stations functional and accessible in dyeing/chemical areas?", criticality: "major" }),
+      cp({ code: "GT-PP-006", question: "Are metal-mesh gloves provided and used at cutting workstations?", linked_safeops_module: "ppe", criticality: "major" }),
     ],
   },
   {
@@ -178,13 +178,13 @@ const GARMENTS_CATEGORIES: Category[] = [
     category_icon: "broom",
     sequence: 7,
     checkpoints: [
-      cp({ code: "GT-HK-001", question: "Are all walkways and aisles free from fabric rolls, cut-waste, yarn bales, and obstructions?", criticality: "major" }),
-      cp({ code: "GT-HK-002", question: "Is adequate lighting provided at all workstations (≥300 lux machine floor, ≥500 lux finishing/inspection and QC lab)?", criticality: "major" }),
-      cp({ code: "GT-HK-003", question: "Is ventilation adequate in the dye house and pressing/ironing areas — no heat-stress risk?", criticality: "major" }),
-      cp({ code: "GT-HK-004", question: "Are ergonomic workstations available — adjustable chairs, footrests for control-room and finishing-line operators?", criticality: "minor" }),
-      cp({ code: "GT-HK-005", question: "Is cotton-dust and lint accumulation controlled in the knitting hall and checking/finishing areas?", criticality: "major" }),
+      cp({ code: "GT-HK-001", question: "Are all walkways and aisles free from fabric rolls, cut pieces, and obstructions?", criticality: "major" }),
+      cp({ code: "GT-HK-002", question: "Is adequate lighting provided at all workstations (≥300 lux sewing, ≥500 lux cutting/inspection)?", criticality: "major" }),
+      cp({ code: "GT-HK-003", question: "Is ventilation adequate in ironing and heat-press areas — no heat stress risk?", criticality: "major" }),
+      cp({ code: "GT-HK-004", question: "Are ergonomic workstations available — adjustable chairs, footrests for sewing operators?", criticality: "minor" }),
+      cp({ code: "GT-HK-005", question: "Is dust and lint accumulation controlled in cutting and blowing areas?", criticality: "major" }),
       cp({ code: "GT-HK-006", question: "Is noise level within acceptable limits in production areas (<85 dB for 8 hours)?", criticality: "major" }),
-      cp({ code: "GT-HK-007", question: "Is fabric cut-waste / thread trim collected in designated bins and cleared each shift?", criticality: "minor" }),
+      cp({ code: "GT-HK-007", question: "Is waste fabric / trim collected in designated bins and cleared each shift?", criticality: "minor" }),
     ],
   },
   {
@@ -518,7 +518,7 @@ async function main() {
   // ── Libraries ──
   await prisma.auditCheckpointLibrary.createMany({
     data: [
-      { industryCode: "GARMENTS_TEXTILE", industryName: "Apparel / Garment Manufacturing", version: "2026.1", categories: GARMENTS_CATEGORIES as any, checkpointCount: countCheckpoints(GARMENTS_CATEGORIES) },
+      { industryCode: "GARMENTS_TEXTILE", industryName: "Garments, Textile & Apparel Manufacturing", version: "2026.1", categories: GARMENTS_CATEGORIES as any, checkpointCount: countCheckpoints(GARMENTS_CATEGORIES) },
       { industryCode: "CEMENT", industryName: "Cement & Building Materials", version: "2026.1", categories: CEMENT_CATEGORIES as any, checkpointCount: countCheckpoints(CEMENT_CATEGORIES) },
       { industryCode: "STEEL_METALS", industryName: "Steel, Metals & Foundry", version: "2026.1", categories: STEEL_CATEGORIES as any, checkpointCount: countCheckpoints(STEEL_CATEGORIES) },
       { industryCode: "CHEMICAL_PROCESS", industryName: "Chemical & Process Industries", version: "2026.1", categories: CHEMICAL_CATEGORIES as any, checkpointCount: countCheckpoints(CHEMICAL_CATEGORIES) },
@@ -533,7 +533,7 @@ async function main() {
   const welfareCodes = GARMENTS_CATEGORIES[1].checkpoints.map((c) => c.code);
   const tFull = await prisma.auditTemplate.create({
     data: {
-      name: "SA8000 + ISO 45001 Integrated Audit — Apparel", description: "Full integrated social-compliance + OH&S audit across all 10 categories.",
+      name: "SA8000 + ISO 45001 Integrated Audit — Garments", description: "Full integrated social-compliance + OH&S audit across all 10 categories.",
       auditType: "sa8000_iso45001_integrated", baseIndustry: "GARMENTS_TEXTILE",
       checkpointConfiguration: { mode: "all" } as any,
       scoring: { method: "percentage", critical_fail_auto_fails_audit: true, minimum_pass_score: 80 } as any,
@@ -542,7 +542,7 @@ async function main() {
   });
   await prisma.auditTemplate.create({
     data: {
-      name: "Fire Safety Focused Audit — Apparel", description: "Rapid fire & emergency-preparedness audit.",
+      name: "Fire Safety Focused Audit — Garments", description: "Rapid fire & emergency-preparedness audit.",
       auditType: "fire_safety_audit", baseIndustry: "GARMENTS_TEXTILE",
       checkpointConfiguration: { mode: "subset", codes: fireCodes } as any,
       scoring: { method: "percentage", critical_fail_auto_fails_audit: true, minimum_pass_score: 90 } as any,
@@ -550,7 +550,7 @@ async function main() {
   });
   await prisma.auditTemplate.create({
     data: {
-      name: "Worker Welfare & Social Compliance — Apparel", description: "SA8000-aligned worker welfare audit.",
+      name: "Worker Welfare & Social Compliance — Garments", description: "SA8000-aligned worker welfare audit.",
       auditType: "worker_welfare", baseIndustry: "GARMENTS_TEXTILE",
       checkpointConfiguration: { mode: "subset", codes: welfareCodes } as any,
       scoring: { method: "percentage", critical_fail_auto_fails_audit: true, minimum_pass_score: 85 } as any,
@@ -615,7 +615,7 @@ async function main() {
         auditNumber: `AUD-GT-${year}-${opts.plantId === nw!.id ? "NW" : "SW"}-${String(opts.seq).padStart(4, "0")}`,
         title: opts.title, plantId: opts.plantId, templateId: tFull.id, industryCode: "GARMENTS_TEXTILE",
         auditType: "sa8000_iso45001_integrated",
-        scopeDepartments: ["Knitting Section", "Sewing Lines", "Checking & Finishing", "Stores"] as any, scopeAreas: ["Sewing / Stitching Lines", "Dye House"] as any,
+        scopeDepartments: ["Cutting", "Sewing", "Finishing", "Stores"] as any, scopeAreas: ["Production Floor 1", "Dye House"] as any,
         scopeDescription: "Integrated SA8000 + ISO 45001 internal audit.",
         scheduledDate: opts.scheduledDate, scheduledStartTime: "09:00", estimatedDurationHours: 4,
         leadAuditorUserId: lead.id, coAuditors: [] as any, auditees: auditees as any, plantManagerUserId: pm.id,
@@ -639,11 +639,11 @@ async function main() {
     return audit;
   }
 
-  await makeAudit({ seq: 1, plantId: nw.id, title: "Q2 Integrated Audit — North Garment Unit (In Progress)", status: "in_progress", scheduledDate: new Date("2026-06-09T03:30:00.000Z"), answeredFraction: 0.55, computeFinal: false });
-  await makeAudit({ seq: 2, plantId: nw.id, title: "SA8000 Mid-Year Audit — North Garment Unit (Awaiting Responses)", status: "submitted_pending_response", scheduledDate: new Date("2026-06-02T03:30:00.000Z"), answeredFraction: 1.0, computeFinal: true, submitted: true });
-  await makeAudit({ seq: 3, plantId: nw.id, title: "Q1 Integrated Audit — North Garment Unit (Closed)", status: "closed", scheduledDate: new Date("2026-03-12T03:30:00.000Z"), answeredFraction: 1.0, computeFinal: true, closed: true });
+  await makeAudit({ seq: 1, plantId: nw.id, title: "Q2 Integrated Audit — North Works (In Progress)", status: "in_progress", scheduledDate: new Date("2026-06-09T03:30:00.000Z"), answeredFraction: 0.55, computeFinal: false });
+  await makeAudit({ seq: 2, plantId: nw.id, title: "SA8000 Mid-Year Audit — North Works (Awaiting Responses)", status: "submitted_pending_response", scheduledDate: new Date("2026-06-02T03:30:00.000Z"), answeredFraction: 1.0, computeFinal: true, submitted: true });
+  await makeAudit({ seq: 3, plantId: nw.id, title: "Q1 Integrated Audit — North Works (Closed)", status: "closed", scheduledDate: new Date("2026-03-12T03:30:00.000Z"), answeredFraction: 1.0, computeFinal: true, closed: true });
   if (sw) {
-    await makeAudit({ seq: 1, plantId: sw.id, title: "Q2 Integrated Audit — South Garment Unit (Scheduled)", status: "scheduled", scheduledDate: new Date("2026-06-20T03:30:00.000Z"), answeredFraction: 0, computeFinal: false });
+    await makeAudit({ seq: 1, plantId: sw.id, title: "Q2 Integrated Audit — South Works (Scheduled)", status: "scheduled", scheduledDate: new Date("2026-06-20T03:30:00.000Z"), answeredFraction: 0, computeFinal: false });
   }
 
   console.log("  demo audits: 4 (in_progress, submitted, closed, scheduled)");

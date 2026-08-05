@@ -14,14 +14,17 @@ import {
   Banknote,
   BarChart3,
   Bell,
+  BellRing,
   Boxes,
   Building2,
   CalendarDays,
+  CalendarRange,
   ChevronRight,
   ChevronsUpDown,
   ClipboardCheck,
   Clock,
   Eye,
+  Factory,
   FileBarChart,
   FileCheck,
   FileText,
@@ -39,9 +42,12 @@ import {
   Leaf,
   LayoutDashboard,
   LogOut,
+  MapPin,
   Network,
+  QrCode,
   Radar,
   Scale,
+  ScrollText,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -49,12 +55,17 @@ import {
   SlidersHorizontal,
   Sparkles,
   Telescope,
+  Truck,
   Trophy,
   Umbrella,
+  UserCheck,
+  Smartphone,
   Users,
   Workflow,
 } from "lucide-react";
 import { usePermissions } from "@/components/auth/can";
+import { useLicence } from "@/components/licensing/licence-provider";
+import { moduleForPath } from "@/lib/licensing/route-map";
 import { shortPlantName } from "@/lib/utils";
 import {
   Sidebar,
@@ -109,6 +120,8 @@ const SECTIONS: NavSection[] = [
     items: [
       { href: "/inbox", label: "Inbox", icon: Inbox, showBadge: true },
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      // Event-driven daily brief — "what changed and why it matters"
+      { href: "/dashboard/daily", label: "Daily Brief", icon: BellRing, permission: "ALERT.READ", exact: true },
     ],
   },
   {
@@ -120,6 +133,12 @@ const SECTIONS: NavSection[] = [
       { href: "/ptw", label: "Permit to Work", icon: FileCheck, permission: "PTW.READ" },
       { href: "/flra", label: "FLRA", icon: Hammer, permission: "FLRA.READ" },
       { href: "/incidents", label: "Incident Investigation", icon: ShieldAlert, permission: "INCIDENT.READ" },
+      // Guided Field Capture — the technician wizard is a full-screen, offline,
+      // no-chrome PWA (route group (field)); technicians also land there via
+      // Role.defaultLanding. This link opens it from the desk for access/testing.
+      { href: "/capture", label: "Field Capture", icon: QrCode, permission: "CAPTURE.CREATE", exact: true },
+      // ...and the officer triage queue for what those captures produce.
+      { href: "/field-reports", label: "Field Reports", icon: Smartphone, permission: "CAPTURE.READ" },
     ],
   },
   {
@@ -151,10 +170,14 @@ const SECTIONS: NavSection[] = [
       { href: "/erm/appetite", label: "Risk Appetite", icon: Scale, permission: "APPETITE.READ" },
       { href: "/erm/compliance", label: "Compliance Register", icon: ShieldCheck, permission: "COMPLIANCE.READ" },
       { href: "/erm/loss", label: "Loss Events", icon: Banknote, permission: "LOSS.READ" },
+      { href: "/erm/rca", label: "RCA Register", icon: ScrollText, permission: "RCA.READ", exact: true },
+      { href: "/erm/rca/analytics", label: "Root-Cause Analytics", icon: Telescope, permission: "RCA.READ" },
+      { href: "/erm/rca/map", label: "Cause-to-Risk Map", icon: Radar, permission: "RCA.READ" },
       { href: "/erm/reviews", label: "Review Calendar", icon: CalendarDays, permission: "ERM.READ" },
       { href: "/erm/board-packs", label: "Board Packs", icon: FileText, permission: "ERM.READ" },
       { href: "/erm/reports", label: "Reports", icon: FileBarChart, permission: "ERM.EXPORT" },
       { href: "/erm/admin/taxonomy", label: "Taxonomy Admin", icon: Workflow, permission: "ERM.TAXONOMY_ADMIN" },
+      { href: "/erm/admin/rca-taxonomy", label: "RCA Cause Taxonomy", icon: Workflow, permission: "RCA.TAXONOMY_ADMIN" },
       { href: "/erm/admin/matrix", label: "Scoring Matrix", icon: SlidersHorizontal, permission: "ERM.MATRIX_ADMIN" },
       { href: "/erm/admin/rollup", label: "Rollup Rules", icon: GitBranch, permission: "ERM.ROLLUP_ADMIN" },
     ],
@@ -206,21 +229,44 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
-    // CAMS — Compliance & Audit Management System. The audit-execution flow now
-    // runs through the Audit & Compliance module (auditor -> Plant Head ->
-    // auditee -> auditor -> Plant Head acceptance); CAMS keeps the dashboards
-    // (Command Centre / CAPA / Compliance Tracker / Analytics) which reflect
-    // those audits via the mirror in audit_compliance_cams_bridge.
+    key: "facilities",
+    label: "Facilities",
+    items: [
+      { href: "/facilities", label: "Consolidated Dashboard", icon: Factory, permission: "FACILITY.READ", exact: true },
+      { href: "/facilities/social-compliance", label: "Workforce & SA8000", icon: Users, permission: "FACILITY.READ" },
+      { href: "/facilities/certifications", label: "Certifications Register", icon: ScrollText, permission: "FACILITY.READ" },
+      { href: "/facilities/map", label: "Facilities Map", icon: MapPin, permission: "FACILITY.READ" },
+      { href: "/facilities/compare", label: "Comparison", icon: BarChart3, permission: "FACILITY.COMPARE" },
+      { href: "/facilities/reports", label: "Reports", icon: FileBarChart, permission: "FACILITY.EXPORT" },
+      { href: "/facilities/new", label: "Add Factory", icon: Building2, permission: "FACILITY.CREATE" },
+    ],
+  },
+  {
+    // CAMS — Compliance & Audit Management System. The centralised module.
+    // Audits run on the ComplianceAudit lifecycle engine (one row per
+    // checkpoint, multi-auditor/auditee, reports); inspections run on the
+    // lighter Cams engine. Dashboards present a union of both.
     key: "cams",
     label: "CAMS — Audit & Compliance",
     items: [
       { href: "/cams", label: "Command Centre", icon: LayoutDashboard, permission: "CAMS.READ", exact: true },
-      { href: "/audit-compliance", label: "Audit & Compliance", icon: ClipboardCheck, permission: "AUDIT_COMPLIANCE.READ" },
+      { href: "/cams/programme", label: "Audit Programme", icon: CalendarRange, permission: "CAMS.READ" },
+      { href: "/cams/calendar", label: "Audit Calendar", icon: CalendarDays, permission: "CAMS.READ" },
+      { href: "/cams/audits", label: "Audits", icon: ClipboardCheck, permission: "AUDIT_COMPLIANCE.READ" },
+      { href: "/cams/audits/my-checkpoints", label: "My Checkpoints", icon: Inbox, permission: "AUDIT_COMPLIANCE.READ" },
+      { href: "/cams/engagements", label: "Inspections", icon: HardHat, permission: "CAMS.READ" },
+      { href: "/cams/templates", label: "Templates", icon: FileCheck, permission: "CAMS.READ" },
+      { href: "/cams/findings", label: "Findings", icon: AlertTriangle, permission: "CAMS.READ" },
       { href: "/cams/capa", label: "CAPA (Audit Source)", icon: Layers, permission: "CAMS.READ" },
       { href: "/cams/compliance", label: "Compliance Tracker", icon: ShieldCheck, permission: "CAMS.READ" },
+      // Named for what it holds, and placed below the daily work. A
+      // certification body asks for impartiality evidence as its own artefact
+      // (ISO 19011 §5.4.2) — but it is reference material, consulted when asked,
+      // not a queue anyone works through.
+      { href: "/cams/assurance", label: "Independence Register", icon: UserCheck, permission: "CAMS.READ" },
       { href: "/cams/analytics", label: "Analytics & Benchmarking", icon: BarChart3, permission: "CAMS.ANALYTICS" },
-      { href: "/cams/board-pack", label: "Board Pack", icon: FileText, permission: "CAMS.ANALYTICS" },
-      { href: "/cams/admin/types", label: "Audit Types", icon: Shield, permission: "CAMS.TYPE_CONFIG" },
+      { href: "/cams/admin/types", label: "Audit Configuration", icon: Shield, permission: "CAMS.TYPE_CONFIG" },
+      { href: "/cams/settings", label: "Audit Settings", icon: Bell, permission: "CAMS.READ" },
     ],
   },
   {
@@ -233,14 +279,43 @@ const SECTIONS: NavSection[] = [
       { href: "/configuration/agents", label: "AI Agents", icon: Sparkles },
     ],
   },
+  // EPC / Sites hidden — to restore, uncomment this block
+  // {
+  //   key: "epc",
+  //   label: "EPC / Sites",
+  //   items: [
+  //     { href: "/epc", label: "Multi-Site Dashboard", icon: LayoutDashboard, permission: "EPC.READ" },
+  //     { href: "/epc/sites", label: "Sites", icon: MapPin, permission: "EPC.READ" },
+  //     { href: "/epc/contractors", label: "Contractor Companies", icon: Building2, permission: "EPC.READ" },
+  //     { href: "/epc/workers", label: "Workers", icon: UserCheck, permission: "EPC.READ" },
+  //     { href: "/epc/mobilization", label: "Mobilization", icon: Truck, permission: "EPC.READ" },
+  //     { href: "/epc/gate", label: "Gate Clearance", icon: QrCode, permission: "EPC.READ" },
+  //   ],
+  // },
   {
     key: "people",
     label: "People & Competency",
     items: [
+      { href: "/training-intelligence", label: "Training Intelligence", icon: ShieldAlert, permission: "SKILL_MATRIX.READ" },
       { href: "/training", label: "Training", icon: GraduationCap, permission: "TRAINING.READ" },
-      { href: "/skill-matrix", label: "Skill Matrix", icon: Grid3x3 },
-      { href: "/sci", label: "Safety Culture Index", icon: Trophy },
-      { href: "/sci/kaizen", label: "Safety Kaizen Wall", icon: Hammer }
+      { href: "/training/assignments", label: "Training Assignments", icon: ClipboardCheck, permission: "SKILL_MATRIX.READ" },
+      { href: "/training/my-training", label: "My Training", icon: UserCheck, permission: "TRAINING.READ" },
+      { href: "/skill-matrix", label: "Skill Matrix", icon: Grid3x3, permission: "SKILL_MATRIX.READ" },
+      { href: "/skill-matrix/rollup", label: "Competency Roll-up", icon: BarChart3, permission: "SKILL_MATRIX.READ" },
+      { href: "/skill-matrix/correlation", label: "Training Impact", icon: Activity, permission: "SKILL_MATRIX.READ" },
+      { href: "/skill-matrix/configuration/mappings", label: "Training Config", icon: SlidersHorizontal, permission: "SKILL_MATRIX.COMPETENCY_CONFIGURE" },
+    ],
+  },
+  {
+    key: "culture",
+    label: "Safety Culture",
+    items: [
+      { href: "/safety-culture", label: "Culture Maturity", icon: Gauge, permission: "SAFETY_CULTURE.READ" },
+      { href: "/safety-culture/leadership", label: "Leadership Walks", icon: Handshake, permission: "SAFETY_CULTURE.READ" },
+      { href: "/safety-culture/leading-lagging", label: "Leading / Lagging Ratio", icon: Scale, permission: "SAFETY_CULTURE.READ" },
+      { href: "/safety-culture/bbs-quality", label: "BBS Quality Index", icon: Eye, permission: "SAFETY_CULTURE.READ" },
+      { href: "/safety-culture/perception", label: "Perception Surveys", icon: Radar, permission: "SAFETY_CULTURE.READ" },
+      { href: "/safety-culture/recognition", label: "Recognition", icon: Trophy, permission: "SAFETY_CULTURE.READ" },
     ],
   },
   {
@@ -248,12 +323,12 @@ const SECTIONS: NavSection[] = [
     label: "Assets & Inspection",
     items: [
       { href: "/ppe", label: "PPE Management", icon: HardHat },
-      { href: "/inspections", label: "Inspection Schedule", icon: CalendarDays, permission: "INSPECTION.READ", exact: true },
-      { href: "/inspections/inbox", label: "My Inspections", icon: ClipboardCheck, permission: "INSPECTION.READ" },
+      { href: "/inspections", label: "Inspection Schedule", icon: ClipboardCheck, permission: "INSPECTION.READ" },
+      { href: "/inspections/inbox", label: "My Inspections", icon: Inbox, permission: "INSPECTION.READ" },
       { href: "/inspections/findings", label: "Findings", icon: AlertTriangle, permission: "INSPECTION_FINDING.READ" },
       { href: "/inspections/equipment", label: "Equipment Master", icon: Hammer, permission: "EQUIPMENT_MASTER.READ" },
-      { href: "/inspections/types", label: "Inspection Types", icon: Shield, permission: "INSPECTION_TYPE.READ" },
-      { href: "/inspections/checklists", label: "Checklist Templates", icon: FileCheck, permission: "CHECKLIST_TEMPLATE.READ" },
+      { href: "/inspections/types", label: "Inspection Types", icon: FileCheck, permission: "INSPECTION_TYPE.READ" },
+      { href: "/inspections/checklists", label: "Checklist Templates", icon: ClipboardCheck, permission: "CHECKLIST_TEMPLATE.READ" },
       { href: "/inspections/analytics", label: "Inspection Analytics", icon: BarChart3, permission: "INSPECTION.READ" },
     ],
   },
@@ -276,6 +351,7 @@ const SECTIONS: NavSection[] = [
       { href: "/configuration/users", label: "Users", icon: Users, permission: "CONFIGURATION.USERS" },
       { href: "/configuration/roles", label: "Roles & Permissions", icon: ShieldAlert, permission: "CONFIGURATION.ROLES" },
       { href: "/configuration/workflows", label: "Workflows", icon: Workflow, permission: "CONFIGURATION.WORKFLOWS" },
+      { href: "/licence", label: "Licence & Entitlements", icon: ScrollText },
     ],
   },
 ];
@@ -285,7 +361,19 @@ export function AppSidebar() {
   const { data: session } = useSession();
   const user = session?.user as any;
   const permissions = usePermissions();
+  const { hasModule } = useLicence();
   const [inboxCount, setInboxCount] = React.useState<number | null>(null);
+  // Hydration guard. `permissions` and `hasModule()` come from client-only state
+  // (async permission fetch + per-factory licence fetch) whose value at the first
+  // client paint is NOT guaranteed to equal the server render — that divergence
+  // was producing a React hydration mismatch on permission-less nav items (which
+  // are gated only by hasModule()). Until mounted we render a deterministic,
+  // hook-free baseline identical on server and client; the real filter applies
+  // after hydration.
+  const [hydrated, setHydrated] = React.useState(false);
+  React.useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   // Inbox poll — every 60s, paused when tab hidden
   React.useEffect(() => {
@@ -387,6 +475,17 @@ export function AppSidebar() {
       <SidebarContent>
         {SECTIONS.map((section) => {
           const visibleItems = section.items.filter((item) => {
+            // Before hydration, do NOT consult client-only permission/licence
+            // state — render the same deterministic baseline the server rendered
+            // (permission-less items shown; everything else deferred), so SSR and
+            // the first client paint are byte-identical. Real filtering resumes
+            // once hydrated.
+            if (!hydrated) return !item.permission;
+            // Module entitlement gate (licence) — hide items whose module the
+            // licence doesn't include. Core/unmatched routes (module === null)
+            // always pass. This is UX; the API enforces independently.
+            const mod = moduleForPath(item.href);
+            if (mod && !hasModule(mod)) return false;
             if (!item.permission) return true;
             return !!permissions[item.permission];
           });

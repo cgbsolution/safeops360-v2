@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { requirePermission } from "@/lib/auth/server";
+import { AccessRestricted } from "@/components/access-restricted";
 import { PrintButton } from "@/components/ui/print-button";
+import { formatUserRefText, type UserDirectory } from "@/lib/users/user-ref";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +53,7 @@ type CapaOut = {
     evidenceOfCompletion: string | null;
   }[];
   rootCauses: { id: string; description: string; category: string; confidence: string }[];
+  userDirectory: UserDirectory;
 };
 
 export default async function CapaPrintPage(
@@ -64,6 +67,8 @@ export default async function CapaPrintPage(
     capa = await backendFetch<CapaOut>(`/api/capa/${id}`);
   } catch (e) {
     if (e instanceof BackendError && e.status === 404) notFound();
+    if (e instanceof BackendError && e.status === 403)
+      return <AccessRestricted backHref="/capa" backLabel="← Back to CAPA" />;
     throw e;
   }
 
@@ -98,8 +103,8 @@ export default async function CapaPrintPage(
               ["Severity", capa.severity],
               ["Priority", capa.priority],
               ["State", capa.state.replace(/_/g, " ")],
-              ["Raised by", capa.raisedByUserId],
-              ["Primary owner", capa.primaryOwnerUserId],
+              ["Raised by", formatUserRefText(capa.userDirectory, capa.raisedByUserId)],
+              ["Primary owner", formatUserRefText(capa.userDirectory, capa.primaryOwnerUserId)],
               ["Detected at", new Date(capa.detectedAt).toLocaleString()],
               ["Closure target", capa.closureTargetDate ? new Date(capa.closureTargetDate).toLocaleDateString() : "—"],
               ["Closed at", capa.closedAt ? new Date(capa.closedAt).toLocaleString() : "Not closed"]
@@ -182,7 +187,7 @@ export default async function CapaPrintPage(
                 <tr key={a.id} className="border-t">
                   <td className="px-2 py-1.5 text-xs">{a.actionType.replace(/_/g, " ")}</td>
                   <td className="px-2 py-1.5">{a.description}</td>
-                  <td className="px-2 py-1.5 text-xs">{a.ownerUserId}</td>
+                  <td className="px-2 py-1.5 text-xs">{formatUserRefText(capa.userDirectory, a.ownerUserId)}</td>
                   <td className="px-2 py-1.5 text-xs">{new Date(a.dueDate).toLocaleDateString()}</td>
                   <td className="px-2 py-1.5 text-xs">{a.status.replace(/_/g, " ")}</td>
                   <td className="px-2 py-1.5 text-xs">

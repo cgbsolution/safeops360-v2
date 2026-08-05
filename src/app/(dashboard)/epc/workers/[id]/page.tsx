@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { RosterStatusBadge } from "@/components/workforce/roster-status-badge";
 import { backendFetch } from "@/lib/backend/fetch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   User,
   Phone,
@@ -62,6 +64,10 @@ type WorkerDetail = {
   yearsExperience: number | null;
   educationLevel: string | null;
   status: string;
+  // HSE safety hold from the Observation deroster workflow — a separate axis
+  // from `status` (the EPC employment state).
+  rosterStatus?: string;
+  currentDerosterRef?: string | null;
   contractorCompanyName: string;
   contractorCompanyId: string;
   medicalFitnessValidUpto: string | null;
@@ -190,6 +196,7 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
                 <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${statusBadgeClass(worker.status)}`}>
                   {humanizeStatus(worker.status)}
                 </span>
+                <RosterStatusBadge status={worker.rosterStatus} />
               </h1>
               <p className="text-sm text-slate-500 mt-0.5">
                 {worker.primaryTrade} &middot;{" "}
@@ -293,36 +300,36 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
                 No mobilizations on record.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                    <th className="px-4 py-2.5">Mob. No.</th>
-                    <th className="px-4 py-2.5">Site</th>
-                    <th className="px-4 py-2.5">Trade</th>
-                    <th className="px-4 py-2.5">Status</th>
-                    <th className="px-4 py-2.5">Start</th>
-                    <th className="px-4 py-2.5">End</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mob. No.</TableHead>
+                    <TableHead>Site</TableHead>
+                    <TableHead>Trade</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Start</TableHead>
+                    <TableHead>End</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {mobilizations.map((m) => (
-                    <tr key={m.id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{m.mobilizationNumber}</td>
-                      <td className="px-4 py-2.5 font-medium text-slate-900">
+                    <TableRow key={m.id}>
+                      <TableCell className="font-mono text-xs text-slate-500">{m.mobilizationNumber}</TableCell>
+                      <TableCell className="font-medium text-slate-900">
                         {m.siteName} <span className="text-xs text-slate-400 font-normal">({m.siteCode})</span>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600">{m.trade}</td>
-                      <td className="px-4 py-2.5">
+                      </TableCell>
+                      <TableCell className="text-slate-600">{m.trade}</TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(m.status)}`}>
                           {humanizeStatus(m.status)}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600">{fmtDate(m.mobilisationDate)}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{fmtDate(m.demobilisationDate)}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="text-slate-600">{fmtDate(m.mobilisationDate)}</TableCell>
+                      <TableCell className="text-slate-600">{fmtDate(m.demobilisationDate)}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </TabsContent>
@@ -349,30 +356,30 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
                 No induction records found.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                    <th className="px-4 py-2.5">Site</th>
-                    <th className="px-4 py-2.5">Induction Date</th>
-                    <th className="px-4 py-2.5">Valid Until</th>
-                    <th className="px-4 py-2.5">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Site</TableHead>
+                    <TableHead>Induction Date</TableHead>
+                    <TableHead>Valid Until</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {inductions.map((ind) => (
-                    <tr key={ind.id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 font-medium text-slate-900">{ind.siteName}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{fmtDate(ind.inductionDate)}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{fmtDate(ind.validUpto)}</td>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={ind.id}>
+                      <TableCell className="font-medium text-slate-900">{ind.siteName}</TableCell>
+                      <TableCell className="text-slate-600">{fmtDate(ind.inductionDate)}</TableCell>
+                      <TableCell className="text-slate-600">{fmtDate(ind.validUpto)}</TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(ind.status)}`}>
                           {humanizeStatus(ind.status)}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </TabsContent>
@@ -389,30 +396,30 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
                 No gate activity on record.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                    <th className="px-4 py-2.5">Time</th>
-                    <th className="px-4 py-2.5">Site</th>
-                    <th className="px-4 py-2.5">Result</th>
-                    <th className="px-4 py-2.5">Gate Pass</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Site</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead>Gate Pass</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {gateHistory.map((entry) => (
-                    <tr key={entry.id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{fmtDateTime(entry.checkedAt)}</td>
-                      <td className="px-4 py-2.5 font-medium text-slate-900">{entry.siteName}</td>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={entry.id}>
+                      <TableCell className="text-xs text-slate-500 whitespace-nowrap">{fmtDateTime(entry.checkedAt)}</TableCell>
+                      <TableCell className="font-medium text-slate-900">{entry.siteName}</TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${gateResultClass(entry.result)}`}>
                           {humanizeStatus(entry.result)}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{entry.gatePassNumber ?? "—"}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-slate-500">{entry.gatePassNumber ?? "—"}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </TabsContent>

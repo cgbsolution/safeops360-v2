@@ -14,6 +14,11 @@ import {
   YAxis,
 } from "recharts";
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { BandBadge } from "@/components/erm/shared";
 import {
   BREACH_STATUS_CHIP,
@@ -135,12 +140,9 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-          <button
-            onClick={() => setModal("reading")}
-            className="rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800"
-          >
+          <Button onClick={() => setModal("reading")}>
             Enter reading
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -192,39 +194,39 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
             <p className="py-6 text-center text-xs text-slate-400">No readings recorded.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                    <th className="px-2 py-1.5">Period</th>
-                    <th className="px-2 py-1.5">Value</th>
-                    <th className="px-2 py-1.5">Status</th>
-                    <th className="px-2 py-1.5">Source</th>
-                    <th className="px-2 py-1.5">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Period</TableHead>
+                    <TableHead>Value</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Source</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {[...kri.readings]
                     .sort((a, b) => b.periodLabel.localeCompare(a.periodLabel))
                     .map((r: Reading) => (
-                      <tr key={r.id} className="border-b border-slate-100">
-                        <td className="px-2 py-1.5 font-medium text-slate-700">
+                      <TableRow key={r.id}>
+                        <TableCell className="font-medium">
                           {r.periodLabel}
                           {r.isCurrent && (
                             <span className="ml-1 rounded bg-primary-50 px-1 text-[9px] font-semibold text-primary-700">
                               CURRENT
                             </span>
                           )}
-                        </td>
-                        <td className="px-2 py-1.5 tabular-nums font-semibold">{r.value}</td>
-                        <td className="px-2 py-1.5">
+                        </TableCell>
+                        <TableCell className="tabular-nums font-semibold">{r.value}</TableCell>
+                        <TableCell>
                           <StatusChip status={r.status} sm />
-                        </td>
-                        <td className="px-2 py-1.5 text-xs text-slate-500">{r.source}</td>
-                        <td className="max-w-[220px] truncate px-2 py-1.5 text-xs text-slate-500">{r.notes || "—"}</td>
-                      </tr>
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-500">{r.source}</TableCell>
+                        <TableCell className="max-w-[220px] truncate text-xs text-slate-500">{r.notes || "—"}</TableCell>
+                      </TableRow>
                     ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
@@ -262,21 +264,21 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
           <p className="py-6 text-center text-xs text-slate-400">No breaches recorded.</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-2 py-1.5">Type</th>
-                  <th className="px-2 py-1.5">Status</th>
-                  <th className="px-2 py-1.5">Acknowledged by</th>
-                  <th className="px-2 py-1.5">Resolution notes</th>
-                  <th className="px-2 py-1.5">Raised</th>
-                  <th className="px-2 py-1.5"></th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Acknowledged by</TableHead>
+                  <TableHead>Resolution notes</TableHead>
+                  <TableHead>Raised</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {kri.breaches.map((b) => (
-                  <tr key={b.id} className="border-b border-slate-100">
-                    <td className="px-2 py-1.5">
+                  <TableRow key={b.id}>
+                    <TableCell>
                       <span
                         className={
                           "rounded border px-2 py-0.5 text-[11px] font-medium " +
@@ -289,8 +291,8 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
                       >
                         {b.breachType}
                       </span>
-                    </td>
-                    <td className="px-2 py-1.5">
+                    </TableCell>
+                    <TableCell>
                       <span
                         className={
                           "rounded border px-2 py-0.5 text-[11px] font-medium " +
@@ -299,31 +301,34 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
                       >
                         {b.status.replace(/_/g, " ")}
                       </span>
-                    </td>
-                    <td className="px-2 py-1.5 text-xs text-slate-600">
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-600">
                       {b.acknowledgedByName ?? "—"}
                       {b.acknowledgedAt && (
                         <span className="ml-1 text-[10px] text-slate-400">{fmtDate(b.acknowledgedAt)}</span>
                       )}
-                    </td>
-                    <td className="max-w-[260px] truncate px-2 py-1.5 text-xs text-slate-500">
+                    </TableCell>
+                    <TableCell className="max-w-[260px] truncate text-xs text-slate-500">
                       {b.resolutionNotes || "—"}
-                    </td>
-                    <td className="px-2 py-1.5 text-xs text-slate-500">{fmtDate(b.createdAt)}</td>
-                    <td className="px-2 py-1.5 text-right">
+                    </TableCell>
+                    <TableCell className="text-xs text-slate-500">{fmtDate(b.createdAt)}</TableCell>
+                    <TableCell className="text-right">
                       {b.status === "OPEN" && (
-                        <button
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
                           onClick={() => setModal({ ack: b })}
-                          className="rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-primary-500"
+                          className="text-slate-700 hover:border-primary-500"
                         >
                           Acknowledge
-                        </button>
+                        </Button>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         )}
       </div>
@@ -359,9 +364,15 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
         {children}
       </div>
@@ -399,47 +410,44 @@ function ReadingModal({ kriId, onClose, onDone }: { kriId: string; onClose: () =
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Period label (required)</label>
-          <input
+          <Input
             value={periodLabel}
             onChange={(e) => setPeriodLabel(e.target.value)}
             placeholder="e.g. 2026-06"
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Period end (optional)</label>
-          <input
+          <Input
             type="date"
             value={periodEnd}
             onChange={(e) => setPeriodEnd(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Value (required)</label>
-          <input
+          <Input
             type="number"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Notes</label>
-          <textarea
+          <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
         </div>
-        <button
+        <Button
+          type="button"
           disabled={busy || !periodLabel.trim() || value === ""}
           onClick={submit}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
           {busy ? "Saving…" : "Save reading"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -484,24 +492,24 @@ function AckModal({
         </p>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Resolution / response notes</label>
-          <textarea
+          <Textarea
             value={resolutionNotes}
             onChange={(e) => setResolutionNotes(e.target.value)}
             rows={3}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
         </div>
         <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input type="checkbox" checked={resolve} onChange={(e) => setResolve(e.target.checked)} />
+          <Checkbox checked={resolve} onChange={(e) => setResolve(e.target.checked)} />
           Resolve this breach
         </label>
-        <button
+        <Button
+          type="button"
           disabled={busy || !resolutionNotes.trim()}
           onClick={submit}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
           {busy ? "Saving…" : resolve ? "Acknowledge & resolve" : "Acknowledge"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

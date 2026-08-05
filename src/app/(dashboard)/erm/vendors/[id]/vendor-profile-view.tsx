@@ -13,6 +13,11 @@ import {
   Tooltip,
 } from "recharts";
 import { AlertTriangle, Plus, Repeat, ShieldAlert, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import {
   CRITICALITY_CHIP,
   ONBOARDING_CHIP,
@@ -237,13 +242,16 @@ function FindingsList({ vendorId, lensAssessments }: { vendorId: string; lensAss
                 <p className="text-sm text-slate-700">{f.description}</p>
               </div>
               {f.severity === "CRITICAL_GAP" && !f.capaId && (
-                <button
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
                   onClick={() => raiseCapa(f.assessmentId, f.id)}
                   disabled={busyId === f.id}
-                  className="inline-flex flex-shrink-0 items-center gap-1 rounded-md border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                  className="flex-shrink-0 gap-1"
                 >
                   <AlertTriangle size={13} /> {busyId === f.id ? "Raising…" : "Raise CAPA"}
-                </button>
+                </Button>
               )}
             </li>
           ))}
@@ -288,50 +296,37 @@ function OnboardingModal({ vendorId, current, onClose }: { vendorId: string; cur
       <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Change Onboarding Status</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="h-8 w-8 text-slate-400 hover:text-slate-700">
             <X size={18} />
-          </button>
+          </Button>
         </div>
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">New status</label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            >
+            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
               {ONBOARDING_STATES.map((s) => (
                 <option key={s} value={s}>
                   {s.replace(/_/g, " ")}
                 </option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1 text-[11px] text-slate-400">
               APPROVING a Strategic/Critical vendor with an open CRITICAL_GAP is blocked; CONDITIONAL approval of such a vendor requires the CRO.
             </p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Note</label>
-            <textarea
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              rows={3}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            />
+            <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
           </div>
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={submit}
-            disabled={busy || status === current}
-            className="rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-800 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" onClick={submit} disabled={busy || status === current}>
             {busy ? "Saving…" : "Update"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -421,25 +416,15 @@ export function VendorProfileView({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
-          <button
-            onClick={() => setAssessOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-primary-800"
-          >
+          <Button type="button" onClick={() => setAssessOpen(true)}>
             <Plus size={15} /> New assessment
-          </button>
-          <button
-            onClick={raiseRisk}
-            disabled={raiseBusy}
-            className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" variant="outline" onClick={raiseRisk} disabled={raiseBusy}>
             <ShieldAlert size={15} /> {raiseBusy ? "Raising…" : "Raise as risk"}
-          </button>
-          <button
-            onClick={() => setOnboardOpen(true)}
-            className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setOnboardOpen(true)}>
             <Repeat size={15} /> Change onboarding
-          </button>
+          </Button>
           {raiseResult && (
             <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
               Enterprise risk {raiseResult} created
@@ -454,18 +439,20 @@ export function VendorProfileView({
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
         {tabs.map((t) => (
-          <button
+          <Button
             key={t.key}
+            type="button"
+            variant="ghost"
             onClick={() => setTab(t.key)}
-            className={
-              "border-b-2 px-4 py-2 text-sm font-medium transition-colors " +
-              (tab === t.key
+            className={cn(
+              "h-auto rounded-none border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              tab === t.key
                 ? "border-primary-700 text-primary-700"
-                : "border-transparent text-slate-500 hover:text-slate-700")
-            }
+                : "border-transparent text-slate-500 hover:text-slate-700"
+            )}
           >
             {t.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -570,35 +557,35 @@ export function VendorProfileView({
 
       {tab === "audit" && (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="w-full min-w-[720px] text-sm">
-            <thead className="bg-slate-50/95">
-              <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-3 py-2.5">Date</th>
-                <th className="px-3 py-2.5">Lens</th>
-                <th className="px-3 py-2.5">Method</th>
-                <th className="px-3 py-2.5">Assessor</th>
-                <th className="px-3 py-2.5">Score / band</th>
-                <th className="px-3 py-2.5">Findings</th>
-                <th className="px-3 py-2.5">Valid until</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-[720px]">
+            <TableHeader>
+              <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                <TableHead>Date</TableHead>
+                <TableHead>Lens</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead>Assessor</TableHead>
+                <TableHead>Score / band</TableHead>
+                <TableHead>Findings</TableHead>
+                <TableHead>Valid until</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {vendor.assessments.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-3 py-10 text-center text-sm text-slate-400">
+                <TableRow>
+                  <TableCell colSpan={7} className="px-3 py-10 text-center text-sm text-slate-400">
                     No assessments recorded.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 vendor.assessments.map((a) => (
-                  <tr key={a.id} className="border-t border-slate-100 hover:bg-slate-50/70">
-                    <td className="px-3 py-2.5 text-xs text-slate-600">{fmtDate(a.assessmentDate)}</td>
-                    <td className="px-3 py-2.5">
+                  <TableRow key={a.id} className="border-t border-slate-100">
+                    <TableCell className="px-3 py-2.5 text-xs text-slate-600">{fmtDate(a.assessmentDate)}</TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-700">{a.lens}</span>
-                    </td>
-                    <td className="px-3 py-2.5 text-xs text-slate-600">{a.method.replace(/_/g, " ")}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-600">{a.assessorName ?? "—"}</td>
-                    <td className="px-3 py-2.5">
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-xs text-slate-600">{a.method.replace(/_/g, " ")}</TableCell>
+                    <TableCell className="px-3 py-2.5 text-xs text-slate-600">{a.assessorName ?? "—"}</TableCell>
+                    <TableCell className="px-3 py-2.5">
                       <span
                         className={
                           "rounded border px-2 py-0.5 text-[11px] font-semibold " +
@@ -607,14 +594,14 @@ export function VendorProfileView({
                       >
                         {a.weightedScore} · {a.band}
                       </span>
-                    </td>
-                    <td className="px-3 py-2.5 text-xs tabular-nums text-slate-600">{a.findings.length}</td>
-                    <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(a.validUntil)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5 text-xs tabular-nums text-slate-600">{a.findings.length}</TableCell>
+                    <TableCell className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(a.validUntil)}</TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 

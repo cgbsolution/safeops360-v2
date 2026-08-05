@@ -4,10 +4,25 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ShieldPlus, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { EvidenceAttachment } from "@/components/evidence/EvidenceAttachment";
 import { SEVERITY_CHIP, FINDING_STATUS_CHIP, fmtDate, labelize, type Finding } from "../../lib-cams";
 
 const RCA_METHODS = ["5_WHY", "FISHBONE", "FAULT_TREE", "BOWTIE", "TAP_ROOT", "CAUSE_MAP", "EIGHT_D", "NONE_REQUIRED"];
 const STATUSES = ["OPEN", "CAPA_RAISED", "IN_REMEDIATION", "VERIFICATION", "CLOSED", "ACCEPTED_RISK"];
+
+// Shared evidence-attachment categories for an audit finding (mirror the
+// backend evidence_registry `cams_finding` entry).
+const FINDING_EVIDENCE_CATEGORIES = [
+  { value: "FINDING_EVIDENCE", label: "Finding evidence" },
+  { value: "CLOSURE_EVIDENCE", label: "Closure evidence" },
+  { value: "CERTIFICATE", label: "Certificate" },
+  { value: "LICENSE", label: "License" },
+  { value: "REPORT", label: "Report" },
+  { value: "OTHER", label: "Other" },
+];
 
 export function FindingDetailView({ finding, canManage }: { finding: Finding; canManage: boolean }) {
   const router = useRouter();
@@ -53,30 +68,39 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
           <h3 className="mb-2 text-sm font-semibold text-slate-800">Root cause</h3>
           {err && <div className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
           <div className="space-y-2">
-            <select disabled={!canManage} value={rcaMethod} onChange={(e) => setRcaMethod(e.target.value)} className="rounded-lg border border-slate-300 p-2 text-sm">
+            <Select disabled={!canManage} value={rcaMethod} onChange={(e) => setRcaMethod(e.target.value)}>
               <option value="">— RCA method —</option>
               {RCA_METHODS.map((m) => <option key={m} value={m}>{labelize(m)}</option>)}
-            </select>
-            <textarea disabled={!canManage} value={rcaSummary} onChange={(e) => setRcaSummary(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Root cause summary" />
+            </Select>
+            <Textarea disabled={!canManage} value={rcaSummary} onChange={(e) => setRcaSummary(e.target.value)} rows={3} placeholder="Root cause summary" />
             {canManage && (
-              <button disabled={busy === "rca"} onClick={() => patch({ rootCauseMethod: rcaMethod || null, rootCauseSummary: rcaSummary }, "rca")} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50">
+              <Button disabled={busy === "rca"} onClick={() => patch({ rootCauseMethod: rcaMethod || null, rootCauseSummary: rcaSummary }, "rca")} variant="outline">
                 {busy === "rca" ? "Saving…" : "Save RCA"}
-              </button>
+              </Button>
             )}
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h3 className="mb-2 text-sm font-semibold text-slate-800">Verification & closure</h3>
-          <textarea disabled={!canManage} value={verificationNote} onChange={(e) => setVerificationNote(e.target.value)} rows={2} className="mb-2 w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Verification evidence / note" />
+          <Textarea disabled={!canManage} value={verificationNote} onChange={(e) => setVerificationNote(e.target.value)} rows={2} className="mb-2" placeholder="Verification evidence / note" />
           {canManage && (
             <div className="flex flex-wrap gap-2">
-              <button disabled={busy === "verify"} onClick={() => patch({ status: "VERIFICATION", verificationNote }, "verify")} className="rounded-lg border border-violet-300 bg-violet-50 px-3 py-1.5 text-sm text-violet-800 hover:bg-violet-100 disabled:opacity-50">Move to verification</button>
-              <button disabled={busy === "close"} onClick={() => patch({ status: "CLOSED", verificationNote }, "close")} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">Close finding</button>
-              <button disabled={busy === "accept"} onClick={() => patch({ status: "ACCEPTED_RISK" }, "accept")} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50">Accept as risk</button>
+              <Button disabled={busy === "verify"} onClick={() => patch({ status: "VERIFICATION", verificationNote }, "verify")} variant="outline" className="border-violet-300 bg-violet-50 text-violet-800 hover:bg-violet-100">Move to verification</Button>
+              <Button disabled={busy === "close"} onClick={() => patch({ status: "CLOSED", verificationNote }, "close")} variant="success">Close finding</Button>
+              <Button disabled={busy === "accept"} onClick={() => patch({ status: "ACCEPTED_RISK" }, "accept")} variant="outline" className="text-slate-600">Accept as risk</Button>
             </div>
           )}
         </div>
+
+        <EvidenceAttachment
+          entityType="cams_finding"
+          entityId={finding.id}
+          categories={FINDING_EVIDENCE_CATEGORIES}
+          canManage={canManage}
+          title="Evidence & documents"
+          help="Attach the source document that substantiates this finding or its closure — license, certificate, report, photo."
+        />
       </div>
 
       <div className="space-y-4">
@@ -87,9 +111,9 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
               {finding.capaNumber} · {labelize(finding.capaState ?? "")}
             </Link>
           ) : canManage ? (
-            <button disabled={busy === "capa"} onClick={raiseCapa} className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+            <Button disabled={busy === "capa"} onClick={raiseCapa} className="inline-flex items-center gap-1.5">
               {busy === "capa" ? <Loader2 size={14} className="animate-spin" /> : <ShieldPlus size={14} />} Raise CAPA
-            </button>
+            </Button>
           ) : <p className="text-slate-500">No CAPA raised.</p>}
         </div>
 
@@ -109,9 +133,9 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
         {canManage && finding.status !== "CLOSED" && (
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
             <h3 className="mb-2 text-sm font-semibold text-slate-800">Status</h3>
-            <select value={finding.status} onChange={(e) => patch({ status: e.target.value }, "status")} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
+            <Select value={finding.status} onChange={(e) => patch({ status: e.target.value }, "status")}>
               {STATUSES.map((s) => <option key={s} value={s}>{labelize(s)}</option>)}
-            </select>
+            </Select>
           </div>
         )}
       </div>

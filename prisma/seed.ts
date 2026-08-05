@@ -34,41 +34,55 @@ const ROLE_CODES = {
 
 const prisma = new PrismaClient();
 
-// ─── Plant data — Page Industries Limited (apparel — Jockey & Speedo) ──
-const GARMENT_UNIT_AREAS = [
-  "Yarn & Fabric Store",
-  "Knitting Section (Circular Knitting Machines)",
-  "Dye House — Dyeing & Processing",
-  "Cutting Section — Spreading & Band Knife",
-  "Sewing / Stitching Lines (Production Floor)",
-  "Printing & Embroidery",
-  "Checking & Finishing (AQL Quality)",
-  "Pressing & Ironing (Steam Press)",
-  "Boiler House & Utilities / Confined Space (Dye Vessels, ETP Tanks)",
-  "Effluent Treatment Plant",
-  "Chemical & Dye Store",
-  "Finished Goods Warehouse & Dispatch",
-  "Maintenance Workshop",
-  "Electrical Substation",
-  "Canteen / Welfare Building"
-];
-
+// ─── Plant data — Meridian Manufacturing Limited (cross-industry, sector-neutral) ──
 const PLANTS = [
   {
     code: "NW",
-    name: "Page Industries — North Garment Unit (Hassan)",
-    location: "Industrial Area, Hassan",
-    state: "Karnataka",
+    name: "Meridian North Works — Integrated Manufacturing Unit",
+    location: "Industrial Area Phase II, Sector 7, Bharatpur",
+    state: "Rajasthan",
     unitType: "Integrated",
-    areas: GARMENT_UNIT_AREAS
+    areas: [
+      "Process Area A — Primary Production",
+      "Process Area B — Secondary Production",
+      "Utilities Block (Boiler, Compressors, Cooling)",
+      "Electrical Substation",
+      "Chemical Storage & Handling Area",
+      "Main Warehouse",
+      "Maintenance Workshop",
+      "Quality Control Laboratory",
+      "DG / Power House",
+      "Effluent Treatment Plant",
+      "Loading / Dispatch Area",
+      "Cooling Tower Area",
+      "Confined Space Zones (Vessels, Tanks, Pits)",
+      "Roof / Elevated Structures",
+      "Canteen / Welfare Building"
+    ]
   },
   {
     code: "SW",
-    name: "Page Industries — South Garment Unit (Tiptur)",
-    location: "Industrial Estate, Tiptur",
-    state: "Karnataka",
+    name: "Meridian South Works — Integrated Manufacturing Unit",
+    location: "Special Economic Zone, Block C, Nellore",
+    state: "Andhra Pradesh",
     unitType: "Integrated",
-    areas: GARMENT_UNIT_AREAS
+    areas: [
+      "Process Area A — Primary Production",
+      "Process Area B — Secondary Production",
+      "Utilities Block (Boiler, Compressors, Cooling)",
+      "Electrical Substation",
+      "Chemical Storage & Handling Area",
+      "Main Warehouse",
+      "Maintenance Workshop",
+      "Quality Control Laboratory",
+      "DG / Power House",
+      "Effluent Treatment Plant",
+      "Loading / Dispatch Area",
+      "Cooling Tower Area",
+      "Confined Space Zones (Vessels, Tanks, Pits)",
+      "Roof / Elevated Structures",
+      "Canteen / Welfare Building"
+    ]
   },
   // Plant set limited to 2 (NW + SW) for demo — matches DEMO_PLANTS in demo-users-config.ts.
   // NW: primary demo plant (full data, healthy metrics).
@@ -158,7 +172,7 @@ async function main() {
     }
   });
 
-  // 1b) Priya Nair — PRIMARY DEMO PERSONA (HSE Manager, North Garment Unit).
+  // 1b) Priya Nair — PRIMARY DEMO PERSONA (HSE Manager, North Works).
   //     Demo walkthroughs are conducted logged in as her.
   //     Simple named email; always NW plant regardless of matrix.
   const nwPlant = plants.find(p => p.code === "NW");

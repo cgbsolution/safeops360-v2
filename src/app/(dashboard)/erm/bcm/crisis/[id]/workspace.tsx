@@ -18,6 +18,10 @@ import {
   X,
 } from "lucide-react";
 import { CRISIS_STATUS_CHIP, SEVERITY_LABEL, type CrisisDetail } from "@/app/(dashboard)/erm/lib-p3";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 const LOG_TYPES = ["DECISION", "ACTION", "COMMUNICATION", "STATUS_UPDATE"] as const;
 
@@ -165,12 +169,9 @@ export function CrisisWorkspace({
         <StandDownClose crisis={crisis} disabled={offline} onDone={() => router.refresh()} mode="close" />
       )}
 
-      <button
-        onClick={() => window.print()}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-3 text-sm font-medium text-slate-600 hover:bg-slate-50"
-      >
+      <Button type="button" variant="outline" onClick={() => window.print()} className="w-full text-slate-600">
         <Printer size={16} /> Print log (PDF)
-      </button>
+      </Button>
     </div>
   );
 }
@@ -212,18 +213,20 @@ function SeverityControl({ crisis, disabled }: { crisis: CrisisDetail; disabled:
         {[1, 2, 3].map((lvl) => {
           const on = crisis.severityLevel === lvl;
           return (
-            <button
+            <Button
               key={lvl}
+              type="button"
+              variant="ghost"
               onClick={() => change(lvl)}
               disabled={disabled || busy}
-              className={
-                "min-h-12 rounded-xl border-2 px-2 text-center text-xs font-semibold transition-colors disabled:opacity-50 " +
-                (on ? "border-rose-600 bg-rose-50 text-rose-700" : "border-slate-200 text-slate-600 hover:border-slate-300")
-              }
+              className={cn(
+                "min-h-12 rounded-xl border-2 px-2 text-center text-xs font-semibold transition-colors disabled:opacity-50 h-auto",
+                on ? "border-rose-600 bg-rose-50 text-rose-700" : "border-slate-200 text-slate-600 hover:border-slate-300"
+              )}
             >
               <div className="text-base font-extrabold">{lvl}</div>
               <div className="leading-tight">{SEVERITY_LABEL[lvl]?.replace(/^Sev \d+ — /, "")}</div>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -287,11 +290,16 @@ function RecoverySection({ crisis, elapsedHours, disabled }: { crisis: CrisisDet
             else { toneRing = "border-rose-300 bg-rose-50"; toneText = "text-rose-700"; }
           }
           return (
-            <button
+            <Button
               key={t.id}
+              type="button"
+              variant="ghost"
               onClick={() => check(t)}
               disabled={t.checked || disabled || busyId === t.id}
-              className={"flex w-full items-start gap-3 rounded-xl border-2 p-3 text-left transition-colors disabled:cursor-default " + toneRing}
+              className={cn(
+                "flex w-full items-start gap-3 rounded-xl border-2 p-3 text-left transition-colors disabled:cursor-default h-auto",
+                toneRing
+              )}
             >
               <span className="mt-0.5 shrink-0">
                 {busyId === t.id ? (
@@ -314,7 +322,7 @@ function RecoverySection({ crisis, elapsedHours, disabled }: { crisis: CrisisDet
                   </span>
                 )}
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>
@@ -382,30 +390,36 @@ function LogSection({ crisis, disabled }: { crisis: CrisisDetail; disabled: bool
         <div className="space-y-2 border-t border-slate-100 pt-3">
           <div className="flex flex-wrap gap-1.5">
             {LOG_TYPES.map((t) => (
-              <button
+              <Button
                 key={t}
+                type="button"
+                variant="ghost"
                 onClick={() => setType(t)}
-                className={"rounded-full border px-3 py-1.5 text-xs font-medium " + (type === t ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-500")}
+                className={cn(
+                  "rounded-full border px-3 py-1.5 text-xs font-medium h-auto",
+                  type === t ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-500"
+                )}
               >
                 {t.replace(/_/g, " ")}
-              </button>
+              </Button>
             ))}
           </div>
-          <textarea
+          <Textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={2}
-            className="min-h-12 w-full rounded-xl border border-slate-300 p-2.5 text-base"
+            className="min-h-12 text-base"
             placeholder="What happened / what was decided…"
           />
           {err && <p className="text-xs text-rose-600">{err}</p>}
-          <button
+          <Button
+            type="button"
             onClick={submit}
             disabled={busy || !content.trim()}
-            className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary-700 text-base font-semibold text-white hover:bg-primary-800 disabled:opacity-50"
+            className="min-h-12 w-full text-base font-semibold"
           >
             {busy ? <Loader2 size={18} className="animate-spin" /> : null} Add log entry
-          </button>
+          </Button>
         </div>
       )}
     </Section>
@@ -572,19 +586,21 @@ function StandDownClose({ crisis, disabled, onDone, mode }: { crisis: CrisisDeta
   // close
   return (
     <>
-      <button
+      <Button
+        type="button"
+        variant="success"
         onClick={() => setOpen(true)}
         disabled={disabled}
-        className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+        className="min-h-14 w-full text-base font-semibold"
       >
         Close crisis
-      </button>
+      </Button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-4">
           <div className="w-full max-w-lg rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-900">Close & post-crisis review</h2>
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+              <Button type="button" variant="ghost" size="icon" onClick={() => setOpen(false)} className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
             </div>
             <p className="mb-3 text-sm text-slate-500">
               Closure requires a post-crisis review: record a note (e.g. &quot;no further actions required&quot;) <b>or</b> link a CAPA.
@@ -592,24 +608,26 @@ function StandDownClose({ crisis, disabled, onDone, mode }: { crisis: CrisisDeta
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Review note</label>
-                <textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={3} className="w-full rounded-xl border border-slate-300 p-2.5 text-base" placeholder="Lessons learned / no actions required…" />
+                <Textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={3} className="text-base" placeholder="Lessons learned / no actions required…" />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Linked CAPA id (optional)</label>
-                <input value={reviewCapaId} onChange={(e) => setReviewCapaId(e.target.value)} className="w-full rounded-xl border border-slate-300 p-2.5 text-base" placeholder="CAPA id" />
+                <Input value={reviewCapaId} onChange={(e) => setReviewCapaId(e.target.value)} className="text-base" placeholder="CAPA id" />
               </div>
               {err && (
                 <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-sm text-rose-800">
                   <AlertTriangle size={16} className="mt-0.5 shrink-0" /> <span>{err}</span>
                 </div>
               )}
-              <button
+              <Button
+                type="button"
+                variant="success"
                 onClick={run}
                 disabled={busy || (!reviewNote.trim() && !reviewCapaId.trim())}
-                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-base font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                className="min-h-12 w-full text-base font-semibold"
               >
                 {busy ? <Loader2 size={18} className="animate-spin" /> : null} Close crisis
-              </button>
+              </Button>
               {!reviewNote.trim() && !reviewCapaId.trim() && (
                 <p className="text-center text-[11px] text-slate-400">A review note or a linked CAPA is required to close.</p>
               )}

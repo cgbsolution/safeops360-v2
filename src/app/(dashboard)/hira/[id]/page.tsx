@@ -4,6 +4,7 @@ import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/components/auth/can";
+import { markRecordTasksReadForViewer } from "@/lib/workflow/read-state";
 import { Plus, FileText, FileSpreadsheet, Printer } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +57,11 @@ type StudyDetailResponse = {
     residualRiskLevel: string | null;
     residualRiskScore: number | null;
     residualAcceptable: boolean | null;
+    residualAlarpRegion: string | null;
+    alarpStatus: string | null;
+    targetRiskLevel: string | null;
+    targetAlarpRegion: string | null;
+    unacceptableOverrideActive: boolean;
     status: string;
     lastReviewedAt: string | null;
     nextReviewDue: string | null;
@@ -93,6 +99,10 @@ export default async function HiraStudyDetailPage(
     if (e instanceof BackendError && e.status === 404) notFound();
     throw e;
   }
+
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksReadForViewer({ module: "HIRA_STUDY", recordId: id });
 
   const study = data.study;
   const scopeBits = [data.plantName, data.departmentName, data.areaName].filter(Boolean) as string[];
@@ -270,17 +280,50 @@ export default async function HiraStudyDetailPage(
                         </td>
                         <td className="px-3 py-2">
                           {e.residualRiskLevel ? (
-                            <div className="flex items-center gap-1">
-                              <RiskChip level={e.residualRiskLevel} score={e.residualRiskScore ?? 0} />
-                              {e.residualAcceptable === false && (
-                                <span title="Above acceptability threshold" className="text-rose-600 text-xs">⚠</span>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1">
+                                <RiskChip level={e.residualRiskLevel} score={e.residualRiskScore ?? 0} />
+                                {e.residualAcceptable === false && (
+                                  <span title="Not yet acceptable" className="text-rose-600 text-xs">⚠</span>
+                                )}
+                              </div>
+                              {e.residualAlarpRegion && (
+                                <AlarpRegionChip region={e.residualAlarpRegion} status={e.alarpStatus} />
+                              )}
+                              {e.targetRiskLevel && (
+                                <span
+                                  title={`Forecast target after recommended controls${e.targetAlarpRegion ? ` — ${e.targetAlarpRegion.replace(/_/g, " ").toLowerCase()}` : ""}`}
+                                  className="text-[10px] text-slate-500"
+                                >
+                                  → target <span className="font-medium">{e.targetRiskLevel}</span>
+                                </span>
                               )}
                             </div>
                           ) : (
                             <span className="text-xs text-slate-400">not assessed</span>
                           )}
                         </td>
-                        <td className="px-3 py-2 text-xs text-slate-600">{e.status.replace(/_/g, " ")}</td>
+                        <td className="px-3 py-2 text-xs">
+                          <div className="flex flex-col items-start gap-1">
+                            <span
+                              className={
+                                e.status === "PENDING_REAPPROVAL"
+                                  ? "inline-block px-1.5 py-0.5 rounded border bg-amber-100 text-amber-900 border-amber-300 font-medium"
+                                  : "text-slate-600"
+                              }
+                            >
+                              {e.status.replace(/_/g, " ")}
+                            </span>
+                            {e.unacceptableOverrideActive && (
+                              <span
+                                title="Unacceptable risk accepted under an elevated, time-bounded override"
+                                className="inline-block px-1.5 py-0.5 rounded border bg-rose-100 text-rose-800 border-rose-400 font-semibold"
+                              >
+                                ⚠ OVERRIDE
+                              </span>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -342,6 +385,27 @@ function RiskChip({ level, score }: { level: string; score: number }) {
       }`}
     >
       {level} · {score}
+    </span>
+  );
+}
+
+const ALARP_REGION_CHIP: Record<string, { label: string; cls: string }> = {
+  BROADLY_ACCEPTABLE: { label: "Broadly acceptable", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  TOLERABLE: { label: "Tolerable · ALARP", cls: "bg-amber-50 text-amber-800 border-amber-200" },
+  UNACCEPTABLE: { label: "Unacceptable", cls: "bg-rose-50 text-rose-700 border-rose-200" }
+};
+
+function AlarpRegionChip({ region, status }: { region: string; status: string | null }) {
+  const meta = ALARP_REGION_CHIP[region];
+  if (!meta) return null;
+  const pending = region === "TOLERABLE" && status !== "DEMONSTRATED";
+  return (
+    <span
+      title={pending ? "ALARP demonstration outstanding" : undefined}
+      className={`inline-block px-1.5 py-0.5 text-[10px] rounded border ${meta.cls}`}
+    >
+      {meta.label}
+      {pending ? " ⏳" : region === "TOLERABLE" ? " ✓" : ""}
     </span>
   );
 }

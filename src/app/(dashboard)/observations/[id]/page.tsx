@@ -3,9 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
+import { EditRecordIconButton } from "@/components/common/edit-icon-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
+import { ActionRecordPanel } from "@/components/workflow/action-record";
+import { PARTY_SELECT, toParty } from "@/lib/workflow/party";
+import { markRecordTasksRead } from "@/lib/workflow/read-state";
 import { OrphanWorkflowRepair } from "@/components/workflow/orphan-repair";
 import { ApprovalPanel } from "@/components/workflow/approval-panel";
 import { ExecutionPanel, VerificationPanel } from "@/components/workflow/execution-panel";
@@ -16,6 +20,31 @@ import { ActionEvidencePanel } from "@/components/observations/action-evidence-p
 import { AiInsightsPanel } from "@/components/observations/ai-insights-panel";
 import { DeleteObservationButton } from "@/components/observations/delete-observation-button";
 import { RelatedItems } from "@/components/observations/related-items";
+import { DerosterPanel, type DerosterStatus } from "@/components/observations/deroster-panel";
+import { TargetDateHistory } from "@/components/observations/target-date-history";
+import { getUserRoleCodes } from "@/lib/auth/permissions";
+
+// Server-render wording only; the panel replaces these from the API, which is
+// the authority (services/observation_deroster.visible_status). A pending flag
+// must never read as "derostered" — nobody has decided yet.
+const DEROSTER_FALLBACK_LABEL: Record<string, string> = {
+  pending_review: "Under safety review",
+  confirmed: "Derostered",
+  overruled: "Review closed — no action",
+  reinstated: "Reinstated"
+};
+
+// Mirrors DECISION_ROLES in app/services/observation_deroster.py. "Section
+// Head" is the business name for the OBSERVATION workflow's CHECKER step,
+// whose seeded approverRole is DEPARTMENT_HEAD — there is no SECTION_HEAD role.
+const DEROSTER_DECISION_ROLES = [
+  "DEPARTMENT_HEAD",
+  "HSE_MANAGER",
+  "PLANT_HSE_HEAD",
+  "CORPORATE_HSE",
+  "SYSTEM_ADMIN",
+  "ADMIN"
+];
 import { formatDate, statusColor, severityColor, humanize } from "@/lib/utils";
 import { CalendarDays, MapPin, User as UserIcon, AlertCircle, Clock, Camera, CheckCircle2 as CheckCircle2Icon } from "lucide-react";
 
@@ -44,6 +73,8 @@ export default async function ObservationDetailPage(
         number: true,
         type: true,
         category: true,
+        subCategoryCode: true,
+        stopTaxonomy: { select: { subCategoryLabel: true, categoryLabel: true, stopReferenceCode: true } },
         description: true,
         severity: true,
         status: true,
@@ -63,9 +94,60 @@ export default async function ObservationDetailPage(
         triggeredTbtId: true,
         contributedToIncidentId: true,
         closureTriggers: true,
+        // ─── SLA closure-date provenance + trail (spec §2.7: "not just
+        //     stored, surfaced") ───
+        targetDateSource: true,
+        targetDateSlaConfig: true,
+        targetDateOverrideReason: true,
+        targetDateHistory: {
+          orderBy: { changedAt: "asc" },
+          select: {
+            id: true,
+            targetDate: true,
+            source: true,
+            reason: true,
+            slaConfigApplied: true,
+            changedById: true,
+            changedAt: true
+          }
+        },
+        // ─── Named workers + their safety reviews ───
+        workersInvolved: {
+          orderBy: { createdAt: "asc" },
+          select: {
+            id: true,
+            partyType: true,
+            nameSnapshot: true,
+            roleSnapshot: true,
+            employerSnapshot: true,
+            userId: true,
+            contractorWorkerId: true,
+            user: { select: { rosterStatus: true } },
+            contractorWorker: { select: { rosterStatus: true } },
+            deroster: {
+              select: {
+                id: true,
+                status: true,
+                flaggedAt: true,
+                flaggedReason: true,
+                reviewSlaHours: true,
+                reviewDueAt: true,
+                reviewedById: true,
+                reviewedAt: true,
+                reviewDecisionReason: true,
+                correctiveActionTrainingId: true,
+                correctiveActionCompetencyId: true,
+                escalatedAt: true,
+                reinstatedAt: true,
+                reinstatementNote: true
+              }
+            }
+          }
+        },
         plant: { select: { name: true } },
         area: { select: { name: true } },
         observer: { select: { name: true } },
+        contractorCompany: { select: { name: true } },
         responsiblePerson: { select: { name: true, designation: true } },
         activePermit: { select: { id: true, number: true } },
         triggeredInspection: { select: { id: true, number: true } },
@@ -106,7 +188,8 @@ export default async function ObservationDetailPage(
             action: true,
             performedAt: true,
             comments: true,
-            performedBy: { select: { name: true, designation: true } }
+            attachments: true,
+            performedBy: { select: PARTY_SELECT }
           }
         },
         pendingTasks: {
@@ -119,7 +202,7 @@ export default async function ObservationDetailPage(
             assignedAt: true,
             assignedToId: true,
             taskType: true,
-            assignedTo: { select: { name: true, designation: true, department: true } }
+            assignedTo: { select: PARTY_SELECT }
           }
         }
       }
@@ -127,13 +210,27 @@ export default async function ObservationDetailPage(
   ]);
   if (!o) return notFound();
 
+  // Opening the record clears its Inbox unread state — however the viewer got
+  // here (Inbox row, deep link, notification, modal). No-op unless they're the
+  // action owner.
+  await markRecordTasksRead({ module: "OBSERVATION", recordId: o.id, userId });
+
+  // Whether to show the Confirm / Overrule / Reinstate controls. Presentation
+  // only — the endpoints enforce the same role set server-side.
+  const canDecideDeroster = o.workersInvolved.some((w) => w.deroster)
+    ? (await getUserRoleCodes(userId)).some((c) => DEROSTER_DECISION_ROLES.includes(c))
+    : false;
+
   // Find the user's pending task (if any) on this record. Only consider
   // it actionable when the workflow is still IN_PROGRESS — once the
   // instance is COMPLETED or REJECTED any leftover pending tasks are
   // stale and shouldn't drive the action panels.
   const workflowActive = instance?.status === "IN_PROGRESS";
+  // Include OVERDUE/ESCALATED so an assignee can still act once a task
+  // slips past its due date (mirrors the near-miss page).
+  const OPEN_TASK_STATUSES = ["PENDING", "OVERDUE", "ESCALATED"];
   const myTask = workflowActive
-    ? instance?.pendingTasks.find((t) => t.assignedToId === userId && t.status === "PENDING")
+    ? instance?.pendingTasks.find((t) => t.assignedToId === userId && OPEN_TASK_STATUSES.includes(t.status))
     : undefined;
 
   // Detect workflow states that need self-heal: (a) orphan — instance is
@@ -209,6 +306,9 @@ export default async function ObservationDetailPage(
             ) : (
               <Badge className={statusColor(o.status)}>{humanize(o.status)}</Badge>
             )}
+            {o.status !== "CLOSED" && (
+              <EditRecordIconButton href={`/observations/${o.id}/edit`} permission="OBSERVATION.UPDATE" />
+            )}
           </div>
         }
       />
@@ -249,7 +349,7 @@ export default async function ObservationDetailPage(
             history={instance.history.map((h) => ({
               id: h.id, stepId: h.stepId, stepName: h.stepName, action: h.action,
               performedAt: h.performedAt, comments: h.comments,
-              performedBy: { name: h.performedBy.name, designation: h.performedBy.designation }
+              performedBy: toParty(h.performedBy)
             }))}
             pendingTasks={
               workflowActive
@@ -270,7 +370,7 @@ export default async function ObservationDetailPage(
                     }
                     return unique.map((t) => ({
                       id: t.id, stepId: t.stepId, stepName: t.stepName, status: t.status, dueAt: t.dueAt,
-                      assignedTo: { name: t.assignedTo.name, designation: t.assignedTo.designation, department: t.assignedTo.department }
+                      assignedTo: toParty(t.assignedTo)
                     }));
                   })()
                 : []
@@ -394,9 +494,66 @@ export default async function ObservationDetailPage(
             </CardContent>
           </Card>
 
+          {/* The action owner's corrective-action narrative + the verifier's
+              findings. Sits directly under the record details because on a
+              closed observation it IS the outcome — previously it was only
+              reachable by expanding the Audit Trail. Self-hides until someone
+              has actually executed or commented. */}
+          {instance && (
+            <ActionRecordPanel
+              history={instance.history.map((h) => ({
+                id: h.id,
+                stepId: h.stepId,
+                stepName: h.stepName,
+                action: h.action,
+                performedAt: h.performedAt,
+                comments: h.comments,
+                attachments: h.attachments,
+                performedBy: toParty(h.performedBy)
+              }))}
+              steps={instance.definition.steps.map((s) => ({ id: s.id, stepType: s.stepType }))}
+            />
+          )}
+
           {/* AI agent outputs (TriageAgent on submission, LessonsDistribution
               on closure). Self-hides when no agent has fired or
               ANTHROPIC_API_KEY isn't set. */}
+          {/* Safety Review — one card per named worker carrying a deroster.
+              Self-hides when nobody was flagged. Placed above the AI panel
+              because an open review is time-boxed by an SLA. */}
+          <DerosterPanel
+            observationId={o.id}
+            canDecide={canDecideDeroster}
+            workers={o.workersInvolved.map((w) => ({
+              id: w.id,
+              partyType: w.partyType as "USER" | "CONTRACTOR_WORKER",
+              name: w.nameSnapshot,
+              role: w.roleSnapshot,
+              employer: w.employerSnapshot,
+              rosterStatus: w.user?.rosterStatus ?? w.contractorWorker?.rosterStatus ?? null,
+              deroster: w.deroster
+                ? {
+                    ...w.deroster,
+                    // `status` is a plain String column (not a Postgres enum),
+                    // so Prisma types it as `string`; the DB CHECK-equivalent
+                    // is the service layer's state machine.
+                    status: w.deroster.status as DerosterStatus,
+                    // The panel re-fetches these from the API on mount; the
+                    // server owns both the wording and the corrective-action
+                    // state, so nothing is derived from `status` here.
+                    displayLabel: DEROSTER_FALLBACK_LABEL[w.deroster.status] ?? w.deroster.status,
+                    punitive: w.deroster.status === "confirmed",
+                    flaggedAt: w.deroster.flaggedAt.toISOString(),
+                    reviewDueAt: w.deroster.reviewDueAt.toISOString(),
+                    reviewedAt: w.deroster.reviewedAt?.toISOString() ?? null,
+                    escalatedAt: w.deroster.escalatedAt?.toISOString() ?? null,
+                    reinstatedAt: w.deroster.reinstatedAt?.toISOString() ?? null,
+                    correctiveAction: null
+                  }
+                : null
+            }))}
+          />
+
           <AiInsightsPanel closureTriggers={o.closureTriggers} />
 
           {/* Corrective-action photos uploaded by the action owner — shown
@@ -462,14 +619,39 @@ export default async function ObservationDetailPage(
               <Meta icon={MapPin} label="Plant" value={o.plant.name} />
               <Meta icon={MapPin} label="Area" value={o.area?.name ?? "—"} />
               <Meta icon={UserIcon} label="Observer" value={o.observer.name} />
+              {o.contractorCompany && (
+                <Meta icon={UserIcon} label="Contractor" value={o.contractorCompany.name} />
+              )}
               <Meta
                 icon={UserIcon}
                 label="Responsible"
                 value={o.responsiblePerson ? `${o.responsiblePerson.name}${o.responsiblePerson.designation ? ` — ${o.responsiblePerson.designation}` : ""}` : "—"}
               />
               <Meta icon={Clock} label="Target Date" value={formatDate(o.targetDate)} />
+              {/* Which SLA policy produced that date, any override + reason,
+                  and the full change trail. */}
+              <TargetDateHistory
+                targetDate={o.targetDate}
+                source={o.targetDateSource}
+                slaConfig={o.targetDateSlaConfig}
+                overrideReason={o.targetDateOverrideReason}
+                history={o.targetDateHistory}
+              />
               <Meta icon={AlertCircle} label="Type" value={humanize(o.type)} />
-              <Meta icon={AlertCircle} label="Category" value={humanize(o.category)} />
+              <Meta
+                icon={AlertCircle}
+                label="Category"
+                value={
+                  o.stopTaxonomy
+                    ? `${o.stopTaxonomy.categoryLabel} (${o.stopTaxonomy.stopReferenceCode})`
+                    : humanize(o.category)
+                }
+              />
+              {/* Sub-category exists only on at-risk records classified under the
+                  STOP taxonomy — legacy rows awaiting review show nothing here. */}
+              {o.stopTaxonomy && (
+                <Meta icon={AlertCircle} label="Sub-category" value={o.stopTaxonomy.subCategoryLabel} />
+              )}
             </CardContent>
           </Card>
 

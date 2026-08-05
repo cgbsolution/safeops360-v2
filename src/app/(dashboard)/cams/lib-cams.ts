@@ -114,6 +114,13 @@ export interface AuditType {
   defaultRecurrence?: string | null;
   requiresAssetRef: boolean;
   requiresAuditorCompetency: string[];
+  // WP-49: the audit type is the configuration home. `scoringRules` replaces the
+  // platform-wide MINIMUM_PASS_SCORE constant (F-22); `regimeCode` selects the
+  // buyer-regime vocabulary (WP-47); `competenceEnforcement` decides whether a
+  // missing competency warns or blocks (WP-36).
+  scoringRules?: { minimumPassScore?: number; criticalGateThreshold?: number } | null;
+  regimeCode?: string | null;
+  competenceEnforcement?: string;
   standardRefs: string[];
   isActive: boolean;
   engagementCount: number;
@@ -155,6 +162,9 @@ export interface Engagement {
   openFindingCount: number;
   ncCount: number;
   updatedAt?: string | null;
+  // Unified feed only: provenance ("AUDIT" = ComplianceAudit engine) + the
+  // detail route (audits → /cams/audits, inspections → /cams/engagements).
+  href?: string | null;
 }
 
 export interface EngagementListResponse {
@@ -285,6 +295,8 @@ export interface Finding {
   capaRequired: boolean;
   createdAt?: string | null;
   updatedAt?: string | null;
+  // Unified feed only: detail route (audit findings → /cams/audits).
+  href?: string | null;
 }
 
 export interface FindingListResponse {
@@ -332,62 +344,6 @@ export interface Analytics {
   capaOverduePct: number;
 }
 
-// ── Audit Programme (C-03) ────────────────────────────────────────────────────
-export interface ProgrammeCell {
-  auditTypeId: string;
-  auditTypeName: string;
-  standardRefs: string[];
-  siteId?: string | null;
-  siteName?: string | null;
-  done: number;
-  planned: number;
-  total: number;
-  status: "DONE" | "PLANNED" | "GAP";
-  lastConductedDate?: string | null;
-}
-export interface ProgrammeGap {
-  auditTypeName: string;
-  siteId?: string | null;
-  siteName?: string | null;
-  standardRefs: string[];
-}
-export interface Programme {
-  sites: { siteId: string; siteName?: string | null }[];
-  auditTypes: { auditTypeId: string; name: string; standardRefs: string[] }[];
-  standards: string[];
-  matrix: ProgrammeCell[];
-  gaps: ProgrammeGap[];
-  cellCount: number;
-  coveredCount: number;
-  coveragePct: number;
-}
-
-// ── Board / Management-Review pack (C-15) ─────────────────────────────────────
-export interface BoardPack {
-  periodLabel: string;
-  programme: Analytics["programme"];
-  programmeCoveragePct: number;
-  programmeGaps: ProgrammeGap[];
-  findingsBySeverity: Record<string, number>;
-  repeatFindingRatePct: number;
-  openFindingCount: number;
-  avgClosureDays?: number | null;
-  clauseConformance: ClauseConformanceRow[];
-  paretoByClause: ParetoRow[];
-  benchmarkingBySite: BenchmarkRow[];
-  bySourceModule: Record<string, number>;
-  capaOverduePct: number;
-  compliance: {
-    totalObligations: number;
-    verifiedByAuditCount: number;
-    verifiedPct: number;
-    openNcCount: number;
-    obligationsSource?: string | null;
-  };
-  snapshotHash?: string | null;
-  generatedAt?: string | null;
-}
-
 // ── Compliance Tracker (C-12) ─────────────────────────────────────────────────
 export interface ComplianceLink {
   id: string;
@@ -415,10 +371,19 @@ export interface ObligationCoverageRow {
   links: ComplianceLink[];
 }
 export interface ComplianceTracker {
-  totalObligations: number;
-  verifiedByAuditCount: number;
-  verifiedPct: number;
-  openNcCount: number;
+  // WP-52 / F-48: the counts are NULLABLE on purpose. When the statutory
+  // obligations register cannot be read, the backend returns
+  // `available: false` with nulls rather than zeros — "no obligations" and
+  // "could not read obligations" are different facts, and only one of them is
+  // good news on a compliance dashboard. Branch on `available`, never on a 0.
+  available?: boolean;
+  unavailableReason?: string | null;
+  totalObligations: number | null;
+  verifiedByAuditCount: number | null;
+  // Null on an empty register too — 0% over an empty denominator is meaningless
+  // and reads as total failure.
+  verifiedPct: number | null;
+  openNcCount: number | null;
   statusCounts: Record<string, number>;
   rows: ObligationCoverageRow[];
 }

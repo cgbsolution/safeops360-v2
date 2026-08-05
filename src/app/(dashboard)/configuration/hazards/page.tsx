@@ -1,6 +1,7 @@
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
+import { PermitGateToggle } from "./permit-gate-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +36,8 @@ type Hazard = {
   isGlobal: boolean;
   factoriesActSection: string | null;
   isStandard: string | null;
+  requiresPermit: boolean;
+  permitTypes: string[] | null;
 };
 
 export default async function HazardsAdminPage(
@@ -101,11 +104,18 @@ export default async function HazardsAdminPage(
                 <div key={h.id} className="rounded-lg border bg-white p-4">
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-medium text-slate-900">{h.name}</div>
-                    {h.isGlobal && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200 flex-shrink-0">
-                        global
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      {h.requiresPermit && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                          permit
+                        </span>
+                      )}
+                      {h.isGlobal && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 border border-slate-200">
+                          global
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div className="text-xs text-slate-500 mt-1">{h.code}</div>
                   <p className="text-sm text-slate-600 mt-2 line-clamp-3">{h.description}</p>
@@ -128,6 +138,11 @@ export default async function HazardsAdminPage(
                       )}
                     </div>
                   )}
+                  <PermitGateToggle
+                    hazardId={h.id}
+                    requiresPermit={h.requiresPermit ?? false}
+                    permitTypes={h.permitTypes ?? []}
+                  />
                 </div>
               ))}
             </div>

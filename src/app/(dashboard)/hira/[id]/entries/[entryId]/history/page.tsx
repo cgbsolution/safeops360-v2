@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { AccessRestricted } from "@/components/access-restricted";
 import { VersionDiff } from "./version-diff";
 
 export const dynamic = "force-dynamic";
@@ -57,6 +58,8 @@ export default async function HiraEntryHistoryPage(
     ]);
   } catch (e) {
     if (e instanceof BackendError && e.status === 404) notFound();
+    if (e instanceof BackendError && e.status === 403)
+      return <AccessRestricted backHref="/hira" backLabel="← Back to HIRA register" />;
     throw e;
   }
   if (entry.studyId !== studyId) notFound();

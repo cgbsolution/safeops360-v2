@@ -9,14 +9,24 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
+import { ActionRecordPanel } from "@/components/workflow/action-record";
+import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
+import { markRecordTasksRead } from "@/lib/workflow/read-state";
 import { ApprovalPanel } from "@/components/workflow/approval-panel";
 import { ExecutionPanel, VerificationPanel } from "@/components/workflow/execution-panel";
 import { ResubmitPanel } from "@/components/workflow/resubmit-panel";
 import { ClassificationPanel } from "@/components/incidents/classification-panel";
 import { InvestigationPanel } from "@/components/incidents/investigation-panel";
+import { IncidentIntelligencePanel } from "@/components/incidents/incident-intelligence-panel";
+import { CauseAnalysisCanvas } from "@/components/incidents/cause-analysis-canvas";
+import { IncidentSimilarCard } from "@/components/incidents/incident-similar-card";
+import { IncidentDownstreamPanel } from "@/components/incidents/incident-downstream-panel";
+import { IncidentCostCard } from "@/components/incidents/incident-cost-card";
+import { IncidentStatutoryPanel } from "@/components/incidents/incident-statutory-panel";
 import { MultiFileUpload } from "@/components/incidents/multi-file-upload";
 import { AttachmentGallery, MissingInitialPhotosBanner } from "@/components/incidents/attachment-gallery";
 import { PrintIncidentButton } from "@/components/incidents/print-incident-button";
+import { DeleteIncidentIconButton } from "@/components/incidents/delete-icon-button";
 import {
   IncidentSummarySection, PersonsInvolvedSection, TimelineSection,
   WitnessStatementsSection, EvidenceSection, EquipmentSection,
@@ -79,6 +89,10 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
   });
   if (!i) return notFound();
 
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksRead({ module: "INCIDENT", recordId: i.id, userId });
+
   // ─── Page-level permission gate ───────────────────────────────────
   // Block users who don't have INCIDENT.READ for THIS specific record
   // before any child data is fetched. Without this check the page would
@@ -115,6 +129,13 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
   // Corporate HSE / Admin can see them. Workers and supervisors cannot.
   const role = (session?.user as any)?.role ?? "";
   const canSeePrivilegedComments = ["HSE_MANAGER", "PLANT_HEAD", "CORPORATE_HSE", "ADMIN", "SYSTEM_ADMIN"].includes(role);
+  // Feature 5 — the numeric risk score is visible to Plant Head and above.
+  const canSeeScore = ["PLANT_HEAD", "CORPORATE_HSE", "ADMIN", "SYSTEM_ADMIN"].includes(role);
+  // Features 1/2 — who may run AI assist + raise CAPAs from causes (backend
+  // re-checks INCIDENT.UPDATE; this only gates the UI).
+  const canManageIntel =
+    ["HSE_MANAGER", "PLANT_HEAD", "CORPORATE_HSE", "ADMIN", "SYSTEM_ADMIN"].includes(role) ||
+    i.investigationTeamLead === userId;
 
   const initialPhotoCount = await prisma.incidentAttachment.count({
     where: { incidentId: i.id, category: "INITIAL_PHOTO", deletedAt: null }
@@ -125,7 +146,7 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
     where: { module_recordId: { module: "INCIDENT", recordId: i.id } },
     include: {
       definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: true }, orderBy: { performedAt: "asc" } },
+      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
       // Filter to ACTIVE statuses only. The relation is named
       // `pendingTasks` in the schema but is actually `WorkflowTask[]`
       // unfiltered — without this `where` it returns COMPLETED /
@@ -133,18 +154,18 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
       // entries on the workflow tracker panel.
       pendingTasks: {
         where: { status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-        include: { assignedTo: true }
+        include: { assignedTo: { include: PARTY_INCLUDE } }
       }
     }
   });
 
-  // Match the assignee's task whether it's still PENDING or has gone OVERDUE /
-  // ESCALATED past its due date — same active statuses the pendingTasks query
-  // fetches. (Previously this was PENDING-only, so once a task went overdue the
-  // assignee kept seeing "Awaiting Action" but lost the action panel.)
-  const myTask = instance?.pendingTasks.find(
-    (t) => t.assignedToId === userId && ["PENDING", "OVERDUE", "ESCALATED"].includes(t.status),
-  );
+  // Mirror the near-miss page: an assignee must still be able to act on
+  // their task once it slips past its due date. Without OVERDUE/ESCALATED
+  // here, an overdue task shows in the "Awaiting Action" banner (which uses
+  // the broader status set) but its action panel never renders — leaving
+  // the assignee with nothing to click.
+  const OPEN_TASK_STATUSES = ["PENDING", "OVERDUE", "ESCALATED"];
+  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && OPEN_TASK_STATUSES.includes(t.status));
   const isInitiator = !!instance && instance.initiatedById === userId;
   const isClosed = instance?.status === "COMPLETED" || i.status === "CLOSED";
   const showResubmit = !!instance && instance.status === "REJECTED" && isInitiator;
@@ -154,15 +175,6 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
 
   return (
     <div className="print:bg-white">
-      {/* TEMP DEBUG — remove after diagnosis */}
-      <div className="mb-4 rounded border-2 border-amber-500 bg-amber-50 p-3 text-[11px] font-mono leading-relaxed print:hidden">
-        <div><b>DEBUG</b> userId(session) = <b>{userId || "(empty)"}</b></div>
-        <div>instance = {instance ? `${instance.status}` : "NONE"} | myTask = {myTask ? `${myTask.stepName} · type=${(myTask as any).taskType} · status=${myTask.status}` : "NULL (no match)"}</div>
-        <div>pendingTasks ({instance?.pendingTasks.length ?? 0}):</div>
-        {instance?.pendingTasks.map((t) => (
-          <div key={t.id}>· assignedToId={t.assignedToId} {t.assignedToId === userId ? "✓MATCH" : "✗ no-match"} · status={t.status} · type={(t as any).taskType} · step="{t.stepName}"</div>
-        ))}
-      </div>
       <PageHeader
         title={i.number}
         description={`${humanize(i.type)} · ${i.plant.name}`}
@@ -189,6 +201,7 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
               }>{humanize(instance.status)}</Badge>
             )}
             <PrintIncidentButton />
+            <DeleteIncidentIconButton incidentId={i.id} incidentNumber={i.number} redirectTo="/incidents" />
           </div>
         }
       />
@@ -217,11 +230,11 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
             history={instance.history.map((h) => ({
               id: h.id, stepId: h.stepId, stepName: h.stepName, action: h.action,
               performedAt: h.performedAt, comments: h.comments,
-              performedBy: { name: h.performedBy.name, designation: h.performedBy.designation }
+              performedBy: toParty(h.performedBy)
             }))}
             pendingTasks={instance.pendingTasks.map((t) => ({
               id: t.id, stepId: t.stepId, stepName: t.stepName, status: t.status, dueAt: t.dueAt,
-              assignedTo: { name: t.assignedTo.name, designation: t.assignedTo.designation, department: t.assignedTo.department }
+              assignedTo: toParty(t.assignedTo)
             }))}
             currentStepId={instance.currentStepId}
             status={instance.status}
@@ -299,6 +312,25 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
           {/* ─── 2. Incident Summary ─── */}
           <IncidentSummarySection incident={i} reclassifications={i.reclassifications as any} />
 
+          {/* The narrative each actor wrote when completing their step —
+              corrective action, verification findings, rework reasons. Was
+              only reachable by expanding the Audit Trail. */}
+          {instance && (
+            <ActionRecordPanel
+              history={instance.history.map((h) => ({
+                id: h.id,
+                stepId: h.stepId,
+                stepName: h.stepName,
+                action: h.action,
+                performedAt: h.performedAt,
+                comments: h.comments,
+                attachments: h.attachments,
+                performedBy: toParty(h.performedBy)
+              }))}
+              steps={instance.definition.steps.map((s) => ({ id: s.id, stepType: s.stepType }))}
+            />
+          )}
+
           {/* ─── Initial photos — upload widget hidden on closed/print ─── */}
           <Card id="initial-photos">
             <CardHeader>
@@ -341,14 +373,41 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
           {/* ─── 9. Cause Analysis ─── */}
           <CauseAnalysisSection incident={i} />
 
+          {/* ─── 9a. Visual RCA canvas — Fishbone / 5-Why shared model (Feature 1) ─── */}
+          <CauseAnalysisCanvas
+            incidentId={i.id}
+            plantId={i.plantId}
+            initial={i.causeAnalysis as any}
+            canManage={canManageIntel}
+          />
+
+          {/* ─── 9b. Incident Intelligence — AI assist + inline CAPA (Features 1, 2) ─── */}
+          <IncidentIntelligencePanel
+            incidentId={i.id}
+            plantId={i.plantId}
+            rootCauses={(i.rootCauses ?? []) as string[]}
+            aiAssist={i.aiAssist as any}
+            canManage={canManageIntel}
+          />
+
+          {/* ─── 9c. Trend tie-back + downstream impact (Features 3, 7) ─── */}
+          <IncidentSimilarCard incidentId={i.id} />
+          <IncidentDownstreamPanel incidentId={i.id} />
+
           {/* ─── 10. CAPAs ─── */}
           <CapasSection capas={i.capas as any} />
 
           {/* ─── 11. Cost ─── */}
           <CostBreakdownSection incident={i} />
 
+          {/* ─── 11a. Cost of unsafety rollup (Feature 8) ─── */}
+          <IncidentCostCard plantId={i.plantId} costImpact={i.costImpact as any} />
+
           {/* ─── 12. Statutory & Compliance ─── */}
           <StatutorySection incident={i} />
+
+          {/* ─── 12a. Statutory form auto-generation (Feature 4) ─── */}
+          <IncidentStatutoryPanel incidentId={i.id} canManage={canManageIntel} />
 
           {/* ─── 14. Lessons Learned ─── */}
           <LessonsLearnedSection incident={i} />
@@ -371,7 +430,7 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
         {/* Sidebar */}
         <div className="space-y-4">
           {/* ─── Sidebar metadata ─── */}
-          <IncidentMetadataSidebar incident={i} />
+          <IncidentMetadataSidebar incident={i} canSeeScore={canSeeScore} />
 
           {/* ─── 13. Investigation Team ─── */}
           <InvestigationTeamSection team={i.investigationTeam as any} />

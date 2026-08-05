@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { CheckCircle2, Clock, AlertTriangle, ChevronDown, ChevronUp, User as UserIcon } from "lucide-react";
 import { cn, formatDateTime, humanize } from "@/lib/utils";
+import { formatPartyMeta, formatPartyMetaOrHint, formatPartyName } from "@/lib/users/user-ref";
 
 type Step = {
   id: string;
@@ -14,6 +15,18 @@ type Step = {
   slaHours?: number | null;
 };
 
+// Everyone shown on the tracker — the pending assignee and every actor in the
+// audit trail — is described by the same identity shape, so "who is this?" reads
+// identically wherever it appears. `plantName` is flattened by the caller from
+// the User → Plant relation.
+type Party = {
+  name?: string | null;
+  designation?: string | null;
+  role?: string | null;
+  department?: string | null;
+  plantName?: string | null;
+};
+
 type HistoryEntry = {
   id: string;
   stepId: string | null;
@@ -21,7 +34,7 @@ type HistoryEntry = {
   action: string;
   performedAt: Date | string;
   comments?: string | null;
-  performedBy: { name: string; designation?: string | null };
+  performedBy: Party;
 };
 
 type Task = {
@@ -30,11 +43,7 @@ type Task = {
   stepName: string;
   status: string;
   dueAt?: Date | string | null;
-  assignedTo: {
-    name: string;
-    designation?: string | null;
-    department?: string | null;
-  };
+  assignedTo: Party;
 };
 
 export function WorkflowTracker({
@@ -132,30 +141,35 @@ export function WorkflowTracker({
         return (
         <div className="rounded-lg border bg-amber-50 border-amber-200 p-3">
           <div className="text-xs uppercase tracking-wider font-semibold text-amber-800 mb-2">Awaiting Action</div>
-          <div className="space-y-1.5">
-            {visiblePendingTasks.map((t) => {
-              // Build the "Designation · Department" suffix from whatever
-              // we have. Either field can be missing on User; gracefully
-              // skip dots when a field is empty.
-              const meta = [t.assignedTo.designation, t.assignedTo.department].filter(Boolean).join(" · ");
-              return (
-                <div key={t.id} className="flex items-center justify-between text-sm gap-3">
-                  <span className="flex items-center gap-2 text-amber-900 min-w-0">
-                    <UserIcon size={12} className="flex-shrink-0" />
-                    <span className="font-medium">{t.assignedTo.name}</span>
-                    {meta && <span className="text-xs text-amber-700/80 truncate">({meta})</span>}
-                    <span className="text-amber-400">·</span>
-                    <span className="text-amber-700 truncate">{t.stepName}</span>
-                  </span>
-                  {t.dueAt && (
-                    <span className="text-xs text-amber-700 flex-shrink-0">
-                      <Clock size={11} className="inline mr-1" />
-                      Due {formatDateTime(t.dueAt)}
+          <div className="space-y-2.5">
+            {visiblePendingTasks.map((t) => (
+              // Two lines on purpose: the person's full name has to be legible
+              // at a glance, and designation / role / department / plant are
+              // what tell a reader WHICH "Process Operator" owes the action.
+              // Squeezing all five onto one line truncated the identity away
+              // on narrower screens, which is exactly what we're fixing.
+              <div key={t.id} className="flex items-start justify-between text-sm gap-3">
+                <span className="flex items-start gap-2 text-amber-900 min-w-0">
+                  <UserIcon size={12} className="flex-shrink-0 mt-1" />
+                  <span className="min-w-0">
+                    <span className="block">
+                      <span className="font-semibold">{formatPartyName(t.assignedTo)}</span>
+                      <span className="text-amber-400"> · </span>
+                      <span className="text-amber-700">{t.stepName}</span>
                     </span>
-                  )}
-                </div>
-              );
-            })}
+                    <span className="block text-xs text-amber-700/90 mt-0.5">
+                      {formatPartyMetaOrHint(t.assignedTo)}
+                    </span>
+                  </span>
+                </span>
+                {t.dueAt && (
+                  <span className="text-xs text-amber-700 flex-shrink-0 mt-0.5">
+                    <Clock size={11} className="inline mr-1" />
+                    Due {formatDateTime(t.dueAt)}
+                  </span>
+                )}
+              </div>
+            ))}
           </div>
         </div>
         );
@@ -188,12 +202,14 @@ export function WorkflowTracker({
                 )} />
                 <div className="flex-1">
                   <div className="text-slate-900">
-                    <span className="font-medium">{h.performedBy.name}</span>
+                    <span className="font-medium">{formatPartyName(h.performedBy)}</span>
                     <span className="text-slate-500"> — {humanize(h.action)}</span>
                     <span className="text-slate-500"> · {h.stepName}</span>
                   </div>
                   {h.comments && <div className="text-slate-600 mt-0.5 italic">"{h.comments}"</div>}
-                  <div className="text-xs text-slate-400 mt-0.5">{formatDateTime(h.performedAt)}{h.performedBy.designation ? ` · ${h.performedBy.designation}` : ""}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">
+                    {[formatDateTime(h.performedAt), formatPartyMeta(h.performedBy)].filter(Boolean).join(" · ")}
+                  </div>
                 </div>
               </div>
             ))}

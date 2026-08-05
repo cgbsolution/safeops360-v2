@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import { Printer, Save, CheckCircle2, Settings2 } from "lucide-react";
 import { HeatMap, KpiTile, BandBadge, TrendArrow } from "@/components/erm/shared";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import type { BoardPackRender, BoardPackPhase2, BoardPackPhase3 } from "./page";
 import type { Tier3Summary } from "@/app/(dashboard)/erm/lib-t3";
 
@@ -150,11 +154,9 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
           <div className="space-y-2">
             {SECTION_DEFS.map((s) => (
               <label key={s.key} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={!!sections[s.key]}
                   onChange={() => toggleSection(s.key)}
-                  className="h-4 w-4 rounded border-slate-300 text-primary-700 focus:ring-primary-500"
                 />
                 {s.label}
               </label>
@@ -173,12 +175,12 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
                 <label className="mb-1 block text-[11px] font-semibold text-slate-600">
                   {r.riskCode} — {r.title}
                 </label>
-                <textarea
+                <Textarea
                   value={commentary[r.id] ?? ""}
                   onChange={(e) => setComment(r.id, e.target.value)}
                   rows={2}
                   placeholder="Add board commentary…"
-                  className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                  className="px-2 py-1.5 text-xs"
                 />
               </div>
             ))}
@@ -199,26 +201,28 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
               Saved.
             </div>
           )}
-          <button
+          <Button
+            variant="outline"
             onClick={persist}
             disabled={busy}
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2"
           >
             <Save size={16} /> {busy ? "Saving…" : "Save Config"}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="success"
             onClick={publish}
             disabled={busy || status === "PUBLISHED"}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-700 disabled:opacity-50"
+            className="flex w-full items-center justify-center gap-2"
           >
             <CheckCircle2 size={16} /> {status === "PUBLISHED" ? "Published" : "Publish Pack"}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => window.print()}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-primary-800"
+            className="flex w-full items-center justify-center gap-2"
           >
             <Printer size={16} /> Print / Save as PDF
-          </button>
+          </Button>
           <div className="pt-1 text-center text-[11px] text-slate-400">
             {quarterLabel} · Status:{" "}
             <span className={status === "PUBLISHED" ? "font-semibold text-emerald-600" : "text-slate-500"}>
@@ -294,48 +298,48 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
 
             {sections.top10 && (
               <Section title="Top 10 Risks (by residual score)">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                      <th className="px-2 py-2">#</th>
-                      <th className="px-2 py-2">Code</th>
-                      <th className="px-2 py-2">Title</th>
-                      <th className="px-2 py-2">Residual</th>
-                      <th className="px-2 py-2">Trend</th>
-                      <th className="px-2 py-2">Owner</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>Residual</TableHead>
+                      <TableHead>Trend</TableHead>
+                      <TableHead>Owner</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {top10.map((r) => (
-                      <tr key={r.id} className="border-b border-slate-100 align-top">
-                        <td className="px-2 py-2 font-semibold tabular-nums text-slate-400">{r.rank}</td>
-                        <td className="px-2 py-2 font-medium text-slate-800">{r.riskCode}</td>
-                        <td className="px-2 py-2 text-slate-700">
+                      <TableRow key={r.id}>
+                        <TableCell className="font-semibold tabular-nums text-slate-400">{r.rank}</TableCell>
+                        <TableCell className="font-medium text-slate-800">{r.riskCode}</TableCell>
+                        <TableCell className="text-slate-700">
                           {r.title}
                           {commentary[r.id]?.trim() && (
                             <p className="mt-1 whitespace-pre-wrap border-l-2 border-primary-200 pl-2 text-[11px] italic text-slate-500">
                               {commentary[r.id]}
                             </p>
                           )}
-                        </td>
-                        <td className="px-2 py-2">
+                        </TableCell>
+                        <TableCell>
                           <BandBadge band={r.residualBand} score={r.residualScore} />
-                        </td>
-                        <td className="px-2 py-2">
+                        </TableCell>
+                        <TableCell>
                           <TrendArrow trend={r.trend} delta={r.trendDelta} />
-                        </td>
-                        <td className="px-2 py-2 text-xs text-slate-600">{r.riskOwnerName ?? "—"}</td>
-                      </tr>
+                        </TableCell>
+                        <TableCell className="text-xs text-slate-600">{r.riskOwnerName ?? "—"}</TableCell>
+                      </TableRow>
                     ))}
                     {top10.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-2 py-4 text-center text-xs text-slate-400">
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-xs text-slate-400">
                           No risks.
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </Section>
             )}
 
@@ -344,39 +348,39 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
                 {movement.length === 0 ? (
                   <p className="text-xs text-slate-400">No band changes this quarter.</p>
                 ) : (
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                        <th className="px-2 py-2">Code</th>
-                        <th className="px-2 py-2">Title</th>
-                        <th className="px-2 py-2">From</th>
-                        <th className="px-2 py-2">To</th>
-                        <th className="px-2 py-2">Direction</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Code</TableHead>
+                        <TableHead>Title</TableHead>
+                        <TableHead>From</TableHead>
+                        <TableHead>To</TableHead>
+                        <TableHead>Direction</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {movement.map((m) => (
-                        <tr key={m.id} className="border-b border-slate-100">
-                          <td className="px-2 py-2 font-medium text-slate-800">{m.riskCode}</td>
-                          <td className="px-2 py-2 text-slate-700">{m.title}</td>
-                          <td className="px-2 py-2">
+                        <TableRow key={m.id}>
+                          <TableCell className="font-medium text-slate-800">{m.riskCode}</TableCell>
+                          <TableCell className="text-slate-700">{m.title}</TableCell>
+                          <TableCell>
                             <BandBadge band={m.fromBand} />
-                          </td>
-                          <td className="px-2 py-2">
+                          </TableCell>
+                          <TableCell>
                             <BandBadge band={m.toBand} />
-                          </td>
-                          <td
+                          </TableCell>
+                          <TableCell
                             className={
-                              "px-2 py-2 text-xs font-semibold " +
+                              "text-xs font-semibold " +
                               (m.direction === "UP" ? "text-rose-600" : "text-emerald-600")
                             }
                           >
                             {m.direction === "UP" ? "▲ Worsened" : "▼ Improved"}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 )}
               </Section>
             )}
@@ -442,26 +446,26 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
                     {acceptanceLog.length === 0 ? (
                       <p className="text-xs text-slate-400">No formally accepted risks this period.</p>
                     ) : (
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                            <th className="px-2 py-2">Code</th>
-                            <th className="px-2 py-2">Justification</th>
-                            <th className="px-2 py-2">Accepted By</th>
-                            <th className="px-2 py-2">Accepted At</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Code</TableHead>
+                            <TableHead>Justification</TableHead>
+                            <TableHead>Accepted By</TableHead>
+                            <TableHead>Accepted At</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
                           {acceptanceLog.map((a) => (
-                            <tr key={a.riskCode} className="border-b border-slate-100 align-top">
-                              <td className="px-2 py-2 font-medium text-slate-800">{a.riskCode}</td>
-                              <td className="px-2 py-2 text-slate-700">{a.justification ?? "—"}</td>
-                              <td className="px-2 py-2 text-slate-600">{a.acceptedBy ?? "—"}</td>
-                              <td className="px-2 py-2 text-xs text-slate-500">{fmtDate(a.acceptedAt)}</td>
-                            </tr>
+                            <TableRow key={a.riskCode}>
+                              <TableCell className="font-medium text-slate-800">{a.riskCode}</TableCell>
+                              <TableCell className="text-slate-700">{a.justification ?? "—"}</TableCell>
+                              <TableCell className="text-slate-600">{a.acceptedBy ?? "—"}</TableCell>
+                              <TableCell className="text-xs text-slate-500">{fmtDate(a.acceptedAt)}</TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     )}
                   </div>
                 </div>
@@ -474,36 +478,36 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
                 {phase2.kriStatus.length === 0 ? (
                   <p className="text-xs text-slate-400">All KRIs within tolerance (no RED/AMBER).</p>
                 ) : (
-                  <table className="w-full text-sm">
-                    <thead><tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500"><th className="px-2 py-2">KRI</th><th className="px-2 py-2">Value</th><th className="px-2 py-2">Status</th></tr></thead>
-                    <tbody>
+                  <Table>
+                    <TableHeader><TableRow><TableHead>KRI</TableHead><TableHead>Value</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                    <TableBody>
                       {phase2.kriStatus.map((k) => (
-                        <tr key={k.kriCode} className="border-b border-slate-100">
-                          <td className="px-2 py-2"><span className="font-medium text-slate-800">{k.kriCode}</span> {k.name}</td>
-                          <td className="px-2 py-2 tabular-nums">{k.value ?? "—"} {k.unit}</td>
-                          <td className="px-2 py-2"><span className="rounded px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: P2_HEX[k.status] ?? "#64748b" }}>{k.status}</span></td>
-                        </tr>
+                        <TableRow key={k.kriCode}>
+                          <TableCell><span className="font-medium text-slate-800">{k.kriCode}</span> {k.name}</TableCell>
+                          <TableCell className="tabular-nums">{k.value ?? "—"} {k.unit}</TableCell>
+                          <TableCell><span className="rounded px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: P2_HEX[k.status] ?? "#64748b" }}>{k.status}</span></TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 )}
               </Section>
             )}
 
             {sections.appetiteCompliance && phase2 && (
               <Section title="Appetite Compliance">
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500"><th className="px-2 py-2">Category</th><th className="px-2 py-2">Appetite</th><th className="px-2 py-2">Open Breaches</th></tr></thead>
-                  <tbody>
+                <Table>
+                  <TableHeader><TableRow><TableHead>Category</TableHead><TableHead>Appetite</TableHead><TableHead>Open Breaches</TableHead></TableRow></TableHeader>
+                  <TableBody>
                     {phase2.appetiteCompliance.map((a: any) => (
-                      <tr key={a.categoryId} className="border-b border-slate-100">
-                        <td className="px-2 py-2 text-slate-800">{a.categoryName}</td>
-                        <td className="px-2 py-2 text-slate-600">{a.appetiteLevel ?? "—"}</td>
-                        <td className="px-2 py-2 tabular-nums">{a.openBreaches > 0 ? <span className="font-semibold text-rose-600">{a.openBreaches}</span> : "0"}</td>
-                      </tr>
+                      <TableRow key={a.categoryId}>
+                        <TableCell className="text-slate-800">{a.categoryName}</TableCell>
+                        <TableCell className="text-slate-600">{a.appetiteLevel ?? "—"}</TableCell>
+                        <TableCell className="tabular-nums">{a.openBreaches > 0 ? <span className="font-semibold text-rose-600">{a.openBreaches}</span> : "0"}</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
                 {phase2.appetiteBreaches.length > 0 && (
                   <div className="mt-3">
                     <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">Open breaches &amp; committee decisions</h3>
@@ -586,20 +590,20 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
 
             {sections.scenarioResilience && phase3 && phase3.scenarios.length > 0 && (
               <Section title="Scenario Resilience">
-                <table className="w-full text-sm">
-                  <thead><tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500"><th className="py-1.5 pr-3">Scenario</th><th className="py-1.5 pr-3">Category</th><th className="py-1.5 pr-3">Likelihood</th><th className="py-1.5 pr-3">Top impact</th><th className="py-1.5">Readiness</th></tr></thead>
-                  <tbody>
+                <Table>
+                  <TableHeader><TableRow><TableHead className="py-1.5 pr-3">Scenario</TableHead><TableHead className="py-1.5 pr-3">Category</TableHead><TableHead className="py-1.5 pr-3">Likelihood</TableHead><TableHead className="py-1.5 pr-3">Top impact</TableHead><TableHead className="py-1.5">Readiness</TableHead></TableRow></TableHeader>
+                  <TableBody>
                     {phase3.scenarios.map((s) => (
-                      <tr key={s.scenarioCode} className="border-b border-slate-100 last:border-0">
-                        <td className="py-1.5 pr-3 text-slate-700">{s.scenarioCode} {s.title}</td>
-                        <td className="py-1.5 pr-3 text-xs text-slate-500">{s.category.replace(/_/g, " ")}</td>
-                        <td className="py-1.5 pr-3 text-xs text-slate-600">{PROB_LBL[s.probabilityQualitative] ?? s.probabilityQualitative}</td>
-                        <td className="py-1.5 pr-3 tabular-nums text-slate-600">{s.topImpactLevel || "—"}</td>
-                        <td className="py-1.5"><span className="rounded px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: READINESS_HEX[s.mitigationReadiness] ?? "#94a3b8" }}>{s.mitigationReadiness.replace(/_/g, " ")}</span></td>
-                      </tr>
+                      <TableRow key={s.scenarioCode}>
+                        <TableCell className="py-1.5 pr-3 text-slate-700">{s.scenarioCode} {s.title}</TableCell>
+                        <TableCell className="py-1.5 pr-3 text-xs text-slate-500">{s.category.replace(/_/g, " ")}</TableCell>
+                        <TableCell className="py-1.5 pr-3 text-xs text-slate-600">{PROB_LBL[s.probabilityQualitative] ?? s.probabilityQualitative}</TableCell>
+                        <TableCell className="py-1.5 pr-3 tabular-nums text-slate-600">{s.topImpactLevel || "—"}</TableCell>
+                        <TableCell className="py-1.5"><span className="rounded px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: READINESS_HEX[s.mitigationReadiness] ?? "#94a3b8" }}>{s.mitigationReadiness.replace(/_/g, " ")}</span></TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </Section>
             )}
 

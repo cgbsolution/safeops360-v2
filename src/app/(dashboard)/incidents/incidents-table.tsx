@@ -6,6 +6,9 @@ import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
+import { DeleteIncidentIconButton } from "@/components/incidents/delete-icon-button";
+import { SignalChip } from "@/components/ai/SignalChip";
+import type { Signal } from "@/lib/insights";
 import { formatDate, formatINR, humanize } from "@/lib/utils";
 
 export interface IncidentRow {
@@ -21,6 +24,7 @@ export interface IncidentRow {
   propertyDamageCost: string | null;
   workflowStep: string;
   workflowColor: string;
+  signal?: Signal | null;
 }
 
 const columns: ColumnDef<IncidentRow>[] = [
@@ -89,21 +93,29 @@ const columns: ColumnDef<IncidentRow>[] = [
   {
     accessorKey: "workflowStep",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Workflow Step" />,
-    cell: ({ row }) => <Badge className={row.original.workflowColor}>{row.original.workflowStep}</Badge>,
-    size: 170
+    cell: ({ row }) => (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge className={row.original.workflowColor}>{row.original.workflowStep}</Badge>
+        {row.original.signal && (
+          <SignalChip signal={row.original.signal} href={`/incidents/${row.original.id}`} />
+        )}
+      </div>
+    ),
+    size: 190
   },
   {
     id: "actions",
     header: "",
     enableSorting: false,
     cell: ({ row }) => (
-      <div className="flex items-center justify-end">
-        <Link href={`/incidents/${row.original.id}`} className="text-primary-700 hover:text-primary-900">
+      <div className="flex items-center justify-end gap-3">
+        <Link href={`/incidents/${row.original.id}`} className="text-primary-700 hover:text-primary-900" title="View">
           <Eye size={16} />
         </Link>
+        <DeleteIncidentIconButton incidentId={row.original.id} incidentNumber={row.original.number} />
       </div>
     ),
-    size: 60
+    size: 80
   }
 ];
 

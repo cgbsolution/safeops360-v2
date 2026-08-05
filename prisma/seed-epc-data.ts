@@ -19,40 +19,19 @@ const TODAY = new Date("2026-06-07T08:00:00.000Z");
 function daysAgo(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() - n); return d; }
 function daysFromNow(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() + n); return d; }
 
-// ── ID resolution ──
-// NOTE: User and ContractorCompany primary keys (CUIDs) are NOT hardcoded.
-// They are resolved dynamically at the start of main() via Prisma lookups so
-// that this seed survives a fresh re-seed (new CUIDs each run).
-//
-// Helper: resolve a user by role within a plant, falling back to any user in
-// the plant if no user holds that role (keeps the seed resilient).
-async function userByRoleInPlant(role: string, plantId: string): Promise<string> {
-  const byRole = await prisma.user.findFirst({ where: { role, plantId } });
-  if (byRole) return byRole.id;
-  const anyInPlant = await prisma.user.findFirstOrThrow({ where: { plantId } });
-  return anyInPlant.id;
-}
+// ── Users ──
+const CONT_COORD_NW = "cmq42hifw003013580axkblwa";
+const CONT_COORD_SW = "cmq42ho5100541358xhutpdae";
+const HSE_MGR_NW    = "cmq42hhjw002o1358mzpjpr5i";
+const HSE_MGR_SW    = "cmq42hn9y004s13582w1z3yaf";
+const ADMIN         = "cmq42hd0s00161358a9wo8cz9";
+
+// ── Contractor Companies ──
+const VIZIONFORGE   = "cmpwjtxa4001g11ywxwffw7fj";
+const STAR_ERECT    = "cmpwjtxhe001h11yw8aw8iu4s";
+const NE_MECH       = "cmpwjtxof001i11ywwjzbpbzn";
 
 async function main() {
-  console.log("Resolving user and contractor ids dynamically…");
-
-  // ── Plants (used to scope user lookups) ──
-  const nwPlant = await prisma.plant.findFirstOrThrow({ where: { code: "NW" } });
-  const swPlant = await prisma.plant.findFirstOrThrow({ where: { code: "SW" } });
-
-  // ── Users (role code → User.role; scoped by plant where applicable) ──
-  const CONT_COORD_NW = await userByRoleInPlant("CONTRACTOR_COORDINATOR", nwPlant.id);
-  const CONT_COORD_SW = await userByRoleInPlant("CONTRACTOR_COORDINATOR", swPlant.id);
-  const HSE_MGR_NW    = await userByRoleInPlant("HSE_MANAGER", nwPlant.id);
-  const HSE_MGR_SW    = await userByRoleInPlant("HSE_MANAGER", swPlant.id);
-  const ADMIN         = (await prisma.user.findFirstOrThrow({ where: { role: "ADMIN" } })).id;
-
-  // ── Contractor Companies (by code from seed-masters CONTRACTORS) ──
-  const VIZIONFORGE = (await prisma.contractorCompany.findFirstOrThrow({ where: { code: "VFC" } })).id;
-  const STAR_ERECT  = (await prisma.contractorCompany.findFirstOrThrow({ where: { code: "SES" } })).id;
-  const NE_MECH     = (await prisma.contractorCompany.findFirstOrThrow({ where: { code: "NEMW" } })).id;
-  void NE_MECH; // resolved to keep the contractor↔code mapping complete; not referenced below
-
   console.log("Deleting existing EPC DEMO records…");
   const oldSites = await prisma.constructionSite.findMany({ where: { siteCode: { contains: "DEMO" } } });
   for (const site of oldSites) {
@@ -69,13 +48,13 @@ async function main() {
   const siteNW = await prisma.constructionSite.create({
     data: {
       siteCode: "DEMO-NW-EXP-2026",
-      siteName: "Page Industries — North Garment Unit (Hassan) — Utilities Expansion Block C",
+      siteName: "Meridian North Works — Utilities Expansion Block C",
       projectNumber: "MML-PROJ-2026-NW-004",
-      clientName: "Page Industries Limited",
+      clientName: "Meridian Manufacturing Limited",
       clientContactName: "Rajesh Patel",
-      clientContactEmail: "rajesh.patel@pageindustries.in",
+      clientContactEmail: "rajesh.patel@meridianmfg.in",
       clientProjectManager: "Sunita Ghosh",
-      address: "North Garment Unit Campus, Block C Extension, Andheri East, Mumbai",
+      address: "North Works Campus, Block C Extension, Andheri East, Mumbai",
       district: "Mumbai Suburban",
       state: "Maharashtra",
       lat: 19.1136,
@@ -107,7 +86,7 @@ async function main() {
   await prisma.siteComplianceConfig.create({
     data: {
       siteId: siteNW.id,
-      clientName: "Page Industries Limited",
+      clientName: "Meridian Manufacturing Limited",
       ptwConfig: { required: true, types: ["hot_work", "confined_space", "electrical", "work_at_height"], colourCoded: true },
       inductionConfig: { required: true, durationMinutes: 90, passMark: 70, languages: ["Hindi", "English", "Marathi"] },
       gateConfig: { biometricRequired: false, gatePassRequired: true, photoRequired: false },
@@ -124,20 +103,20 @@ async function main() {
   const siteSW = await prisma.constructionSite.create({
     data: {
       siteCode: "DEMO-SW-GF-2025",
-      siteName: "Page Industries — South Garment Unit (Tiptur) — New Sewing Block SB-3 Erection",
+      siteName: "Meridian South Works — New API Synthesis Block",
       projectNumber: "MML-PROJ-2025-SW-007",
-      clientName: "Page Industries Limited",
+      clientName: "Meridian Manufacturing Limited",
       clientContactName: "Pradeep Kumar",
-      clientContactEmail: "pradeep.kumar@pageindustries.in",
+      clientContactEmail: "pradeep.kumar@meridianmfg.in",
       clientProjectManager: "Meera Iyer",
-      address: "South Garment Unit Campus, Plot 7A, Taloja Industrial Area, Navi Mumbai",
+      address: "South Works Campus, Plot 7A, Taloja Industrial Area, Navi Mumbai",
       district: "Raigad",
       state: "Maharashtra",
       lat: 19.0456,
       lng: 73.1189,
       projectType: "GREENFIELD",
       scopeDescription:
-        "Greenfield erection of new Sewing Block SB-3 (additional stitching lines & finishing) comprising: production hall building, cutting room (spreading & band-knife area), sewing/stitching line floors, checking & finishing (AQL) area, pressing & ironing bay, process utilities, ETP capacity addition, and supporting infrastructure.",
+        "Greenfield construction of API Synthesis Block comprising: Reactor building (6 reactors), solvent storage and recovery, distillation columns, process utilities, waste water pre-treatment, and supporting infrastructure.",
       contractValue: 430000000,
       contractCurrency: "INR",
       status: "active_construction",
@@ -153,7 +132,7 @@ async function main() {
         { type: "Environmental Clearance — Category B", authority: "SEIAA Maharashtra", number: "SEIAA/EC/2025/0214", date: "2025-03-12", status: "approved" },
         { type: "Consent to Establish", authority: "MPCB", number: "MPCB/CTE/2025/0567", date: "2025-04-01", status: "approved" },
         { type: "Factory Plan Approval", authority: "Maharashtra Factories Inspectorate", number: "MFI/PA/2025/0089", date: "2025-04-15", status: "approved" },
-        { type: "PESO NOC — HSD & Fuel Oil Storage", authority: "PESO", number: "PESO/NOC/2025/1143", date: "2025-05-01", status: "approved" },
+        { type: "PESO NOC — Solvent Storage", authority: "PESO", number: "PESO/NOC/2025/1143", date: "2025-05-01", status: "approved" },
       ],
       createdById: ADMIN,
     },
@@ -162,7 +141,7 @@ async function main() {
   await prisma.siteComplianceConfig.create({
     data: {
       siteId: siteSW.id,
-      clientName: "Page Industries Limited",
+      clientName: "Meridian Manufacturing Limited",
       ptwConfig: { required: true, types: ["hot_work", "confined_space", "electrical", "work_at_height", "excavation", "chemical_handling"], colourCoded: true },
       inductionConfig: { required: true, durationMinutes: 120, passMark: 75, languages: ["Hindi", "English", "Tamil", "Telugu"] },
       gateConfig: { biometricRequired: true, gatePassRequired: true, photoRequired: true },
@@ -278,7 +257,7 @@ async function main() {
         siteId,
         mobilizationType: "new_deployment",
         tradeAtSite: spec.trade,
-        workArea: isNW ? "Block C Civil Works" : "SB-3 Production Hall — Structural",
+        workArea: isNW ? "Block C Civil Works" : "API Synthesis Block — Structural",
         reportingSupervisorUserId: coordinator,
         contractorCoordinatorUserId: coordinator,
         mobilisationDate: mobDate,
@@ -312,7 +291,7 @@ async function main() {
           "PPE requirements by work area",
           "Incident and near miss reporting procedure",
           "Zero tolerance safety rules",
-          isNW ? "Confined space hazards in Block C" : "Chemical and rotating-machinery hazards in SB-3 hall",
+          isNW ? "Confined space hazards in Block C" : "Chemical hazards in API block",
         ],
         clientRequirementsCovered: true,
         siteEmergencyProceduresCovered: true,
@@ -385,7 +364,7 @@ async function main() {
         passType: "project_pass",
         validFrom: mobDate,
         validUntil: daysFromNow(30),
-        authorizedAreas: isNW ? ["Block C Civil", "Laydown Area", "Site Office"] : ["SB-3 Production Hall Structure", "Laydown Yard", "Site Office"],
+        authorizedAreas: isNW ? ["Block C Civil", "Laydown Area", "Site Office"] : ["API Block Structure", "Laydown Yard", "Site Office"],
         authorizedTrades: [spec.trade],
         status: "active",
         qrCodeData: JSON.stringify({ pass: `GP-${isNW ? "NW" : "SW"}-${spec.code.slice(-4)}-001`, worker: spec.code, site: isNW ? "DEMO-NW-EXP-2026" : "DEMO-SW-GF-2025", valid_until: daysFromNow(30).toISOString() }),

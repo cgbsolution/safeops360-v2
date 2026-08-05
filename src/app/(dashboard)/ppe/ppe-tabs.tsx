@@ -4,6 +4,11 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -76,12 +81,13 @@ export function PpeTabs(props: {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="inline-flex flex-wrap rounded-lg border border-slate-200 bg-white p-0.5">
           {TABS.map((t) => (
-            <button
+            <Button
               key={t.key}
               type="button"
+              variant="ghost"
               onClick={() => setTab(t.key)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition",
+                "h-auto inline-flex items-center gap-1.5 rounded-md px-3.5 py-1.5 text-sm font-medium transition",
                 tab === t.key ? "bg-cyan-700 text-white" : "text-slate-600 hover:bg-slate-100"
               )}
             >
@@ -93,18 +99,16 @@ export function PpeTabs(props: {
                   {t.badge}
                 </span>
               ) : null}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setModal({ kind: "issue" })}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-cyan-700 px-3 py-2 text-sm font-medium text-white hover:bg-cyan-800">
+          <Button type="button" onClick={() => setModal({ kind: "issue" })} className="gap-1.5">
             <UserCheck size={14} /> Issue PPE
-          </button>
-          <button type="button" onClick={() => setModal({ kind: "commission" })}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          </Button>
+          <Button type="button" variant="outline" onClick={() => setModal({ kind: "commission" })} className="gap-1.5 text-slate-700">
             <Plus size={14} /> Add Item
-          </button>
+          </Button>
           <a href={`/api/ppe/reports/people-compliance.csv?plantId=${plantId}`}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
             Export
@@ -199,14 +203,14 @@ function DashboardView({ d, onJump }: { d: DashboardData | null; onJump: (t: Tab
     <div className="space-y-5">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         {cards.map((card) => (
-          <button key={card.label} type="button" onClick={() => onJump(card.to)}
-            className={cn("rounded-xl border p-4 text-left transition hover:shadow-sm", tone[card.tone])}>
+          <Button key={card.label} type="button" variant="ghost" onClick={() => onJump(card.to)}
+            className={cn("flex h-auto flex-col items-stretch gap-0 whitespace-normal rounded-xl border p-4 text-left transition hover:shadow-sm", tone[card.tone])}>
             <div className="flex items-center justify-between">
               <span className="opacity-70">{card.icon}</span>
               <span className="text-2xl font-extrabold tabular-nums">{card.value}</span>
             </div>
             <div className="mt-2 text-xs font-medium opacity-80">{card.label}</div>
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -254,47 +258,46 @@ function ItemsView({ items, onAct }: { items: Item[]; onAct: (m: Modal) => void 
   return (
     <div className="rounded-xl border border-slate-200 bg-white">
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item / serial / type…"
-          className="w-64 rounded-lg border border-slate-300 px-3 py-1.5 text-sm" />
-        <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm">
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item / serial / type…" className="w-64" />
+        <Select value={status} onChange={(e) => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           {statuses.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-        </select>
+        </Select>
         <span className="ml-auto text-xs text-slate-500">{filtered.length} items</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
-            <tr>
-              <th className="px-3 py-2 text-left">Item</th>
-              <th className="px-3 py-2 text-left">Type</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-left">Validity</th>
-              <th className="px-3 py-2 text-left">Inspection</th>
-              <th className="px-3 py-2 text-left">Service life</th>
-              <th className="px-3 py-2 text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
+            <TableRow>
+              <TableHead className="px-3 py-2 text-left">Item</TableHead>
+              <TableHead className="px-3 py-2 text-left">Type</TableHead>
+              <TableHead className="px-3 py-2 text-left">Status</TableHead>
+              <TableHead className="px-3 py-2 text-left">Validity</TableHead>
+              <TableHead className="px-3 py-2 text-left">Inspection</TableHead>
+              <TableHead className="px-3 py-2 text-left">Service life</TableHead>
+              <TableHead className="px-3 py-2 text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-slate-100">
             {filtered.map((i) => (
-              <tr key={i.id} className="hover:bg-slate-50">
-                <td className="px-3 py-2">
+              <TableRow key={i.id} className="hover:bg-slate-50">
+                <TableCell className="px-3 py-2">
                   <Link href={`/ppe/items/${i.id}`} className="font-medium text-cyan-800 hover:underline">{i.itemNumber}</Link>
                   <div className="text-[11px] text-slate-400">{i.serialNumber}</div>
-                </td>
-                <td className="px-3 py-2 text-slate-700">{i.ppeTypeName}</td>
-                <td className="px-3 py-2"><Chip map={STATUS_CHIP} value={i.status} /></td>
-                <td className="px-3 py-2"><Chip map={VALIDITY_CHIP} value={i.validity} label={i.validity === "pass" ? "valid" : i.validityReason} /></td>
-                <td className="px-3 py-2 text-xs">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-slate-700">{i.ppeTypeName}</TableCell>
+                <TableCell className="px-3 py-2"><Chip map={STATUS_CHIP} value={i.status} /></TableCell>
+                <TableCell className="px-3 py-2"><Chip map={VALIDITY_CHIP} value={i.validity} label={i.validity === "pass" ? "valid" : i.validityReason} /></TableCell>
+                <TableCell className="px-3 py-2 text-xs">
                   <Chip map={VALIDITY_CHIP} value={i.inspectionStatus === "overdue" ? "block" : i.inspectionStatus === "due_soon" ? "warn" : "pass"}
                     label={i.inspectionStatus === "overdue" ? `overdue ${i.inspectionOverdueDays}d` : i.inspectionStatus.replace(/_/g, " ")} />
                   <div className="mt-0.5 text-[11px] text-slate-400">{fmtDate(i.nextInspectionDueDate)}</div>
-                </td>
-                <td className="px-3 py-2 text-xs text-slate-600">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-slate-600">
                   {i.serviceLifeExceeded ? <span className="text-rose-600 font-medium">exceeded</span> : `${i.serviceLifeRemainingDays}d left`}
                   <div className="text-[11px] text-slate-400">{fmtDate(i.serviceLifeEndDate)}</div>
-                </td>
-                <td className="px-3 py-2">
+                </TableCell>
+                <TableCell className="px-3 py-2">
                   <div className="flex justify-end gap-1">
                     {i.status === "in_stock" && (
                       <IconBtn title="Issue" onClick={() => onAct({ kind: "issue", item: i })}><UserCheck size={14} /></IconBtn>
@@ -306,12 +309,12 @@ function ItemsView({ items, onAct }: { items: Item[]; onAct: (m: Modal) => void 
                       <IconBtn title="Retire" onClick={() => onAct({ kind: "retire", item: i })}><Trash2 size={14} /></IconBtn>
                     )}
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-            {filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-sm text-slate-400">No items.</td></tr>}
-          </tbody>
-        </table>
+            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="p-8 text-center text-sm text-slate-400">No items.</TableCell></TableRow>}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -329,11 +332,11 @@ function PeopleView({ people, onIssue }: { people: PeopleCompliance | null; onIs
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         {(["", "critical", "gaps", "compliant"] as const).map((f) => (
-          <button key={f || "all"} type="button" onClick={() => setFilter(f)}
-            className={cn("rounded-full px-3 py-1 text-xs font-medium transition",
+          <Button key={f || "all"} type="button" variant="ghost" onClick={() => setFilter(f)}
+            className={cn("h-auto rounded-full px-3 py-1 text-xs font-medium transition",
               filter === f ? "bg-cyan-700 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50")}>
             {f === "" ? `All (${people.summary.totalPeople})` : f === "critical" ? `Critical (${people.summary.criticalGaps})` : f === "gaps" ? `Gaps (${people.summary.gaps})` : `Compliant (${people.summary.compliant})`}
-          </button>
+          </Button>
         ))}
       </div>
       <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
@@ -342,8 +345,8 @@ function PeopleView({ people, onIssue }: { people: PeopleCompliance | null; onIs
           const open = expanded === p.userId;
           return (
             <div key={p.userId}>
-              <button type="button" onClick={() => setExpanded(open ? null : p.userId)}
-                className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
+              <Button type="button" variant="ghost" onClick={() => setExpanded(open ? null : p.userId)}
+                className="h-auto w-full items-center justify-start gap-3 rounded-none px-4 py-3 text-left font-normal hover:bg-slate-50">
                 <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium", o.c)}>{o.icon}{o.label}</span>
                 <div className="min-w-0 flex-1">
                   <div className="font-medium text-slate-900">{p.name}</div>
@@ -356,28 +359,27 @@ function PeopleView({ people, onIssue }: { people: PeopleCompliance | null; onIs
                         r.status === "pass" ? "bg-emerald-500" : r.status === "warn" ? "bg-amber-400" : r.status === "block" ? "bg-rose-500" : "bg-slate-300")} />
                   ))}
                 </div>
-              </button>
+              </Button>
               {open && (
                 <div className="bg-slate-50/60 px-4 pb-3">
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-slate-100">
+                  <Table className="w-full text-sm">
+                    <TableBody className="divide-y divide-slate-100">
                       {p.requirements.map((r) => (
-                        <tr key={r.ppeTypeCode}>
-                          <td className="py-1.5 text-slate-700">{r.ppeTypeName}
+                        <TableRow key={r.ppeTypeCode}>
+                          <TableCell className="py-1.5 text-slate-700">{r.ppeTypeName}
                             <span className="ml-2 text-[10px] uppercase tracking-wide text-slate-400">{r.requirementLevel}</span>
-                          </td>
-                          <td className="py-1.5 text-xs text-slate-500">{r.held ? `${r.itemNumber} · ${r.serialNumber}` : "—"}</td>
-                          <td className="py-1.5"><Chip map={VALIDITY_CHIP} value={r.status} label={r.status === "pass" ? "valid" : r.reason} /></td>
-                          <td className="py-1.5 text-right">
+                          </TableCell>
+                          <TableCell className="py-1.5 text-xs text-slate-500">{r.held ? `${r.itemNumber} · ${r.serialNumber}` : "—"}</TableCell>
+                          <TableCell className="py-1.5"><Chip map={VALIDITY_CHIP} value={r.status} label={r.status === "pass" ? "valid" : r.reason} /></TableCell>
+                          <TableCell className="py-1.5 text-right">
                             {!r.held && r.status !== "recommended" && (
-                              <button type="button" onClick={() => onIssue(p, r.ppeTypeCode)}
-                                className="rounded-md bg-cyan-700 px-2 py-1 text-[11px] font-medium text-white hover:bg-cyan-800">Issue</button>
+                              <Button type="button" size="sm" onClick={() => onIssue(p, r.ppeTypeCode)} className="text-[11px]">Issue</Button>
                             )}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
@@ -408,27 +410,26 @@ function DueView({ due, onInspect }: { due: InspectionsDue | null; onInspect: (i
           <div key={g.key} className={cn("rounded-xl border", g.tone)}>
             <div className="border-b border-black/5 px-4 py-2 text-sm font-semibold text-slate-800">{g.label} <span className="text-slate-400">({rows.length})</span></div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <tbody className="divide-y divide-black/5">
+              <Table className="w-full text-sm">
+                <TableBody className="divide-y divide-black/5">
                   {rows.map((r: DueRow) => (
-                    <tr key={r.id} className="hover:bg-white/40">
-                      <td className="px-4 py-2">
+                    <TableRow key={r.id} className="hover:bg-white/40">
+                      <TableCell className="px-4 py-2">
                         <Link href={`/ppe/items/${r.id}`} className="font-medium text-cyan-800 hover:underline">{r.itemNumber}</Link>
                         <span className="ml-2 text-slate-600">{r.ppeTypeName}</span>
-                      </td>
-                      <td className="px-4 py-2 text-xs text-slate-500">{r.serialNumber}</td>
-                      <td className="px-4 py-2 text-xs text-slate-600">{fmtDate(r.nextInspectionDueDate)}</td>
-                      <td className="px-4 py-2 text-xs font-medium text-slate-700">
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-xs text-slate-500">{r.serialNumber}</TableCell>
+                      <TableCell className="px-4 py-2 text-xs text-slate-600">{fmtDate(r.nextInspectionDueDate)}</TableCell>
+                      <TableCell className="px-4 py-2 text-xs font-medium text-slate-700">
                         {r.overdueDays != null ? <span className="text-rose-600">{r.overdueDays}d overdue</span> : `in ${r.daysUntilDue}d`}
-                      </td>
-                      <td className="px-4 py-2 text-right">
-                        <button type="button" onClick={() => onInspect(r.id)}
-                          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50">Inspect</button>
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-4 py-2 text-right">
+                        <Button type="button" variant="outline" size="sm" onClick={() => onInspect(r.id)} className="text-[11px] text-slate-700">Inspect</Button>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         );
@@ -447,49 +448,48 @@ function IssuancesView({ issuances, onReturn }: { issuances: Issuance[]; onRetur
     <div className="rounded-xl border border-slate-200 bg-white">
       <div className="flex items-center gap-2 border-b p-3">
         <label className="inline-flex items-center gap-2 text-sm text-slate-600">
-          <input type="checkbox" checked={showReturned} onChange={(e) => setShowReturned(e.target.checked)} /> Include closed
+          <Checkbox checked={showReturned} onChange={(e) => setShowReturned(e.target.checked)} /> Include closed
         </label>
         <span className="ml-auto text-xs text-slate-500">{rows.length} issuances</span>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
-            <tr>
-              <th className="px-3 py-2 text-left">Issuance</th>
-              <th className="px-3 py-2 text-left">Item</th>
-              <th className="px-3 py-2 text-left">Holder</th>
-              <th className="px-3 py-2 text-left">Purpose</th>
-              <th className="px-3 py-2 text-left">Issued</th>
-              <th className="px-3 py-2 text-left">Status</th>
-              <th className="px-3 py-2 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500">
+            <TableRow>
+              <TableHead className="px-3 py-2 text-left">Issuance</TableHead>
+              <TableHead className="px-3 py-2 text-left">Item</TableHead>
+              <TableHead className="px-3 py-2 text-left">Holder</TableHead>
+              <TableHead className="px-3 py-2 text-left">Purpose</TableHead>
+              <TableHead className="px-3 py-2 text-left">Issued</TableHead>
+              <TableHead className="px-3 py-2 text-left">Status</TableHead>
+              <TableHead className="px-3 py-2 text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-slate-100">
             {rows.map((i) => (
-              <tr key={i.id} className="hover:bg-slate-50">
-                <td className="px-3 py-2 font-medium text-slate-800">{i.issuanceNumber}</td>
-                <td className="px-3 py-2 text-slate-700">{i.ppeTypeName}<div className="text-[11px] text-slate-400">{i.serialNumber}</div></td>
-                <td className="px-3 py-2 text-slate-700">{i.issuedToName}<div className="text-[11px] text-slate-400">{i.issuedToDepartment}</div></td>
-                <td className="px-3 py-2 text-xs text-slate-600">{i.purpose.replace(/_/g, " ")}</td>
-                <td className="px-3 py-2 text-xs text-slate-500">{fmtDate(i.issuedAt)}</td>
-                <td className="px-3 py-2">
+              <TableRow key={i.id} className="hover:bg-slate-50">
+                <TableCell className="px-3 py-2 font-medium text-slate-800">{i.issuanceNumber}</TableCell>
+                <TableCell className="px-3 py-2 text-slate-700">{i.ppeTypeName}<div className="text-[11px] text-slate-400">{i.serialNumber}</div></TableCell>
+                <TableCell className="px-3 py-2 text-slate-700">{i.issuedToName}<div className="text-[11px] text-slate-400">{i.issuedToDepartment}</div></TableCell>
+                <TableCell className="px-3 py-2 text-xs text-slate-600">{i.purpose.replace(/_/g, " ")}</TableCell>
+                <TableCell className="px-3 py-2 text-xs text-slate-500">{fmtDate(i.issuedAt)}</TableCell>
+                <TableCell className="px-3 py-2">
                   {i.overdueReturn
                     ? <Chip map={{ x: "bg-amber-100 text-amber-900" }} value="x" label="return overdue" />
                     : <Chip map={{ active: "bg-sky-100 text-sky-800", returned: "bg-slate-100 text-slate-500", damaged_return: "bg-rose-100 text-rose-700", lost: "bg-rose-100 text-rose-700", stolen: "bg-rose-100 text-rose-700" }} value={i.status} />}
-                </td>
-                <td className="px-3 py-2 text-right">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-right">
                   {i.status === "active" && (
-                    <button type="button" onClick={() => onReturn(i)}
-                      className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50">
+                    <Button type="button" variant="outline" size="sm" onClick={() => onReturn(i)} className="gap-1 text-[11px] text-slate-700">
                       <RotateCcw size={12} /> Return
-                    </button>
+                    </Button>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-            {rows.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-sm text-slate-400">No issuances.</td></tr>}
-          </tbody>
-        </table>
+            {rows.length === 0 && <TableRow><TableCell colSpan={7} className="p-8 text-center text-sm text-slate-400">No issuances.</TableCell></TableRow>}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -642,28 +642,28 @@ function ActionModal({
       <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-base font-semibold text-slate-900">{titles[modal.kind]}</h3>
-          <button type="button" onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100"><X size={16} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 text-slate-400"><X size={16} /></Button>
         </div>
 
         <div className="space-y-3 text-sm">
           {modal.kind === "issue" && (
             <>
               <Field label="PPE item (in stock)">
-                <select value={itemId} onChange={(e) => setItemId(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <Select value={itemId} onChange={(e) => setItemId(e.target.value)}>
                   <option value="">Select an item…</option>
                   {inStock.map((i) => <option key={i.id} value={i.id}>{i.itemNumber} — {i.ppeTypeName}</option>)}
-                </select>
+                </Select>
               </Field>
               <Field label="Issue to">
-                <select value={toUserId} onChange={(e) => setToUserId(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <Select value={toUserId} onChange={(e) => setToUserId(e.target.value)}>
                   <option value="">Select a person…</option>
                   {people.map((p) => <option key={p.userId} value={p.userId}>{p.name} — {p.role?.replace(/_/g, " ")}</option>)}
-                </select>
+                </Select>
               </Field>
               <Field label="Purpose">
-                <select value={purpose} onChange={(e) => setPurpose(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <Select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
                   {["personal_assignment", "permit_task", "training", "temporary_loan"].map((p) => <option key={p} value={p}>{p.replace(/_/g, " ")}</option>)}
-                </select>
+                </Select>
               </Field>
             </>
           )}
@@ -672,9 +672,9 @@ function ActionModal({
             <>
               <p className="text-slate-600">Returning <span className="font-medium">{modal.issuance.serialNumber}</span> from {modal.issuance.issuedToName}.</p>
               <Field label="Condition at return">
-                <select value={condition} onChange={(e) => setCondition(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <Select value={condition} onChange={(e) => setCondition(e.target.value)}>
                   {["good", "fair", "damaged", "destroyed"].map((c) => <option key={c} value={c}>{c}</option>)}
-                </select>
+                </Select>
               </Field>
             </>
           )}
@@ -683,11 +683,11 @@ function ActionModal({
             <>
               <p className="text-slate-600">Inspecting <span className="font-medium">{modal.item.itemNumber}</span> — {modal.item.ppeTypeName}.</p>
               <Field label="Overall result">
-                <select value={result} onChange={(e) => setResult(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <Select value={result} onChange={(e) => setResult(e.target.value)}>
                   <option value="pass">Pass — return to service</option>
                   <option value="conditional_pass">Conditional pass</option>
                   <option value="fail">Fail — quarantine</option>
-                </select>
+                </Select>
               </Field>
             </>
           )}
@@ -696,8 +696,7 @@ function ActionModal({
             <>
               <p className="text-slate-600">Retiring <span className="font-medium">{modal.item.itemNumber}</span>. This is permanent.</p>
               <Field label="Reason">
-                <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. service life reached"
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2" />
+                <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. service life reached" />
               </Field>
             </>
           )}
@@ -705,20 +704,20 @@ function ActionModal({
           {modal.kind === "commission" && (
             <>
               <Field label="PPE type">
-                <select value={typeId} onChange={(e) => setTypeId(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2">
+                <Select value={typeId} onChange={(e) => setTypeId(e.target.value)}>
                   <option value="">Select a type…</option>
                   {catalog.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
-                </select>
+                </Select>
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Quantity"><input type="number" min={1} max={200} value={qty} onChange={(e) => setQty(Number(e.target.value))} className="w-full rounded-lg border border-slate-300 px-3 py-2" /></Field>
-                <Field label="Manufacture date"><input type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" /></Field>
+                <Field label="Quantity"><Input type="number" min={1} max={200} value={qty} onChange={(e) => setQty(Number(e.target.value))} /></Field>
+                <Field label="Manufacture date"><Input type="date" value={mfgDate} onChange={(e) => setMfgDate(e.target.value)} /></Field>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Manufacturer"><input value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" /></Field>
-                <Field label="Batch / lot"><input value={batch} onChange={(e) => setBatch(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2" /></Field>
+                <Field label="Manufacturer"><Input value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} /></Field>
+                <Field label="Batch / lot"><Input value={batch} onChange={(e) => setBatch(e.target.value)} /></Field>
               </div>
-              <Field label="Storage location"><input value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="Safety Store — Rack…" className="w-full rounded-lg border border-slate-300 px-3 py-2" /></Field>
+              <Field label="Storage location"><Input value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="Safety Store — Rack…" /></Field>
             </>
           )}
 
@@ -728,14 +727,13 @@ function ActionModal({
 
         <div className="mt-5 flex justify-end gap-2">
           {notice ? (
-            <button type="button" onClick={onClose} className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-800">Close</button>
+            <Button type="button" onClick={onClose}>Close</Button>
           ) : (
             <>
-              <button type="button" onClick={onClose} className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={submit} disabled={pending}
-                className="rounded-lg bg-cyan-700 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-800 disabled:opacity-60">
+              <Button type="button" variant="outline" onClick={onClose} className="text-slate-600">Cancel</Button>
+              <Button type="button" onClick={submit} disabled={pending}>
                 {pending ? "Saving…" : "Confirm"}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -756,8 +754,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button type="button" title={title} onClick={onClick}
-      className="rounded-md border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700">{children}</button>
+    <Button type="button" variant="outline" size="icon" title={title} onClick={onClick}
+      className="h-7 w-7 text-slate-500 hover:text-slate-700">{children}</Button>
   );
 }
 function Empty({ children }: { children: React.ReactNode }) {

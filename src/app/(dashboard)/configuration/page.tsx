@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Workflow, ListChecks, Users, Shield, ChevronRight, Flag,
-  Sparkles, Grid3X3, AlertTriangle, ShieldCheck
+  Sparkles, Grid3X3, AlertTriangle, ShieldCheck, CalendarClock, Gauge
 } from "lucide-react";
 import { requirePermission } from "@/lib/auth/server";
 import { getServerSession } from "next-auth";
@@ -32,6 +32,10 @@ export default async function ConfigurationLandingPage() {
       description: "Customize approval / verification / closure steps per module." },
     { title: "Feature Flags", href: "/configuration/feature-flags", icon: Flag, permission: "CONFIGURATION.MASTERS",
       description: "Enable HIRA Phase 2/3 modules per plant — EAI Environmental Register, Combined Risk Register, Risk Aggregation Dashboard, and HIRA Assistant v2." },
+    { title: "Observation SLA Matrix", href: "/configuration/observation-sla", icon: CalendarClock, permission: "CONFIGURATION.MASTERS",
+      description: "Target closure days by severity × behavioural/physical, plus the deroster review SLA and escalation contact. Applies to new observations only." },
+    { title: "Severity Matrix Calibration", href: "/configuration/severity-calibration", icon: Gauge, permission: "OBSERVATION.READ",
+      description: "Where observers disagree with the suggested observation severity. A sub-category overridden consistently in one direction means the matrix rule is wrong, not the observers." },
     { title: "AI Agents", href: "/configuration/agents", icon: Sparkles, permission: "AGENT.RCA_INVOKE",
       description: "Operations dashboard for user-initiated AI agents. View metrics, change authority levels, manage prompts, trigger calibration." },
     // HIRA admin — Phase 1 of IMS expansion. Each tile is a master that

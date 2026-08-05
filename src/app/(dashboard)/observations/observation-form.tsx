@@ -10,6 +10,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { readApiError } from "@/lib/client-errors";
 import { uploadObservationAttachment } from "@/components/observations/upload-helper";
+import {
+  StopTaxonomyFields,
+  isAtRisk,
+  type StopTaxonomyValue
+} from "@/components/observations/stop-taxonomy-fields";
+import {
+  WorkerInvolvedPicker,
+  type WorkerRef
+} from "@/components/observations/worker-involved-picker";
+import {
+  SlaTargetDateField,
+  useSlaPreview,
+  MIN_OVERRIDE_REASON
+} from "@/components/observations/sla-target-date";
+import {
+  SeveritySuggestionField,
+  useSeveritySuggestion,
+  severityLabel
+} from "@/components/observations/severity-suggestion";
 import { Camera, Upload, X, Image as ImageIcon, Film, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +41,8 @@ const TYPES = [
   { value: "UNSAFE_CONDITION", label: "Unsafe Condition" }
 ];
 
+// Legacy hazard categories — still the classification for SAFE observations.
+// At-risk observations use the DuPont STOP taxonomy instead (StopTaxonomyFields).
 const CATEGORIES = [
   "PPE", "HOUSEKEEPING", "WORK_AT_HEIGHT", "HOT_WORK", "MOBILE_EQUIPMENT",
   "ELECTRICAL", "MATERIAL_HANDLING", "CONFINED_SPACE", "CHEMICAL_HANDLING",
@@ -43,7 +64,16 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitStage, setSubmitStage] = useState<"" | "creating" | "uploading">("");
   const [plantId, setPlantId] = useState(plants[0]?.id ?? "");
+  // Controlled because the area's hazard tier can lift the suggested severity a
+  // rung — a suggestion computed without the area would be wrong on a
+  // HighHazard area, and silently so.
+  const [areaId, setAreaId] = useState(plants[0]?.areas[0]?.id ?? "");
   const [severity, setSeverity] = useState("MEDIUM");
+  const [severityReason, setSeverityReason] = useState("");
+  // Observation type drives the whole taxonomy — controlled so the STOP
+  // dropdowns can react to Act ↔ Condition switches mid-entry.
+  const [type, setType] = useState("UNSAFE_ACT");
+  const [taxonomy, setTaxonomy] = useState<StopTaxonomyValue>({ categoryCode: "", subCategoryCode: "" });
   const [error, setError] = useState("");
   const [uploadFailures, setUploadFailures] = useState<{ id: string; fileName: string; error: string }[]>([]);
   const [createdObservationId, setCreatedObservationId] = useState<string | null>(null);
@@ -51,6 +81,24 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  // Contractor companies (shared master) — reuse the near-miss masters endpoint.
+  const [contractors, setContractors] = useState<{ id: string; name: string }[]>([]);
+  // Controlled so the Worker Involved picker can scope to this company's crew.
+  const [contractorCompanyId, setContractorCompanyId] = useState("");
+  const [workersInvolved, setWorkersInvolved] = useState<WorkerRef[]>([]);
+  // Observation date is controlled because the SLA preview is computed from it.
+  const [obsDate, setObsDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [targetDateOverride, setTargetDateOverride] = useState("");
+  const [targetDateReason, setTargetDateReason] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    fetch("/api/near-miss/masters/contractors")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => { if (alive && Array.isArray(rows)) setContractors(rows); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
 
   const selectedPlant = plants.find((p) => p.id === plantId);
   const today = new Date().toISOString().slice(0, 10);
@@ -64,7 +112,12 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   }, []);
 
   function onPlantChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setPlantId(e.target.value);
+    const next = e.target.value;
+    setPlantId(next);
+    // The area list is plant-scoped, so the previous area is no longer a member
+    // of it. Follow the browser's own behaviour for the uncontrolled select
+    // this replaced and land on the new plant's first area.
+    setAreaId(plants.find((p) => p.id === next)?.areas[0]?.id ?? "");
   }
 
   function addFiles(incoming: FileList | File[]) {
@@ -102,9 +155,78 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   const photosRecommended = severity === "HIGH" || severity === "CRITICAL";
   const validPhotos = photos.filter((p) => !p.error);
 
+  // Worker Involved is mandatory only for a High/Critical Unsafe Act — the same
+  // condition the server enforces and the deroster trigger fires on.
+  const workersRequired =
+    type === "UNSAFE_ACT" && (severity === "HIGH" || severity === "CRITICAL");
+
+  // Target closure date preview. The Behavioural/Physical group comes from the
+  // configurable STOP-category mapping, so the category is part of the key —
+  // for at-risk types the date settles once a category is chosen. Safe types
+  // carry no STOP category and resolve from the axis alone.
+  // Severity suggestion. Only at-risk types carry the STOP taxonomy, and the
+  // matrix is keyed on it — a Safe Act has nothing to look up, so the hook is
+  // disabled rather than sent a request that can only miss.
+  const { suggestion: severitySuggestion, loading: severityLoading } = useSeveritySuggestion({
+    observationType: type,
+    categoryCode: taxonomy.categoryCode,
+    subCategoryCode: taxonomy.subCategoryCode,
+    plantId,
+    areaId,
+    enabled: isAtRisk(type)
+  });
+
+  const { preview: slaPreview, loading: slaLoading } = useSlaPreview(
+    plantId,
+    type,
+    severity,
+    obsDate,
+    isAtRisk(type) ? taxonomy.categoryCode : undefined
+  );
+
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
+
+    // A disabled <select> is skipped by native validation, so a submit while
+    // the taxonomy is still loading would slip through with no category.
+    // (The server rejects it too — this just gives a better message.)
+    if (isAtRisk(type) && (!taxonomy.categoryCode || !taxonomy.subCategoryCode)) {
+      setError("Select both a category and a sub-category for this observation type.");
+      return;
+    }
+
+    // Worker Involved gate. The server enforces this too — this is just the
+    // faster, clearer failure.
+    if (workersRequired && workersInvolved.length === 0) {
+      setError(
+        "Name at least one worker involved. A High or Critical severity Unsafe Act " +
+          "starts a safety review for each named worker."
+      );
+      return;
+    }
+
+    // Severity override without a usable reason. The server re-resolves the
+    // suggestion and rejects this too — catching it here just avoids bouncing
+    // the user after the photos have queued.
+    const suggested = severitySuggestion?.suggested;
+    const minSeverityReason = severitySuggestion?.minOverrideReasonChars ?? 10;
+    if (suggested && severity !== suggested && severityReason.trim().length < minSeverityReason) {
+      setError(
+        `Severity was changed from the suggested ${severityLabel(suggested)} — give a reason ` +
+          `of at least ${minSeverityReason} characters explaining why this observation differs.`
+      );
+      return;
+    }
+
+    // An override without a usable reason is rejected server-side; catch it
+    // here so the user isn't bounced after the photos have queued.
+    if (targetDateOverride && targetDateReason.trim().length < MIN_OVERRIDE_REASON) {
+      setError(
+        `A closure-date override needs a reason of at least ${MIN_OVERRIDE_REASON} characters.`
+      );
+      return;
+    }
 
     // Soft warning for High/Critical without photos — don't hard-block, but
     // confirm so users don't accidentally submit critical reports with no
@@ -123,6 +245,21 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
     const fd = new FormData(e.currentTarget);
     const payload: Record<string, any> = Object.fromEntries(fd.entries());
     // responsiblePersonId is now assigned by the Section Head during review.
+    // Empty contractor select → null (an empty-string FK would fail on insert).
+    if (!payload.contractorCompanyId) payload.contractorCompanyId = null;
+
+    // Named workers, tagged with which people table each id belongs to.
+    payload.workersInvolved = workersInvolved.map((w) => ({
+      partyType: w.partyType,
+      userId: w.partyType === "USER" ? w.id : null,
+      contractorWorkerId: w.partyType === "CONTRACTOR_WORKER" ? w.id : null
+    }));
+
+    // targetDate is only honoured server-side when no SLA policy matches; with
+    // a policy in force the server computes it. An intentional override is
+    // applied as a second call below, because it needs a reason recorded
+    // against a record that already exists.
+    if (!payload.targetDate) delete payload.targetDate;
 
     try {
       // 1. Create the observation
@@ -138,6 +275,31 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
         return;
       }
       const created = await res.json();
+
+      // 1b. Apply the closure-date override, if one was entered. Non-fatal —
+      // the observation exists and has a valid SLA date; a failure here means
+      // the policy date stands, which is reported rather than silently kept.
+      if (targetDateOverride && targetDateReason.trim().length >= MIN_OVERRIDE_REASON) {
+        const ovr = await fetch(
+          `/api/observations/${created.id}/target-closure-date/override`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              date: new Date(targetDateOverride).toISOString(),
+              reason: targetDateReason.trim()
+            })
+          }
+        );
+        if (!ovr.ok) {
+          setError(
+            await readApiError(
+              ovr,
+              "Observation saved, but the closure-date override was not applied — the SLA date stands."
+            )
+          );
+        }
+      }
 
       // 2. Upload photos sequentially (preserves order, simpler error handling)
       const failures: { id: string; fileName: string; error: string }[] = [];
@@ -183,20 +345,29 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Date" name="date" required>
-              <Input name="date" type="date" defaultValue={today} required />
-            </Field>
-            <Field label="Severity" name="severity" required>
-              <Select
-                name="severity"
+              {/* Controlled: the SLA target date is observationDate + slaDays,
+                  so backdating the observation moves the closure date with it. */}
+              <Input
+                name="date"
+                type="date"
+                value={obsDate}
+                onChange={(e) => setObsDate(e.target.value)}
                 required
+              />
+            </Field>
+            {/* Pre-filled from the severity matrix once Category + Sub-category
+                are chosen; still fully editable, with a recorded reason when the
+                observer disagrees. Falls back to a plain dropdown when no rule
+                is seeded for the combination. */}
+            <Field label="Severity" name="severity" required>
+              <SeveritySuggestionField
                 value={severity}
-                onChange={(e) => setSeverity(e.target.value)}
-              >
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
-                <option value="CRITICAL">Critical</option>
-              </Select>
+                onChange={setSeverity}
+                suggestion={severitySuggestion}
+                loading={severityLoading}
+                reason={severityReason}
+                onReasonChange={setSeverityReason}
+              />
             </Field>
           </div>
 
@@ -207,7 +378,12 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
               </Select>
             </Field>
             <Field label="Area" name="areaId" required>
-              <Select name="areaId" required>
+              <Select
+                name="areaId"
+                required
+                value={areaId}
+                onChange={(e) => setAreaId(e.target.value)}
+              >
                 {selectedPlant?.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </Select>
             </Field>
@@ -215,16 +391,64 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Observation Type" name="type" required>
-              <Select name="type" required defaultValue="UNSAFE_ACT">
+              <Select
+                name="type"
+                required
+                value={type}
+                onChange={(e) => setType(e.target.value)}
+              >
                 {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </Select>
             </Field>
-            <Field label="Category" name="category" required>
-              <Select name="category" required defaultValue="PPE">
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
+            {/* At-risk → DuPont STOP category + sub-category, both scoped to the
+                act/condition axis. Safe → the legacy hazard category only. */}
+            <StopTaxonomyFields
+              type={type}
+              value={taxonomy}
+              onChange={setTaxonomy}
+              safeCategorySlot={
+                <Field label="Category" name="category" required>
+                  <Select name="category" required defaultValue="PPE">
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
+                  </Select>
+                </Field>
+              }
+            />
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Contractor (if applicable)" name="contractorCompanyId">
+              <Select
+                name="contractorCompanyId"
+                defaultValue=""
+                value={contractorCompanyId}
+                onChange={(e) => setContractorCompanyId(e.target.value)}
+              >
+                <option value="">— None (own employee) —</option>
+                {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Select>
             </Field>
           </div>
+
+          {/* Worker Involved — always visible, mandatory only for High/Critical
+              Unsafe Acts. Kept optional elsewhere on purpose: forcing a name on
+              every Medium/Low or Unsafe Condition report turns hazard reporting
+              into blame reporting. */}
+          <Field label="Worker Involved" name="workersInvolved" required={workersRequired}>
+            <WorkerInvolvedPicker
+              value={workersInvolved}
+              onChange={setWorkersInvolved}
+              plantId={plantId}
+              contractorCompanyId={contractorCompanyId || null}
+              required={workersRequired}
+              invalid={workersRequired && workersInvolved.length === 0}
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              {workersRequired
+                ? "Required for a High or Critical severity Unsafe Act — this starts a safety review for each named worker."
+                : "Optional. Name a worker only when the observation is about a specific person's action."}
+            </p>
+          </Field>
 
           <Field label="Description" name="description" required>
             <Textarea name="description" required minLength={10} placeholder="Describe what was observed, where, and any context (10 chars min)..." rows={4} />
@@ -308,9 +532,18 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Target Closure Date" name="targetDate">
-              <Input name="targetDate" type="date" min={today} />
+              <SlaTargetDateField
+                preview={slaPreview}
+                loading={slaLoading}
+                overrideDate={targetDateOverride}
+                overrideReason={targetDateReason}
+                onOverrideDate={setTargetDateOverride}
+                onOverrideReason={setTargetDateReason}
+                minDate={today}
+              />
               <p className="text-xs text-slate-500 mt-1">
-                The Section Head will assign the responsible person during review.
+                The Section Head will assign the responsible person during review,
+                and may reset this date at that point.
               </p>
             </Field>
           </div>

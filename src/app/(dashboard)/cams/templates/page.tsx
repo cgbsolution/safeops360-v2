@@ -9,7 +9,9 @@ import {
   TEMPLATE_STATUS_CHIP, fmtDate, labelize, engagementTypeLabel,
   type TemplateListResponse,
 } from "../lib-cams";
+import type { AuditLibrary } from "../audits/lib";
 import { NewTemplateButton } from "./new-template";
+import { ImportLibraryButton } from "./import-library";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +41,14 @@ export default async function TemplateLibraryPage(props: {
     error = e?.message ?? "Failed to load templates";
   }
 
+  // Audit checkpoint libraries — the source the audit flow materializes from.
+  let libraries: AuditLibrary[] = [];
+  try {
+    libraries = (await backendFetch<{ libraries: AuditLibrary[] }>("/api/audit-compliance/library")).libraries;
+  } catch {
+    libraries = [];
+  }
+
   const spStr: Record<string, string> = {};
   for (const [k, v] of Object.entries(sp)) {
     if (typeof v === "string") spStr[k] = v;
@@ -59,15 +69,51 @@ export default async function TemplateLibraryPage(props: {
   return (
     <div>
       <PageHeader
-        title="Template Library"
-        description="The single source of truth for every checklist on the platform. Questions are mapped to ISO clauses — which is what powers conformance-by-clause analytics no checklist-only tool can offer."
+        title="Templates & Libraries"
+        description="Two checklist sources: audit checkpoint libraries (per-industry discipline→checkpoint sets the audit flow materializes from — supports ≈1500 checkpoints via import) and clause-mapped inspection templates."
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Templates" }]}
         action={<Can permission="CAMS.TEMPLATE_AUTHOR"><NewTemplateButton ownerId={ownerId ?? ""} /></Can>}
       />
+
+      {/* Audit checkpoint libraries — source for the ComplianceAudit flow. */}
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white">
+        <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
+          <h2 className="text-sm font-semibold text-slate-800">Audit Checkpoint Libraries</h2>
+          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{libraries.length}</span>
+          <span className="text-xs text-slate-500">— per-industry discipline → checkpoint sets that audits materialize from</span>
+          <div className="ml-auto"><Can permission="AUDIT_COMPLIANCE.CREATE"><ImportLibraryButton /></Can></div>
+        </div>
+        {libraries.length === 0 ? (
+          <div className="px-4 py-6 text-center text-sm text-slate-400">No audit libraries yet. Import one to enable the audit flow (supports ≈1500 checkpoints).</div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {libraries.map((lib) => (
+              <div key={lib.industryCode} className="rounded-lg border border-slate-200 p-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold text-slate-800">{lib.industryName}</span>
+                  <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">{lib.checkpointCount} cp</span>
+                </div>
+                <div className="mt-0.5 font-mono text-[10px] text-slate-400">{lib.industryCode} · v{lib.version}</div>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {lib.categories.slice(0, 6).map((c) => (
+                    <span key={c.category_code} className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-500">
+                      <span className="size-1.5 rounded-full" style={{ backgroundColor: c.category_color || "#94a3b8" }} />
+                      {c.category_name} <span className="tabular-nums text-slate-400">{c.checkpointCount}</span>
+                    </span>
+                  ))}
+                  {lib.categories.length > 6 && <span className="text-[10px] text-slate-400">+{lib.categories.length - 6} more</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
       ) : (
         <>
+          <h2 className="mb-2 text-sm font-semibold text-slate-800">Inspection Templates</h2>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Status</span>
             {["DRAFT", "IN_REVIEW", "APPROVED", "RETIRED"].map((s) => statusChip(s, labelize(s)))}

@@ -27,6 +27,9 @@ export type GateBlocker = {
 
 export type PtwActivationGateStatus = {
   ok: boolean;
+  /** Closed-loop rebuild: FLRA blocks activation only when the permit was
+   *  created with flraRequired (instance policy / wizard override). */
+  flraRequired: boolean;
   blockers: GateBlocker[];
   flra: {
     id: string;
@@ -120,6 +123,7 @@ export async function getPtwActivationGate(
 ): Promise<PtwActivationGateStatus> {
   const status: PtwActivationGateStatus = {
     ok: true,
+    flraRequired: false,
     blockers: [],
     flra: null,
     crewValidityIssues: [],
@@ -182,7 +186,12 @@ export async function getPtwActivationGate(
     });
   }
 
-  // ─── 2. FLRA gate ───
+  // ─── 2. FLRA gate — CONDITIONAL (closed-loop rebuild) ───
+  // Blocks only when the permit was created with flraRequired. An FLRA that
+  // exists anyway on a non-required permit is surfaced (status.flra) but
+  // never blocks — its issues downgrade to WARN.
+  const flraRequired = Boolean((permit as any).flraRequired);
+  status.flraRequired = flraRequired;
   const flra = await prisma.fLRA.findFirst({
     where: {
       permitId,
@@ -195,13 +204,15 @@ export async function getPtwActivationGate(
   });
 
   if (!flra) {
-    status.ok = false;
-    status.blockers.push({
-      code: "FLRA_MISSING",
-      message:
-        "A completed FLRA is required before activation. Crew must sign at the worksite.",
-      severity: "ERROR"
-    });
+    if (flraRequired) {
+      status.ok = false;
+      status.blockers.push({
+        code: "FLRA_MISSING",
+        message:
+          "A completed FLRA is required before activation. Crew must sign at the worksite.",
+        severity: "ERROR"
+      });
+    }
   } else {
     status.flra = {
       id: flra.id,
@@ -215,19 +226,19 @@ export async function getPtwActivationGate(
       const unsigned = flra.crewSignatures.filter((s) => !s.signed && !s.refusedToSign);
       const refused = flra.crewSignatures.filter((s) => s.refusedToSign);
       if (unsigned.length > 0) {
-        status.ok = false;
+        if (flraRequired) status.ok = false;
         status.blockers.push({
           code: "FLRA_UNSIGNED",
           message: `FLRA awaiting sign-off from: ${unsigned.map((s) => s.user.name).join(", ")}.`,
-          severity: "ERROR"
+          severity: flraRequired ? "ERROR" : "WARN"
         });
       }
       if (refused.length > 0) {
-        status.ok = false;
+        if (flraRequired) status.ok = false;
         status.blockers.push({
           code: "FLRA_REFUSED",
           message: `Crew refused to sign: ${refused.map((s) => s.user.name).join(", ")}. Supervisor must replace them and re-do the FLRA.`,
-          severity: "ERROR"
+          severity: flraRequired ? "ERROR" : "WARN"
         });
       }
     }

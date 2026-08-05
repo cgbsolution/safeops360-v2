@@ -10,7 +10,7 @@ import { PerformanceScorecard } from "@/components/manhours/widgets/performance-
 import { KpiDrillDownPrint } from "@/app/(dashboard)/manhours/kpi/print-button";
 
 const HEADLINE_KPIS: KpiCode[] = ["LTIFR", "TRIFR", "DART_RATE", "SEVERITY_RATE", "NEAR_MISS_RATE", "DAYS_SINCE_LAST_LTI"];
-const SECONDARY_KPIS: KpiCode[] = ["FSI", "HEINRICH_RATIO", "OBSERVATION_RATE", "TRAINING_COMPLIANCE", "INSPECTION_COMPLIANCE", "PTW_FLRA_COMPLIANCE", "CAPA_CLOSURE_RATE", "COST_OF_INCIDENTS"];
+const SECONDARY_KPIS: KpiCode[] = ["IFR", "TRIR", "FSI", "HEINRICH_RATIO", "OBSERVATION_RATE", "TRAINING_COMPLIANCE", "INSPECTION_COMPLIANCE", "PTW_FLRA_COMPLIANCE", "CAPA_CLOSURE_RATE", "COST_OF_INCIDENTS"];
 
 /**
  * One renderer for all three report shapes — monthly, quarterly,

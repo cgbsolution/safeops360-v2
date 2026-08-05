@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Printer, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
   BAND_HEX,
@@ -155,28 +157,30 @@ export function ScenarioDetailView({
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <button
+            <Button
               onClick={openStressed}
               disabled={loadingHm}
-              className="rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+              className="rounded-lg px-3 py-1.5"
             >
               {loadingHm ? "Stressing…" : "Stress the Heat Map"}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
               onClick={runAsExercise}
               disabled={busy}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-50"
+              className="rounded-lg px-3 py-1.5 text-slate-700 hover:border-primary-500"
             >
               Run as Exercise
-            </button>
+            </Button>
             {scenario.status !== "ACTIVE" && (
-              <button
+              <Button
+                variant="outline"
                 onClick={activate}
                 disabled={busy}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-50"
+                className="rounded-lg px-3 py-1.5 text-slate-700 hover:border-primary-500"
               >
                 Activate
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -193,28 +197,28 @@ export function ScenarioDetailView({
           {scenario.impactEstimates.length === 0 ? (
             <p className="text-xs text-slate-400">No impact estimates recorded.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-2 py-1.5">Dimension</th>
-                  <th className="px-2 py-1.5">Level</th>
-                  <th className="px-2 py-1.5">Basis / notes</th>
-                  <th className="px-2 py-1.5">Gross (INR)</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-2 py-1.5">Dimension</TableHead>
+                  <TableHead className="px-2 py-1.5">Level</TableHead>
+                  <TableHead className="px-2 py-1.5">Basis / notes</TableHead>
+                  <TableHead className="px-2 py-1.5">Gross (INR)</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {scenario.impactEstimates.map((e: any, i: number) => (
-                  <tr key={i} className="border-b border-slate-100">
-                    <td className="px-2 py-1.5 text-slate-700">{DIMENSION_LABEL[e.dimension] ?? e.dimension}</td>
-                    <td className="px-2 py-1.5 tabular-nums font-semibold">L{e.estimatedLevel}</td>
-                    <td className="max-w-[280px] px-2 py-1.5 text-xs text-slate-500">{e.estimateBasisNotes ?? "—"}</td>
-                    <td className="px-2 py-1.5 tabular-nums text-xs text-slate-600">
+                  <TableRow key={i}>
+                    <TableCell className="px-2 py-1.5">{DIMENSION_LABEL[e.dimension] ?? e.dimension}</TableCell>
+                    <TableCell className="px-2 py-1.5 tabular-nums font-semibold">L{e.estimatedLevel}</TableCell>
+                    <TableCell className="max-w-[280px] px-2 py-1.5 text-xs text-slate-500">{e.estimateBasisNotes ?? "—"}</TableCell>
+                    <TableCell className="px-2 py-1.5 tabular-nums text-xs text-slate-600">
                       {e.estimatedGrossInr != null ? `₹${Number(e.estimatedGrossInr).toLocaleString("en-IN")}` : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
 
@@ -360,18 +364,19 @@ function StressedOverlay({ heatmap, onClose }: { heatmap: StressedHeatMap; onClo
             </p>
           </div>
           <div className="flex gap-2 print:hidden">
-            <button
+            <Button
+              variant="outline"
               onClick={() => window.print()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-primary-500"
+              className="gap-1.5 rounded-lg px-3 py-1.5 text-slate-700 hover:border-primary-500"
             >
               <Printer size={15} /> Export PNG
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={onClose}
-              className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 text-sm font-medium text-white hover:bg-slate-800"
+              className="gap-1.5 rounded-lg bg-slate-900 px-3 py-1.5 hover:bg-slate-800"
             >
               <X size={15} /> Close
-            </button>
+            </Button>
           </div>
         </div>
 

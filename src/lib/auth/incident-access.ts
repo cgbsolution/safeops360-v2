@@ -24,9 +24,15 @@ export type IncidentReadScope = Prisma.IncidentWhereInput | false;
 export async function incidentReadScopeWhere(userId: string): Promise<IncidentReadScope> {
   if (!userId) return false;
 
+  // Soft-deleted incidents (governed-entity delete) are never readable, at any
+  // scope. The backend hides them via its ORM filter; the frontend reads via
+  // Prisma directly, so we AND this in here — the single source of truth for
+  // incident reads (list + detail gate).
+  const notDeleted: Prisma.IncidentWhereInput = { isDeleted: false };
+
   const scopes = await getScopesFor(userId, "INCIDENT.READ");
   if (scopes.length === 0) return false;
-  if (scopes.includes("ALL_PLANTS")) return {};
+  if (scopes.includes("ALL_PLANTS")) return notDeleted;
 
   const me = await prisma.user.findUnique({
     where: { id: userId },
@@ -62,7 +68,8 @@ export async function incidentReadScopeWhere(userId: string): Promise<IncidentRe
   }
 
   if (ors.length === 0) return false;
-  return ors.length === 1 ? ors[0] : { OR: ors };
+  const scopeWhere = ors.length === 1 ? ors[0] : { OR: ors };
+  return { AND: [notDeleted, scopeWhere] };
 }
 
 // True if `userId` may READ the given incident — used by the detail-page gate.

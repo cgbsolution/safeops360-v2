@@ -10,6 +10,7 @@ import {
   type InsuranceDashboard,
 } from "@/app/(dashboard)/erm/lib-t3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { CoverageByTypeChart } from "./coverage-chart";
 
 export const dynamic = "force-dynamic";
@@ -89,33 +90,33 @@ export default async function InsuranceDashboardPage() {
                 <p className="py-8 text-center text-sm text-slate-400">No policies expiring in the next 90 days.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[460px] text-sm">
-                    <thead className="bg-slate-50/95">
-                      <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                        <th className="px-3 py-2">Code</th>
-                        <th className="px-3 py-2">Policy</th>
-                        <th className="px-3 py-2">Coverage end</th>
-                        <th className="px-3 py-2 text-right">Days</th>
-                        <th className="px-3 py-2">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table className="min-w-[460px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="px-3 py-2">Code</TableHead>
+                        <TableHead className="px-3 py-2">Policy</TableHead>
+                        <TableHead className="px-3 py-2">Coverage end</TableHead>
+                        <TableHead className="px-3 py-2 text-right">Days</TableHead>
+                        <TableHead className="px-3 py-2">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {data.renewalCalendar.map((r) => {
                         const danger = r.status === "EXPIRING_SOON" || r.status === "EXPIRED";
                         return (
-                          <tr key={r.policyCode} className={"border-t border-slate-100 " + (danger ? "bg-rose-50" : "hover:bg-slate-50/70")}>
-                            <td className="px-3 py-2 font-medium text-primary-700">{r.policyCode}</td>
-                            <td className="max-w-[200px] truncate px-3 py-2 text-slate-700">{r.policyName}</td>
-                            <td className="px-3 py-2 text-xs text-slate-500">{fmtDate(r.coverageEndDate)}</td>
-                            <td className={"px-3 py-2 text-right text-xs tabular-nums " + (danger ? "font-semibold text-rose-700" : "text-slate-600")}>
+                          <TableRow key={r.policyCode} className={danger ? "bg-rose-50" : ""}>
+                            <TableCell className="px-3 py-2 font-medium text-primary-700">{r.policyCode}</TableCell>
+                            <TableCell className="max-w-[200px] truncate px-3 py-2 text-slate-700">{r.policyName}</TableCell>
+                            <TableCell className="px-3 py-2 text-xs text-slate-500">{fmtDate(r.coverageEndDate)}</TableCell>
+                            <TableCell className={"px-3 py-2 text-right text-xs tabular-nums " + (danger ? "font-semibold text-rose-700" : "text-slate-600")}>
                               {r.daysToExpiry}
-                            </td>
-                            <td className="px-3 py-2">{statusChip(r.status)}</td>
-                          </tr>
+                            </TableCell>
+                            <TableCell className="px-3 py-2">{statusChip(r.status)}</TableCell>
+                          </TableRow>
                         );
                       })}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
@@ -136,30 +137,30 @@ export default async function InsuranceDashboardPage() {
               <p className="py-8 text-center text-sm text-slate-400">No open claims.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[520px] text-sm">
-                  <thead className="bg-slate-50/95">
-                    <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                      <th className="px-3 py-2">Claim</th>
-                      <th className="px-3 py-2">Policy</th>
-                      <th className="px-3 py-2 text-right">Claimed</th>
-                      <th className="px-3 py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="min-w-[520px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2">Claim</TableHead>
+                      <TableHead className="px-3 py-2">Policy</TableHead>
+                      <TableHead className="px-3 py-2 text-right">Claimed</TableHead>
+                      <TableHead className="px-3 py-2">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {data.openClaims.map((c) => (
-                      <tr key={c.claimCode} className="border-t border-slate-100 hover:bg-slate-50/70">
-                        <td className="px-3 py-2 font-medium text-slate-800">{c.claimCode}</td>
-                        <td className="px-3 py-2 text-xs text-slate-600">{c.policyCode ?? "—"}</td>
-                        <td className="px-3 py-2 text-right text-xs tabular-nums text-slate-700">{inrCompact(c.claimedAmountInr)}</td>
-                        <td className="px-3 py-2">
+                      <TableRow key={c.claimCode}>
+                        <TableCell className="px-3 py-2 font-medium text-slate-800">{c.claimCode}</TableCell>
+                        <TableCell className="px-3 py-2 text-xs text-slate-600">{c.policyCode ?? "—"}</TableCell>
+                        <TableCell className="px-3 py-2 text-right text-xs tabular-nums text-slate-700">{inrCompact(c.claimedAmountInr)}</TableCell>
+                        <TableCell className="px-3 py-2">
                           <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (CLAIM_STATUS_CHIP[c.status] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                             {c.status.replace(/_/g, " ")}
                           </span>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>

@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Download, Printer, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { HeatMap, BandBadge } from "@/components/erm/shared";
 import {
   bandForScore,
@@ -46,6 +48,7 @@ function computeResidualCells(risks: RiskListItem[]): HeatMapCell[] {
 export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary; risks: RiskListResponse }) {
   const [mode, setMode] = useState<Mode>("RESIDUAL");
   const [activeCategories, setActiveCategories] = useState<Set<string>>(new Set());
+  const [activeBusinessUnits, setActiveBusinessUnits] = useState<Set<string>>(new Set());
   const [activeCell, setActiveCell] = useState<{ likelihood: number; impact: number } | null>(null);
 
   // Category chips derived from the risk list
@@ -59,10 +62,26 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
     return [...m.entries()].map(([code, v]) => ({ code, ...v }));
   }, [risks.items]);
 
+  // Distinct business units / departments present in the loaded risks.
+  const businessUnits = useMemo(() => {
+    const set = new Set<string>();
+    for (const r of risks.items) {
+      if (r.businessUnit) set.add(r.businessUnit);
+    }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [risks.items]);
+
   const filteredRisks = useMemo(() => {
-    if (activeCategories.size === 0) return risks.items;
-    return risks.items.filter((r) => r.categoryCode != null && activeCategories.has(r.categoryCode));
-  }, [risks.items, activeCategories]);
+    return risks.items.filter((r) => {
+      if (activeCategories.size > 0 && !(r.categoryCode != null && activeCategories.has(r.categoryCode))) {
+        return false;
+      }
+      if (activeBusinessUnits.size > 0 && !(r.businessUnit != null && activeBusinessUnits.has(r.businessUnit))) {
+        return false;
+      }
+      return true;
+    });
+  }, [risks.items, activeCategories, activeBusinessUnits]);
 
   // Residual cells recomputed from the filtered list. Inherent cells come from the
   // server summary (the risk list only carries residual L/I), and are not
@@ -79,6 +98,16 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
       const next = new Set(prev);
       if (next.has(code)) next.delete(code);
       else next.add(code);
+      return next;
+    });
+    setActiveCell(null);
+  }
+
+  function toggleBusinessUnit(bu: string) {
+    setActiveBusinessUnits((prev) => {
+      const next = new Set(prev);
+      if (next.has(bu)) next.delete(bu);
+      else next.add(bu);
       return next;
     });
     setActiveCell(null);
@@ -103,19 +132,20 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 print:hidden">
         <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
           {(["INHERENT", "RESIDUAL", "BOTH"] as const).map((m) => (
-            <button
+            <Button
               key={m}
+              variant="ghost"
               onClick={() => {
                 setMode(m);
                 setActiveCell(null);
               }}
-              className={
-                "rounded-md px-3 py-1.5 transition-all " +
-                (mode === m ? "bg-white text-primary-700 shadow-sm" : "text-slate-500 hover:text-slate-700")
-              }
+              className={cn(
+                "h-auto rounded-md px-3 py-1.5 transition-all",
+                mode === m ? "bg-white text-primary-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
             >
               {m === "INHERENT" ? "Inherent" : m === "RESIDUAL" ? "Residual" : "Both (side-by-side)"}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -125,21 +155,50 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
         {categories.map((c) => {
           const active = activeCategories.has(c.code);
           return (
-            <button
+            <Button
               key={c.code}
               type="button"
+              variant="ghost"
               onClick={() => toggleCategory(c.code)}
-              className={
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors " +
-                (active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400")
-              }
+              className={cn(
+                "h-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+              )}
               title={c.name}
             >
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
               {c.code}
-            </button>
+            </Button>
           );
         })}
+
+        {businessUnits.length > 0 && (
+          <>
+            <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <Filter size={13} /> Department
+            </span>
+            {businessUnits.map((bu) => {
+              const active = activeBusinessUnits.has(bu);
+              return (
+                <Button
+                  key={bu}
+                  type="button"
+                  variant="ghost"
+                  onClick={() => toggleBusinessUnit(bu)}
+                  className={cn(
+                    "h-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                    active
+                      ? "border-slate-900 bg-slate-900 text-white"
+                      : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                  )}
+                  title={bu}
+                >
+                  {bu}
+                </Button>
+              );
+            })}
+          </>
+        )}
 
         <div className="ml-auto flex items-center gap-2">
           <a
@@ -148,13 +207,14 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
           >
             <Download size={14} /> Download CSV
           </a>
-          <button
+          <Button
             type="button"
+            variant="outline"
             onClick={() => window.print()}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-slate-400"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:border-slate-400"
           >
             <Printer size={14} /> Export PNG (print)
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -166,7 +226,7 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
               <h2 className="text-sm font-semibold text-slate-900">Residual Exposure</h2>
               <p className="text-xs text-slate-500">
                 After current controls · {filteredRisks.length} risk(s)
-                {activeCategories.size > 0 && " (filtered)"}
+                {(activeCategories.size > 0 || activeBusinessUnits.size > 0) && " (filtered)"}
               </p>
             </div>
             <div className="flex justify-center py-2">

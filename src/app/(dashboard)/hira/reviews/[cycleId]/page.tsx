@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { AccessRestricted } from "@/components/access-restricted";
 import { requirePermission } from "@/lib/auth/server";
 import { ReviewForm } from "./review-form";
 
@@ -48,6 +49,8 @@ export default async function HiraReviewCyclePage(
     cycle = await backendFetch<Cycle>(`/api/hira/review-cycles/${cycleId}`);
   } catch (e) {
     if (e instanceof BackendError && e.status === 404) notFound();
+    if (e instanceof BackendError && e.status === 403)
+      return <AccessRestricted backHref="/hira/reviews" backLabel="← Back to review cycles" />;
     throw e;
   }
 

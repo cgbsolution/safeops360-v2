@@ -23,6 +23,7 @@ import { StepValidate } from "./step-validate";
 import { ManhoursActionPanel } from "./action-panel";
 import { LockedKpiPanel } from "./locked-kpi-panel";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
+import type { Party as WorkflowParty } from "@/lib/workflow/party";
 
 interface WorkflowSnapshot {
   steps: {
@@ -40,7 +41,7 @@ interface WorkflowSnapshot {
     action: string;
     performedAt: string;
     comments?: string | null;
-    performedBy: { name: string; designation?: string | null };
+    performedBy: WorkflowParty;
   }[];
   pendingTasks: {
     id: string;
@@ -48,7 +49,7 @@ interface WorkflowSnapshot {
     stepName: string;
     status: string;
     dueAt?: string | null;
-    assignedTo: { name: string; designation?: string | null; department?: string | null };
+    assignedTo: WorkflowParty;
   }[];
   currentStepId: string | null;
   status: string;

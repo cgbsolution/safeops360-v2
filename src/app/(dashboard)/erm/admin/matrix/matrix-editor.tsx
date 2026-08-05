@@ -3,6 +3,10 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Info, Save, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   DIMENSION_LABEL,
   IMPACT_DIMENSIONS,
@@ -132,57 +136,50 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
             band thresholds change.
           </p>
         </div>
-        <button
-          onClick={onSave}
-          disabled={busy}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-        >
+        <Button type="button" onClick={onSave} disabled={busy} className="gap-1.5">
           <Save size={16} /> {busy ? "Working…" : "Save matrix"}
-        </button>
+        </Button>
       </div>
 
       {/* 1. Likelihood */}
       <section className="rounded-xl border border-slate-200 bg-white p-5">
         <h3 className="mb-3 text-sm font-semibold text-slate-800">1 · Likelihood scale</h3>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-2 py-1.5 w-14">Level</th>
-                <th className="px-2 py-1.5">Label</th>
-                <th className="px-2 py-1.5">Probability guide</th>
-                <th className="px-2 py-1.5">Frequency guide</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-[640px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-14 text-slate-500">Level</TableHead>
+                <TableHead className="text-slate-500">Label</TableHead>
+                <TableHead className="text-slate-500">Probability guide</TableHead>
+                <TableHead className="text-slate-500">Frequency guide</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {likelihood.map((l) => (
-                <tr key={l.level} className="border-t border-slate-100">
-                  <td className="px-2 py-1.5 text-center text-base font-bold tabular-nums text-slate-700">{l.level}</td>
-                  <td className="px-2 py-1.5">
-                    <input
+                <TableRow key={l.level}>
+                  <TableCell className="text-center text-base font-bold tabular-nums">{l.level}</TableCell>
+                  <TableCell>
+                    <Input
                       value={l.label}
                       onChange={(e) => setLikelihoodField(l.level, "label", e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 p-1.5 text-sm"
                     />
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <input
+                  </TableCell>
+                  <TableCell>
+                    <Input
                       value={l.probabilityGuide}
                       onChange={(e) => setLikelihoodField(l.level, "probabilityGuide", e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 p-1.5 text-sm"
                     />
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <input
+                  </TableCell>
+                  <TableCell>
+                    <Input
                       value={l.frequencyGuide}
                       onChange={(e) => setLikelihoodField(l.level, "frequencyGuide", e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 p-1.5 text-sm"
                     />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
 
@@ -193,35 +190,35 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
           One descriptor per dimension × level. Edit the Financial row to set the ₹ bands.
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-2 py-1.5 w-44">Dimension</th>
+          <Table className="min-w-[900px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-44 text-slate-500">Dimension</TableHead>
                 {LEVELS.map((lvl) => (
-                  <th key={lvl} className="px-2 py-1.5 text-center">
+                  <TableHead key={lvl} className="text-center text-slate-500">
                     Level {lvl}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {IMPACT_DIMENSIONS.map((dim) => (
-                <tr key={dim} className="border-t border-slate-100 align-top">
-                  <td className="px-2 py-2 text-xs font-medium text-slate-700">{DIMENSION_LABEL[dim]}</td>
+                <TableRow key={dim}>
+                  <TableCell className="text-xs font-medium">{DIMENSION_LABEL[dim]}</TableCell>
                   {LEVELS.map((lvl) => (
-                    <td key={lvl} className="px-1 py-2">
-                      <textarea
+                    <TableCell key={lvl}>
+                      <Textarea
                         rows={2}
                         value={descriptorFor(dim, lvl)}
                         onChange={(e) => setImpactDescriptor(dim, lvl, e.target.value)}
-                        className="w-full min-w-[120px] resize-y rounded-lg border border-slate-300 p-1.5 text-xs"
+                        className="min-w-[120px] resize-y text-xs"
                       />
-                    </td>
+                    </TableCell>
                   ))}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
 
@@ -233,46 +230,47 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
           the matrix version.
         </p>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[520px] text-sm">
-            <thead>
-              <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-2 py-1.5">Band</th>
-                <th className="px-2 py-1.5 w-28">Min score</th>
-                <th className="px-2 py-1.5 w-28">Max score</th>
-                <th className="px-2 py-1.5">Colour</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-[520px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-slate-500">Band</TableHead>
+                <TableHead className="w-28 text-slate-500">Min score</TableHead>
+                <TableHead className="w-28 text-slate-500">Max score</TableHead>
+                <TableHead className="text-slate-500">Colour</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {bands.map((b, i) => (
-                <tr key={b.name} className="border-t border-slate-100">
-                  <td className="px-2 py-1.5">
+                <TableRow key={b.name}>
+                  <TableCell>
                     <span className="inline-flex items-center gap-2">
                       <span className="h-4 w-4 rounded ring-1 ring-inset ring-slate-200" style={{ backgroundColor: b.colorHex }} />
                       <span className="font-semibold text-slate-700">{b.name}</span>
                     </span>
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <input
+                  </TableCell>
+                  <TableCell>
+                    <Input
                       type="number"
                       min={1}
                       max={25}
                       value={b.minScore}
                       onChange={(e) => setBandField(i, { minScore: Number(e.target.value) })}
-                      className="w-20 rounded-lg border border-slate-300 p-1.5 text-sm tabular-nums"
+                      className="w-20 tabular-nums"
                     />
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <input
+                  </TableCell>
+                  <TableCell>
+                    <Input
                       type="number"
                       min={1}
                       max={25}
                       value={b.maxScore}
                       onChange={(e) => setBandField(i, { maxScore: Number(e.target.value) })}
-                      className="w-20 rounded-lg border border-slate-300 p-1.5 text-sm tabular-nums"
+                      className="w-20 tabular-nums"
                     />
-                  </td>
-                  <td className="px-2 py-1.5">
+                  </TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-2">
+                      {/* type=color has no Input equivalent — native swatch control, left raw */}
                       <input
                         type="color"
                         value={b.colorHex}
@@ -283,11 +281,11 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
                         {b.colorHex}
                       </span>
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </section>
 
@@ -296,28 +294,28 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
           <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-900">Confirm re-band</h2>
-              <button onClick={() => setConfirm(null)} className="text-slate-400 hover:text-slate-700">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setConfirm(null)}
+                aria-label="Close"
+                className="h-8 w-8 text-slate-400 hover:text-slate-700"
+              >
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <p className="text-sm text-slate-700">{confirm.message}</p>
             <p className="mt-2 text-xs text-slate-500">
               Scores are unchanged; only bands recalculate. The matrix version will increment.
             </p>
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                onClick={() => setConfirm(null)}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
-              >
+              <Button type="button" variant="outline" onClick={() => setConfirm(null)}>
                 Cancel
-              </button>
-              <button
-                onClick={persist}
-                disabled={busy}
-                className="rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-              >
+              </Button>
+              <Button type="button" onClick={persist} disabled={busy}>
                 {busy ? "Saving…" : `Re-band & save${confirm.affected ? ` (${confirm.affected})` : ""}`}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

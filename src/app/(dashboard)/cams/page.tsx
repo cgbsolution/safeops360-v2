@@ -15,8 +15,9 @@ import {
 export const dynamic = "force-dynamic";
 
 const NAV_TILES = [
-  { href: "/cams/engagements", label: "Engagements", icon: ClipboardList, desc: "Audits & inspections — one engine" },
-  { href: "/cams/templates", label: "Templates", icon: FileSpreadsheet, desc: "Clause-mapped checklist library" },
+  { href: "/cams/audits", label: "Audits", icon: ClipboardCheck, desc: "Discipline-scoped audit programme" },
+  { href: "/cams/engagements", label: "Inspections", icon: ClipboardList, desc: "Routine inspections on the CAMS engine" },
+  { href: "/cams/templates", label: "Templates & Libraries", icon: FileSpreadsheet, desc: "Audit libraries + clause-mapped templates" },
   { href: "/cams/findings", label: "Findings", icon: AlertTriangle, desc: "Cross-engagement findings & CAPA" },
   { href: "/cams/admin/types", label: "Audit Types", icon: ClipboardCheck, desc: "Type config & recurrence" },
 ];
@@ -43,8 +44,8 @@ export default async function CamsCommandCentre() {
   let error: string | null = null;
   try {
     [engagements, findings] = await Promise.all([
-      backendFetch<EngagementListResponse>("/api/cams/engagements"),
-      backendFetch<FindingListResponse>("/api/cams/findings"),
+      backendFetch<EngagementListResponse>("/api/cams/unified-engagements"),
+      backendFetch<FindingListResponse>("/api/cams/unified-findings"),
     ]);
   } catch (e: any) {
     error = e?.message ?? "Failed to load CAMS command centre";
@@ -107,7 +108,7 @@ export default async function CamsCommandCentre() {
                   <div className="px-4 py-8 text-center text-sm text-slate-400">No upcoming engagements scheduled.</div>
                 ) : (
                   upcoming.map((e) => (
-                    <Link key={e.id} href={`/cams/engagements/${e.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
+                    <Link key={e.id} href={e.href ?? `/cams/engagements/${e.id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50">
                       <span className={"shrink-0 rounded border px-2 py-0.5 text-[11px] " + (ENGAGEMENT_TYPE_CHIP[e.engagementType] ?? "")}>
                         {engagementTypeLabel(e.engagementType)}
                       </span>

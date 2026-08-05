@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   User as UserIcon,
 } from "lucide-react";
+import { markRecordTasksRead } from "@/lib/workflow/read-state";
 import { ScheduleLifecyclePanel } from "@/components/training/schedule-lifecycle-panel";
 import { ScheduleSessionsBlock } from "@/components/training/schedule-sessions-block";
 import { formatDate, formatDateTime } from "@/lib/utils";
@@ -83,6 +84,15 @@ export default async function TrainingScheduleDetailPage(props: {
     },
   });
   if (!schedule) return notFound();
+
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. TRAINING workflow tasks key off the schedule id, so this is the page
+  // that owns that read state. No-op unless they're the action owner.
+  await markRecordTasksRead({
+    module: "TRAINING",
+    recordId: schedule.id,
+    userId: (session?.user as any)?.id ?? null
+  });
 
   const presentRegIds = new Set(
     schedule.registrations

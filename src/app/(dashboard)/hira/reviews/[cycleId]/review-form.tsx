@@ -12,6 +12,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Check, AlertCircle } from "lucide-react";
+import { parseApiError } from "@/lib/api-error";
 
 const TEXTAREA =
   "w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600";
@@ -104,8 +105,7 @@ export function ReviewForm({
         body: JSON.stringify({ outcome, outcomeNotes: notes })
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? `Submit failed (${res.status})`);
+        setError(await parseApiError(res, "Submit failed"));
         return;
       }
       // FIX 1.3 — Fix redirect after ENTRY_ARCHIVED

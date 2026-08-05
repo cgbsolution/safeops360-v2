@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
 import { useToast } from "@/components/ui/toast";
+import { PanelBoundary } from "@/components/ui/panel-boundary";
 import { RcaEditor, useRcaMethodSwitcher } from "@/components/incidents/rca-editor";
 import { RcaAssistantCard } from "@/components/incidents/rca-assistant";
 import { type RcaMethod, RCA_METHODS_LIST, emptyDataFor, isEmptyRcaData } from "@/lib/rca/types";
@@ -427,13 +428,15 @@ function CauseAnalysisTab({
       {/* RCA Assistant entry point — only shown when the caller has the
           AGENT.RCA_INVOKE permission. Slotted ABOVE the editor so the
           investigator sees the agent option before they start drafting. */}
-      <RcaAssistantCard
-        incidentId={incidentId}
-        canInvoke={canInvokeRcaAgent}
-        canViewAudit={canViewAgentAudit}
-        onLoadIntoEditor={onLoadFromAgent}
-        getCurrentDraftState={() => ({ method, data, rootCauses })}
-      />
+      <PanelBoundary label="RCA Assistant">
+        <RcaAssistantCard
+          incidentId={incidentId}
+          canInvoke={canInvokeRcaAgent}
+          canViewAudit={canViewAgentAudit}
+          onLoadIntoEditor={onLoadFromAgent}
+          getCurrentDraftState={() => ({ method, data, rootCauses })}
+        />
+      </PanelBoundary>
 
       <div className="grid sm:grid-cols-3 gap-3 items-end">
         <div className="sm:col-span-2">

@@ -18,6 +18,14 @@ import {
 } from "recharts";
 import { X } from "lucide-react";
 import { BandBadge, ScorePair } from "@/components/erm/shared";
+import { UserPicker } from "@/components/ui/user-picker";
+import { RiskAttachments } from "@/components/erm/risk-attachments";
+import { RiskHistory } from "@/components/erm/risk-history";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import {
   BAND_HEX,
   DIMENSION_LABEL,
@@ -30,9 +38,10 @@ import {
   type Assessment,
   type RiskDetail,
   type ScoringMatrix,
+  type Treatment,
 } from "../../lib";
 
-const TABS = ["Overview", "Assessments", "Treatments", "Contributing", "KRIs", "Loss History", "Linkages", "Reviews"] as const;
+const TABS = ["Overview", "Assessments", "Treatments", "Contributing", "KRIs", "Loss History", "Linkages", "Reviews", "Documents", "History"] as const;
 type Tab = (typeof TABS)[number];
 
 type Phase2Context = {
@@ -156,20 +165,22 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-200">
         {tabs.map((t) => (
-          <button
+          <Button
             key={t}
+            type="button"
+            variant="ghost"
             onClick={() => setTab(t)}
-            className={
-              "border-b-2 px-3 py-2 text-sm font-medium transition-colors " +
-              (tab === t ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700")
-            }
+            className={cn(
+              "h-auto rounded-none border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              tab === t ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700"
+            )}
           >
             {t}
             {t === "Treatments" && risk.treatments.length > 0 && <span className="ml-1 text-[10px] text-slate-400">{risk.treatments.length}</span>}
             {t === "Contributing" && <span className="ml-1 text-[10px] text-slate-400">{risk.contributingEntries.length}</span>}
             {t === "KRIs" && phase2 && <span className="ml-1 text-[10px] text-slate-400">{phase2.linkedKris.length}</span>}
             {t === "Loss History" && phase2 && <span className="ml-1 text-[10px] text-slate-400">{phase2.lossEvents.length}</span>}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -182,6 +193,8 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
         {tab === "Loss History" && phase2 && <LossHistoryTab phase2={phase2} />}
         {tab === "Linkages" && <LinkagesTab risk={risk} />}
         {tab === "Reviews" && <ReviewsTab risk={risk} />}
+        {tab === "Documents" && <RiskAttachments riskId={risk.id} canEdit={true} />}
+        {tab === "History" && <RiskHistory riskId={risk.id} riskCode={risk.riskCode} />}
       </div>
 
       {modal === "assess" && <AssessModal risk={risk} matrix={matrix} onClose={() => setModal(null)} onDone={() => { setModal(null); router.refresh(); }} />}
@@ -193,16 +206,9 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
 
 function ActionBtn({ children, onClick, disabled, primary }: { children: React.ReactNode; onClick: () => void; disabled?: boolean; primary?: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={
-        "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 " +
-        (primary ? "bg-primary-700 text-white hover:bg-primary-800" : "border border-slate-300 bg-white text-slate-700 hover:border-primary-500")
-      }
-    >
+    <Button type="button" variant={primary ? "default" : "outline"} onClick={onClick} disabled={disabled}>
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -318,26 +324,26 @@ function AssessmentsTab({ risk }: { risk: RiskDetail }) {
       </div>
       <div>
         <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Assessment history</h3>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-              <th className="px-2 py-1.5">Type</th><th className="px-2 py-1.5">L×I</th><th className="px-2 py-1.5">Score</th><th className="px-2 py-1.5">Band</th><th className="px-2 py-1.5">Date</th><th className="px-2 py-1.5">By</th><th className="px-2 py-1.5">Current</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead><TableHead>L×I</TableHead><TableHead>Score</TableHead><TableHead>Band</TableHead><TableHead>Date</TableHead><TableHead>By</TableHead><TableHead>Current</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {risk.assessmentHistory.map((a) => (
-              <tr key={a.id} className="border-b border-slate-100">
-                <td className="px-2 py-1.5">{a.assessmentType}</td>
-                <td className="px-2 py-1.5 tabular-nums">{a.likelihood}×{a.overallImpact}</td>
-                <td className="px-2 py-1.5 tabular-nums font-semibold">{a.totalScore}</td>
-                <td className="px-2 py-1.5"><BandBadge band={a.ratingBand} /></td>
-                <td className="px-2 py-1.5 text-xs text-slate-500">{fmtDate(a.assessmentDate)}</td>
-                <td className="px-2 py-1.5 text-xs text-slate-500">{a.assessedByName ?? "—"}</td>
-                <td className="px-2 py-1.5">{a.isCurrent ? "✓" : ""}</td>
-              </tr>
+              <TableRow key={a.id}>
+                <TableCell>{a.assessmentType}</TableCell>
+                <TableCell className="tabular-nums">{a.likelihood}×{a.overallImpact}</TableCell>
+                <TableCell className="tabular-nums font-semibold">{a.totalScore}</TableCell>
+                <TableCell><BandBadge band={a.ratingBand} /></TableCell>
+                <TableCell className="text-xs text-slate-500">{fmtDate(a.assessmentDate)}</TableCell>
+                <TableCell className="text-xs text-slate-500">{a.assessedByName ?? "—"}</TableCell>
+                <TableCell>{a.isCurrent ? "✓" : ""}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -375,27 +381,123 @@ function AssessmentCard({ title, a }: { title: string; a: Assessment | null }) {
 function TreatmentsTab({ risk }: { risk: RiskDetail }) {
   if (!risk.treatments.length) return <p className="py-6 text-center text-sm text-slate-400">No treatments yet. Use “Add Treatment”.</p>;
   return (
-    <table className="w-full text-sm">
-      <thead>
-        <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-          <th className="px-2 py-1.5">CAPA</th><th className="px-2 py-1.5">Strategy</th><th className="px-2 py-1.5">State</th><th className="px-2 py-1.5">Owner</th><th className="px-2 py-1.5">Due</th><th className="px-2 py-1.5">Exp. reduction</th>
-        </tr>
-      </thead>
-      <tbody>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>CAPA</TableHead><TableHead>Strategy</TableHead><TableHead>State</TableHead><TableHead>Owner</TableHead><TableHead>Due</TableHead><TableHead>Exp. reduction</TableHead><TableHead>Progress</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
         {risk.treatments.map((t) => (
-          <tr key={t.id} className="border-b border-slate-100">
-            <td className="px-2 py-1.5">
+          <TableRow key={t.id}>
+            <TableCell>
               <Link href={`/capa/${t.id}`} className="font-medium text-primary-700 hover:underline">{t.capaNumber}</Link>
-            </td>
-            <td className="px-2 py-1.5"><span className="rounded bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-800">{t.treatmentStrategy}</span></td>
-            <td className="px-2 py-1.5 text-xs">{t.state.replace(/_/g, " ")}{t.overdue && <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">OVERDUE</span>}</td>
-            <td className="px-2 py-1.5 text-xs text-slate-600">{t.primaryOwnerName ?? "—"}</td>
-            <td className="px-2 py-1.5 text-xs text-slate-500">{fmtDate(t.closureTargetDate)}</td>
-            <td className="px-2 py-1.5 tabular-nums text-xs">{t.expectedResidualReduction ?? "—"}</td>
-          </tr>
+            </TableCell>
+            <TableCell><span className="rounded bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-800">{t.treatmentStrategy}</span></TableCell>
+            <TableCell className="text-xs">{t.state.replace(/_/g, " ")}{t.overdue && <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">OVERDUE</span>}</TableCell>
+            <TableCell className="text-xs text-slate-600">{t.primaryOwnerName ?? "—"}</TableCell>
+            <TableCell className="text-xs text-slate-500">{fmtDate(t.closureTargetDate)}</TableCell>
+            <TableCell className="tabular-nums text-xs">{t.expectedResidualReduction ?? "—"}</TableCell>
+            <TableCell><TreatmentProgress treatment={t} /></TableCell>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
+  );
+}
+
+function ProgressBar({ percent }: { percent: number }) {
+  const p = Math.max(0, Math.min(100, percent));
+  return (
+    <div className="h-2 w-32 overflow-hidden rounded-full bg-slate-100">
+      <div
+        className={"h-full rounded-full transition-all " + (p >= 100 ? "bg-emerald-500" : "bg-primary-600")}
+        style={{ width: `${p}%` }}
+      />
+    </div>
+  );
+}
+
+function TreatmentProgress({ treatment: t }: { treatment: Treatment }) {
+  const router = useRouter();
+  const [value, setValue] = useState<number>(t.completionPercent ?? 0);
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
+
+  if (!t.isOpen) {
+    // Closed treatment — show the % bar only, no editable control.
+    const pct = t.completionPercent ?? 100;
+    return (
+      <div className="space-y-1">
+        <ProgressBar percent={pct} />
+        <span className="text-[11px] tabular-nums text-slate-500">{pct}%</span>
+      </div>
+    );
+  }
+
+  async function save() {
+    setBusy(true);
+    setNote(null);
+    try {
+      const res = await fetch(`/api/erm/treatments/${t.id}/progress`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ completionPercent: value }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(j.detail || j.error || `Failed (${res.status})`);
+        return;
+      }
+      const j = await res.json().catch(() => ({}));
+      if (j.residualRecalculated) {
+        setNote("Residual auto-recalculated.");
+        setTimeout(() => setNote(null), 4000);
+      }
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const dirty = value !== (t.completionPercent ?? 0);
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <ProgressBar percent={value} />
+        <span className="w-9 text-right text-[11px] tabular-nums text-slate-600">{value}%</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={value}
+          onChange={(e) => setValue(Number(e.target.value))}
+          disabled={busy}
+          className="h-1.5 w-28 cursor-pointer accent-primary-600"
+        />
+        <input
+          type="number"
+          min={0}
+          max={100}
+          value={value}
+          onChange={(e) => setValue(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
+          disabled={busy}
+          className="w-14 rounded border border-slate-300 px-1.5 py-0.5 text-[11px] tabular-nums"
+        />
+        <button
+          onClick={save}
+          disabled={busy || !dirty}
+          className="rounded-md border border-slate-300 bg-white px-2 py-0.5 text-[11px] font-medium text-slate-700 hover:border-primary-500 disabled:opacity-50"
+        >
+          {busy ? "Saving…" : "Save"}
+        </button>
+      </div>
+      {note && <span className="text-[10px] font-medium text-emerald-600">{note}</span>}
+    </div>
   );
 }
 
@@ -417,24 +519,24 @@ function KrisTab({ phase2 }: { phase2: NonNullable<Phase2Context> }) {
   return (
     <div>
       <p className="mb-3 text-xs text-slate-500">Key Risk Indicators linked to this risk — continuous early-warning signal.</p>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-            <th className="px-2 py-1.5">KRI</th><th className="px-2 py-1.5">Current</th><th className="px-2 py-1.5">Status</th><th className="px-2 py-1.5">Trend</th><th className="px-2 py-1.5"></th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>KRI</TableHead><TableHead>Current</TableHead><TableHead>Status</TableHead><TableHead>Trend</TableHead><TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {phase2.linkedKris.map((k) => (
-            <tr key={k.id} className="border-b border-slate-100">
-              <td className="px-2 py-1.5"><Link href={`/erm/kris/${k.id}`} className="font-medium text-primary-700 hover:underline">{k.kriCode}</Link> <span className="text-slate-600">{k.name}</span></td>
-              <td className="px-2 py-1.5 tabular-nums">{k.currentValue ?? "—"} <span className="text-[10px] text-slate-400">{k.unit}</span></td>
-              <td className="px-2 py-1.5"><span className="rounded px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: P2_STATUS_HEX[k.currentStatus] ?? "#64748b" }}>{k.currentStatus}</span></td>
-              <td className="px-2 py-1.5"><MiniSpark points={k.sparkline} /></td>
-              <td className="px-2 py-1.5"><Link href={`/erm/kris/${k.id}`} className="text-xs text-primary-700 hover:underline">Open ↗</Link></td>
-            </tr>
+            <TableRow key={k.id}>
+              <TableCell><Link href={`/erm/kris/${k.id}`} className="font-medium text-primary-700 hover:underline">{k.kriCode}</Link> <span className="text-slate-600">{k.name}</span></TableCell>
+              <TableCell className="tabular-nums">{k.currentValue ?? "—"} <span className="text-[10px] text-slate-400">{k.unit}</span></TableCell>
+              <TableCell><span className="rounded px-2 py-0.5 text-[11px] font-semibold text-white" style={{ backgroundColor: P2_STATUS_HEX[k.currentStatus] ?? "#64748b" }}>{k.currentStatus}</span></TableCell>
+              <TableCell><MiniSpark points={k.sparkline} /></TableCell>
+              <TableCell><Link href={`/erm/kris/${k.id}`} className="text-xs text-primary-700 hover:underline">Open ↗</Link></TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -446,23 +548,23 @@ function LossHistoryTab({ phase2 }: { phase2: NonNullable<Phase2Context> }) {
         <p className="text-xs text-slate-500">Actual loss events evidencing this risk (12-month net).</p>
         <span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">12-mo net: {inr(phase2.netLoss12m)}</span>
       </div>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-            <th className="px-2 py-1.5">Event</th><th className="px-2 py-1.5">Date</th><th className="px-2 py-1.5">Net loss</th><th className="px-2 py-1.5">Status</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Event</TableHead><TableHead>Date</TableHead><TableHead>Net loss</TableHead><TableHead>Status</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {phase2.lossEvents.map((e) => (
-            <tr key={e.id} className="border-b border-slate-100">
-              <td className="px-2 py-1.5"><Link href="/erm/loss" className="font-medium text-primary-700 hover:underline">{e.eventCode}</Link> <span className="text-slate-600">{e.title}</span>{e.isNearMiss && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">NEAR MISS</span>}</td>
-              <td className="px-2 py-1.5 text-xs text-slate-500">{fmtDate(e.eventDate)}</td>
-              <td className="px-2 py-1.5 tabular-nums">{e.isNearMiss ? <span className="text-amber-600">{inr(e.potentialLossInr)} potential</span> : inr(e.netLossInr)}</td>
-              <td className="px-2 py-1.5 text-xs">{e.status}</td>
-            </tr>
+            <TableRow key={e.id}>
+              <TableCell><Link href="/erm/loss" className="font-medium text-primary-700 hover:underline">{e.eventCode}</Link> <span className="text-slate-600">{e.title}</span>{e.isNearMiss && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">NEAR MISS</span>}</TableCell>
+              <TableCell className="text-xs text-slate-500">{fmtDate(e.eventDate)}</TableCell>
+              <TableCell className="tabular-nums">{e.isNearMiss ? <span className="text-amber-600">{inr(e.potentialLossInr)} potential</span> : inr(e.netLossInr)}</TableCell>
+              <TableCell className="text-xs">{e.status}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -474,24 +576,24 @@ function ContributingTab({ risk }: { risk: RiskDetail }) {
       <p className="mb-3 text-xs text-slate-500">
         This enterprise risk is auto-aggregated from the Combined Risk Register. Its residual score is derived from the live HIRA/EAI entries below — manage them at source.
       </p>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-            <th className="px-2 py-1.5">Module</th><th className="px-2 py-1.5">Activity</th><th className="px-2 py-1.5">Contributing score</th><th className="px-2 py-1.5">Band</th><th className="px-2 py-1.5"></th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Module</TableHead><TableHead>Activity</TableHead><TableHead>Contributing score</TableHead><TableHead>Band</TableHead><TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {risk.contributingEntries.map((e) => (
-            <tr key={e.id} className="border-b border-slate-100">
-              <td className="px-2 py-1.5"><span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium">{e.sourceModule}</span></td>
-              <td className="max-w-[420px] px-2 py-1.5 text-slate-700">{e.sourceRef}</td>
-              <td className="px-2 py-1.5 tabular-nums font-semibold">{e.contributingScore}</td>
-              <td className="px-2 py-1.5"><BandBadge band={e.contributingBand} /></td>
-              <td className="px-2 py-1.5"><Link href={e.drilldownUrl ?? "#"} className="text-xs text-primary-700 hover:underline">Open ↗</Link></td>
-            </tr>
+            <TableRow key={e.id}>
+              <TableCell><span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium">{e.sourceModule}</span></TableCell>
+              <TableCell className="max-w-[420px] text-slate-700">{e.sourceRef}</TableCell>
+              <TableCell className="tabular-nums font-semibold">{e.contributingScore}</TableCell>
+              <TableCell><BandBadge band={e.contributingBand} /></TableCell>
+              <TableCell><Link href={e.drilldownUrl ?? "#"} className="text-xs text-primary-700 hover:underline">Open ↗</Link></TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -536,7 +638,7 @@ function Modal({ title, onClose, children, wide }: { title: string; onClose: () 
       <div className={"max-h-[90vh] overflow-y-auto rounded-xl bg-white p-6 shadow-xl " + (wide ? "w-full max-w-3xl" : "w-full max-w-xl")}>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         {children}
       </div>
@@ -572,7 +674,7 @@ export function AssessForm({
       {!forceType && (
         <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
           {(["INHERENT", "RESIDUAL"] as const).map((t) => (
-            <button key={t} onClick={() => setType(t)} className={"rounded-md px-3 py-1.5 " + (type === t ? "bg-white text-primary-700 shadow-sm" : "text-slate-500")}>{t}</button>
+            <Button key={t} type="button" variant="ghost" onClick={() => setType(t)} className={cn("h-auto rounded-md px-3 py-1.5", type === t ? "bg-white text-primary-700 shadow-sm" : "text-slate-500")}>{t}</Button>
           ))}
         </div>
       )}
@@ -582,11 +684,11 @@ export function AssessForm({
           {[1, 2, 3, 4, 5].map((l) => {
             const ll = lLevels.find((x) => x.level === l);
             return (
-              <button key={l} onClick={() => setLikelihood(l)} title={ll ? `${ll.probabilityGuide} / ${ll.frequencyGuide}` : ""}
-                className={"rounded-lg border p-2 text-center text-xs " + (likelihood === l ? "border-primary-600 bg-primary-50 font-semibold text-primary-700" : "border-slate-200 hover:border-slate-400")}>
+              <Button key={l} type="button" variant="ghost" onClick={() => setLikelihood(l)} title={ll ? `${ll.probabilityGuide} / ${ll.frequencyGuide}` : ""}
+                className={cn("h-auto flex-col rounded-lg border p-2 text-center text-xs", likelihood === l ? "border-primary-600 bg-primary-50 font-semibold text-primary-700" : "border-slate-200 hover:border-slate-400")}>
                 <div className="text-base font-bold">{l}</div>
                 <div className="text-[10px] leading-tight">{ll?.label ?? ""}</div>
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -600,12 +702,12 @@ export function AssessForm({
               <div className="flex flex-1 gap-1">
                 {[0, 1, 2, 3, 4, 5].map((l) =>
                   l === 0 ? (
-                    <button key={l} onClick={() => setLevels((p) => { const n = { ...p }; delete n[dim]; return n; })}
-                      className={"rounded px-2 py-1 text-[10px] " + (!levels[dim] ? "bg-slate-200 font-semibold" : "bg-slate-50 text-slate-400")}>n/a</button>
+                    <Button key={l} type="button" variant="ghost" onClick={() => setLevels((p) => { const n = { ...p }; delete n[dim]; return n; })}
+                      className={cn("h-auto rounded px-2 py-1 text-[10px]", !levels[dim] ? "bg-slate-200 font-semibold" : "bg-slate-50 text-slate-400")}>n/a</Button>
                   ) : (
-                    <button key={l} onClick={() => setLevels((p) => ({ ...p, [dim]: l }))} title={impactDescriptor(dim, l)}
-                      className={"flex-1 rounded px-1 py-1 text-xs font-medium text-white " + (levels[dim] === l ? "ring-2 ring-slate-900" : "opacity-60 hover:opacity-100")}
-                      style={{ backgroundColor: BAND_HEX[bandForScore(l * l) ?? "LOW"] }}>{l}</button>
+                    <Button key={l} type="button" variant="ghost" onClick={() => setLevels((p) => ({ ...p, [dim]: l }))} title={impactDescriptor(dim, l)}
+                      className={cn("h-auto flex-1 rounded px-1 py-1 text-xs font-medium text-white", levels[dim] === l ? "ring-2 ring-slate-900" : "opacity-60 hover:opacity-100")}
+                      style={{ backgroundColor: BAND_HEX[bandForScore(l * l) ?? "LOW"] }}>{l}</Button>
                   )
                 )}
               </div>
@@ -620,10 +722,11 @@ export function AssessForm({
       </div>
       <div>
         <label className="mb-1 block text-xs font-medium text-slate-600">Rationale (required)</label>
-        <textarea value={rationale} onChange={(e) => setRationale(e.target.value)} rows={3}
-          className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Why this likelihood and impact…" />
+        <Textarea value={rationale} onChange={(e) => setRationale(e.target.value)} rows={3}
+          placeholder="Why this likelihood and impact…" />
       </div>
-      <button
+      <Button
+        type="button"
         disabled={busy || !rationale.trim() || overall === 0}
         onClick={() =>
           onSubmit({
@@ -633,24 +736,62 @@ export function AssessForm({
             rationale,
           })
         }
-        className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+        className="w-full"
       >
         {busy ? "Saving…" : "Save assessment"}
-      </button>
+      </Button>
     </div>
   );
 }
 
 function AssessModal({ risk, matrix, onClose, onDone }: { risk: RiskDetail; matrix: ScoringMatrix | null; onClose: () => void; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
-  async function submit(body: any) {
+  const [overridePrompt, setOverridePrompt] = useState<{ message: string; body: any } | null>(null);
+  const [justification, setJustification] = useState("");
+  async function doPost(body: any) {
     setBusy(true);
     const res = await fetch(`/api/erm/risks/${risk.id}/assessments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     setBusy(false);
-    if (!res.ok) { const j = await res.json().catch(() => ({})); alert(j.detail || j.error || "Failed"); return; }
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      const detail = j.detail;
+      // Governance guard: a residual materially more optimistic than controls
+      // justify needs a short justification — reveal it inline instead of erroring.
+      if (res.status === 400 && detail && typeof detail === "object" && detail.code === "OVERRIDE_JUSTIFICATION_REQUIRED") {
+        setOverridePrompt({ message: detail.message as string, body });
+        return;
+      }
+      const msg = detail && typeof detail === "object" ? (detail.message || JSON.stringify(detail)) : (detail || j.error || "Failed");
+      alert(msg);
+      return;
+    }
     onDone();
   }
-  return <Modal title="Record assessment" onClose={onClose} wide><AssessForm matrix={matrix} onSubmit={submit} busy={busy} /></Modal>;
+  async function submit(body: any) { setOverridePrompt(null); await doPost(body); }
+  async function confirmOverride() {
+    if (!justification.trim() || !overridePrompt) return;
+    await doPost({ ...overridePrompt.body, overrideJustification: justification.trim() });
+  }
+  return (
+    <Modal title="Record assessment" onClose={onClose} wide>
+      {overridePrompt ? (
+        <div className="space-y-3">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">{overridePrompt.message}</div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">Override justification (required)</label>
+            <Textarea value={justification} onChange={(e) => setJustification(e.target.value)} rows={3} placeholder="Why is this residual supportable despite the control-derived value?" />
+          </div>
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => { setOverridePrompt(null); setJustification(""); }} className="flex-1">Back</Button>
+            {/* Bespoke amber "confirm override" action — no Button variant matches this warning color; left as a raw styled button to avoid guessing a visual change. */}
+            <button disabled={busy || !justification.trim()} onClick={confirmOverride} className="flex-1 rounded-lg bg-amber-600 py-2 text-sm font-medium text-white disabled:opacity-50">{busy ? "Saving…" : "Confirm override & save"}</button>
+          </div>
+        </div>
+      ) : (
+        <AssessForm matrix={matrix} onSubmit={submit} busy={busy} />
+      )}
+    </Modal>
+  );
 }
 
 function TreatModal({ risk, onClose, onDone }: { risk: RiskDetail; onClose: () => void; onDone: () => void }) {
@@ -658,14 +799,22 @@ function TreatModal({ risk, onClose, onDone }: { risk: RiskDetail; onClose: () =
   const [title, setTitle] = useState("");
   const [reduction, setReduction] = useState("");
   const [justification, setJustification] = useState("");
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [dueDate, setDueDate] = useState("");
   const [busy, setBusy] = useState(false);
   async function submit() {
     setBusy(true);
-    const body: any = { treatmentStrategy: strategy, title, expectedResidualReduction: reduction ? Number(reduction) : null };
+    const body: any = {
+      treatmentStrategy: strategy,
+      title,
+      expectedResidualReduction: reduction ? Number(reduction) : null,
+      primaryOwnerUserId: ownerId || null,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
+    };
     if (strategy === "TOLERATE") body.acceptanceJustification = justification;
     const res = await fetch(`/api/erm/risks/${risk.id}/treatments`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     setBusy(false);
-    if (!res.ok) { const j = await res.json().catch(() => ({})); alert(j.detail || j.error || "Failed"); return; }
+    if (!res.ok) { const j = await res.json().catch(() => ({})); const d = j.detail; alert((d && typeof d === "object" ? d.message : d) || j.error || "Failed"); return; }
     onDone();
   }
   return (
@@ -675,31 +824,41 @@ function TreatModal({ risk, onClose, onDone }: { risk: RiskDetail; onClose: () =
           <label className="mb-1 block text-xs font-medium text-slate-600">Strategy</label>
           <div className="grid grid-cols-4 gap-1.5">
             {["TREAT", "TOLERATE", "TRANSFER", "TERMINATE"].map((s) => (
-              <button key={s} onClick={() => setStrategy(s)} className={"rounded-lg border px-2 py-2 text-xs font-medium " + (strategy === s ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200")}>{s}</button>
+              <Button key={s} type="button" variant="ghost" onClick={() => setStrategy(s)} className={cn("h-auto rounded-lg border px-2 py-2 text-xs font-medium", strategy === s ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200")}>{s}</Button>
             ))}
           </div>
         </div>
         {strategy === "TOLERATE" ? (
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Acceptance justification (required — CRO sign-off via Accept)</label>
-            <textarea value={justification} onChange={(e) => setJustification(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+            <Textarea value={justification} onChange={(e) => setJustification(e.target.value)} rows={3} />
           </div>
         ) : (
           <>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Treatment title</label>
-              <input value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. Qualify alternate polymer vendor" />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Qualify alternate polymer vendor" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Action owner</label>
+                <UserPicker value={ownerId} onChange={(id) => setOwnerId(id)} filter={{ plantId: risk.plantId ?? undefined }} placeholder="Assign an owner" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">Due date</label>
+                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              </div>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Expected residual score after completion</label>
-              <input type="number" min={1} max={25} value={reduction} onChange={(e) => setReduction(e.target.value)} className="w-32 rounded-lg border border-slate-300 p-2 text-sm" />
+              <Input type="number" min={1} max={25} value={reduction} onChange={(e) => setReduction(e.target.value)} className="w-32" />
             </div>
-            <p className="text-xs text-slate-500">Spawns a CAPA on the universal CAPA engine (source type RISK_TREATMENT) — one action universe, one overdue report.</p>
+            <p className="text-xs text-slate-500">Spawns a CAPA on the universal CAPA engine (source type RISK_TREATMENT) — one action universe, one overdue report. The owner is notified on assignment.</p>
           </>
         )}
-        <button disabled={busy || (strategy === "TOLERATE" ? !justification.trim() : !title.trim())} onClick={submit} className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white disabled:opacity-50">
+        <Button type="button" disabled={busy || (strategy === "TOLERATE" ? !justification.trim() : !title.trim())} onClick={submit} className="w-full">
           {busy ? "Saving…" : "Create treatment"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -728,13 +887,13 @@ function ReviewModal({ risk, matrix, onClose, onDone }: { risk: RiskDetail; matr
           <label className="mb-1 block text-xs font-medium text-slate-600">Outcome</label>
           <div className="grid grid-cols-2 gap-1.5">
             {["NO_CHANGE", "RESCORED", "ESCALATED", "RECOMMEND_CLOSURE"].map((o) => (
-              <button key={o} onClick={() => setOutcome(o)} className={"rounded-lg border px-2 py-2 text-xs font-medium " + (outcome === o ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200")}>{o.replace(/_/g, " ")}</button>
+              <Button key={o} type="button" variant="ghost" onClick={() => setOutcome(o)} className={cn("h-auto rounded-lg border px-2 py-2 text-xs font-medium", outcome === o ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200")}>{o.replace(/_/g, " ")}</Button>
             ))}
           </div>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Notes (required)</label>
-          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+          <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
         </div>
         {outcome === "RESCORED" && (
           <div className="rounded-lg border border-slate-200 p-3">
@@ -742,9 +901,9 @@ function ReviewModal({ risk, matrix, onClose, onDone }: { risk: RiskDetail; matr
             <AssessForm matrix={matrix} forceType="RESIDUAL" busy={false} onSubmit={(b) => setAssessment(b)} />
           </div>
         )}
-        <button disabled={busy || !notes.trim()} onClick={submit} className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white disabled:opacity-50">
+        <Button type="button" disabled={busy || !notes.trim()} onClick={submit} className="w-full">
           {busy ? "Saving…" : "Submit review"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

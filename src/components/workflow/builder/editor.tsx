@@ -165,7 +165,11 @@ function EditorInner({ initial }: { initial: DefinitionDTO }) {
       escalationRole: null,
       isOptional: false,
       conditionExpr: null,
-      notes: null
+      notes: null,
+      // A brand-new step is an ordinary sequential one — parallel strategies
+      // and severity SLAs are configured outside the builder.
+      parallelStrategy: null,
+      slaBySeverity: null
     };
     setSteps((prev) => {
       const next = prev.slice();
@@ -356,7 +360,11 @@ function EditorInner({ initial }: { initial: DefinitionDTO }) {
             escalationRole: s.escalationRole,
             isOptional: s.isOptional,
             conditionExpr: s.conditionExpr,
-            notes: s.notes
+            notes: s.notes,
+            // Carried through untouched — the editor exposes no control for
+            // these, but omitting them from the payload would erase them.
+            parallelStrategy: s.parallelStrategy,
+            slaBySeverity: s.slaBySeverity
           }))
         })
       });

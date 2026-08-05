@@ -3,6 +3,9 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { RiskDetailView } from "./detail-view";
 import { Tier3RiskPanel } from "./tier3-panel";
+import { AdvancedRiskPanel } from "./advanced-panel";
+import { AdvancedRiskEditor } from "./advanced-edit";
+import { RcaRiskPanel } from "@/components/erm/rca-risk-panel";
 import type { RiskDetail, ScoringMatrix } from "../../lib";
 
 export const dynamic = "force-dynamic";
@@ -41,6 +44,9 @@ export default async function RiskDetailPage(props: { params: Promise<{ id: stri
         breadcrumbs={[{ label: "Enterprise Risk", href: "/erm" }, { label: "Register", href: "/erm/register" }, { label: risk.riskCode }]}
       />
       <RiskDetailView risk={risk} matrix={matrix} phase2={phase2} />
+      <AdvancedRiskPanel risk={risk} />
+      <AdvancedRiskEditor risk={risk} />
+      <RcaRiskPanel riskId={id} riskCode={risk.riskCode} riskTitle={risk.title} />
       <Tier3RiskPanel riskId={id} />
     </div>
   );

@@ -10,6 +10,10 @@ import {
   CloseCapaForm,
   RecurrenceCheckForm
 } from "@/components/capa/lifecycle-actions";
+import { CapaAssistantCard } from "@/components/capa/capa-assistant-card";
+import { PanelBoundary } from "@/components/ui/panel-boundary";
+import { UserRefLabel, type UserDirectory } from "@/lib/users/user-ref";
+import { markRecordTasksReadForViewer } from "@/lib/workflow/read-state";
 
 export const dynamic = "force-dynamic";
 
@@ -59,9 +63,11 @@ type CapaOut = {
   rcaCompleted: boolean;
   rcaSummary: string | null;
   rcaCompletedAt: string | null;
+  rcaCompletedByUserId: string | null;
   verificationSuccessCriteria: string | null;
   verificationDueDate: string | null;
   verificationCompletedAt: string | null;
+  verificationCompletedByUserId: string | null;
   verificationResult: string | null;
   verificationEvidence: string | null;
   recurrenceCheckDueDate: string | null;
@@ -94,6 +100,7 @@ type CapaOut = {
   contributors: { id: string; userId: string; role: string | null; contributionType: string }[];
   attachments: { id: string; category: string; fileName: string; fileUrl: string; description: string | null }[];
   comments: { id: string; body: string; authorUserId: string; commentType: string; createdAt: string }[];
+  userDirectory: UserDirectory;
 };
 
 export default async function CapaDetailPage(
@@ -111,8 +118,17 @@ export default async function CapaDetailPage(
     capa = await backendFetch<CapaOut>(`/api/capa/${id}`);
   } catch (e) {
     if (e instanceof BackendError && e.status === 404) notFound();
+    // Row-level scope denial (e.g. a CAPA on a plant outside the viewer's
+    // OWN_PLANT scope). Render a calm "no access" panel rather than letting the
+    // 403 bubble up into the generic full-page crash. The list is already
+    // scope-filtered, so this only fires on direct URL / stale link navigation.
+    if (e instanceof BackendError && e.status === 403) return <CapaAccessDenied />;
     throw e;
   }
+
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksReadForViewer({ module: "CAPA", recordId: id });
 
   // Fetch the data the lifecycle forms need (verification methods + users).
   // Failures are tolerated — forms degrade gracefully without owner picker.
@@ -191,10 +207,13 @@ export default async function CapaDetailPage(
       {tab === "overview" && <OverviewTab capa={capa} />}
       {tab === "source" && <SourceTab capa={capa} />}
       {tab === "rca" && (
-        <>
+        <div className="space-y-4">
           <RcaTab capa={capa} />
+          <PanelBoundary label="CAPA Assistant">
+            <CapaAssistantCard capaId={capa.id} />
+          </PanelBoundary>
           <RcaSubmitForm capaId={capa.id} currentState={capa.state} />
-        </>
+        </div>
       )}
       {tab === "actions" && <ActionsTab capa={capa} users={users} />}
       {tab === "execution" && <ExecutionTab capa={capa} capaId={capa.id} />}
@@ -320,9 +339,15 @@ function LinkagesTab({ capa }: { capa: CapaOut }) {
             </div>
           ) : null}
           {capa.sourceReferenceId ? (
-            <div>
-              <span className="text-slate-500 text-xs">Source record ID</span>{" "}
-              <code className="px-1 rounded bg-slate-100 text-xs">{capa.sourceReferenceId}</code>
+            <div className="text-xs">
+              <span className="text-slate-500">Source record</span>{" "}
+              {capa.sourceReferenceUrl ? (
+                <a href={capa.sourceReferenceUrl} className="font-medium text-primary-700 hover:underline">
+                  {capa.sourceReferenceSummary ?? capa.sourceReferenceId} →
+                </a>
+              ) : (
+                <span className="font-medium text-slate-800">{capa.sourceReferenceSummary ?? capa.sourceReferenceId}</span>
+              )}
             </div>
           ) : (
             <div className="text-xs text-slate-500 italic">No source record reference.</div>
@@ -336,7 +361,7 @@ function LinkagesTab({ capa }: { capa: CapaOut }) {
           <ul className="text-sm space-y-1">
             {capa.contributors.map((c) => (
               <li key={c.id} className="flex justify-between">
-                <span>{c.userId}</span>
+                <UserRefLabel dir={capa.userDirectory} id={c.userId} />
                 <span className="text-xs text-slate-500">{c.contributionType.replace(/_/g, " ")}</span>
               </li>
             ))}
@@ -406,10 +431,15 @@ function CostTab({ capa }: { capa: CapaOut }) {
 function AuditTrailTab({ capa }: { capa: CapaOut }) {
   // v1: synthesise from comments + key state-changing timestamps. A future
   // version will hit a dedicated /api/capa/[id]/audit endpoint.
-  const events: { at: string; label: string; detail?: string; who?: string }[] = [];
+  const events: { at: string; label: string; detail?: string; who?: string | null }[] = [];
   events.push({ at: capa.createdAt, label: "CAPA created", who: capa.raisedByUserId });
   if (capa.rcaCompletedAt) {
-    events.push({ at: capa.rcaCompletedAt, label: "RCA completed", who: undefined, detail: capa.rcaMethodology ?? undefined });
+    events.push({
+      at: capa.rcaCompletedAt,
+      label: "RCA completed",
+      who: capa.rcaCompletedByUserId,
+      detail: capa.rcaMethodology ?? undefined
+    });
   }
   for (const a of capa.actions) {
     if (a.completedAt) {
@@ -425,11 +455,12 @@ function AuditTrailTab({ capa }: { capa: CapaOut }) {
     events.push({
       at: capa.verificationCompletedAt,
       label: "Verification completed",
+      who: capa.verificationCompletedByUserId,
       detail: capa.verificationResult ?? undefined
     });
   }
   if (capa.closedAt) {
-    events.push({ at: capa.closedAt, label: "CAPA closed" });
+    events.push({ at: capa.closedAt, label: "CAPA closed", who: capa.closedByUserId });
   }
   for (const c of capa.comments) {
     events.push({ at: c.createdAt, label: `Comment (${c.commentType})`, detail: c.body.slice(0, 100), who: c.authorUserId });
@@ -451,7 +482,11 @@ function AuditTrailTab({ capa }: { capa: CapaOut }) {
                 </div>
               </div>
               {e.detail && <div className="text-xs text-slate-600 mt-0.5">{e.detail}</div>}
-              {e.who && <div className="text-[10px] text-slate-500 mt-0.5">by {e.who}</div>}
+              {e.who && (
+                <div className="text-[10px] text-slate-500 mt-0.5">
+                  by <UserRefLabel dir={capa.userDirectory} id={e.who} className="text-[10px]" />
+                </div>
+              )}
             </li>
           ))}
         </ul>
@@ -498,8 +533,8 @@ function OverviewTab({ capa }: { capa: CapaOut }) {
       <Card title="Ownership">
         <DefList
           items={[
-            ["Raised by", capa.raisedByUserId],
-            ["Primary owner", capa.primaryOwnerUserId],
+            ["Raised by", <UserRefLabel key="raised" dir={capa.userDirectory} id={capa.raisedByUserId} />],
+            ["Primary owner", <UserRefLabel key="owner" dir={capa.userDirectory} id={capa.primaryOwnerUserId} />],
             ["Contributors", String(capa.contributors.length)]
           ]}
         />
@@ -519,28 +554,82 @@ function OverviewTab({ capa }: { capa: CapaOut }) {
   );
 }
 
+function humanizeMetaKey(k: string): string {
+  return k
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/[_-]/g, " ")
+    .replace(/\bInr\b/gi, "(INR)")
+    .replace(/^./, (c) => c.toUpperCase())
+    .trim();
+}
+function formatMetaValue(v: unknown): string {
+  if (typeof v === "boolean") return v ? "Yes" : "No";
+  if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) {
+    const d = new Date(v);
+    return isNaN(d.getTime()) ? v : d.toLocaleString();
+  }
+  return String(v);
+}
+
 function SourceTab({ capa }: { capa: CapaOut }) {
+  const meta = (capa.sourceMetadata ?? {}) as Record<string, unknown>;
+  // Prefer the human code (e.g. ERM-2026-0027) over the raw cuid.
+  const refCode =
+    (typeof meta.riskCode === "string" && meta.riskCode) ||
+    (typeof meta.sourceCode === "string" && meta.sourceCode) ||
+    capa.sourceReferenceSummary?.split(" — ")[0]?.trim() ||
+    null;
+  const reference =
+    refCode ? (
+      capa.sourceReferenceUrl ? (
+        <a href={capa.sourceReferenceUrl} className="font-medium text-primary-700 hover:underline">
+          {refCode} →
+        </a>
+      ) : (
+        <span className="font-medium">{refCode}</span>
+      )
+    ) : (
+      capa.sourceReferenceId ?? "—"
+    );
+
+  type ProgressEntry = { at?: string; pct?: number; note?: string; by?: string };
+  const progressLog: ProgressEntry[] = Array.isArray(meta.progressLog) ? (meta.progressLog as ProgressEntry[]) : [];
+  const metaEntries = Object.entries(meta).filter(
+    ([k, v]) => k !== "riskCode" && k !== "progressLog" && v !== null && v !== undefined && v !== "" && typeof v !== "object"
+  );
+
   return (
     <div className="space-y-4">
       <Card title="Source Context">
         <DefList
           items={[
             ["Source type", capa.sourceTypeCode.replace(/_/g, " ")],
-            ["Reference ID", capa.sourceReferenceId ?? "—"],
+            ["Reference", reference],
             ["Reference summary", capa.sourceReferenceSummary ?? "—"]
           ]}
         />
-        {capa.sourceReferenceUrl && (
-          <a href={capa.sourceReferenceUrl} className="text-xs text-primary-700 hover:underline mt-2 inline-block">
-            Open source record →
-          </a>
-        )}
       </Card>
-      {capa.sourceMetadata && Object.keys(capa.sourceMetadata).length > 0 && (
+      {(metaEntries.length > 0 || progressLog.length > 0) && (
         <Card title="Source Metadata">
-          <pre className="text-xs font-mono whitespace-pre-wrap bg-slate-50 p-3 rounded">
-            {JSON.stringify(capa.sourceMetadata, null, 2)}
-          </pre>
+          {metaEntries.length > 0 && (
+            <DefList items={metaEntries.map(([k, v]) => [humanizeMetaKey(k), formatMetaValue(v)])} />
+          )}
+          {progressLog.length > 0 && (
+            <div className="mt-3">
+              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1.5">Progress log</div>
+              <ul className="space-y-1">
+                {progressLog.map((p, i) => (
+                  <li key={i} className="flex justify-between gap-3 text-xs text-slate-700">
+                    <span>
+                      {typeof p?.pct === "number" ? <span className="font-medium tabular-nums">{p.pct}% </span> : null}
+                      {p?.note ?? ""}
+                    </span>
+                    <span className="shrink-0 text-slate-400">{p?.at ? new Date(p.at).toLocaleDateString() : ""}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </Card>
       )}
       {capa.legacySource && (
@@ -611,6 +700,7 @@ function ActionsTab({ capa, users }: { capa: CapaOut; users: { id: string; name:
         capaId={capa.id}
         defaultActionType="IMMEDIATE_CONTAINMENT"
         users={users}
+        dir={capa.userDirectory}
       />
       <ActionGroup
         title="Corrective Actions"
@@ -618,6 +708,7 @@ function ActionsTab({ capa, users }: { capa: CapaOut; users: { id: string; name:
         capaId={capa.id}
         defaultActionType="CORRECTIVE"
         users={users}
+        dir={capa.userDirectory}
       />
       <ActionGroup
         title="Preventive Actions"
@@ -625,6 +716,7 @@ function ActionsTab({ capa, users }: { capa: CapaOut; users: { id: string; name:
         capaId={capa.id}
         defaultActionType="PREVENTIVE"
         users={users}
+        dir={capa.userDirectory}
       />
     </div>
   );
@@ -635,13 +727,15 @@ function ActionGroup({
   actions,
   capaId,
   defaultActionType,
-  users
+  users,
+  dir
 }: {
   title: string;
   actions: CapaOut["actions"];
   capaId: string;
   defaultActionType: string;
   users: { id: string; name: string }[];
+  dir: UserDirectory;
 }) {
   return (
     <Card title={`${title} (${actions.length})`}>
@@ -667,7 +761,8 @@ function ActionGroup({
               </div>
               {a.rationale && <div className="text-xs text-slate-600 mt-1">{a.rationale}</div>}
               <div className="text-xs text-slate-500 mt-1">
-                Owner: {a.ownerUserId} · Due: {new Date(a.dueDate).toLocaleDateString()}
+                Owner: <UserRefLabel dir={dir} id={a.ownerUserId} className="text-xs" /> · Due:{" "}
+                {new Date(a.dueDate).toLocaleDateString()}
                 {a.completedAt && ` · Completed: ${new Date(a.completedAt).toLocaleDateString()}`}
                 {a.costEstimate && ` · Cost est: ${a.costEstimate.toLocaleString()}`}
               </div>
@@ -717,6 +812,31 @@ function VerificationTab({ capa }: { capa: CapaOut }) {
   );
 }
 
+function CapaAccessDenied() {
+  return (
+    <div>
+      <PageHeader
+        title="CAPA — Access Restricted"
+        description="This record is outside your access scope"
+        breadcrumbs={[{ label: "CAPA", href: "/capa" }, { label: "Restricted" }]}
+      />
+      <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-6 text-sm text-amber-900 max-w-2xl">
+        <div className="font-semibold mb-1">You don&apos;t have access to this CAPA.</div>
+        <p className="text-amber-800">
+          It belongs to a plant or scope your role isn&apos;t permitted to view. If you believe
+          you should have access, ask an administrator to review your CAPA permissions.
+        </p>
+        <Link
+          href="/capa"
+          className="inline-flex items-center gap-1 mt-4 px-3 py-1.5 text-xs rounded border border-amber-400 bg-white hover:border-amber-500"
+        >
+          ← Back to CAPA list
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 function Card({
   title,
   children,
@@ -736,7 +856,7 @@ function Card({
   );
 }
 
-function DefList({ items }: { items: [string, string | null | undefined][] }) {
+function DefList({ items }: { items: [string, React.ReactNode][] }) {
   return (
     <dl className="grid grid-cols-1 gap-1.5 text-sm">
       {items.map(([k, v]) => (

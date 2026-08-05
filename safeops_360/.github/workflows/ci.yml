@@ -1,0 +1,52 @@
+name: CI
+
+# Gates every PR + push to main so a broken build can never silently ship
+# (Vercel's own build was previously the only gate — a failed build there
+# just keeps prod stale). Typecheck + production build are BLOCKING and were
+# verified green locally; lint is reported but non-blocking until the existing
+# lint debt is burned down.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Prisma generate
+        run: npx prisma generate
+
+      - name: Typecheck (blocking)
+        run: npx tsc --noEmit
+
+      - name: Lint (non-blocking until lint debt is cleared)
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Production build (blocking — catches the tsc-passes-but-next-build-fails trap)
+        run: npx next build
+        env:
+          # The build must never need real secrets; force-dynamic pages don't
+          # touch the DB at build time. These placeholders satisfy any
+          # module-load-time env/URL validation.
+          DATABASE_URL: postgresql://user:pass@localhost:5432/db
+          NEXTAUTH_SECRET: build-time-placeholder-not-a-real-secret
+          NEXTAUTH_URL: http://localhost:3000
+          JWT_SECRET: build-time-placeholder-not-a-real-secret

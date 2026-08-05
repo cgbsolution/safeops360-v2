@@ -222,6 +222,7 @@ export function inferDrillSourceForKpi(code: string): DrillSource | null {
     case "LTIFR":
     case "TRIFR":
     case "TRIR":
+    case "IFR":
     case "DART_RATE":
     case "SEVERITY_RATE":
     case "DAYS_SINCE_LAST_LTI":

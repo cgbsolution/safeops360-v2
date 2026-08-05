@@ -1,10 +1,23 @@
 "use client";
 
+// PTW closed-loop close-out flow:
+//   Phase 1 — Work Completed declaration (receiver): structured OUTCOME +
+//             restoration confirmations + narrative + field evidence
+//             (GPS / onsite photo / signature) → POST /api/ptw/{id}/complete
+//   Phase 2 — Handback Inspection (issuer / safety officer / plant head):
+//             5-point checklist + notes + field evidence
+//             → POST /api/ptw/{id}/handback
+//   Phase 3 — Closure summary + close-out report download (once CLOSED)
+//
+// Replaces the legacy Return / Site-Verify pair (which sent photos: null
+// into a table that never existed).
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   ClipboardCheck,
+  FileDown,
   Hammer,
   Loader2,
   PackageCheck,
@@ -17,6 +30,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { readApiError } from "@/lib/client-errors";
 import { formatDateTime } from "@/lib/utils";
+import {
+  EvidenceCapture,
+  evidenceComplete,
+  evidencePayload,
+  useEvidenceCapture,
+} from "@/components/ptw/evidence-capture";
 
 const VERIFICATION_CHECKLIST: { code: string; label: string }[] = [
   { code: "AREA_CLEAN", label: "Work area is clean — no debris, scrap or tools left behind" },
@@ -26,20 +45,34 @@ const VERIFICATION_CHECKLIST: { code: string; label: string }[] = [
   { code: "AREA_HANDED_BACK", label: "Area handed back to operations" },
 ];
 
+const OUTCOMES: { value: string; label: string; hint: string }[] = [
+  { value: "COMPLETED", label: "Completed", hint: "All planned work finished" },
+  { value: "PARTIALLY_COMPLETED", label: "Partially completed", hint: "Some scope remains — a follow-up permit is needed" },
+  { value: "STOPPED_INCIDENT", label: "Stopped — incident", hint: "Work stopped due to an incident / unsafe condition" },
+  { value: "CANCELLED", label: "Not started / abandoned", hint: "Work never started under this permit" },
+];
+
+const COMPLETE_DECLARATION =
+  "I declare the work under this permit is finished as stated, isolations are restored, " +
+  "and the area has been left in a safe condition.";
+
+const HANDBACK_DECLARATION =
+  "I have physically walked the worksite after the completion declaration and confirm " +
+  "the checklist above reflects its true condition.";
+
 export function ClosurePanel({
   permitId,
   status,
   receiverId,
   currentUserId,
   canVerify,
+  workCompletedAt,
+  outcome,
   returnedAt,
-  returnedById,
   returnNotes,
   siteVerifiedAt,
-  siteVerifiedById,
   siteVerificationChecklist,
   closingRemark,
-  closedById,
   closedAt,
 }: {
   permitId: string;
@@ -47,101 +80,108 @@ export function ClosurePanel({
   receiverId: string | null;
   currentUserId: string;
   canVerify: boolean;
+  workCompletedAt: string | Date | null;
+  outcome: string | null;
   returnedAt: string | Date | null;
-  returnedById: string | null;
   returnNotes: string | null;
   siteVerifiedAt: string | Date | null;
-  siteVerifiedById: string | null;
   siteVerificationChecklist: any;
   closingRemark: string | null;
-  closedById: string | null;
   closedAt: string | Date | null;
 }) {
   const router = useRouter();
   const isReceiver = receiverId === currentUserId;
+  const declared = !!(workCompletedAt ?? returnedAt);
 
-  // Don't render if the permit hasn't reached the active phase or is already
-  // fully closed and the audit panel below should show instead.
-  if (status === "DRAFT" || status === "SUBMITTED" || status === "ISSUER_APPROVED" || status === "SAFETY_APPROVED" || status === "PLANT_HEAD_APPROVED" || status === "REJECTED") {
+  // Hidden until the permit is at least issued/accepted.
+  if (
+    ["DRAFT", "SUBMITTED", "APPROVED", "ISSUED", "ISSUER_APPROVED", "SAFETY_APPROVED", "PLANT_HEAD_APPROVED", "REJECTED", "CANCELLED"].includes(status)
+  ) {
     return null;
   }
 
   return (
     <div className="space-y-4">
-      {/* Phase 1: Return */}
-      <ReturnSection
+      <WorkCompletedSection
         permitId={permitId}
         status={status}
-        canReturn={isReceiver || canVerify}
-        returnedAt={returnedAt}
-        returnedById={returnedById}
-        returnNotes={returnNotes}
+        canDeclare={isReceiver || canVerify}
+        declared={declared}
+        declaredAt={workCompletedAt ?? returnedAt}
+        outcome={outcome}
+        notes={returnNotes}
         onChanged={() => router.refresh()}
       />
 
-      {/* Phase 2: Site verification */}
-      <SiteVerifySection
+      <HandbackSection
         permitId={permitId}
         canVerify={canVerify}
-        returnedAt={returnedAt}
+        declared={declared}
         siteVerifiedAt={siteVerifiedAt}
-        siteVerifiedById={siteVerifiedById}
         checklist={siteVerificationChecklist}
         onChanged={() => router.refresh()}
       />
 
-      {/* Phase 3: Closure summary (when closed) */}
       {status === "CLOSED" && (
         <ClosureSummary
+          permitId={permitId}
           closedAt={closedAt}
-          closedById={closedById}
           closingRemark={closingRemark}
+          outcome={outcome}
         />
       )}
     </div>
   );
 }
 
-// ─── Return ───────────────────────────────────────────────────────────
+// ─── Phase 1: Work Completed declaration ──────────────────────────────
 
-function ReturnSection({
+function WorkCompletedSection({
   permitId,
   status,
-  canReturn,
-  returnedAt,
-  returnedById,
-  returnNotes,
+  canDeclare,
+  declared,
+  declaredAt,
+  outcome,
+  notes,
   onChanged,
 }: {
   permitId: string;
   status: string;
-  canReturn: boolean;
-  returnedAt: string | Date | null;
-  returnedById: string | null;
-  returnNotes: string | null;
+  canDeclare: boolean;
+  declared: boolean;
+  declaredAt: string | Date | null;
+  outcome: string | null;
+  notes: string | null;
   onChanged: () => void;
 }) {
   const [show, setShow] = useState(false);
   const [iso, setIso] = useState(false);
   const [clean, setClean] = useState(false);
-  const [notes, setNotes] = useState("");
+  const [chosenOutcome, setChosenOutcome] = useState("");
+  const [narrative, setNarrative] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const evidenceState = useEvidenceCapture();
 
-  const returned = !!returnedAt;
+  const evidenceReady = evidenceComplete(evidenceState, {
+    requirePhoto: true,
+    requireDeclaration: true,
+  });
 
   async function submit() {
     setBusy(true);
     setError("");
     try {
-      const r = await fetch(`/api/ptw/${permitId}/active/return`, {
+      const r = await fetch(`/api/ptw/${permitId}/complete`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          outcome: chosenOutcome,
           isolationsRestored: iso,
           workAreaClean: clean,
-          notes: notes || null,
-          photos: null,
+          notes: narrative || null,
+          evidence: evidencePayload(evidenceState, COMPLETE_DECLARATION),
         }),
       });
       if (r.ok) {
@@ -149,102 +189,126 @@ function ReturnSection({
         onChanged();
         return;
       }
-      setError(await readApiError(r, "Failed to return permit"));
+      setError(await readApiError(r, "Failed to declare work completed"));
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <Card
-      className={
-        returned
-          ? "border-emerald-200 bg-emerald-50/40"
-          : "border-slate-200"
-      }
-    >
+    <Card className={declared ? "border-emerald-200 bg-emerald-50/40" : "border-slate-200"}>
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
-          <PackageCheck size={16} className={returned ? "text-emerald-600" : "text-slate-500"} />
-          Return Permit
-          {returned && (
+          <PackageCheck size={16} className={declared ? "text-emerald-600" : "text-slate-500"} />
+          Work Completed
+          {declared && (
             <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">
-              Returned
+              Declared
+            </Badge>
+          )}
+          {outcome && (
+            <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px]">
+              {OUTCOMES.find((o) => o.value === outcome)?.label ?? outcome}
             </Badge>
           )}
         </CardTitle>
         <CardDescription className="text-xs">
-          Receiver hands the permit back at end of work. Confirms isolations
-          restored and area is clean.
+          Receiver declares the outcome at end of work — with GPS, onsite
+          photo and signature captured for the close-out report.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
-        {returned ? (
+        {declared ? (
           <div className="text-sm space-y-1">
             <div className="text-slate-700">
-              Returned at{" "}
-              <span className="font-medium">{formatDateTime(new Date(returnedAt!))}</span>
+              Declared at <span className="font-medium">{formatDateTime(new Date(declaredAt!))}</span>
             </div>
-            {returnNotes && (
-              <div className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">
-                {returnNotes}
-              </div>
-            )}
+            {notes && <div className="text-xs text-slate-600 mt-1 whitespace-pre-wrap">{notes}</div>}
           </div>
         ) : !show ? (
-          canReturn && (status === "ACTIVE" || status === "SUSPENDED") ? (
+          canDeclare && (status === "ACTIVE" || status === "SUSPENDED") ? (
             <Button size="sm" onClick={() => setShow(true)}>
-              <Hammer size={14} /> Return Permit
+              <Hammer size={14} /> Declare Work Completed
             </Button>
           ) : (
             <div className="text-xs text-slate-500">
-              Pending — only the named receiver (or HSE/Admin) can return.
+              Pending — only the named receiver (or HSE/Admin) can declare completion.
             </div>
           )
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-3">
+            {/* Outcome */}
+            <div className="space-y-1.5">
+              <Label className="text-[11px]">
+                Outcome <span className="text-rose-600">*</span>
+              </Label>
+              <div className="grid sm:grid-cols-2 gap-1.5">
+                {OUTCOMES.map((o) => (
+                  <label
+                    key={o.value}
+                    className={`flex items-start gap-2 p-2 rounded-md border text-xs cursor-pointer ${
+                      chosenOutcome === o.value
+                        ? "border-primary-400 bg-primary-50"
+                        : "border-slate-200 bg-white hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="ptw-outcome"
+                      value={o.value}
+                      checked={chosenOutcome === o.value}
+                      onChange={() => setChosenOutcome(o.value)}
+                      className="mt-0.5"
+                    />
+                    <div>
+                      <div className="font-medium">{o.label}</div>
+                      <div className="text-slate-500">{o.hint}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Restoration confirmations (carried over from the old Return step) */}
             <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white text-xs">
-              <input
-                type="checkbox"
-                checked={iso}
-                onChange={(e) => setIso(e.target.checked)}
-                className="mt-0.5"
-              />
+              <input type="checkbox" checked={iso} onChange={(e) => setIso(e.target.checked)} className="mt-0.5" />
               <div>
                 <div className="font-medium">All isolations restored</div>
-                <div className="text-slate-600">
-                  LOTO removed, valves reopened, energy sources re-engaged.
-                </div>
+                <div className="text-slate-600">LOTO removed, valves reopened, energy sources re-engaged.</div>
               </div>
             </label>
             <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white text-xs">
-              <input
-                type="checkbox"
-                checked={clean}
-                onChange={(e) => setClean(e.target.checked)}
-                className="mt-0.5"
-              />
+              <input type="checkbox" checked={clean} onChange={(e) => setClean(e.target.checked)} className="mt-0.5" />
               <div>
                 <div className="font-medium">Work area is clean</div>
-                <div className="text-slate-600">
-                  No tools, scrap, debris or barricades left behind.
-                </div>
+                <div className="text-slate-600">No tools, scrap, debris or barricades left behind.</div>
               </div>
             </label>
+
             <div>
-              <Label className="text-[11px]">Notes</Label>
+              <Label className="text-[11px]">
+                Close-out narrative — what was done, anything outstanding
+              </Label>
               <Textarea
-                rows={2}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Anything the closer should know"
+                rows={3}
+                value={narrative}
+                onChange={(e) => setNarrative(e.target.value)}
+                placeholder="Summary of the work performed and site condition at handback"
               />
             </div>
-            {error && <div className="text-xs text-rose-700">{error}</div>}
+
+            <EvidenceCapture
+              permitId={permitId}
+              requirePhoto
+              declaration={COMPLETE_DECLARATION}
+              state={evidenceState}
+            />
+
+            {error && <div className="text-xs text-rose-700 whitespace-pre-wrap">{error}</div>}
             <div className="flex gap-2">
-              <Button size="sm" onClick={submit} disabled={busy || !iso || !clean}>
+              <Button size="sm" onClick={submit} disabled={busy || !iso || !clean || !chosenOutcome || !evidenceReady}>
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                Confirm Return
+                Confirm Work Completed
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShow(false)} disabled={busy}>
                 Cancel
@@ -257,22 +321,20 @@ function ReturnSection({
   );
 }
 
-// ─── Site verification ────────────────────────────────────────────────
+// ─── Phase 2: Handback inspection ─────────────────────────────────────
 
-function SiteVerifySection({
+function HandbackSection({
   permitId,
   canVerify,
-  returnedAt,
+  declared,
   siteVerifiedAt,
-  siteVerifiedById,
   checklist,
   onChanged,
 }: {
   permitId: string;
   canVerify: boolean;
-  returnedAt: string | Date | null;
+  declared: boolean;
   siteVerifiedAt: string | Date | null;
-  siteVerifiedById: string | null;
   checklist: any;
   onChanged: () => void;
 }) {
@@ -281,21 +343,26 @@ function SiteVerifySection({
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const evidenceState = useEvidenceCapture();
 
   const verified = !!siteVerifiedAt;
   const allChecked = VERIFICATION_CHECKLIST.every((c) => vals[c.code]);
+  const evidenceReady = evidenceComplete(evidenceState, {
+    requirePhoto: true,
+    requireDeclaration: true,
+  });
 
   async function submit() {
     setBusy(true);
     setError("");
     try {
-      const r = await fetch(`/api/ptw/${permitId}/active/site-verify`, {
+      const r = await fetch(`/api/ptw/${permitId}/handback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           checklist: vals,
-          photos: null,
           notes: notes || null,
+          evidence: evidencePayload(evidenceState, HANDBACK_DECLARATION),
         }),
       });
       if (r.ok) {
@@ -303,7 +370,7 @@ function SiteVerifySection({
         onChanged();
         return;
       }
-      setError(await readApiError(r, "Failed to verify site"));
+      setError(await readApiError(r, "Failed to record handback inspection"));
     } finally {
       setBusy(false);
     }
@@ -314,7 +381,7 @@ function SiteVerifySection({
       className={
         verified
           ? "border-emerald-200 bg-emerald-50/40"
-          : returnedAt
+          : declared
           ? "border-amber-200 bg-amber-50/40"
           : "border-slate-200"
       }
@@ -322,27 +389,27 @@ function SiteVerifySection({
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <ClipboardCheck size={16} className={verified ? "text-emerald-600" : "text-slate-500"} />
-          Site Verification
+          Handback Inspection
           {verified && (
             <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">
-              Verified
+              Inspected
             </Badge>
           )}
         </CardTitle>
         <CardDescription className="text-xs">
-          Issuer / Safety Officer / Plant Head walks the area before closure.
+          Issuer / Safety Officer / Plant Head walks the area after the
+          completion declaration. Closure approval needs this on record.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
-        {!returnedAt && (
+        {!declared && (
           <div className="text-xs text-slate-500">
-            Receiver must return the permit before site verification can begin.
+            Receiver must declare Work Completed before the handback inspection can begin.
           </div>
         )}
-        {returnedAt && verified && (
+        {declared && verified && (
           <div className="text-sm">
-            Verified at{" "}
-            <span className="font-medium">{formatDateTime(new Date(siteVerifiedAt!))}</span>
+            Inspected at <span className="font-medium">{formatDateTime(new Date(siteVerifiedAt!))}</span>
             {checklist && typeof checklist === "object" && (
               <ul className="mt-2 space-y-0.5">
                 {Object.entries(checklist as Record<string, boolean>).map(([k, v]) => (
@@ -361,12 +428,12 @@ function SiteVerifySection({
             )}
           </div>
         )}
-        {returnedAt && !verified && !show && canVerify && (
+        {declared && !verified && !show && canVerify && (
           <Button size="sm" onClick={() => setShow(true)}>
-            <ClipboardCheck size={14} /> Start Site Verification
+            <ClipboardCheck size={14} /> Start Handback Inspection
           </Button>
         )}
-        {returnedAt && !verified && !show && !canVerify && (
+        {declared && !verified && !show && !canVerify && (
           <div className="text-xs text-slate-500">
             Awaiting Issuer / Safety / Plant Head walk-through.
           </div>
@@ -381,9 +448,7 @@ function SiteVerifySection({
                 <input
                   type="checkbox"
                   checked={!!vals[c.code]}
-                  onChange={(e) =>
-                    setVals((v) => ({ ...v, [c.code]: e.target.checked }))
-                  }
+                  onChange={(e) => setVals((v) => ({ ...v, [c.code]: e.target.checked }))}
                   className="mt-0.5"
                 />
                 <span>{c.label}</span>
@@ -398,11 +463,19 @@ function SiteVerifySection({
                 placeholder="Anything noteworthy from the walk"
               />
             </div>
-            {error && <div className="text-xs text-rose-700">{error}</div>}
+
+            <EvidenceCapture
+              permitId={permitId}
+              requirePhoto
+              declaration={HANDBACK_DECLARATION}
+              state={evidenceState}
+            />
+
+            {error && <div className="text-xs text-rose-700 whitespace-pre-wrap">{error}</div>}
             <div className="flex gap-2">
-              <Button size="sm" onClick={submit} disabled={busy || !allChecked}>
+              <Button size="sm" onClick={submit} disabled={busy || !allChecked || !evidenceReady}>
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                Mark Verified
+                Record Inspection
               </Button>
               <Button size="sm" variant="outline" onClick={() => setShow(false)} disabled={busy}>
                 Cancel
@@ -420,25 +493,32 @@ function SiteVerifySection({
   );
 }
 
-// ─── Closure summary ──────────────────────────────────────────────────
+// ─── Phase 3: Closure summary + report ────────────────────────────────
 
 function ClosureSummary({
+  permitId,
   closedAt,
-  closedById,
   closingRemark,
+  outcome,
 }: {
+  permitId: string;
   closedAt: string | Date | null;
-  closedById: string | null;
   closingRemark: string | null;
+  outcome: string | null;
 }) {
   return (
     <Card className="border-slate-300 bg-slate-50">
       <CardHeader className="pb-3">
         <CardTitle className="text-base flex items-center gap-2">
           <CheckCircle2 size={16} className="text-emerald-600" /> Permit Closed
+          {outcome && (
+            <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-[10px]">
+              {OUTCOMES.find((o) => o.value === outcome)?.label ?? outcome}
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-1">
+      <CardContent className="space-y-2">
         {closedAt && (
           <div className="text-sm">
             Closed at <span className="font-medium">{formatDateTime(new Date(closedAt))}</span>
@@ -449,6 +529,11 @@ function ClosureSummary({
             {closingRemark}
           </div>
         )}
+        <Button asChild size="sm" variant="outline">
+          <a href={`/api/ptw/${permitId}/report`} target="_blank" rel="noreferrer">
+            <FileDown size={14} /> Download Close-out Report (PDF)
+          </a>
+        </Button>
       </CardContent>
     </Card>
   );

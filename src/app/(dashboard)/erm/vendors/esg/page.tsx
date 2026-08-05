@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   ESG_BAND_CHIP,
   inrCompact,
@@ -71,24 +72,24 @@ export default async function EsgPortfolioPage() {
               {data.spendByCategory.length === 0 ? (
                 <p className="text-xs text-slate-400">No category spend data.</p>
               ) : (
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                      <th className="px-2 py-2">Category</th>
-                      <th className="px-2 py-2 text-right">Spend</th>
-                      <th className="px-2 py-2 text-right">% of total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                      <TableHead className="px-2 py-2">Category</TableHead>
+                      <TableHead className="px-2 py-2 text-right">Spend</TableHead>
+                      <TableHead className="px-2 py-2 text-right">% of total</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {data.spendByCategory.map((c) => (
-                      <tr key={c.category} className="border-b border-slate-100">
-                        <td className="px-2 py-2 text-slate-700">{c.category}</td>
-                        <td className="px-2 py-2 text-right tabular-nums text-slate-700">{inrCompact(c.spend)}</td>
-                        <td className="px-2 py-2 text-right tabular-nums text-slate-500">{(c.pct ?? 0).toFixed(1)}%</td>
-                      </tr>
+                      <TableRow key={c.category} className="border-b border-slate-100">
+                        <TableCell className="px-2 py-2 text-slate-700">{c.category}</TableCell>
+                        <TableCell className="px-2 py-2 text-right tabular-nums text-slate-700">{inrCompact(c.spend)}</TableCell>
+                        <TableCell className="px-2 py-2 text-right tabular-nums text-slate-500">{(c.pct ?? 0).toFixed(1)}%</TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               )}
             </div>
           </div>
@@ -103,38 +104,38 @@ export default async function EsgPortfolioPage() {
                 LAGGING
               </span>
             </div>
-            <table className="w-full min-w-[760px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Legal name</th>
-                  <th className="px-3 py-2.5">Category</th>
-                  <th className="px-3 py-2.5 text-right">Annual spend</th>
-                  <th className="px-3 py-2.5 text-right">ESG score</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-[760px]">
+              <TableHeader>
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead>Code</TableHead>
+                  <TableHead>Legal name</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead className="text-right">Annual spend</TableHead>
+                  <TableHead className="text-right">ESG score</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.laggingWatchlist.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={5} className="px-3 py-10 text-center text-sm text-slate-400">
                       No LAGGING vendors — supplier ESG posture is healthy.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.laggingWatchlist.map((w) => (
-                    <tr key={w.vendorCode} className="border-t border-slate-100 hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5 font-medium text-slate-700">{w.vendorCode}</td>
-                      <td className="px-3 py-2.5 text-slate-700">{w.legalName}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{w.category}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums text-slate-700">{inrCompact(w.annualSpendInr)}</td>
-                      <td className="px-3 py-2.5 text-right tabular-nums font-semibold text-rose-600">
+                    <TableRow key={w.vendorCode} className="border-t border-slate-100">
+                      <TableCell className="px-3 py-2.5 font-medium text-slate-700">{w.vendorCode}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-slate-700">{w.legalName}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{w.category}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-right tabular-nums text-slate-700">{inrCompact(w.annualSpendInr)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-right tabular-nums font-semibold text-rose-600">
                         {w.esgScore != null ? w.esgScore : "—"}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <p className="text-center text-[11px] text-slate-400">

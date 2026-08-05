@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { Can } from "@/components/auth/can";
 import { requirePermission } from "@/lib/auth/server";
 import {
-  ENGAGEMENT_STATUS_CHIP, ENGAGEMENT_TYPE_CHIP, RESULT_CHIP, ENGAGEMENT_TYPES,
+  ENGAGEMENT_STATUS_CHIP, ENGAGEMENT_TYPE_CHIP, RESULT_CHIP,
   fmtDate, engagementTypeLabel, labelize,
   type EngagementListResponse, type AuditType, type Template,
 } from "../lib-cams";
@@ -22,8 +22,12 @@ export default async function EngagementsPage(props: {
     const v = sp[k];
     return Array.isArray(v) ? v[0] : v;
   };
-  const query: Record<string, string> = {};
-  for (const k of ["status", "engagementType", "siteId", "sourceModule", "q"]) {
+  // Inspections page: hard-scope to inspection-type engagements. Audits run on
+  // the ComplianceAudit flow (/cams/audits) and must NOT appear or be created
+  // here — otherwise navigating "into an audit via Inspections" lands on the old
+  // Cams workspace / schedule modal.
+  const query: Record<string, string> = { engagementType: "INSPECTION" };
+  for (const k of ["status", "siteId", "sourceModule", "q"]) {
     const v = get(k);
     if (v) query[k] = v;
   }
@@ -65,12 +69,12 @@ export default async function EngagementsPage(props: {
   return (
     <div>
       <PageHeader
-        title="Engagements"
-        description="Every audit and inspection on one engine — scheduled, executed, scored, closed. Consumer-raised engagements (Fire / PPE / Pharma / EPC) appear here with a source badge."
-        breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Engagements" }]}
+        title="Inspections"
+        description="Routine inspections on the CAMS engine — scheduled, executed, scored, closed. Consumer-raised inspections (Fire / PPE / Pharma / EPC) appear here with a source badge. Audits run on the audit flow under Audits."
+        breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Inspections" }]}
         action={
           <Can permission="CAMS.SCHEDULE">
-            <ScheduleEngagementButton auditTypes={auditTypes} templates={templates} plants={plants} />
+            <ScheduleEngagementButton auditTypes={auditTypes} templates={templates} plants={plants} inspectionOnly />
           </Can>
         }
       />
@@ -79,15 +83,11 @@ export default async function EngagementsPage(props: {
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
       ) : (
         <>
-          <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Status</span>
             {["PLANNED", "SCHEDULED", "IN_PROGRESS", "FIELDWORK_COMPLETE", "REPORT_ISSUED", "CLOSED"].map((s) =>
               chip("status", s, labelize(s), data.statusCounts[s]))}
-            <span className="ml-auto text-xs text-slate-500">{data.total} engagement(s)</span>
-          </div>
-          <div className="mb-4 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Type</span>
-            {ENGAGEMENT_TYPES.map((t) => chip("engagementType", t.value, t.label, data.typeCounts[t.value]))}
+            <span className="ml-auto text-xs text-slate-500">{data.total} inspection(s)</span>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -107,7 +107,7 @@ export default async function EngagementsPage(props: {
               </thead>
               <tbody>
                 {data.items.length === 0 ? (
-                  <tr><td colSpan={9} className="px-3 py-10 text-center text-sm text-slate-400">No engagements match the current filter.</td></tr>
+                  <tr><td colSpan={9} className="px-3 py-10 text-center text-sm text-slate-400">No inspections match the current filter.</td></tr>
                 ) : (
                   data.items.map((e) => (
                     <tr key={e.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">

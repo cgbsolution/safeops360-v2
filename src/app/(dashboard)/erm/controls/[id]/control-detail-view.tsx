@@ -5,6 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, ClipboardCheck, Link2, Plus, Trash2, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { ControlAttachments } from "@/components/erm/control-attachments";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import {
   RATING_CHIP,
@@ -166,10 +172,10 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
           <h2 className="text-sm font-semibold text-slate-900">
             Mapped risks / processes / obligations <span className="text-slate-400">({detail.mappings.length})</span>
           </h2>
-          <button onClick={() => setMapOpen(true)} disabled={busy}
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+          <Button onClick={() => setMapOpen(true)} disabled={busy} variant="outline"
+            className="h-auto gap-1.5 px-3 py-1.5 text-xs text-slate-700">
             <Link2 size={13} /> Add mapping
-          </button>
+          </Button>
         </div>
         {detail.mappings.length === 0 ? (
           <p className="py-3 text-center text-sm text-slate-400">This control mitigates nothing yet — map it to a risk, process or obligation.</p>
@@ -186,10 +192,10 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
                   </p>
                   {mp.coverageNotes && <p className="mt-0.5 text-xs text-slate-500">{mp.coverageNotes}</p>}
                 </div>
-                <button onClick={() => call(`/api/erm/controls/mappings/${mp.id}`, "DELETE", undefined, "Mapping removed.")}
-                  disabled={busy} className="shrink-0 text-slate-300 hover:text-rose-600" aria-label="Delete mapping">
+                <Button onClick={() => call(`/api/erm/controls/mappings/${mp.id}`, "DELETE", undefined, "Mapping removed.")}
+                  disabled={busy} variant="ghost" size="icon" className="h-8 w-8 shrink-0 text-slate-300 hover:text-rose-600" aria-label="Delete mapping">
                   <Trash2 size={15} />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -201,14 +207,14 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-900">Test history</h2>
           <div className="flex items-center gap-2">
-            <button onClick={() => setPlanOpen(true)} disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            <Button onClick={() => setPlanOpen(true)} disabled={busy} variant="outline"
+              className="h-auto gap-1.5 px-3 py-1.5 text-xs text-slate-700">
               <CalendarPlus size={13} /> Schedule test plan
-            </button>
-            <button onClick={() => setTestOpen(true)} disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+            </Button>
+            <Button onClick={() => setTestOpen(true)} disabled={busy}
+              className="h-auto gap-1.5 px-3 py-1.5 text-xs text-white">
               <ClipboardCheck size={13} /> Record test
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -235,43 +241,48 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
         {detail.tests.length === 0 ? (
           <p className="py-3 text-center text-sm text-slate-400">No tests recorded yet.</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[820px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2">Date</th>
-                  <th className="px-3 py-2">Cycle</th>
-                  <th className="px-3 py-2">Type</th>
-                  <th className="px-3 py-2">Method</th>
-                  <th className="px-3 py-2 text-right">Sample</th>
-                  <th className="px-3 py-2 text-right">Exceptions</th>
-                  <th className="px-3 py-2">Conclusion</th>
-                  <th className="px-3 py-2">Tester</th>
-                  <th className="px-3 py-2">Workpaper</th>
-                </tr>
-              </thead>
-              <tbody>
-                {detail.tests.map((t) => (
-                  <tr key={t.id} className="border-t border-slate-100 align-top">
-                    <td className="px-3 py-2 text-xs text-slate-600">{fmtDate(t.testDate)}</td>
-                    <td className="px-3 py-2 text-xs text-slate-600">{testPlanLabel(t.testPlanId)}</td>
-                    <td className="px-3 py-2 text-xs text-slate-600">{tidy(t.testType)}</td>
-                    <td className="px-3 py-2 text-xs text-slate-600">{tidy(t.method)}</td>
-                    <td className="px-3 py-2 text-right text-xs tabular-nums text-slate-600">{t.sampleSize}</td>
-                    <td className="px-3 py-2 text-right text-xs tabular-nums">
-                      {t.exceptionsFound > 0 ? <span className="font-semibold text-rose-700">{t.exceptionsFound}</span> : <span className="text-slate-500">0</span>}
-                    </td>
-                    <td className="px-3 py-2">
-                      <span className={"rounded border px-2 py-0.5 text-[11px] " + (RATING_CHIP[t.conclusion === "EFFECTIVE" ? "EFFECTIVE" : "DEFICIENT"])}>{tidy(t.conclusion)}</span>
-                    </td>
-                    <td className="px-3 py-2 text-xs text-slate-600">{t.testerName ?? "—"}</td>
-                    <td className="max-w-[240px] px-3 py-2 text-xs text-slate-500">{t.workpaperNotes || "—"}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table className="min-w-[820px]">
+            <TableHeader>
+              <TableRow className="text-slate-500">
+                <TableHead>Date</TableHead>
+                <TableHead>Cycle</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Method</TableHead>
+                <TableHead className="text-right">Sample</TableHead>
+                <TableHead className="text-right">Exceptions</TableHead>
+                <TableHead>Conclusion</TableHead>
+                <TableHead>Tester</TableHead>
+                <TableHead>Workpaper</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {detail.tests.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="text-xs text-slate-600">{fmtDate(t.testDate)}</TableCell>
+                  <TableCell className="text-xs text-slate-600">{testPlanLabel(t.testPlanId)}</TableCell>
+                  <TableCell className="text-xs text-slate-600">{tidy(t.testType)}</TableCell>
+                  <TableCell className="text-xs text-slate-600">{tidy(t.method)}</TableCell>
+                  <TableCell className="text-right text-xs tabular-nums text-slate-600">{t.sampleSize}</TableCell>
+                  <TableCell className="text-right text-xs tabular-nums">
+                    {t.exceptionsFound > 0 ? <span className="font-semibold text-rose-700">{t.exceptionsFound}</span> : <span className="text-slate-500">0</span>}
+                  </TableCell>
+                  <TableCell>
+                    <span className={"rounded border px-2 py-0.5 text-[11px] " + (RATING_CHIP[t.conclusion === "EFFECTIVE" ? "EFFECTIVE" : "DEFICIENT"])}>{tidy(t.conclusion)}</span>
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-600">{t.testerName ?? "—"}</TableCell>
+                  <TableCell className="max-w-[240px] text-xs text-slate-500">{t.workpaperNotes || "—"}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
+      </div>
+
+      {/* Evidence & Documents */}
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <h2 className="mb-1 text-sm font-semibold text-slate-900">Evidence &amp; Documents</h2>
+        <p className="mb-3 text-xs text-slate-500">Control evidence, test workpapers and review documents. PDF, images, Office files, CSV/TXT and Outlook messages up to 25 MB.</p>
+        <ControlAttachments controlId={detail.id} canEdit={true} />
       </div>
 
       {/* Deficiencies */}
@@ -314,16 +325,16 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
                     </div>
                     <div className="flex flex-wrap items-center justify-end gap-1.5">
                       {!def.remediationCapaId && (
-                        <button onClick={() => call(`/api/erm/controls/deficiencies/${def.id}/raise-capa`, "POST", undefined, "CAPA raised.")} disabled={busy}
-                          className="rounded-md border border-primary-300 bg-white px-2 py-1 text-[11px] font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-50">
+                        <Button onClick={() => call(`/api/erm/controls/deficiencies/${def.id}/raise-capa`, "POST", undefined, "CAPA raised.")} disabled={busy} variant="outline"
+                          className="h-auto border-primary-300 px-2 py-1 text-[11px] text-primary-700 hover:bg-primary-50">
                           Raise CAPA
-                        </button>
+                        </Button>
                       )}
                       {advances.map((s) => (
-                        <button key={s} onClick={() => call(`/api/erm/controls/deficiencies/${def.id}?status=${s}`, "PATCH", undefined, `Status → ${tidy(s)}.`)} disabled={busy}
-                          className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                        <Button key={s} onClick={() => call(`/api/erm/controls/deficiencies/${def.id}?status=${s}`, "PATCH", undefined, `Status → ${tidy(s)}.`)} disabled={busy} variant="outline"
+                          className="h-auto px-2 py-1 text-[11px] text-slate-700">
                           {STATUS_ACTION_LABEL[s] ?? s}
-                        </button>
+                        </Button>
                       ))}
                       {!def.reportedToAuditCommittee && (
                         <ReportButton onReport={(ref) => call(`/api/erm/controls/deficiencies/${def.id}/report`, "POST", { auditCommitteeReference: ref }, "Reported to Audit Committee.")} busy={busy} />
@@ -350,25 +361,23 @@ function ReportButton({ onReport, busy }: { onReport: (ref: string) => void; bus
   const [ref, setRef] = useState("");
   return (
     <>
-      <button onClick={() => setOpen(true)} disabled={busy}
-        className="rounded-md border border-rose-300 bg-white px-2 py-1 text-[11px] font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50">
+      <Button onClick={() => setOpen(true)} disabled={busy} variant="outline"
+        className="h-auto border-rose-300 px-2 py-1 text-[11px] text-rose-700 hover:bg-rose-50">
         Report to AC
-      </button>
+      </Button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
           <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-900">Report to Audit Committee</h2>
-              <button onClick={() => setOpen(false)} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+              <Button onClick={() => setOpen(false)} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
             </div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Audit Committee reference</label>
-            <input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="e.g. AC-2026-Q2-07"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="e.g. AC-2026-Q2-07" />
             <p className="mt-2 text-[11px] text-slate-400">CRO-only — a 403 here means you lack the CRO role.</p>
             <div className="mt-5 flex justify-end gap-2">
-              <button onClick={() => setOpen(false)} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-              <button onClick={() => { onReport(ref.trim()); setOpen(false); }} disabled={busy || ref.trim().length < 1}
-                className="rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">Report</button>
+              <Button onClick={() => setOpen(false)} variant="outline">Cancel</Button>
+              <Button onClick={() => { onReport(ref.trim()); setOpen(false); }} disabled={busy || ref.trim().length < 1}>Report</Button>
             </div>
           </div>
         </div>
@@ -444,60 +453,53 @@ function AddMappingModal({ controlId, existing, onClose, onSaved }: { controlId:
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Add mapping</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Target type</label>
-              <select value={targetType} onChange={(e) => setTargetType(e.target.value as any)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={targetType} onChange={(e) => setTargetType(e.target.value as any)}>
                 <option value="risk">Risk</option>
                 <option value="process">Process</option>
                 <option value="obligation">Obligation</option>
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Strength</label>
-              <select value={mitigationStrength} onChange={(e) => setMitigationStrength(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={mitigationStrength} onChange={(e) => setMitigationStrength(e.target.value)}>
                 {STRENGTHS.map((s) => <option key={s} value={s}>{tidy(s)}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">{targetType === "risk" ? "Risk" : targetType === "process" ? "Process" : "Obligation ID"}</label>
             {targetType === "obligation" ? (
-              <input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder="Paste obligation id"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder="Paste obligation id" />
             ) : optErr ? (
-              <input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder={`Could not load list — paste ${targetType} id`}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder={`Could not load list — paste ${targetType} id`} />
             ) : (
-              <select value={targetId} onChange={(e) => setTargetId(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={targetId} onChange={(e) => setTargetId(e.target.value)}>
                 <option value="">{options.length ? `Select a ${targetType}…` : "Loading…"}</option>
                 {options.map((o) => <option key={o.id} value={o.id}>{o.code ? `${o.code} · ` : ""}{o.label}</option>)}
-              </select>
+              </Select>
             )}
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Coverage notes</label>
-            <textarea value={coverageNotes} onChange={(e) => setCoverageNotes(e.target.value)} rows={2} placeholder="How this control mitigates the target."
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Textarea value={coverageNotes} onChange={(e) => setCoverageNotes(e.target.value)} rows={2} placeholder="How this control mitigates the target." />
           </div>
 
           {dupPrimary && <p className="text-[11px] text-amber-600">A primary mapping already exists — the backend may reject a second primary.</p>}
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={busy || targetId.trim().length < 1}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button onClick={onClose} variant="outline">Cancel</Button>
+          <Button onClick={submit} disabled={busy || targetId.trim().length < 1}>
             <Plus size={14} /> {busy ? "Adding…" : "Add mapping"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -546,31 +548,27 @@ function SchedulePlanModal({ controlId, ownerId, onClose, onSaved }: { controlId
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Schedule test plan</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Test cycle label</label>
-            <input value={testCycleLabel} onChange={(e) => setTestCycleLabel(e.target.value)} placeholder="e.g. FY26 Q2 interim"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Input value={testCycleLabel} onChange={(e) => setTestCycleLabel(e.target.value)} placeholder="e.g. FY26 Q2 interim" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
-              <select value={testMethod} onChange={(e) => setTestMethod(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={testMethod} onChange={(e) => setTestMethod(e.target.value)}>
                 {TEST_METHODS.map((m) => <option key={m} value={m}>{tidy(m)}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Sample size</label>
-              <input type="number" min={1} value={sampleSizePlanned} onChange={(e) => setSampleSizePlanned(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={1} value={sampleSizePlanned} onChange={(e) => setSampleSizePlanned(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Times / year</label>
-              <input type="number" min={1} value={testFrequencyPerYear} onChange={(e) => setTestFrequencyPerYear(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={1} value={testFrequencyPerYear} onChange={(e) => setTestFrequencyPerYear(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -580,19 +578,17 @@ function SchedulePlanModal({ controlId, ownerId, onClose, onSaved }: { controlId
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</label>
-              <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
             </div>
           </div>
           {ownerIsTester && <p className="text-[11px] font-medium text-amber-600">Segregation of duties — the tester cannot be the control owner. The backend will reject this.</p>}
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={busy || !valid}
-            className="rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button onClick={onClose} variant="outline">Cancel</Button>
+          <Button onClick={submit} disabled={busy || !valid}>
             {busy ? "Scheduling…" : "Schedule plan"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -657,7 +653,7 @@ function RecordTestModal({ controlId, testPlans, onClose, onSaved }: { controlId
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Record test</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <p className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
@@ -667,65 +663,56 @@ function RecordTestModal({ controlId, testPlans, onClose, onSaved }: { controlId
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Test plan</label>
-              <select value={testPlanId} onChange={(e) => setTestPlanId(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={testPlanId} onChange={(e) => setTestPlanId(e.target.value)}>
                 <option value="">Ad-hoc</option>
                 {testPlans.map((tp) => <option key={tp.id} value={tp.id}>{tp.testCycleLabel}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Test type</label>
-              <select value={testType} onChange={(e) => setTestType(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={testType} onChange={(e) => setTestType(e.target.value)}>
                 {TEST_TYPES.map((t) => <option key={t} value={t}>{tidy(t)}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
-              <select value={method} onChange={(e) => setMethod(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={method} onChange={(e) => setMethod(e.target.value)}>
                 {TEST_METHODS.map((m) => <option key={m} value={m}>{tidy(m)}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Test date</label>
-              <input type="date" value={testDate} onChange={(e) => setTestDate(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="date" value={testDate} onChange={(e) => setTestDate(e.target.value)} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Sample size</label>
-              <input type="number" min={0} value={sampleSize} onChange={(e) => setSampleSize(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={0} value={sampleSize} onChange={(e) => setSampleSize(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Exceptions found</label>
-              <input type="number" min={0} value={exceptionsFound} onChange={(e) => setExceptionsFound(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={0} value={exceptionsFound} onChange={(e) => setExceptionsFound(e.target.value)} />
             </div>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Conclusion</label>
-            <select value={conclusion} onChange={(e) => setConclusion(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+            <Select value={conclusion} onChange={(e) => setConclusion(e.target.value)}>
               {CONCLUSIONS.map((c) => <option key={c} value={c}>{tidy(c)}</option>)}
-            </select>
+            </Select>
             <p className={"mt-1 text-[11px] " + (isDeficient ? "text-amber-600" : "text-slate-400")}>{CONCLUSION_GUIDANCE[conclusion]}</p>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Workpaper notes <span className="text-rose-500">*</span></label>
-            <textarea value={workpaperNotes} onChange={(e) => setWorkpaperNotes(e.target.value)} rows={3} placeholder="Procedures performed, population, samples tested, results."
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Textarea value={workpaperNotes} onChange={(e) => setWorkpaperNotes(e.target.value)} rows={3} placeholder="Procedures performed, population, samples tested, results." />
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Evidence attachment IDs (comma-separated, optional)</label>
-            <input value={evidenceIds} onChange={(e) => setEvidenceIds(e.target.value)} placeholder="att-1, att-2"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Input value={evidenceIds} onChange={(e) => setEvidenceIds(e.target.value)} placeholder="att-1, att-2" />
           </div>
 
           {isDeficient && (
@@ -733,19 +720,16 @@ function RecordTestModal({ controlId, testPlans, onClose, onSaved }: { controlId
               <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Deficiency detail (a non-effective conclusion auto-creates a deficiency)</p>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Deficiency description</label>
-                <textarea value={deficiencyDescription} onChange={(e) => setDeficiencyDescription(e.target.value)} rows={2}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+                <Textarea value={deficiencyDescription} onChange={(e) => setDeficiencyDescription(e.target.value)} rows={2} />
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">Root cause</label>
-                  <textarea value={deficiencyRootCause} onChange={(e) => setDeficiencyRootCause(e.target.value)} rows={2}
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+                  <Textarea value={deficiencyRootCause} onChange={(e) => setDeficiencyRootCause(e.target.value)} rows={2} />
                 </div>
                 <div>
                   <label className="mb-1 block text-xs font-medium text-slate-600">Identified risk impact</label>
-                  <textarea value={identifiedRiskImpact} onChange={(e) => setIdentifiedRiskImpact(e.target.value)} rows={2}
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+                  <Textarea value={identifiedRiskImpact} onChange={(e) => setIdentifiedRiskImpact(e.target.value)} rows={2} />
                 </div>
               </div>
             </div>
@@ -754,11 +738,10 @@ function RecordTestModal({ controlId, testPlans, onClose, onSaved }: { controlId
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={busy || !valid}
-            className="rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button onClick={onClose} variant="outline">Cancel</Button>
+          <Button onClick={submit} disabled={busy || !valid}>
             {busy ? "Recording…" : "Record test"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

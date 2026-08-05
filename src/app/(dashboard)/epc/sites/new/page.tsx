@@ -158,18 +158,18 @@ export default function NewSitePage() {
             </div>
             <div>
               <Label htmlFor="projectType">Project Type *</Label>
-              <select
+              <Select
                 id="projectType"
                 value={form.projectType}
                 onChange={(e) => set("projectType", e.target.value)}
                 required
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select project type...</option>
                 {PROJECT_TYPES.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <Label htmlFor="contractValue">Contract Value (INR)</Label>
@@ -224,18 +224,18 @@ export default function NewSitePage() {
             </div>
             <div>
               <Label htmlFor="state">State *</Label>
-              <select
+              <Select
                 id="state"
                 value={form.state}
                 onChange={(e) => set("state", e.target.value)}
                 required
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select state...</option>
                 {INDIAN_STATES.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <Label htmlFor="district">District</Label>

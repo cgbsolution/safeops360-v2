@@ -7,6 +7,9 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
+import { ActionRecordPanel } from "@/components/workflow/action-record";
+import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
+import { markRecordTasksRead } from "@/lib/workflow/read-state";
 import { ApprovalPanel } from "@/components/workflow/approval-panel";
 import { ExecutionPanel, VerificationPanel } from "@/components/workflow/execution-panel";
 import { ResubmitPanel } from "@/components/workflow/resubmit-panel";
@@ -78,12 +81,16 @@ export default async function NearMissDetail(
   });
   if (!n) return notFound();
 
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksRead({ module: "NEAR_MISS", recordId: n.id, userId });
+
   const instance: any = await prisma.workflowInstance.findUnique({
     where: { module_recordId: { module: "NEAR_MISS", recordId: n.id } },
     include: {
       definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: true }, orderBy: { performedAt: "asc" } },
-      pendingTasks: { include: { assignedTo: true } }
+      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
+      pendingTasks: { include: { assignedTo: { include: PARTY_INCLUDE } } }
     }
   });
 
@@ -221,7 +228,7 @@ export default async function NearMissDetail(
             history={instance.history.map((h: any) => ({
               id: h.id, stepId: h.stepId, stepName: h.stepName, action: h.action,
               performedAt: h.performedAt, comments: h.comments,
-              performedBy: { name: h.performedBy.name, designation: h.performedBy.designation }
+              performedBy: toParty(h.performedBy)
             }))}
             pendingTasks={
               instance.status === "IN_PROGRESS"
@@ -229,7 +236,7 @@ export default async function NearMissDetail(
                     .filter((t: any) => t.status === "PENDING" || t.status === "OVERDUE" || t.status === "ESCALATED")
                     .map((t: any) => ({
                       id: t.id, stepId: t.stepId, stepName: t.stepName, status: t.status, dueAt: t.dueAt,
-                      assignedTo: { name: t.assignedTo.name, designation: t.assignedTo.designation, department: t.assignedTo.department }
+                      assignedTo: toParty(t.assignedTo)
                     }))
                 : []
             }
@@ -294,6 +301,26 @@ export default async function NearMissDetail(
           {myTask && myTask.taskType === "VERIFICATION" && (
             <VerificationPanel
               task={{ id: myTask.id, stepName: myTask.stepName, taskType: myTask.taskType, dueAt: myTask.dueAt }}
+            />
+          )}
+
+          {/* The action owner's CAPA-execution narrative + rework reasons.
+              VERIFIED is excluded — this page already has a dedicated
+              "Verification & Effectiveness" card below. */}
+          {instance && (
+            <ActionRecordPanel
+              exclude={["VERIFIED"]}
+              history={instance.history.map((h: any) => ({
+                id: h.id,
+                stepId: h.stepId,
+                stepName: h.stepName,
+                action: h.action,
+                performedAt: h.performedAt,
+                comments: h.comments,
+                attachments: h.attachments,
+                performedBy: toParty(h.performedBy)
+              }))}
+              steps={instance.definition.steps.map((s: any) => ({ id: s.id, stepType: s.stepType }))}
             />
           )}
 

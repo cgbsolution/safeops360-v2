@@ -21,6 +21,12 @@ export type EditorStep = {
   isOptional: boolean;
   conditionExpr: string | null;
   notes: string | null;
+  // No editor control renders these two — they are carried opaquely purely so
+  // save() can send them back. The API replaces every step row on save, so a
+  // field the editor drops is a field the save erases: JOINT_APPROVAL /
+  // CAPA_FAN_OUT steps would silently become ordinary single-approver steps.
+  parallelStrategy: string | null;
+  slaBySeverity: Record<string, number> | null;
 };
 
 // Server-side shape passed from the page (a row in WorkflowDefinition with its steps)
@@ -49,6 +55,8 @@ export type DefinitionDTO = {
     isOptional: boolean;
     conditionExpr: string | null;
     notes?: string | null;
+    parallelStrategy?: string | null;
+    slaBySeverity?: Record<string, number> | null;
   }[];
 };
 
@@ -175,7 +183,9 @@ export function dtoStepToEditor(s: DefinitionDTO["steps"][number], clientId: str
     escalationRole: s.escalationRole ?? null,
     isOptional: s.isOptional ?? false,
     conditionExpr: s.conditionExpr ?? null,
-    notes: s.notes ?? null
+    notes: s.notes ?? null,
+    parallelStrategy: s.parallelStrategy ?? null,
+    slaBySeverity: s.slaBySeverity ?? null
   };
 }
 

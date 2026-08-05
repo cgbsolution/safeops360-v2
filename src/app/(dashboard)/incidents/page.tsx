@@ -13,6 +13,11 @@ import { IncidentsTable, type IncidentRow } from "./incidents-table";
 import { FilterTab, FilterTabsList } from "@/components/ui/filter-tabs";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { IncidentAnalyticsStrip } from "@/components/incidents/analytics-strip";
+import { InsightBar } from "@/components/ai/InsightBar";
+import { InsightHero } from "@/components/observations/insight-hero";
+import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
+import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
+import { fetchInsights, type InsightBundle } from "@/lib/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +42,7 @@ const STATUS_OPTIONS = [
 ];
 
 export default async function IncidentsPage(
-  props: { searchParams: Promise<{ status?: string; type?: string; denied?: string }> }
+  props: { searchParams: Promise<{ status?: string; type?: string; denied?: string; insight?: string }> }
 ) {
   const searchParams = await props.searchParams;
   const showDenied = searchParams.denied === "1";
@@ -55,9 +60,14 @@ export default async function IncidentsPage(
 
   // findMany and groupBy are independent — fire them in parallel. When the
   // user can read nothing, skip the DB entirely and render an empty list.
-  const [items, statusCounts] =
+  const emptyBundle: InsightBundle = {
+    bar: [],
+    signalByRecord: new Map(),
+    signalsByRecord: new Map(),
+  };
+  const [items, statusCounts, insightsBundle] =
     accessWhere === false
-      ? [[], [] as { status: string; _count: number }[]]
+      ? [[], [] as { status: string; _count: number }[], emptyBundle]
       : await Promise.all([
           prisma.incident.findMany({
             where: { AND: [accessWhere, filters] },
@@ -73,11 +83,15 @@ export default async function IncidentsPage(
               status: true,
               plant: { select: { name: true } }
             },
-            orderBy: { date: "desc" },
+            // Newest-created first (platform-wide list convention).
+            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
             take: 100
           }),
           // Counts reflect the accessible set across all statuses.
-          prisma.incident.groupBy({ by: ["status"], where: accessWhere, _count: true })
+          prisma.incident.groupBy({ by: ["status"], where: accessWhere, _count: true }),
+          // Deterministic insight layer for this screen (tolerant — degrades
+          // to an empty bundle if the backend is unavailable).
+          fetchInsights("incident")
         ]);
 
   const ids = items.map((i) => i.id);
@@ -109,9 +123,58 @@ export default async function IncidentsPage(
       lostDays: i.lostDays,
       propertyDamageCost: i.propertyDamageCost ? i.propertyDamageCost.toString() : null,
       workflowStep,
-      workflowColor
+      workflowColor,
+      signal: insightsBundle.signalByRecord.get(i.id) ?? null
     };
   });
+
+  // Insight-card click-through: narrow the list to the active insight's records.
+  const activeInsight = searchParams.insight
+    ? insightsBundle.bar.find((i) => i.id === searchParams.insight)
+    : undefined;
+  const visibleRows = activeInsight
+    ? rows.filter((r) => activeInsight.recordRefs.includes(r.number))
+    : rows;
+
+  // "This week's focus" hero + panels — reuse the shared builder + component.
+  const incOpen = items.filter((i) => i.status !== "CLOSED");
+  const incHero = buildHeroFromRecords(
+    items.map((i) => ({ date: i.date, open: i.status !== "CLOSED", severity: i.type, group: i.location || i.plant.name })),
+    {
+      type: "incident risk",
+      critical: ["LTI", "FATALITY"],
+      highSeverities: ["RWC", "MTC"],
+      headline: (n, g) => `${n} open incidents concentrated in ${g}`,
+      qualifier: "recordable severity",
+      actionHref: "/incidents",
+      railTitle: "Where they're happening",
+      closing: (d) => `Oldest open investigation is ${d} days.`,
+      statLabels: { critical: "LTI + fatal", high: "RWC + MTC" }
+    }
+  );
+  const incNowMs = Date.now();
+  const incStepAgg = new Map<string, { count: number; totalDays: number }>();
+  incOpen.forEach((i) => {
+    const step = instanceByRecord.get(i.id)?.currentStepName ?? humanize(i.status);
+    const days = Math.max(0, Math.floor((incNowMs - i.date.getTime()) / 86_400_000));
+    const e = incStepAgg.get(step) ?? { count: 0, totalDays: 0 };
+    e.count += 1;
+    e.totalDays += days;
+    incStepAgg.set(step, e);
+  });
+  const incBottleneck = Array.from(incStepAgg.entries())
+    .map(([step, v]) => ({ step, count: v.count, avgDays: Math.round((v.totalDays / v.count) * 10) / 10 }))
+    .sort((a, b) => b.avgDays - a.avgDays);
+  const incCatAgg = new Map<string, { count: number; areas: Set<string> }>();
+  incOpen.forEach((i) => {
+    const e = incCatAgg.get(i.type) ?? { count: 0, areas: new Set<string>() };
+    e.count += 1;
+    if (i.location) e.areas.add(i.location);
+    incCatAgg.set(i.type, e);
+  });
+  const incCategory = Array.from(incCatAgg.entries())
+    .map(([category, v]) => ({ category, count: v.count, areaCount: v.areas.size }))
+    .sort((a, b) => b.count - a.count);
 
   const fac = items.filter((i) => i.type === "FIRST_AID").length;
   const mtc = items.filter((i) => i.type === "MTC").length;
@@ -155,6 +218,18 @@ export default async function IncidentsPage(
         <StatBox label="Fatalities" value={fatal} tone="danger" />
       </div>
 
+      {incHero ? <InsightHero hero={incHero} /> : <InsightBar insights={insightsBundle.bar} />}
+
+      {(incBottleneck.length > 0 || incCategory.length > 0) && (
+        <ObservationAnalyticsPanels
+          bottleneck={incBottleneck}
+          category={incCategory}
+          activeCategory={null}
+          basePath="/incidents"
+          concentratedTitle="By incident type"
+        />
+      )}
+
       {/* Status filter tabs */}
       <FilterTabsList label="Status" className="mb-4">
         <FilterTab
@@ -177,7 +252,7 @@ export default async function IncidentsPage(
         })}
       </FilterTabsList>
 
-      <IncidentsTable data={rows} />
+      <IncidentsTable data={visibleRows} />
     </div>
   );
 }

@@ -105,7 +105,17 @@ model User {
   plant        Plant?   @relation(fields: [plantId], references: [id])
   designation  String?
   department   String?
+  // ─── Safety-roster gate (Observation deroster workflow) ───
+  // active | pending_safety_review | derostered. Anything other than `active`
+  // excludes this person from NEW work assignment (PTW crew, EPC mobilisation,
+  // gate clearance); it never affects login or existing records. Written only
+  // by app/services/observation_deroster.py.
+  rosterStatus       String   @default("active")
+  currentDerosterRef String?
   createdAt    DateTime @default(now())
+
+  observationsInvolved  ObservationWorkerInvolved[] @relation("ObservationWorkerInvolvedUser")
+  severityOverrides     SeverityOverrideLog[]
 
   observations             Observation[]
   observationsResponsible  Observation[]            @relation("ObservationResponsiblePerson")
@@ -212,6 +222,7 @@ model User {
   permitExtensionsApproved  PermitExtension[]        @relation("PermitExtensionApprover")
   permitAttachmentsUploaded PermitAttachment[]       @relation("PermitAttachmentUploader")
   permitComments            PermitComment[]          @relation("PermitCommentAuthor")
+  permitActionEvidence      PermitActionEvidence[]   @relation("PermitEvidenceActor")
   flraFitnessDeclarations   FLRAFitnessDeclaration[] @relation("FlraFitnessDeclarant")
   flraAttachmentsUploaded   FLRAAttachment[]         @relation("FlraAttachmentUploader")
 
@@ -329,6 +340,10 @@ model Plant {
 
   // EAI — environmental register, plant-scoped (Phase 2).
   eaiStudies EaiStudy[]
+
+  // Observation severity engine — per-area hazard tiers, plus the plant-wide
+  // default row (areaId NULL) they fall back to.
+  hazardTiers AreaHazardTier[]
 }
 
 model Area {
@@ -336,6 +351,11 @@ model Area {
   name      String
   plantId   String
   plant     Plant    @relation(fields: [plantId], references: [id])
+  // Responsible owner for this area (docs/cams/09 §2.1.4, open question Q17).
+  // The platform had no area-level ownership, which capped the audit own-work
+  // independence guard at site/department granularity. Nullable: an absent owner
+  // must degrade the guard to "no signal", never to "no conflict".
+  ownerUserId String?
   createdAt DateTime @default(now())
 
   observations Observation[]
@@ -346,6 +366,9 @@ model Area {
   hiraEntries  HiraEntry[]   @relation("HiraEntryArea")
   eaiStudies   EaiStudy[]    @relation("EaiStudyArea")
   eaiEntries   EaiEntry[]    @relation("EaiEntryArea")
+  hazardTiers  AreaHazardTier[]
+
+  @@index([ownerUserId])
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -410,6 +433,8 @@ model ContractorCompany {
   updatedAt DateTime @updatedAt
 
   nearMisses          NearMiss[]
+  observations        Observation[]
+  permits             Permit[]
   incidentPersons     IncidentPerson[]           @relation("IncidentPersonContractor")
   manhoursCategories  ManhoursEmployeeCategory[] @relation("ManhoursCategoryContractor")
   workers             ContractorWorker[]
@@ -450,6 +475,10 @@ enum ObservationType {
   UNSAFE_CONDITION
 }
 
+// Legacy hazard categories + the DuPont STOP categories (last block). At-risk
+// observations dual-write their STOP categoryCode into this column so every
+// existing group-by-category consumer keeps working — see ObservationTaxonomy.
+// PPE and HOUSEKEEPING are shared between both lists.
 enum ObservationCategory {
   PPE
   HOUSEKEEPING
@@ -462,6 +491,10 @@ enum ObservationCategory {
   CHEMICAL_HANDLING
   EMERGENCY_PREP
   OTHERS
+  REACTIONS_OF_PEOPLE
+  POSITIONS_OF_PEOPLE
+  TOOLS_EQUIPMENT
+  PROCEDURES
 }
 
 enum Severity {
@@ -490,17 +523,48 @@ model Observation {
   area                Area?                   @relation(fields: [areaId], references: [id])
   type                ObservationType
   category            ObservationCategory
+  // ─── DuPont STOP taxonomy ─────────────────────────────────────────────
+  // Required for at-risk types (UNSAFE_ACT / UNSAFE_CONDITION), null on safe
+  // observations and on legacy rows the migration couldn't confidently map
+  // (those are queued in UnmappedLegacyObservation). taxonomyAxis is
+  // dual-written from `type` so the composite FK below can enforce
+  // "sub-category belongs to this axis" at the DB level.
+  categoryCode        String?
+  subCategoryCode     String?
+  taxonomyAxis        String?
+  stopTaxonomy        ObservationTaxonomy? @relation(fields: [categoryCode, subCategoryCode, taxonomyAxis], references: [categoryCode, subCategoryCode, observationType])
   description         String
   photoUrl            String?
   severity            Severity
   immediateAction     String?
   responsiblePersonId String?
   responsiblePerson   User?                   @relation("ObservationResponsiblePerson", fields: [responsiblePersonId], references: [id])
-  targetDate          DateTime?
+  contractorCompanyId String?
+  contractorCompany   ContractorCompany?      @relation(fields: [contractorCompanyId], references: [id])
+  // ─── Target closure date + SLA provenance ─────────────────────────────
+  // Deliberately still a FLAT column. The SLA build spec nested it as
+  // `targetClosureDate.date`; that would have been a breaking shape change for
+  // every report, dashboard and mobile screen reading `targetDate` today, so
+  // the provenance went into sidecar columns instead and nothing downstream
+  // had to change. targetDateSource is auto_sla | manual_override |
+  // section_head_reassigned | manual_no_policy; NULL means the row predates
+  // the SLA layer. targetDateSlaConfig is a FROZEN copy of the policy applied,
+  // so editing the matrix can never restate what an existing record was held
+  // to. Full trail in ObservationTargetDateHistory.
+  targetDate               DateTime?
+  targetDateSource         String?
+  targetDateSlaConfig      Json?
+  targetDateOverrideReason String?
   status              ObservationStatus       @default(OPEN)
   closedAt            DateTime?
   closingRemark       String?
   attachments         ObservationAttachment[]
+  workersInvolved     ObservationWorkerInvolved[]
+  /// Append-only record of every time the observer's severity differed from the
+  /// deterministic suggestion. Agreement is not logged — see SeverityOverrideLog.
+  severityOverrides   SeverityOverrideLog[]
+  derosters           ObservationDeroster[]
+  targetDateHistory   ObservationTargetDateHistory[]
 
   // ─── Risk scoring (1-5 likelihood × consequence) ────────────────────
   // Computed at submit when matrix fields are provided; severity (LOW/MEDIUM/
@@ -551,6 +615,60 @@ model Observation {
   @@index([date])
   @@index([observerId])
   @@index([responsiblePersonId])
+  @@index([contractorCompanyId])
+  @@index([categoryCode, taxonomyAxis])
+}
+
+/// DuPont STOP category → sub-category master, split by act/condition axis.
+///
+/// Category eligibility per axis is DERIVED, never flagged: a category is
+/// offered for an axis only when ≥1 active row exists for that
+/// (categoryCode, observationType) pair. "Reactions of People" (STOP-1) and
+/// "Positions of People" (STOP-2) drop out of the CONDITION list purely
+/// because zero CONDITION rows are seeded for them — nothing to keep in sync.
+model ObservationTaxonomy {
+  id                String   @id @default(cuid())
+  categoryCode      String
+  categoryLabel     String
+  /// "ACT" | "CONDITION" — the axis, NOT the four-value ObservationType.
+  observationType   String
+  subCategoryCode   String
+  subCategoryLabel  String
+  /// Traceability to the published standard, e.g. "STOP-3".
+  stopReferenceCode String
+  isActive          Boolean  @default(true)
+  displayOrder      Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  observations Observation[]
+
+  /// Referenced by Observation's composite FK; also the idempotent seed key.
+  @@unique([categoryCode, subCategoryCode, observationType])
+  @@index([categoryCode, observationType, isActive])
+  @@index([observationType])
+  @@index([isActive])
+}
+
+/// Review queue for legacy observations the taxonomy migration would have had
+/// to guess at. Written by prisma/migrate-observation-taxonomy.ts instead of
+/// forcing a bad mapping onto the record.
+model UnmappedLegacyObservation {
+  id                    String    @id @default(cuid())
+  observationId         String
+  observationNumber     String
+  observationType       String
+  legacyCategory        String?
+  /// NO_CONFIDENT_CATEGORY_MATCH | SUBCATEGORY_REQUIRES_REVIEW
+  reason                String
+  suggestedCategoryCode String?
+  suggestedAxis         String?
+  resolvedAt            DateTime?
+  resolvedById          String?
+  createdAt             DateTime  @default(now())
+
+  @@unique([observationId])
+  @@index([reason])
 }
 
 // Lightweight task surface for HR-style coaching / counselling actions
@@ -959,20 +1077,33 @@ enum PermitType {
   WORK_AT_HEIGHT
   EXCAVATION
   ELECTRICAL_LOTO
+  LIFTING
   GENERAL_COLD
 }
 
+// Closed-loop PTW state machine:
+//   DRAFT → SUBMITTED → APPROVED → ISSUED → [receiver accepts] → ACTIVE →
+//   (SUSPENDED loop) → WORK_COMPLETED → HANDBACK_INSPECTION → CLOSED (+ isArchived)
+// ISSUER_APPROVED / SAFETY_APPROVED / PLANT_HEAD_APPROVED are DEPRECATED —
+// retained on the native enum for back-compat; the engine never writes them
+// (per-step approvals live on PermitApproval + the *ApprovedAt columns).
+// New values are applied to the live DB by prisma/apply-ptw-closed-loop-ddl.ts.
 enum PermitStatus {
   DRAFT
   SUBMITTED
-  ISSUER_APPROVED
-  SAFETY_APPROVED
-  PLANT_HEAD_APPROVED
+  ISSUER_APPROVED // deprecated — never written
+  SAFETY_APPROVED // deprecated — never written
+  PLANT_HEAD_APPROVED // deprecated — never written
+  APPROVED // final approver signed off; release to receiver pending
+  ISSUED // published/released to the receiver (auto-fired after APPROVED)
   ACTIVE
   SUSPENDED // HSE has paused active work; resumption requires re-approval
+  WORK_COMPLETED // receiver declared work done + outcome
+  HANDBACK_INSPECTION // handback inspection recorded; awaiting closure approval
   EXPIRED
   CLOSED
   REJECTED
+  CANCELLED // issuer/admin pulled the permit (operational, not an approver refusal)
 }
 
 model Permit {
@@ -994,6 +1125,17 @@ model Permit {
   receiverId          String?
   receiver            User?        @relation("PermitReceiver", fields: [receiverId], references: [id])
   contractorName      String?
+  contractorCompanyId String?
+  contractorCompany   ContractorCompany? @relation(fields: [contractorCompanyId], references: [id])
+
+  // Provenance — set when the permit was raised from a HIRA hazard row via the
+  // Create-PTW prompt. Both null for permits raised independently, so a
+  // non-null hiraEntryId is the "HIRA-driven permit" signal.
+  hiraEntryId       String?
+  hiraEntry         HiraEntry? @relation("PermitFromHiraEntry", fields: [hiraEntryId], references: [id], onDelete: SetNull)
+  hiraEntryHazardId String?
+  hiraEntryHazard   HiraEntryHazard? @relation("PermitFromHiraHazard", fields: [hiraEntryHazardId], references: [id], onDelete: SetNull)
+
   isolationsRequired  String? // CSV / multi-line
   ppeChecklist        String? // JSON of checklist items
   gasTestRequired     Boolean      @default(false)
@@ -1057,27 +1199,49 @@ model Permit {
   windSpeedKmh              Float? // outdoor hot work — auto-block above threshold
   adjacentAreaNotifications Json? // array of user ids notified
 
+  // ─── Issue phase (closed-loop rebuild): APPROVED → ISSUED, auto-fired
+  //     after the final approval. Columns via apply-ptw-closed-loop-ddl.ts ───
+  issuedAt   DateTime?
+  issuedById String?
+
+  // ─── FLRA policy: optional sub-flow; resolved at creation from instance
+  //     config (PTW_FLRA_REQUIRED_*) and snapshotted here ───
+  flraRequired Boolean @default(false)
+
   // ─── Active phase ───
   activatedAt          DateTime?
-  activatedById        String? // typically receiver after FLRA complete
+  activatedById        String? // receiver, stamped by POST /api/ptw/{id}/accept
   currentActiveFlraId  String? // pointer to current effective FLRA
   isCurrentlySuspended Boolean   @default(false)
 
-  // ─── Return phase ───
-  returnedAt   DateTime?
-  returnedById String?
-  returnNotes  String?   @db.Text
-  returnPhotos Json? // array of PermitAttachment ids
+  // ─── Work Completed declaration (receiver). returnedAt/returnedById are the
+  //     legacy names for the same fact, kept in lockstep for old read-sites ───
+  workCompletedAt   DateTime?
+  workCompletedById String?
+  outcome           String? // COMPLETED | PARTIALLY_COMPLETED | STOPPED_INCIDENT | CANCELLED
+  returnedAt        DateTime?
+  returnedById      String?
+  returnNotes       String?   @db.Text
+  returnPhotos      Json? // DEPRECATED — photos live on PermitAttachment (RETURN_PHOTO)
 
-  // ─── Site verification phase ───
+  // ─── Handback inspection (legacy name: site verification) ───
   siteVerifiedAt            DateTime?
   siteVerifiedById          String?
   siteVerificationChecklist Json?
-  siteVerificationPhotos    Json?
+  siteVerificationPhotos    Json? // DEPRECATED — photos live on PermitAttachment (VERIFICATION_PHOTO)
 
   // ─── Closure ───
   closedById    String?
   closingRemark String? @db.Text
+
+  // ─── Cancellation (CANCELLED status; distinct from REJECTED) ───
+  cancelledAt        DateTime?
+  cancelledById      String?
+  cancellationReason String?   @db.Text
+
+  // ─── Archive (retention flag layered on CLOSED — not a lifecycle state) ───
+  isArchived Boolean   @default(false)
+  archivedAt DateTime?
 
   // ─── Auto-expiration audit ───
   autoExpiredAt    DateTime?
@@ -1099,6 +1263,16 @@ model Permit {
   extensions       PermitExtension[]
   attachments      PermitAttachment[]
   comments         PermitComment[]
+  actionEvidence   PermitActionEvidence[]
+
+  // ─── Soft-delete (governed entity — P1-3). Columns live in the DB via
+  //     prisma/apply-softdelete-ddl.ts; declared here so Prisma reads can
+  //     exclude soft-deleted rows. The backend enforces the delete path via
+  //     the ORM guard in app.core.soft_delete (never a hard delete). ───
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?
+  deletionReason String?
 
   @@index([validTo, status])
   @@index([plantId, areaId, status])
@@ -1106,6 +1280,8 @@ model Permit {
   // PTW list orders by createdAt — without this Postgres sorts in memory.
   @@index([createdAt])
   @@index([type, status])
+  @@index([contractorCompanyId])
+  @@index([isDeleted])
 }
 
 // Crew named at PTW issuance time (high-risk permits expect this in Indian
@@ -1299,21 +1475,51 @@ model PermitExtension {
 // photos, rescue plans, TPI certs. Storage path under Supabase bucket;
 // `category` drives where the attachment shows up in the detail view.
 model PermitAttachment {
-  id           String    @id @default(cuid())
-  permitId     String
-  permit       Permit    @relation(fields: [permitId], references: [id], onDelete: Cascade)
-  category     String // SCOPE_DRAWING | SITE_PHOTO | MSDS | TPI_CERT | RESCUE_PLAN | RETURN_PHOTO | VERIFICATION_PHOTO | CLOSURE_DOC
-  fileName     String
-  storagePath  String
-  fileSize     Int
-  mimeType     String
-  caption      String?
-  uploadedById String
-  uploadedBy   User      @relation("PermitAttachmentUploader", fields: [uploadedById], references: [id])
-  uploadedAt   DateTime  @default(now())
-  deletedAt    DateTime?
+  id               String                @id @default(cuid())
+  permitId         String
+  permit           Permit                @relation(fields: [permitId], references: [id], onDelete: Cascade)
+  // Links an evidence photo to the lifecycle action it evidences (approve /
+  // accept / handback …). NULL for general attachments (drawings, MSDS).
+  // Column added by prisma/apply-ptw-closed-loop-ddl.ts.
+  actionEvidenceId String?
+  actionEvidence   PermitActionEvidence? @relation(fields: [actionEvidenceId], references: [id])
+  category         String // SCOPE_DRAWING | SITE_PHOTO | MSDS | TPI_CERT | RESCUE_PLAN | RETURN_PHOTO | VERIFICATION_PHOTO | CLOSURE_DOC | ACTION_EVIDENCE_PHOTO
+  fileName         String
+  storagePath      String
+  fileSize         Int
+  mimeType         String
+  caption          String?
+  uploadedById     String
+  uploadedBy       User                  @relation("PermitAttachmentUploader", fields: [uploadedById], references: [id])
+  uploadedAt       DateTime              @default(now())
+  deletedAt        DateTime?
 
   @@index([permitId, category])
+  @@index([actionEvidenceId])
+}
+
+// Field evidence captured at each permit lifecycle action — the closed-loop
+// audit record: WHO did WHAT, WHERE (GPS), WHEN, with onsite photo(s)
+// (PermitAttachment.actionEvidenceId) and a drawn signature. One row per
+// action per permit. Rendered as the evidence timeline in the close-out
+// report. Table created by prisma/apply-ptw-closed-loop-ddl.ts.
+model PermitActionEvidence {
+  id                   String             @id @default(cuid())
+  permitId             String
+  permit               Permit             @relation(fields: [permitId], references: [id], onDelete: Cascade)
+  action               String // APPROVE_ISSUER | APPROVE_SAFETY | APPROVE_PLANT_HEAD | ISSUE | ACCEPT | ISOLATION_VERIFY | SUSPEND | RESUME | EXTEND | WORK_COMPLETED_DECLARE | HANDBACK_INSPECT | CLOSE | CANCEL | REJECT
+  actorId              String
+  actor                User               @relation("PermitEvidenceActor", fields: [actorId], references: [id])
+  gpsLatitude          Float?
+  gpsLongitude         Float?
+  gpsAccuracyMeters    Float?
+  capturedAt           DateTime           @default(now())
+  signatureImageBase64 String?            @db.Text
+  declarationText      String?            @db.Text
+  comments             String?            @db.Text
+  photos               PermitAttachment[]
+
+  @@index([permitId, action])
 }
 
 // Threaded comments visible across the permit lifecycle.
@@ -1641,8 +1847,17 @@ model Incident {
   classifiedAt            DateTime?
   classifiedById          String?
   classifiedBy            User?     @relation("IncidentClassifier", fields: [classifiedById], references: [id])
-  severity                String? // LOW | MEDIUM | HIGH | CRITICAL
+  severity                String? // LOW | MEDIUM | HIGH | CRITICAL — derived label mirror of severityDetail.band
   classificationRationale String?   @db.Text
+  // ── Incident Intelligence (Slice 1) ──
+  // Feature 5: numeric 5×5 severity scoring + escalation ledger.
+  severityDetail          Json?
+  // Feature 2: AI-assist provenance (summary draft + root-cause suggestion).
+  aiAssist                Json?
+  // ── Incident Intelligence (Slice 2) ──
+  causeAnalysis           Json? // F1 shared cause canvas model (causes[])
+  statutoryObligation     Json? // F4 { required, forms[], jurisdiction }
+  costImpact              Json? // F8 derived cost-of-unsafety breakdown
 
   // ─── PHASE 2 / Statutory ───
   isReportable      Boolean   @default(false)
@@ -1737,10 +1952,20 @@ model Incident {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // ─── Soft-delete (governed entity — P1-3). Columns live in the DB via
+  //     prisma/apply-softdelete-ddl.ts; declared here so Prisma reads can
+  //     exclude soft-deleted rows. The backend enforces the delete path via
+  //     the ORM guard in app.core.soft_delete (never a hard delete). ───
+  isDeleted      Boolean   @default(false)
+  deletedAt      DateTime?
+  deletedBy      String?
+  deletionReason String?
+
   @@index([occurredAt])
   @@index([severity])
   @@index([isReportable, statutoryDeadline])
   @@index([sourceNearMissId])
+  @@index([isDeleted])
   // Incident list orders by `date` (the legacy column) and filters by status/type.
   // The existing index([occurredAt]) does not cover those queries.
   @@index([date])
@@ -1972,6 +2197,7 @@ model IncidentCapa {
   description         String    @db.Text
   type                String // CORRECTIVE | PREVENTIVE
   rootCauseAddressed  String? // links to one of incident.rootCauses entries (free-text match)
+  linkedCauseId       String? // Feature 1: RCA cause node this CAPA was raised from
   ownerId             String
   owner               User      @relation("IncidentCapaOwner", fields: [ownerId], references: [id])
   targetDate          DateTime
@@ -3343,9 +3569,16 @@ model WorkflowTask {
   status       String // "PENDING" | "COMPLETED" | "OVERDUE" | "ESCALATED" | "REASSIGNED"
   completedAt  DateTime?
   priority     String           @default("NORMAL") // "LOW" | "NORMAL" | "HIGH" | "URGENT"
+  // Inbox read state, same contract as Notification.readAt: null = the assignee
+  // has never opened this task's record. Set the first time they land on the
+  // record (from the Inbox, a deep link, or a modal). A task has exactly one
+  // assignee, so a single column on the task IS per-user read state — no join
+  // table needed.
+  readAt       DateTime?
 
   @@index([assignedToId, status])
   @@index([module, recordId])
+  @@index([assignedToId, readAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -3636,6 +3869,12 @@ model RiskMatrix {
   // { "routine": "MODERATE", "non_routine": "MODERATE", "emergency": "LOW" }
   acceptableResidual Json
 
+  // ALARP tolerability bands — maps each riskLevel to an ALARP region. JSON:
+  // { "LOW": "BROADLY_ACCEPTABLE", "MODERATE": "TOLERABLE",
+  //   "HIGH": "TOLERABLE", "CRITICAL": "UNACCEPTABLE" }
+  // Nullable for backward-compat; backend falls back to DEFAULT_ALARP_BANDS.
+  alarpBands Json?
+
   // If true, the entry editor forces the team to record their consideration
   // of higher-tier controls (elimination, substitution) before lower-tier
   // ones (engineering, administrative, PPE) are accepted.
@@ -3739,6 +3978,12 @@ model HiraHazard {
   // Pre-canned control suggestions, shown to the team when this hazard
   // is added to an entry. JSON: [{ hierarchy, description }]
   typicalControlsSuggested Json?
+
+  // Permit gate. When true, an entry hazard row built from this library hazard
+  // surfaces a "Create PTW" prompt. permitTypes narrows the drafted permit's
+  // default type (null/empty => the originator picks).
+  requiresPermit Boolean @default(false)
+  permitTypes    Json?
 
   isActive Boolean @default(true)
   isGlobal Boolean @default(false) // pre-seeded vs tenant-added
@@ -3948,8 +4193,51 @@ model HiraEntry {
   residualRiskScore           Int?
   residualRiskLevel           String?
   residualRiskColor           String?
-  residualAcceptable          Boolean? // computed against matrix.acceptableResidual threshold for entry's routine type
+  residualAcceptable          Boolean? // computed against ALARP region + legacy matrix.acceptableResidual threshold
   residualAcceptanceRationale String?               @db.Text
+  // True => residual L/S are derived from the existing controls (hierarchy +
+  // effectiveness); False => manual matrix pick; Null (legacy) => treated as
+  // manual so hand-set residuals are never silently recomputed.
+  residualAutoCalculated      Boolean?
+
+  // ALARP tolerability banding — region derived from risk level via matrix.alarpBands.
+  // UNACCEPTABLE | TOLERABLE | BROADLY_ACCEPTABLE. Computed server-side.
+  initialAlarpRegion  String? // ALARP region of the initial (pre-control) risk
+  residualAlarpRegion String? // ALARP region of the residual (post-control) risk
+
+  // ALARP demonstration — the reasonably-practicable test required to accept a
+  // residual sitting in the TOLERABLE region. NOT_REQUIRED | REQUIRED | DEMONSTRATED
+  alarpStatus                     String?
+  alarpFurtherControlsConsidered  Boolean?
+  alarpFurtherControlsDescription String? @db.Text
+  alarpRiskReductionBenefit       String? @db.Text
+  alarpCostBand                   String? // LOW | MEDIUM | HIGH | VERY_HIGH
+  alarpGrosslyDisproportionate    Boolean? // true => further reduction not reasonably practicable => ALARP
+  alarpJustification              String? @db.Text
+  alarpDemonstratedById           String?
+  alarpDemonstratedAt             DateTime?
+
+  // Target (forecast) risk — projected residual after the recommended controls
+  // land. Hand-picked on the matrix; region computed server-side. Powers the
+  // Initial→Residual→Target ALARP risk-reduction pathway view.
+  targetLikelihoodId  String?
+  targetLikelihoodScore Int?
+  targetSeverityId    String?
+  targetSeverityScore Int?
+  targetRiskScore     Int?
+  targetRiskLevel     String?
+  targetRiskColor     String?
+  targetAlarpRegion   String?
+  targetRationale     String? @db.Text
+
+  // Unacceptable-risk override (ALARP governance). The only way an Unacceptable
+  // residual can reach APPROVED: an elevated, time-bounded authorisation by a
+  // holder of HIRA.OVERRIDE_UNACCEPTABLE. Cleared on a material change; expired
+  // by the review scheduler. Replaces the old free-text acceptance rationale.
+  unacceptableOverrideById          String?
+  unacceptableOverrideAt            DateTime?
+  unacceptableOverrideJustification String?   @db.Text
+  unacceptableOverrideExpiresAt     DateTime?
 
   // Cross-module linkages — see post-closure rule services for the writers
   triggersTrainingProgramIds Json? // string[] — TrainingProgram.id
@@ -3984,6 +4272,8 @@ model HiraEntry {
   reviewCycles        HiraReviewCycle[]
   versions            HiraVersion[]
   capas               HiraCapa[]
+  // Permits raised from this entry's hazard rows.
+  permits             Permit[] @relation("PermitFromHiraEntry")
 
   // Audit
   createdAt   DateTime @default(now())
@@ -3998,6 +4288,11 @@ model HiraEntry {
   @@index([status, nextReviewDue])
   @@index([initialRiskLevel])
   @@index([residualRiskLevel])
+  @@index([initialAlarpRegion])
+  @@index([residualAlarpRegion])
+  @@index([alarpStatus])
+  @@index([targetAlarpRegion])
+  @@index([unacceptableOverrideExpiresAt])
 }
 
 // Hazard occurrence — links a library Hazard to an entry, with context
@@ -4016,8 +4311,16 @@ model HiraEntryHazard {
   affectedPersons       Json? // string[]
   consequence           String? @db.Text // G16: worst-case consequence if hazard is realised (ISO 45001 cl.6.1.2.1)
 
+  // Hazard-row-grain regulatory citation. Separate from the entry-level
+  // HiraEntryRegulationRef list — that cites the activity, this cites the
+  // hazard. Seeded from HiraHazard's library columns when the row is created.
+  regulationRef     String? @db.VarChar(200)
+  regulationSection String? @db.VarChar(120)
+
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
+
+  permits Permit[] @relation("PermitFromHiraHazard")
 
   @@unique([entryId, hazardId])
   @@index([entryId])
@@ -4070,6 +4373,10 @@ model HiraEntryRecommendedControl {
   // When the recommendation becomes a CAPA, link it for traceability
   capaId String?
   capa   HiraCapa? @relation(fields: [capaId], references: [id])
+
+  // Proof that the proposal actually landed. Mirrors HiraEntryControl.
+  evidenceAttached  Boolean @default(false)
+  documentReference String? @db.VarChar(500)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5265,6 +5572,11 @@ model Competency {
   records          CompetencyRecord[]
   roleRequirements RoleCompetencyRequirement[]
 
+  // Training & Competency Engine back-relations (additive)
+  hazardMappings      HazardToSkillMapping[]
+  trainingAssignments TrainingAssignment[]
+  trainingContent     TrainingContent[]
+
   @@index([plantId, category, isActive])
 }
 
@@ -5335,6 +5647,15 @@ model RoleCompetencyRequirement {
   conditionalLogic           String?
   gracePeriodForNewHiresDays Int     @default(0)
   rationale                  String? @db.Text
+  // Training & Competency Engine (additive): target proficiency for this
+  // role×competency. Awareness | Working | Proficient | Expert. Nullable so
+  // existing rows are unaffected; the 11-state machine stays authoritative
+  // for compliance — proficiency is a display/analytics overlay.
+  requiredProficiency        String?
+
+  // Recert interval override for this role×competency (months). Null = use
+  // Competency.defaultValidityMonths. Consumed by the recertification rule.
+  recertIntervalMonthsOverride Int?
 
   @@index([roleDefinitionId])
   @@index([competencyId])
@@ -5358,6 +5679,10 @@ model CompetencyRecord {
   currentValidatedByUserId     String?
   currentValidationMethod      String?
   currentScore                 Float?
+  // Training & Competency Engine (additive): attained proficiency label
+  // (Awareness | Working | Proficient | Expert). Display/analytics overlay;
+  // nullable so existing rows are unaffected.
+  currentProficiency           String?
   externalCertificateReference String?
   externalCertificateAuthority String?
   externalCertificateUrl       String?
@@ -5628,6 +5953,308 @@ model RecertificationTask {
   @@index([personUserId, status])
 }
 
+// ═════════════════════════════════════════════════════════════════════
+//  TRAINING & COMPETENCY ENGINE  (Trigger + Assignment + Content Adapter)
+//  ─────────────────────────────────────────────────────────────────────
+//  Additive layer over the Skill-Matrix models above. Every table below is
+//  keyed on competencyId (the "skill node") — the rule engine NEVER reads
+//  contentType/vendorId, which is what decouples content vendors from the
+//  logic (spec §C). Tables are created by prisma/apply-training-engine-ddl.ts
+//  (hand-DDL, idempotent) — NEVER prisma db push. String+comment, not enum
+//  (house convention). SQLAlchemy mirror: app/models/training_engine.py.
+// ═════════════════════════════════════════════════════════════════════
+
+// ── HazardToSkillMapping — the admin-configurable "moat" mapping ──────
+// Links a classification value on an Incident / Near Miss / Observation to a
+// competency (skill node). Configurable per plant (plantId null = global) so
+// each client tunes trigger sensitivity WITHOUT a code change (spec §B).
+model HazardToSkillMapping {
+  id      String  @id @default(cuid())
+  plantId String? // null = global mapping (applies to every plant)
+
+  // INCIDENT | NEAR_MISS | OBSERVATION | ANY — which source module this maps
+  sourceModule String @default("ANY")
+
+  // Which classification field on the source record to match against:
+  //   category (Observation) | hazardCategory (NearMiss, MasterItem id) |
+  //   initialRootCauseCategory | rootCauseCategory | severity | type | keyword
+  classificationField String
+  // The value to match (e.g. "CONFINED_SPACE", "WORK_AT_HEIGHT", "CRITICAL"),
+  // or — when classificationField = "keyword" — a substring matched against the
+  // record's root-cause/description text blob (case-insensitive).
+  classificationValue String
+  matchMode           String @default("exact") // exact | keyword
+
+  competencyId String
+  competency   Competency @relation(fields: [competencyId], references: [id])
+
+  priority Int     @default(100)
+  notes    String? @db.Text
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([plantId, sourceModule, isActive])
+  @@index([competencyId])
+  @@index([classificationField, classificationValue])
+}
+
+// ── TrainingRuleConfig — tenant/plant-configurable thresholds & windows ─
+// One row per plant (plantId null = global default). The rule engine resolves
+// the most-specific active config. All sensitivity knobs live here, never
+// hardcoded (spec business rule "all threshold/window values tenant-configurable").
+model TrainingRuleConfig {
+  id      String  @id @default(cuid())
+  plantId String? // null = global default; a plant row overrides it
+
+  // Threshold rule: N mapped records at a site/department within the window.
+  thresholdCount      Int @default(3)
+  thresholdWindowDays Int @default(90)
+
+  // Severity rule: SIF-potential (or >= severityThreshold) → immediate
+  // individual assignment, bypassing the threshold count.
+  severitySifImmediate Boolean @default(true)
+  severityThreshold    String  @default("HIGH") // HIGH | CRITICAL
+
+  // Recertification rule: refresher auto-assigned this many days before expiry.
+  recertWindowDays Int @default(30)
+
+  // Default due-date offset (days) for any created assignment.
+  assignmentDueDays Int @default(30)
+
+  // Correlation report window (days before/after completion).
+  correlationWindowDays Int @default(90)
+
+  // Person-risk analytics — a worker accumulating events "against their name"
+  // is auto-flagged into training. Threshold + window + risk-score band cutoffs,
+  // all tenant-configurable (never hardcoded).
+  personFlagThreshold  Int @default(2)   // distinct events in the window to flag
+  personFlagWindowDays Int @default(365)
+  personRiskElevated   Int @default(3)   // weighted riskScore → band cutoffs
+  personRiskHigh       Int @default(6)
+  personRiskCritical   Int @default(10)
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@index([plantId, isActive])
+}
+
+// ── TrainingAssignment — first-class assignment with full provenance ──
+// Created by the rule engine (threshold/severity/recert) or manually. Carries
+// provenance back to the triggering record(s) for the correlation report and
+// audit defensibility (spec §B "every assignment must carry full provenance").
+model TrainingAssignment {
+  id      String @id @default(cuid())
+  plantId String
+
+  personUserId String // the worker — resolved via RoleCompetencyRequirement, never blanket
+  competencyId String
+  competency   Competency @relation(fields: [competencyId], references: [id])
+
+  // threshold_rule | severity_rule | recert_rule | manual
+  source     String
+  ruleType   String? // mirror of source for reporting convenience
+
+  sourceModule    String? // INCIDENT | NEAR_MISS | OBSERVATION | null (manual/recert)
+  sourceRecordId  String?
+  sourceRecordRef String?
+  triggerMappingId String? // HazardToSkillMapping.id that fired (FK-by-value)
+
+  // { triggerRecords:[{module,id,ref,date}], ruleType, windowDays,
+  //   thresholdCount, matchedValue, keywords, siteCompliancePct }
+  provenance Json?
+
+  contentId String? // assigned TrainingContent.id — opaque to the engine
+
+  assignedAt       DateTime  @default(now())
+  assignedByUserId String?
+  dueDate          DateTime?
+
+  // assigned | in_progress | completed | overdue | escalated | cancelled
+  status String @default("assigned")
+
+  // Severity-rule assignments cannot be dismissed by the worker (spec business
+  // rule) — only marked complete or escalated.
+  isMandatory Boolean @default(false)
+  dismissible Boolean @default(true)
+
+  escalationFlag    Boolean @default(false) // severity rule → HSE Manager escalation
+  escalatedToUserId String?
+
+  completedAt           DateTime?
+  completionEvidenceType String? // training_completion | assessment | manual_signoff
+  completionEvidenceId  String?
+  completionNote        String? @db.Text
+  competencyRecordId    String? // CompetencyRecord updated on completion (FK-by-value)
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([plantId, status])
+  @@index([personUserId, status])
+  @@index([competencyId])
+  @@index([sourceModule, sourceRecordId])
+}
+
+// ── TrainingContent — vendor-decoupled content adapter (spec §C) ──────
+// The engine + skill matrix NEVER reference contentType / vendorId — they
+// operate purely on competencyId. Swapping demo content for an external
+// AR/VR vendor is a data-layer change only.
+model TrainingContent {
+  id           String @id @default(cuid())
+  competencyId String // the skill node — the ONLY field the engine keys on
+  competency   Competency @relation(fields: [competencyId], references: [id])
+
+  title       String
+  description String? @db.Text
+
+  // video | document | quiz | vr_package | ar_package | external_link
+  contentType String
+  // hosted | external_redirect | local_package (local_package = airgapped
+  // VR-headset content; plays with NO runtime network dependency, spec NFR)
+  deliveryMode String
+  contentRef   String // URL, file path, or vendor package id — opaque
+
+  vendorId   String? // null = demo/placeholder content
+  vendorName String?
+
+  durationMinutes Int?
+  passingScore    Int? // for quiz content
+  language        String @default("en")
+
+  isActive  Boolean @default(true)
+  isPrimary Boolean @default(false) // the default content auto-assigned for this competency
+  plantId   String? // null = global catalog
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([competencyId, isActive])
+  @@index([vendorId])
+}
+
+// ── TrainingTriggerEvent — dedicated outbox for the rule engine ───────
+// A DEDICATED outbox (not the shared DomainEvent table — the alerts resolver
+// stamps every DomainEvent processed, so training can't share it). Written in
+// the same transaction as an Incident classify / Near Miss / Observation
+// create; drained asynchronously by the training_engine_resolver scheduler job
+// (spec NFR: "rule engine must run as a background job … not synchronously").
+model TrainingTriggerEvent {
+  id      String  @id @default(cuid())
+  plantId String?
+
+  sourceModule    String // INCIDENT | NEAR_MISS | OBSERVATION
+  sourceRecordId  String
+  sourceRecordRef String?
+  eventType       String @default("classification_saved") // classification_saved | incident_closed
+
+  // { category?, hazardCategory?, initialRootCauseCategory?, rootCauseCategory?,
+  //   severity?, type?, sifPotential(bool), involvedUserIds[], departmentId?,
+  //   textBlob?, keywords[] } — everything the resolver needs, denormalised
+  classification Json
+
+  occurredAt      DateTime  @default(now())
+  processedAt     DateTime?
+  processingError String?
+
+  createdAt DateTime @default(now())
+
+  @@index([processedAt])
+  @@index([sourceModule, sourceRecordId])
+}
+
+// ── TrainingCorrelationPoint — the defensible data asset (spec §D) ────
+// One row logged whenever a triggered training is completed, capturing the
+// re-incident rate in the window BEFORE completion. The correlation scan fills
+// the post-completion count once the window elapses, so the report can compare
+// before-vs-after re-incident rate per skill node per site.
+model TrainingCorrelationPoint {
+  id      String @id @default(cuid())
+  plantId String
+
+  competencyId String
+  personUserId String
+  assignmentId String?
+
+  sourceModule    String?
+  sourceRecordId  String?
+  sourceRecordRef String?
+
+  trainingCompletedAt DateTime
+  windowDays          Int      @default(90)
+
+  preWindowCount  Int  @default(0) // mapped records in the N days before completion
+  postWindowCount Int? // filled by the correlation scan once the window elapses
+  computedAt      DateTime?
+
+  createdAt DateTime @default(now())
+
+  @@index([plantId, competencyId])
+  @@index([personUserId])
+}
+
+// ── WorkerTrainingFlag — the person-risk analytic (auto-flag repeat-involved) ─
+// A worker who accumulates incidents / near misses / observations "against their
+// name" within the window is auto-flagged into the training module, with the
+// contributing records + inferred competencies + auto-created assignments. This
+// is the person-centric flow (distinct from the site/hazard threshold rule):
+// events → PERSON risk → training. Upserted (one active flag per person) by the
+// person_risk_scan job.
+model WorkerTrainingFlag {
+  id           String @id @default(cuid())
+  plantId      String
+  personUserId String @unique
+
+  riskScore  Float  @default(0)
+  riskBand   String @default("elevated") // elevated | high | critical
+  windowDays Int    @default(365)
+
+  incidentCount    Int @default(0)
+  nearMissCount    Int @default(0)
+  observationCount Int @default(0)
+  sifCount         Int @default(0) // events with SIF / serious potential
+  totalEvents      Int @default(0)
+
+  // [{ module, id, ref, date, role, severity }] — the events behind the flag
+  contributingRecords     Json?
+  // [{ competencyId, name, fromEvents }] — training the events point to
+  recommendedCompetencies Json?
+  mappedCompetencyIds     String[]
+  assignmentIds           String[] // TrainingAssignments created for this flag
+
+  // flagged | acknowledged | training_assigned | cleared
+  status String @default("flagged")
+
+  flaggedAt       DateTime  @default(now())
+  lastEvaluatedAt DateTime?
+  acknowledgedBy  String?
+  acknowledgedAt  DateTime?
+  clearedBy       String?
+  clearedAt       DateTime?
+  clearReason     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([plantId, status])
+  @@index([riskBand])
+}
+
 // ─────────────────────────────────────────────────────────────────────
 //  MOC — Management of Change (IMS Phase 1, 4th module)
 //  The workflow that governs every planned change to the plant's operating
@@ -5703,6 +6330,31 @@ model ChangeRequest {
   spawnedFromCapaId String?
   supersededByMocId String?
 
+  // ── Gensuite-parity extension (5-step wizard) — all additive/nullable so
+  //    pre-existing rows load unchanged; only enforced going forward. ──────
+  // standard | emergency (emergency = fast-track: implement before full approval)
+  urgency                     String    @default("standard")
+  emergencyRetroApprovalDueAt DateTime? // now+72h when emergency impl starts pre-approval
+
+  linkedMocIds String[] // related / follow-on MOC references
+
+  // Step 2 — risk & hazard assessment
+  psmApplicable      Boolean @default(false)
+  psmDetails         Json? // { coveredProcess, affectedSafeguards }
+  riskMatrixPre      Json? // { likelihood, impactScores:[{dimension,level}], score, band }
+  riskMatrixResidual Json? // same shape, post-mitigation
+  hazardCategories   String[] // fire_explosion | chemical_exposure | mechanical | …
+  mitigations        String? @db.Text
+
+  // Step 3 — impact & stakeholder
+  departmentImpact      Json? // { safety:{affected,reviewerUserId?}, engineering:{…}, … }
+  trainingRequired      Boolean @default(false)
+  trainingCertificateId String? // FK-by-value → TrainingCertificate.id
+
+  // Step 5 — implementation & closure
+  pssrChecklist       Json? // { items:[{label,verdict,note}], completedAt, completedBy }
+  effectivenessReview Json? // { dueAt, cadenceDays, effective, newRisks, notes, reviewedAt, reviewedBy }
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   versionNumber Int      @default(1)
@@ -5711,6 +6363,7 @@ model ChangeRequest {
   dependentRecords MocDependentRecord[]
   stateHistory     MocStateHistory[]
   impactAssessment MocImpactAssessment?
+  attachments      MocAttachment[]
 
   @@index([plantId, status])
   @@index([plantId, category])
@@ -5803,6 +6456,26 @@ model MocImpactAssessment {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ── Attachment — drawings, P&IDs, vendor specs, risk docs (Supabase) ──
+// Cloned from RiskAttachment; two-phase signed-URL upload, soft-deletable.
+model MocAttachment {
+  id              String        @id @default(cuid())
+  changeRequestId String
+  changeRequest   ChangeRequest @relation(fields: [changeRequestId], references: [id], onDelete: Cascade)
+
+  category     String // drawing | pid | vendor_spec | risk_assessment | other
+  fileName     String
+  storagePath  String
+  fileSize     Int
+  mimeType     String
+  caption      String?   @db.Text
+  uploadedById String
+  uploadedAt   DateTime  @default(now())
+  deletedAt    DateTime?
+
+  @@index([changeRequestId, deletedAt])
 }
 
 // ── Change freeze — administrative block on new submissions ──────────
@@ -5951,6 +6624,162 @@ model KaizenPost {
 
   @@index([plantId, status])
   @@index([submitterUserId])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Safety Culture Management — a live culture engine whose per-site score
+// feeds the ERM Risk Register as a KRI (the structural differentiator vs a
+// disconnected snapshot/survey app). Schema applied by
+// prisma/apply-safetyculture-ddl.ts; mirrored in app/models/safety_culture.py.
+// plantId is FK-by-value (== Plant.id, the site/isolation boundary).
+// ─────────────────────────────────────────────────────────────────────
+model CultureMaturityProfile {
+  id                   String    @id @default(cuid())
+  plantId              String    @unique
+  currentStage         String    @default("Reactive") // Reactive | Dependent | Independent | Interdependent
+  stageScore           Float     @default(0)
+  leadershipEngagement Float     @default(0)
+  workerParticipation  Float     @default(0)
+  leadingLaggingRatio  Float     @default(0)
+  bbsQualityIndex      Float     @default(0)
+  perceptionIndex      Float     @default(0)
+  industryVertical     String?
+  lastCalculatedAt     DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([currentStage])
+}
+
+model CultureMaturitySnapshot {
+  id              String   @id @default(cuid())
+  plantId         String
+  period          String // YYYY-MM
+  stageScore      Float    @default(0)
+  currentStage    String   @default("Reactive")
+  componentScores Json
+  snapshotAt      DateTime @default(now())
+
+  @@unique([plantId, period])
+  @@index([plantId, period])
+}
+
+model CultureObservationClosure {
+  id                    String    @id @default(cuid())
+  observationId         String    @unique
+  plantId               String
+  linkedCapaId          String?
+  linkedActionId        String?
+  reobservationVerified Boolean   @default(false)
+  reobservationDate     DateTime?
+  verifiedById          String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([plantId])
+}
+
+// Shared integrity gate — the single source of truth both BBS Quality and
+// Recognition read, so the two screens can never contradict each other (§Fix 1).
+model CultureObserverIntegrity {
+  id           String    @id @default(cuid())
+  plantId      String
+  observerId   String
+  period       String // YYYY-MM
+  status       String    @default("flagged_pending_review") // clear | flagged_pending_review | flagged_reviewed_dismissed | flagged_reviewed_upheld
+  reasons      Json      @default("[]") // pattern snapshot at flag time
+  reviewNote   String?
+  reviewedById String?
+  reviewedAt   DateTime?
+  flaggedAt    DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([plantId, observerId, period])
+  @@index([plantId, period])
+}
+
+model LeadershipWalk {
+  id                 String    @id @default(cuid())
+  plantId            String
+  leaderId           String
+  scheduledDate      DateTime
+  completedDate      DateTime?
+  status             String    @default("Scheduled") // Scheduled | Completed | Missed | Rescheduled
+  cadence            String? // WEEKLY | MONTHLY
+  areaVisited        String?
+  workersInteracted  Int       @default(0)
+  observationsRaised Int       @default(0)
+  hazardsIdentified  Int       @default(0)
+  notes              String?
+  checklist          Json? // { hazardCategories, workerInteractions, ppeCompliance, housekeepingRating }
+  followUpActionIds  Json
+  escalatedAt        DateTime? // set when a scheduled walk is auto-flipped to Missed
+  createdById        String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([plantId, status])
+  @@index([leaderId, scheduledDate])
+}
+
+model PerceptionSurveyTemplate {
+  id               String   @id @default(cuid())
+  name             String
+  description      String?
+  industryVertical String?
+  questions        Json // [{ id, text, dimension, scaleType }]
+  isActive         Boolean  @default(true)
+  cadence          String   @default("QUARTERLY")
+  createdById      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model PerceptionSurveyResponse {
+  id                       String   @id @default(cuid())
+  surveyTemplateId         String
+  plantId                  String
+  period                   String // e.g. 2026-Q3
+  respondentAnonymousToken String // one-way hash — NO PII, prevents double-submit only
+  responses                Json // [{ questionId, score }]
+  submittedAt              DateTime @default(now())
+
+  @@unique([surveyTemplateId, plantId, period, respondentAnonymousToken])
+  @@index([plantId, period])
+}
+
+model PerceptionIndexSnapshot {
+  id                  String   @id @default(cuid())
+  plantId             String
+  period              String
+  dimensionScores     Json
+  compositeScore      Float    @default(0)
+  responseCount       Int      @default(0)
+  responseRatePercent Float    @default(0)
+  thresholdMet        Boolean  @default(false)
+  publishedAt         DateTime @default(now())
+
+  @@unique([plantId, period])
+  @@index([plantId, period])
+}
+
+model RecognitionEntry {
+  id           String   @id @default(cuid())
+  plantId      String
+  userId       String
+  category     String // ObservationStreak | QualityContribution | LeadershipWalkCompliance | TeamMilestone | MostImproved
+  points       Float    @default(0)
+  periodEarned String // YYYY-MM
+  badgeAwarded String?
+  streakWeeks  Int      @default(0)
+  detail       String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([plantId, userId, category, periodEarned])
+  @@index([plantId, periodEarned])
+  @@index([userId])
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -6226,6 +7055,16 @@ model AuditTemplate {
   auditType               String // sa8000_iso45001_integrated | fire_safety_audit | worker_welfare | …
   baseIndustry            String // industryCode of the source library
   checkpointConfiguration Json // { mode: "all" | "subset", codes?: string[], categories?: string[] }
+  // Custom checkpoints added to this template (audit-lifecycle v2). Each is a
+  // library-shaped def carrying its discipline (category_code). Adding one
+  // FORKS a new template version (parentTemplateId set, version bumped, parent
+  // retired). Materialized into every audit that uses this template/version,
+  // flagged "custom".
+  // [{ code, discipline_code, discipline_name, question, criticality, guidance,
+  //    requirement_reference, standard, evidence_required_on_fail, is_custom,
+  //    added_by_id, added_at }]
+  customCheckpoints Json @default("[]")
+  parentTemplateId  String?
   scoring                 Json? // { method, critical_fail_auto_fails_audit, minimum_pass_score }
   workflow                Json? // { auditee_response_sla_days, plant_manager_approval_required, … }
   isActive                Boolean  @default(true)
@@ -6251,6 +7090,14 @@ model ComplianceAudit {
   scopeDepartments Json // string[]
   scopeAreas       Json // string[]
   scopeDescription String @default("")
+
+  // Discipline scope chosen at scheduling (audit-lifecycle v2). A discipline is
+  // a library category_code. Empty list = full library (back-compat with audits
+  // scheduled before scoped materialization existed).
+  selectedDisciplineIds       Json    @default("[]") // string[] of category_code
+  scopePresetUsed             String? // FULL | FIRE_FOCUSED | SA8000_ISO45001 | WORKER_WELFARE | CUSTOM
+  materializedCheckpointCount Int     @default(0) // sum of materialized checkpoints incl. ad-hoc
+  adHocCount                  Int     @default(0) // ad-hoc checkpoints added to this audit
 
   scheduledDate          DateTime
   scheduledStartTime     String   @default("09:00")
@@ -6280,20 +7127,22 @@ model ComplianceAudit {
   openingRemarks String @default("")
   closingRemarks String @default("")
 
-  // Plant Head final sign-off on the closed audit report.
-  // { reviewer_user_id, decision: accepted|rejected, comments, accepted_at }
-  plantHeadAcceptance Json?
-  // Mirror link into the shared CAMS engine (sourceModule = AUDIT_COMPLIANCE)
-  // so CAMS dashboards reflect this audit. Set on first submit.
-  camsEngagementId String?
-
   isRecurring     Boolean   @default(false)
+
+  // Governed reopen (docs/cams/09 §2.5). close_audit used to be terminal, so the
+  // only way to correct a closed record was a direct DB write — which leaves no
+  // trace in the product. A counted, approved, logged reopen is strictly safer.
+  reopenCount      Int       @default(0)
+  lastReopenedAt   DateTime?
+  lastReopenReason String?
+
   createdByUserId String
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   closedAt        DateTime?
 
   responses AuditCheckpointResponse[]
+  reports   AuditReport[]
 
   @@index([plantId, status])
   @@index([leadAuditorUserId])
@@ -6319,9 +7168,6 @@ model AuditCheckpointResponse {
   responseType         String @default("pass_partial_fail")
   sequence             Int    @default(0)
 
-  // Auditor-added ad-hoc checkpoint (not from the industry library).
-  isCustom Boolean @default(false)
-
   // Denormalized per-checkpoint rules (so submit/save never re-parse the library).
   requiresPhotoOnFail   Boolean @default(false)
   autoTriggerCapaOnFail Boolean @default(false)
@@ -6331,11 +7177,44 @@ model AuditCheckpointResponse {
   // Auditee this checkpoint is routed to on submit (from the audit's auditees map).
   routedToUserId String?
 
+  // Per-checkpoint owner allocation (audit-lifecycle v2). Plant Head / Lead
+  // Auditor assigns owners per-checkpoint / per-discipline / in bulk. A
+  // failed/partial checkpoint routes to assignedOwnerId (falls back to
+  // routedToUserId, then audit-level default).
+  assignedOwnerId String?
+  // assignedAuditorId = the AUDITOR who conducts this checkpoint (per-discipline
+  // auditor assignment). assignedOwnerId is the auditee who responds to findings.
+  assignedAuditorId String?
+  assignedById    String?
+  assignedAt      DateTime?
+
+  // Ad-hoc checkpoint added to THIS audit on the fly by an auditor (vs a
+  // library/template checkpoint). Visually flagged "custom" everywhere.
+  isAdHoc   Boolean @default(false)
+  addedById String?
+
+  // Two-axis state (audit-lifecycle v2), additive to the legacy overallStatus.
+  // assessmentStatus = the auditor's verdict; workflowState = iteration state.
+  assessmentStatus String @default("NOT_ASSESSED") // NOT_ASSESSED | PASS | PARTIAL | FAIL | NA
+  workflowState    String @default("OPEN") // OPEN | PASSED | AWAITING_AUDITEE | AUDITEE_RESPONDED | MORE_INFO_REQUESTED | RESOLVED | ACCEPTED_WITH_CAPA | ESCALATED_PM | FINALIZED
+  currentRound     Int    @default(0)
+
+  // Carousel capture fields (first-class, mirrored into auditorResponse Json
+  // for back-compat with the existing conduct screen).
+  observation String? // auditor's observation note
+  auditorNote String?
+  orderIndex  Int     @default(0) // position within discipline for carousel sequencing
+
+  auditorEvidenceIds Json @default("[]") // attachment ids captured by the auditor
+  auditeeEvidenceIds Json @default("[]") // attachment ids supplied by the auditee
+
+  capaId      String? // scalar mirror of capa.capa_id for direct query
+  finalizedAt DateTime?
+
   // Lifecycle sub-documents (Json).
   auditorResponse    Json? // { value, numeric_value, selected_options, text_observation, auditor_notes, photos[], evidence_links[], responded_at, is_saved }
   auditeeResponse    Json? // { respondent_user_id, response_text, action_taken, action_date, photos[], estimated_closure_date, responded_at, status }
-  auditorReview      Json? // { reviewer_user_id, decision: accepted|rejected, comments, reviewed_at } — auditor verifies the auditee response
-  plantManagerReview Json? // DEPRECATED (legacy) — superseded by auditorReview; kept for back-compat
+  plantManagerReview Json? // { reviewer_user_id, decision, comments, reviewed_at }
   capa               Json? // { auto_triggered, capa_id, capa_number, capa_status, capa_due_date }
 
   overallStatus String    @default("not_answered")
@@ -6344,10 +7223,71 @@ model AuditCheckpointResponse {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  interactions CheckpointInteraction[]
+
   @@unique([auditId, checkpointCode])
   @@index([auditId])
   @@index([auditId, categoryId])
   @@index([auditId, routedToUserId])
+  @@index([auditId, assignedOwnerId])
+  @@index([auditId, assignedAuditorId])
+  @@index([auditId, workflowState])
+  @@index([auditId, sequence])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// Audit lifecycle v2 — multi-round iteration thread (append-only) + reports.
+// ─────────────────────────────────────────────────────────────────────
+
+// Append-only thread row. One per state transition on a checkpoint. Never
+// updated or deleted; `timestamp` is server-set and immutable. Reads as
+// "Round 1, 2, 3 …" via the `round` counter.
+model CheckpointInteraction {
+  id                    String                  @id @default(cuid())
+  checkpointInstanceId  String
+  checkpointInstance    AuditCheckpointResponse @relation(fields: [checkpointInstanceId], references: [id], onDelete: Cascade)
+  auditId               String
+  round                 Int                     @default(0)
+  actorId               String
+  actorRole             String // AUDITOR | AUDITEE | PLANT_MANAGER | LEAD_AUDITOR
+  action                String // ASSESSED | ROUTED_TO_OWNER | AUDITEE_RESPONSE | REQUEST_MORE_INFO | AUDITOR_ACCEPT | RAISE_CAPA | ESCALATE_PM | PM_DECISION | REOPEN | ADHOC_ADDED
+  comment               String?
+  evidenceIds           Json                    @default("[]") // string[]
+  resultingState        String // resulting CheckpointWorkflowState
+  timestamp             DateTime                @default(now()) // server-set, immutable
+
+  createdAt DateTime @default(now())
+
+  @@index([checkpointInstanceId])
+  @@index([auditId])
+}
+
+// Immutable Interim / Final report snapshot. Interim reports accumulate; the
+// latest supersedes for display (isSuperseded) but all are retained.
+model AuditReport {
+  id            String          @id @default(cuid())
+  auditId       String
+  audit         ComplianceAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  siteId        String
+  reportType    String // INTERIM | FINAL
+  reportCode    String          @unique
+  generatedById String
+  generatedAt   DateTime        @default(now())
+  snapshot      Json // frozen metrics + per-discipline scores + open iterations + capa summary
+  signOffs      Json? // [{ role, userId, signedAt }]
+  pdfAttachmentId String?
+  isSuperseded  Boolean         @default(false)
+  // Full-length SHA-256 of the canonical snapshot (docs/cams/09 §2.5). The
+  // snapshot itself carries a 16-char prefix at snapshot["snapshotHash"] for
+  // display; 64 bits is thin against intent, so the verifiable digest lives
+  // here. Null on reports generated before this column → those verify as
+  // LEGACY_TRUNCATED, not as tampered.
+  snapshotHashFull String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([auditId, reportType])
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -6490,8 +7430,17 @@ model ContractorWorker {
   medicalFitnessRecords    Json      @default("[]")
   currentMedicalValidUntil DateTime?
 
-  // Overall status
+  // Overall status — the EPC employment/suspension state, owned by the
+  // contractor coordinator. Gate check (g) reads this.
   overallStatus String @default("active")
+
+  // ─── Safety-roster gate (Observation deroster workflow) ───
+  // active | pending_safety_review | derostered. DELIBERATELY SEPARATE from
+  // overallStatus: this one is an HSE-owned safety hold, and collapsing the two
+  // would let an EPC status edit silently clear a deroster. Gate check (i)
+  // reads this. Written only by app/services/observation_deroster.py.
+  rosterStatus       String  @default("active")
+  currentDerosterRef String?
 
   // Biometric
   biometricEnrolled Boolean @default(false)
@@ -6512,6 +7461,305 @@ model ContractorWorker {
   siteInductions      SiteInduction[]
   gateClearanceChecks GateClearanceCheck[]
   gatePasses          GatePass[]
+  observationsInvolved ObservationWorkerInvolved[] @relation("ObservationWorkerInvolvedContractor")
+}
+
+// ─── Observation SLA / Worker Involved / Deroster ─────────────────────────
+// Mirrors app/models/observation_sla.py. Applied by
+// prisma/apply-observation-sla-ddl.ts (hand DDL, idempotent) — NEVER db push.
+
+/// Target-closure-date policy. plantId NULL = the global default; a plant row
+/// overrides it. There is no Tenant table in this schema, so the spec's
+/// "tenant-scoped" resolves to plant-scoped-with-global-fallback, the same
+/// precedence TrainingRuleConfig uses.
+model ObservationSlaConfig {
+  id            String   @id @default(cuid())
+  plantId       String?
+  severity      String
+  categoryGroup String
+  slaDays       Int
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  updatedById   String?
+
+  @@index([severity, categoryGroup, isActive])
+  @@index([plantId])
+}
+
+/// DuPont STOP category → Behavioural | Physical, the key into the SLA matrix.
+/// Configuration rather than code: the first build derived this from the
+/// act/condition axis, which could not express "not decided yet" and gave the
+/// policy owner no override. `PENDING_DECISION` resolves NO SLA, so the form
+/// falls back to manual entry — nothing guesses a band.
+/// axis 'ANY' covers both axes; an exact ACT/CONDITION row overrides it.
+model ObservationCategoryGroup {
+  id            String   @id @default(cuid())
+  categoryCode  String
+  axis          String   @default("ANY")
+  categoryGroup String
+  notes         String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  updatedById   String?
+
+  @@unique([categoryCode, axis])
+  @@index([categoryCode, isActive])
+}
+
+/// Deroster review SLA + escalation contact. One row per scope.
+/// escalationContactUserId wins when set; otherwise holders of
+/// escalationRoleCode are notified on timeout.
+model ObservationDerosterConfig {
+  id                      String   @id @default(cuid())
+  plantId                 String?
+  reviewSlaHours          Int      @default(4)
+  escalationContactUserId String?
+  escalationRoleCode      String   @default("HSE_MANAGER")
+  isActive                Boolean  @default(true)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+  updatedById             String?
+
+  @@index([plantId])
+}
+
+/// The named worker(s) on an observation. Polymorphic by necessity: `User` is
+/// the employee directory and the only thing TrainingAssignment can point at;
+/// `ContractorWorker` is the EPC workforce and has no user account by design.
+/// Exactly one of userId / contractorWorkerId is set (DB CHECK constraint).
+model ObservationWorkerInvolved {
+  id            String @id @default(cuid())
+  observationId String
+  observation   Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+
+  partyType          String
+  userId             String?
+  user               User?             @relation("ObservationWorkerInvolvedUser", fields: [userId], references: [id])
+  contractorWorkerId String?
+  contractorWorker   ContractorWorker? @relation("ObservationWorkerInvolvedContractor", fields: [contractorWorkerId], references: [id])
+
+  // Snapshotted at observation time so the record still reads correctly after
+  // a transfer, rename or demobilisation.
+  nameSnapshot     String
+  roleSnapshot     String?
+  employerSnapshot String?
+
+  addedById String?
+  createdAt DateTime @default(now())
+
+  deroster ObservationDeroster?
+
+  @@index([observationId])
+  @@index([userId])
+  @@index([contractorWorkerId])
+  @@index([partyType])
+}
+
+/// One review per involved worker on a qualifying observation (UNSAFE_ACT at
+/// HIGH/CRITICAL). `pending_review` is a SOFT-LOCK, not a punitive record —
+/// nothing here is surfaced as "derostered" until a human confirms it.
+model ObservationDeroster {
+  id            String      @id @default(cuid())
+  observationId String
+  observation   Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+
+  workerInvolvedId String                    @unique
+  workerInvolved   ObservationWorkerInvolved @relation(fields: [workerInvolvedId], references: [id], onDelete: Cascade)
+
+  partyType          String
+  userId             String?
+  contractorWorkerId String?
+  plantId            String
+
+  status        String   @default("pending_review")
+  flaggedAt     DateTime @default(now())
+  flaggedReason String
+  reviewSlaHours Int     @default(4)
+  reviewDueAt   DateTime
+
+  reviewedById         String?
+  reviewedAt           DateTime?
+  reviewDecisionReason String?
+
+  // Employees: the TrainingAssignment minted by the Training & Competency
+  // engine. Contractor workers cannot hold one (personUserId is a User FK), so
+  // their gate is an EPC competencyRecords / trainingCertificates entry for
+  // the same mapped competency.
+  correctiveActionTrainingId   String?
+  correctiveActionCompetencyId String?
+  correctiveActionNote         String?
+
+  // Non-null escalatedAt is the latch that makes the timeout scan fire exactly
+  // once. It never changes `status` — silence escalates, it does not decide.
+  escalatedAt   DateTime?
+  escalatedToId String?
+
+  reinstatedById    String?
+  reinstatedAt      DateTime?
+  reinstatementNote String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events ObservationDerosterEvent[]
+
+  @@index([observationId])
+  @@index([status])
+  @@index([userId])
+  @@index([contractorWorkerId])
+  @@index([plantId])
+  @@index([status, escalatedAt, reviewDueAt])
+}
+
+/// Append-only deroster audit trail. A table rather than a JSON array because
+/// in-place JSON mutation silently no-ops a SQLAlchemy commit — this codebase
+/// has been bitten by that before. Never updated, never deleted.
+model ObservationDerosterEvent {
+  id         String              @id @default(cuid())
+  derosterId String
+  deroster   ObservationDeroster @relation(fields: [derosterId], references: [id], onDelete: Cascade)
+
+  observationId String
+  action        String
+  fromStatus    String?
+  toStatus      String?
+  actorId       String?
+  notes         String?
+  context       Json?
+  createdAt     DateTime @default(now())
+
+  @@index([derosterId])
+  @@index([observationId])
+  @@index([createdAt])
+}
+
+/// Append-only trail of every value Observation.targetDate has held,
+/// including the initial auto-calculated one.
+model ObservationTargetDateHistory {
+  id            String      @id @default(cuid())
+  observationId String
+  observation   Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+
+  targetDate DateTime?
+  source     String
+  reason     String?
+  // What the policy said at the time, so a later config edit can't rewrite
+  // history: {severity, categoryGroup, slaDays, configId, scope}.
+  slaConfigApplied Json?
+
+  changedById String?
+  changedAt   DateTime @default(now())
+
+  @@index([observationId])
+  @@index([changedAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  OBSERVATION SEVERITY SUGGESTION ENGINE
+//  prisma/apply-observation-severity-ddl.ts (hand DDL, idempotent) — NEVER db push.
+//  Deterministic: a seeded lookup plus an area modifier, no model in the loop.
+// ─────────────────────────────────────────────────────────────────────
+
+/// Base severity for one DuPont STOP (axis, category, sub-category) triple.
+/// `observationType` holds the ACT / CONDITION axis — the same key
+/// ObservationTaxonomy is partitioned on, NOT the four-value ObservationType.
+/// The unique index is PARTIAL (`WHERE isActive`) so a retired rule and its
+/// replacement coexist: SeverityOverrideLog.matrixRuleId points at the rule
+/// that was in force and must still resolve after the rule is superseded.
+model SeverityMatrixRule {
+  id              String   @id @default(cuid())
+  observationType String
+  category        String
+  subCategory     String
+  baseSeverity    String
+  /// Observer-facing justification, shown next to the suggestion in the form.
+  rationale       String
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  updatedById     String?
+
+  @@index([observationType, category, subCategory, isActive])
+}
+
+/// How much worse the same deviation is in this area. `areaId` NULL is the
+/// plant-wide default; an area row overrides it; absent both, Standard applies
+/// and the base severity passes through untouched.
+///
+/// Created rather than reused: `Area` carries no risk classification, and HIRA's
+/// risk levels sit on HiraEntry — one row per assessed hazard scenario, not a
+/// standing property of the place. The seed DERIVES the first value per area
+/// from those HIRA entries, then leaves it editable here.
+///
+/// Uniqueness is TWO partial indexes in the DDL, not one composite: Postgres
+/// treats NULLs as distinct, so UNIQUE(plantId, areaId) would accept several
+/// plant-wide defaults for the same plant.
+model AreaHazardTier {
+  id          String   @id @default(cuid())
+  plantId     String
+  plant       Plant    @relation(fields: [plantId], references: [id], onDelete: Cascade)
+  areaId      String?
+  area        Area?    @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  hazardTier  String
+  notes       String?
+  /// hira_derived | manual. A manual row is never overwritten by a re-derive.
+  source      String   @default("manual")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  updatedById String?
+
+  @@index([plantId, isActive])
+  @@index([areaId])
+}
+
+/// Append-only record of every submission where the observer's severity differed
+/// from the suggestion. This is the calibration signal: a sub-category overridden
+/// consistently in one direction means the matrix rule is wrong, not the observers.
+///
+/// Agreement writes NO row. The denominator for an override rate is the count of
+/// observations carrying the same taxonomy pair, which Observation already holds
+/// exactly, so a confirmation row would be volume without information.
+///
+/// The taxonomy pair and resolver inputs are denormalised onto the row because
+/// Observation.categoryCode and .severity are both editable afterwards — a report
+/// joining through them would quietly restate history.
+model SeverityOverrideLog {
+  id            String      @id @default(cuid())
+  observationId String
+  observation   Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+
+  suggestedSeverity String
+  finalSeverity     String
+  overrideReason    String?
+
+  /// Frozen copy of what the engine was asked and what it answered with.
+  observationType String?
+  categoryCode    String?
+  subCategoryCode String?
+  /// The rule's own severity, before the area tier was applied. With hazardTier
+  /// this separates "the rule is wrong" from "the tier is wrong".
+  baseSeverity String?
+  hazardTier   String?
+  matrixRuleId String?
+  plantId      String?
+  areaId       String?
+
+  /// OBSERVER_FORM | CAPTURE_CONVERSION | EDIT. The calibration report counts
+  /// OBSERVER_FORM only by default — a triager's or an editor's severity call
+  /// is not observer disagreement.
+  source String @default("OBSERVER_FORM")
+
+  overriddenById String?
+  overriddenBy   User?    @relation(fields: [overriddenById], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([observationId])
+  @@index([source, createdAt, observationType, categoryCode, subCategoryCode])
+  @@index([plantId, createdAt])
+  @@index([matrixRuleId])
 }
 
 model MobilizationRecord {
@@ -6848,6 +8096,47 @@ model EnterpriseRisk {
   priorResidualScore Int?
   priorResidualBand  String?
 
+  // ── ADVANCED (CRO-grade) extension ──────────────────────────────────────
+  // Monetary exposure (₹), denormalised from the current INHERENT/RESIDUAL
+  // assessments by the scoring engine. expected = likelihood% × ₹expected impact;
+  // worst = tail (₹worst impact) for value-at-risk.
+  inherentExpectedLossInr Float?
+  inherentWorstLossInr    Float?
+  residualExpectedLossInr Float?
+  residualWorstLossInr    Float?
+  targetExpectedLossInr   Float?
+
+  // Target risk level — where the org intends to steer the risk (ISO 31000 §6.5).
+  targetLikelihood Int?
+  targetImpact     Int?
+  targetScore      Int?
+  targetBand       String?
+  targetDate       DateTime?
+  targetRationale  String?   @db.Text
+
+  // Control-derived residual. derivedResidual* is residual implied PURELY by mapped
+  // control effectiveness (inherent attenuated by barriers-in-series). When an
+  // expert asserts a different residual it is an OVERRIDE with rationale; the
+  // variance is surfaced. controlAlert fires when a mapped control goes deficient.
+  controlEffectivenessPct  Float?   // 0..100 combined effectiveness of mapped controls
+  derivedResidualScore     Int?
+  derivedResidualBand      String?
+  residualIsOverride       Boolean  @default(false)
+  residualOverrideVariance Int?     // assertedResidualScore − derivedResidualScore
+  controlAlert             Boolean  @default(false)
+  controlAlertAt           DateTime?
+
+  // Structured bow-tie: { topEvent, threats[{preventiveBarriers[{controlId?,status}]}],
+  // consequences[{mitigatingBarriers[{controlId?,status}]}] } — causal model, not free text.
+  bowtie Json?
+  // Three-lines-of-defence accountability (COSO / IIA): owners of each line.
+  firstLineOwnerId  String?
+  secondLineOwnerId String?
+  thirdLineAssurance String? // e.g. "Internal Audit", "External Audit"
+  // Raised when a linked KRI breaches RED — the early-warning → reassessment hook.
+  kriAlert   Boolean   @default(false)
+  kriAlertAt DateTime?
+
   closureJustification    String?   @db.Text
   acceptanceJustification String?   @db.Text
   acceptedBy              String? // CRO userId when state = ACCEPTED
@@ -6893,6 +8182,17 @@ model RiskAssessment {
   totalScore              Int // likelihood × overallImpact (1..25)
   ratingBand              String // LOW | MEDIUM | HIGH | CRITICAL
 
+  // ── ADVANCED quantification ──────────────────────────────────────────────
+  likelihoodPct        Float? // annualised probability 0..100 (defaults from ordinal likelihood)
+  financialBestInr     Float? // single-event ₹ loss — best case
+  financialExpectedInr Float? // single-event ₹ loss — expected
+  financialWorstInr    Float? // single-event ₹ loss — worst (tail)
+  expectedLossInr      Float? // = likelihoodPct/100 × financialExpectedInr
+  unexpectedLossInr    Float? // = likelihoodPct/100 × (worst − expected) — tail proxy
+  timeHorizon          String? // ONE_YEAR | THREE_YEAR | FIVE_YEAR
+  derivedFromControls  Boolean @default(false) // RESIDUAL computed from control effectiveness
+  controlEffectivenessPct Float? // snapshot of mapped-control effectiveness at assessment time
+
   assessmentDate DateTime
   assessedBy     String
   rationale      String   @db.Text
@@ -6913,6 +8213,13 @@ model RiskLinkage {
   targetRisk   EnterpriseRisk @relation("LinkageTarget", fields: [targetRiskId], references: [id], onDelete: Cascade)
   linkageType  String // TRIGGERS | AMPLIFIES | CORRELATED
   notes        String         @default("") @db.Text
+
+  // ── ADVANCED correlation modelling ───────────────────────────────────────
+  // correlationStrength: how tightly the two risks co-move (0..1). impactFactor:
+  // fraction of the SOURCE risk's expected loss that propagates onto the TARGET
+  // when the source materialises — drives correlated-exposure aggregation.
+  correlationStrength Float @default(0.5)
+  impactFactor        Float @default(0.0)
 
   createdAt DateTime @default(now())
   createdBy String?
@@ -7060,6 +8367,7 @@ model KriDefinition {
   linkedRiskIds     Json    @default("[]") // EnterpriseRisk.id[]
   unit              String // "%", "count", "days", "₹ Lakh", "per mn manhours"
   direction         String  @default("HIGHER_IS_WORSE") // HIGHER_IS_WORSE | LOWER_IS_WORSE
+  indicatorType     String  @default("LAGGING") // LEADING | LAGGING | COINCIDENT — does it warn BEFORE the event?
   frequency         String  @default("MONTHLY") // WEEKLY | MONTHLY | QUARTERLY
   feedType          String  @default("MANUAL") // MANUAL | MODULE_FED | API
   metricProviderKey String? // MODULE_FED — key from the metric catalogue
@@ -8116,22 +9424,68 @@ model CamsComplianceLink {
   @@index([findingId])
 }
 
-// ── Shared Service ④ — Analytics snapshot (periodic precompute, §5.2) ──
-// Immutable point-in-time metrics for fast dashboards, QoQ trend, and the board
-// pack (§10.6 seeds FY26-Q3/Q4/FY27-Q1). `metrics` stores the full
-// compute_analytics() payload for the (period, scope); `snapshotHash` gives the
-// board-pack integrity hash (§12). Idempotent per (periodLabel + scope).
-model CamsAnalyticsSnapshot {
-  id                  String    @id @default(cuid())
-  periodLabel         String // "FY27-Q1"
-  periodStart         DateTime?
-  periodEnd           DateTime?
-  scopeSiteId         String? // null = all sites
-  scopeEngagementType String? // null = all types
-  scopeStandardRef    String? // null = all standards
-  metrics             Json      @default("{}") // full compute_analytics() payload at generation time
-  snapshotHash        String? // sha256(metrics) — board-pack integrity
-  generatedAt         DateTime  @default(now())
+// ════════════════════════════════════════════════════════════════════════════
+// FACILITIES — Factory Profile Master & Consolidated Dashboard
+// A descriptive/compliance layer 1:1 with the existing Plant (= "Site"). The
+// consolidated dashboard reads live audit/CAPA/compliance data per siteId from
+// the existing engines; this family owns only profile attributes. siteId is a
+// plain (unique) reference to Plant.id — no FK, matching the Cams* convention.
+// ════════════════════════════════════════════════════════════════════════════
+model FactoryProfile {
+  id            String @id @default(cuid())
+  siteId        String @unique // Plant.id — 1:1, mandatory, unique (enforces TF-01)
+  factoryCode   String @unique // "MAG-TN-01" style
+  factoryName   String
+  status        String @default("OPERATIONAL") // OPERATIONAL | UNDER_CONSTRUCTION | PARTIAL_OPERATION | SHUTDOWN | DECOMMISSIONED
+  ownershipType String @default("OWNED") // OWNED | LEASED | CONTRACT_MANUFACTURING | JOINT_VENTURE
+
+  // location
+  addressLine String  @default("")
+  city        String  @default("")
+  state       String  @default("") // Indian state — drives jurisdiction & map
+  pincode     String  @default("")
+  latitude    Float? // for the India map view
+  longitude   Float?
+
+  // identity & statutory
+  establishedYear          Int?
+  factoryLicenseNo         String? // Factories Act registration
+  factoryLicenseValidUntil DateTime?
+  registrationNos          Json      @default("[]") // { type, number }[] — GST/ESI/EPF/PCB consent
+  applicableActs           Json      @default("[]") // string[] — ["Factories Act 1948", ...]
+  pollutionControlBoard    String? // jurisdictional SPCB
+
+  // descriptive
+  totalLandAreaSqm Float?
+  builtUpAreaSqm   Float?
+  buildingCount    Int    @default(0) // kept in sync with active Building rows; manual when none
+
+  // workforce summary (denormalised from WorkforceComposition — Phase B)
+  totalEmployees Int @default(0)
+
+  // operational summary
+  primaryIndustry String   @default("Garments / Textile") // drives default audit library
+  profileStatus   String   @default("DRAFT") // DRAFT | ACTIVE | REVIEW_DUE
+  lastReviewedAt  DateTime?
+  nextReviewDate  DateTime?
+
+  // lifecycle workflow (governance approval state, separate from profileStatus)
+  lifecycleStage          String   @default("INITIATED") // INITIATED | EXECUTION | VALIDATION | ACTIVE | ARCHIVED
+  lifecycleStageOwnerRole String?
+  lifecycleUpdatedAt      DateTime?
+
+  buildings             Building[]
+  workforceCompositions WorkforceComposition[]
+  productionProcesses   ProductionProcess[]
+  certifications        FactoryCertification[]
+  contacts              FactoryContact[]
+  complianceSnapshots   FactoryComplianceSnapshot[]
+  envPeriods            FactoryEnvPeriod[]
+  socialCompliance      SocialComplianceProfile?
+  equipment             FactoryEquipment[]
+  hazardousMaterials    HazardousMaterial[]
+  regulatoryRegistrations RegulatoryRegistration[]
+  lifecycleEvents       FactoryLifecycleEvent[]
 
   createdAt DateTime @default(now())
   createdBy String?
@@ -8139,30 +9493,28 @@ model CamsAnalyticsSnapshot {
   updatedBy String?
   isDeleted Boolean  @default(false)
 
-  @@index([periodLabel])
-  @@index([scopeSiteId])
+  @@index([state])
+  @@index([status])
+  @@index([profileStatus])
 }
 
-// ── Standalone-mode bundled providers (§1.3 / §12) ──
-// CAMS-owned obligations register — the bundled fallback the compliance provider
-// reads when the ERM Phase-2 register is absent (CAMS_STANDALONE). Mirrors the
-// LegalObligation shape so the Compliance Tracker behaves identically in both
-// modes. In integrated mode this table is unused (ERM LegalObligation wins).
-model CamsObligation {
-  id               String    @id @default(cuid())
-  obligationCode   String    @unique
-  title            String
-  obligationType   String    @default("STATUTORY")
-  statuteReference String    @default("") @db.Text
-  regulatorName    String    @default("")
-  siteId           String?
-  ownerId          String?
-  frequency        String    @default("ANNUAL")
-  validFrom        DateTime?
-  validUntil       DateTime?
-  renewalLeadDays  Int       @default(60)
-  status           String    @default("COMPLIANT") // COMPLIANT | AT_RISK | OVERDUE | ...
-  isActive         Boolean   @default(true)
+model Building {
+  id               String  @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String // denormalised Plant.id for site-scoped queries
+  buildingName     String // "Block A — Stitching"
+  buildingType     String  @default("PRODUCTION") // PRODUCTION | WAREHOUSE | ADMIN_OFFICE | UTILITY | CANTEEN | DORMITORY | ETP_PLANT | BOILER_HOUSE | STORE | OTHER
+  floors           Int     @default(1)
+  areaSqm          Float?
+  maxOccupancy     Int?
+  currentOccupancy Int?
+  yearBuilt        Int?
+  // fire/safety-relevant (feeds Fire Safety module if present)
+  assemblyPoint          String?
+  emergencyExits         Int?
+  occupancyCertificateNo String?
+  isActive               Boolean @default(true)
 
   createdAt DateTime @default(now())
   createdBy String?
@@ -8170,26 +9522,1008 @@ model CamsObligation {
   updatedBy String?
   isDeleted Boolean  @default(false)
 
+  @@index([factoryProfileId])
+  @@index([siteId])
+  @@index([buildingType])
+}
+
+// ── Workforce Composition (SA8000-aware; history retained via isCurrent) ──
+model WorkforceComposition {
+  id               String  @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+  asOfDate         DateTime
+  isCurrent        Boolean @default(true) // latest composition; history kept for trends
+  // headcount by employment type
+  permanentCount         Int @default(0)
+  contractCount          Int @default(0)
+  apprenticeTraineeCount Int @default(0)
+  // gender split (SA8000 / welfare reporting)
+  maleCount        Int @default(0)
+  femaleCount      Int @default(0)
+  otherGenderCount Int @default(0)
+  // optional welfare-relevant detail
+  migrantWorkerCount    Int?
+  differentlyAbledCount Int?
+  totalCount            Int     @default(0) // = permanent + contract + apprentice
+  // child-labour evidence (SA8000 Element 1)
+  youngestWorkerAge   Int? // evidences no child labour
+  workersUnder18Count Int  @default(0) // legally-employed young workers (apprentices); 0 expected for child labour
+  minHiringAgePolicy  Int? // e.g. 18
+  // derived (persisted for fast export) — contract/female/migrant share of total
+  contractPct Float  @default(0)
+  femalePct   Float  @default(0)
+  migrantPct  Float?
+  notes                 String? @db.Text
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId, isCurrent])
+  @@index([siteId])
+}
+
+// ── Production Process (informs audit scope; HIRA link is a Phase-X hook) ──
+model ProductionProcess {
+  id                String  @id @default(cuid())
+  factoryProfileId  String
+  factoryProfile    FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId            String
+  processName       String // "Cutting", "Stitching", "Washing & Dyeing", "Finishing", "Packing"
+  processCategory   String?
+  description       String? @db.Text
+  sequenceOrder     Int? // process-flow order
+  shiftPattern      String? // "2 shifts", "24x7"
+  installedCapacity String? // "12,000 pcs/day"
+  keyHazards        Json    @default("[]") // string[] — links conceptually to HIRA scope
+  isActive          Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
+  @@index([siteId])
+}
+
+// ── Factory Certification (buyer/social-compliance certs; status engine) ──
+model FactoryCertification {
+  id                String  @id @default(cuid())
+  factoryProfileId  String
+  factoryProfile    FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId            String
+  certificationType String // SA8000 | ISO_9001 | ISO_14001 | ISO_45001 | WRAP | BSCI | OEKO_TEX | GOTS | SEDEX_SMETA | OTHER
+  certificateNo     String?
+  issuingBody       String?
+  issueDate         DateTime?
+  expiryDate        DateTime?
+  renewalLeadDays   Int      @default(60) // drives EXPIRING_SOON + dashboard alert
+  status            String   @default("VALID") // VALID | EXPIRING_SOON | EXPIRED | UNDER_RENEWAL | SUSPENDED (date-derived recomputed on read)
+  scopeNotes        String?  @db.Text
+  attachmentIds     Json     @default("[]")
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
+  @@index([siteId])
+  @@index([certificationType])
+}
+
+// ── Factory Contact ──
+model FactoryContact {
+  id               String  @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+  role             String  @default("OTHER") // FACTORY_MANAGER | SAFETY_OFFICER | COMPLIANCE_OFFICER | HR_HEAD | ENVIRONMENT_OFFICER | OTHER
+  name             String
+  phone            String?
+  email            String?
+  isPrimary        Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
+  @@index([siteId])
+}
+
+// ── Factory Compliance Snapshot (dashboard precompute; read from existing engines) ──
+// Cache of live operational metrics per factory so the consolidated dashboard
+// renders fast at any factory count. Recomputed on demand/schedule; the F-02
+// drill-downs hit the real engines live. "LIVE" = current; "FYxx-Qy" = trend.
+model FactoryComplianceSnapshot {
+  id                      String   @id @default(cuid())
+  factoryProfileId        String
+  factoryProfile          FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId                  String
+  periodLabel             String   @default("LIVE")
+  auditComplianceScorePct Float?
+  openFindings            Int      @default(0)
+  criticalFindings        Int      @default(0)
+  openCapas               Int      @default(0)
+  overdueCapas            Int      @default(0)
+  openObligations         Int      @default(0)
+  overdueObligations      Int      @default(0)
+  certsExpiringCount      Int      @default(0)
+  lastAuditDate           DateTime?
+  incidentCount12m        Int      @default(0)
+  computedAt              DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@unique([factoryProfileId, periodLabel])
+  @@index([siteId])
+}
+
+// ── Factory Environmental Period (ESG operational data source) ──
+// Minimal environmental-data source-of-truth for the facility ESG rollup — one
+// row per (site, period) holding energy / water / effluent / waste / emissions
+// totals + targets. NOT a rollup cache: this is the "ESG module" the per-facility
+// Compliance & Audit tab reads live. A site with no rows ⇒ the tab shows the
+// neutral "Environmental data — module not enabled" tile (graceful absence).
+model FactoryEnvPeriod {
+  id               String @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+  periodLabel      String // e.g. "2026-Q2"
+
+  // Energy
+  energyKwh       Float?
+  energyIntensity Float? // kWh / unit output
+  energyTargetKwh Float?
+  // Water + effluent (garment-critical)
+  waterWithdrawnKl     Float?
+  effluentDischargedKl Float?
+  etpStatus            String? // COMPLIANT | NON_COMPLIANT | NOT_MONITORED
+  consentStatus        String? // free-text mirror of SPCB consent standing
+  // Waste
+  wasteGeneratedT        Float?
+  wasteDivertedPct       Float?
+  wasteDivertedTargetPct Float?
+  // Emissions
+  scope1TCo2e Float?
+  scope2TCo2e Float?
+  notes       String?
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@unique([factoryProfileId, periodLabel])
+  @@index([siteId])
+}
+
+// ── Social-Compliance Profile (SA8000 policy/standing; 1:1 with factory) ──
+// The less-volatile attributes a buyer social-compliance audit (SA8000 / WRAP /
+// BSCI / SMETA) checks — wages, working hours, freedom of association, forced
+// labour, grievance, training — separate from the dated headcount. ComplianceFlag
+// fields hold COMPLIANT | ATTENTION | NON_COMPLIANT | NOT_ASSESSED;
+// overallSocialComplianceFlag is the persisted worst-of (computed on write).
+model SocialComplianceProfile {
+  id               String  @id @default(cuid())
+  factoryProfileId String  @unique // 1:1 with the factory
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+  asOfDate         DateTime
+
+  // Remuneration (SA8000 Element 8)
+  minimumWageCompliant    String  @default("NOT_ASSESSED")
+  lowestMonthlyWageInr    Int?
+  statutoryMinimumWageInr Int? // for comparison
+  wagesPaidOnTime         String  @default("NOT_ASSESSED")
+
+  // Working Hours (Element 7) — SA8000 caps OT at 12/week
+  standardWeeklyHours    Int?
+  maxWeeklyOvertimeHours Int?
+  overtimeVoluntary      String  @default("NOT_ASSESSED")
+  weeklyRestDayProvided  String  @default("NOT_ASSESSED")
+
+  // Freedom of Association (Element 4)
+  unionOrWorkerCommitteePresent String  @default("NOT_ASSESSED")
+  collectiveBargainingAgreement Boolean @default(false)
+
+  // Forced Labour (Element 2) — no deposits / ID retention
+  noDepositOrDocumentRetention String  @default("NOT_ASSESSED")
+
+  // Disciplinary & Grievance (Elements 5, 6, 9)
+  grievanceMechanismPresent String  @default("NOT_ASSESSED")
+  antiDiscriminationPolicy  String  @default("NOT_ASSESSED")
+
+  // Management System / Training (Element 9)
+  sa8000AwarenessTrainingPct Float? // % workforce trained
+  socialComplianceOwnerId    String? // accountable person
+  lastSocialAuditDate        DateTime?
+  nextReviewDate             DateTime?
+
+  overallSocialComplianceFlag String @default("NOT_ASSESSED") // computed worst-of the element flags + OT cap
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([siteId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FACILITIES — Extension layer (Equipment, Hazmat, Regulatory, Lifecycle)
+// Applied via prisma/apply-factory-ext-ddl.ts (NOT `db push` — drift-safe).
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Factory Equipment (facility-grade asset register; PUWER/LOLER/noise) ──
+model FactoryEquipment {
+  id               String  @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+  buildingId       String? // loose link to Building.id (no FK)
+
+  equipmentName      String
+  assetCode          String?
+  category           String?
+  manufacturer       String?
+  modelNumber        String?
+  serialNumber       String?
+  installationDate   DateTime?
+  warrantyExpiryDate DateTime?
+
+  capacity             Float?
+  capacityUnit         String?
+  status               String  @default("ACTIVE") // ACTIVE | IDLE | DOWN | RETIRED
+  operatingHoursPerDay Float?
+  hazardLevel          String  @default("LOW") // LOW | MEDIUM | HIGH
+
+  puwerRequired            Boolean   @default(false)
+  puwerLastInspection      DateTime?
+  puwerNextDue             DateTime?
+  lolerRequired            Boolean   @default(false)
+  lolerLastInspection      DateTime?
+  lolerNextDue             DateTime?
+  electricalSafetyRequired Boolean   @default(false)
+  electricalLastCheck      DateTime?
+  electricalNextDue        DateTime?
+  noiseAssessmentRequired  Boolean   @default(false)
+  noiseLastTest            DateTime?
+  noiseMeasurementDb       Float?
+
+  lastMaintenanceDate DateTime?
+  lastMaintenanceType String?
+  nextScheduledDate   DateTime?
+  downtimeHoursYtd    Float     @default(0)
+
+  lastInspectionDate   DateTime?
+  lastInspectionResult String? // PASS | FAIL | CONDITIONAL_PASS
+
+  certifiedOperators Json @default("[]") // [{ name, certifiedOn, expiresOn }]
+  spareParts         Json @default("[]") // [{ partName, quantityInStock, reorderLevel, vendor }]
+
+  notes String?
+
+  inspections FactoryEquipmentInspection[]
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
   @@index([siteId])
   @@index([status])
 }
 
-// Lite asset/equipment register — the bundled fallback the equipment provider
-// reads when the platform Equipment Master is absent (CAMS_STANDALONE). Same
-// interface (code/name/site/location) so asset inspections work standalone (TC-16).
-model CamsAssetLite {
-  id        String  @id @default(cuid())
-  assetCode String  @unique
-  name      String
-  category  String  @default("EQUIPMENT")
-  siteId    String?
-  location  String  @default("")
-  isActive  Boolean @default(true)
+// ── Factory Equipment Inspection (statutory inspection log per asset) ──
+model FactoryEquipmentInspection {
+  id               String  @id @default(cuid())
+  factoryProfileId String // denormalised; real FK applied via DDL (not modelled as a Prisma relation)
+  equipmentId      String
+  equipment        FactoryEquipment @relation(fields: [equipmentId], references: [id], onDelete: Cascade)
+  siteId           String
+
+  inspectionDate DateTime
+  inspectorName  String
+  result         String // PASS | FAIL | CONDITIONAL_PASS
+  findings       String?
 
   createdAt DateTime @default(now())
   createdBy String?
   updatedAt DateTime @updatedAt
+  updatedBy String?
   isDeleted Boolean  @default(false)
 
+  @@index([equipmentId])
+  @@index([factoryProfileId])
   @@index([siteId])
+}
+
+// ── Hazardous Material (chemical inventory; GHS / SDS / storage / shelf-life) ──
+model HazardousMaterial {
+  id               String  @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+
+  chemicalName             String
+  casNumber                String?
+  regulatoryClassification String? // SCHEDULED_SUBSTANCE | HIGH_HAZARD | NOTIFIED | OTHER
+  hazmatClassification     String  @default("LOW") // HIGH | MEDIUM | LOW
+
+  ghsSignalWord    String? // DANGER | WARNING | NONE
+  ghsHazardClasses Json    @default("[]")
+  ghsPictograms    Json    @default("[]")
+
+  quantityStored  Float   @default(0)
+  unit            String?
+  maxAllowableQty Float?
+  reorderLevel    Float?
+
+  storageBuilding             String?
+  storageRoom                 String?
+  containerType               String?
+  containerCount              Int?
+  secondaryContainmentPresent Boolean @default(false)
+  secondaryContainmentVolume  Float?
+  ventilationAvailable        Boolean @default(false)
+  signagePresent              Boolean @default(false)
+
+  issueDate      DateTime?
+  expiryDate     DateTime?
+  batchLotNumber String?
+
+  sdsDocId        String?
+  sdsVersion      String?
+  sdsGhsCompliant Boolean @default(false)
+
+  ppeRequired            Json    @default("[]")
+  incompatibleSubstances Json    @default("[]")
+  spillKitLocation       String?
+  emergencyContact       String?
+
+  handlersTrainedCount Int @default(0)
+  handlersTotalCount   Int @default(0)
+
+  pcbNotificationRequired Boolean @default(false)
+  pcbRegistrationStatus   String  @default("NOT_REGISTERED") // REGISTERED | PENDING | NOT_REGISTERED
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
+  @@index([siteId])
+  @@index([hazmatClassification])
+}
+
+// ── Regulatory Registration (Factory Act / ESI / Fire / PCB / Boiler …) ──
+model RegulatoryRegistration {
+  id               String  @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+
+  registrationType   String // FACTORY_ACT | ESI | PF | GST | FIRE_LICENSE | PCB | BOILER | BUILDING_CERT | OTHER
+  registrationName   String
+  registrationNumber String?
+  issuingAuthority   String?
+  issueDate          DateTime?
+  expiryDate         DateTime?
+  renewalFrequency   String    @default("ANNUAL") // ANNUAL | BIENNIAL | TRIENNIAL | ONEOFF | ONGOING
+  lastRenewedDate    DateTime?
+  nextRenewalDue     DateTime?
+
+  status               String  @default("VALID") // computed on read
+  renewalInProgress    Boolean @default(false)
+  renewalAgencyContact String?
+  renewalEstimatedCost Float?
+  renewalNotes         String?
+
+  alertThresholdDays        Int    @default(90)
+  complianceImpactIfExpired String @default("MEDIUM") // CRITICAL | HIGH | MEDIUM | LOW
+  documentationIds          Json   @default("[]")
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
+  @@index([siteId])
+  @@index([registrationType])
+  @@index([expiryDate])
+}
+
+// ── Factory Lifecycle Event (append-only approval-workflow timeline) ──
+model FactoryLifecycleEvent {
+  id               String  @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+
+  fromStage       String?
+  toStage         String
+  action          String // INITIATE | ADVANCE | REQUEST_REVISIONS | REJECT | NOTIFY
+  performedBy     String?
+  performedByRole String?
+  comment         String?
+  validations     Json    @default("{}") // { fieldName: bool }
+  issues          Json    @default("[]") // [{ section, issue }]
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
+  @@index([siteId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GUIDED FIELD CAPTURE + DAILY ALERT BRIEF
+// Schema mirrored from the backend SQLAlchemy models (app/models/capture.py,
+// app/models/alerts.py). Tables are created by prisma/apply-capture-ddl.ts —
+// hand-DDL only; NEVER `prisma db push` (it would drop drifted tables).
+// Relations are deliberately loose (plain String ids) so the existing User /
+// Plant model blocks stay untouched.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model CaptureSubmission {
+  id                   String    @id @default(cuid())
+  tenantId             String    @default("default")
+  number               String    @unique
+  clientSubmissionId   String
+  type                 String    @default("observation") // observation | near_miss | unsafe_condition | incident
+  reporterId           String?
+  isAnonymous          Boolean   @default(false)
+  anonHash             String?
+  plantId              String
+  areaId               String?
+  mapPinX              Float?
+  mapPinY              Float?
+  equipmentId          String?
+  qrScanned            Boolean   @default(false)
+  categoryL1Id         String?
+  categoryL2Id         String?
+  categorySnapshot     Json?
+  aiSuggested          Boolean   @default(false)
+  aiConfidence         Float?
+  aiSuggestion         Json?
+  severitySelfReported String    @default("medium") // low | medium | high
+  description          String?
+  voiceLangCode        String?
+  transcriptOriginal   String?
+  transcriptEnglish    String?
+  transcriptionStatus  String    @default("none") // none | device | pending | done | failed
+  status               String    @default("submitted") // submitted | triaged | converted | closed | rejected
+  triagedById          String?
+  triagedAt            DateTime?
+  hiraLikelihood       Int?
+  hiraSeverity         Int?
+  riskScore            Int?
+  riskLevel            String?
+  triageNote           String?
+  convertedEntityType  String?
+  convertedEntityId    String?
+  convertedById        String?
+  convertedAt          DateTime?
+  linkedRcaIds         Json      @default("[]")
+  linkedCapaIds        Json      @default("[]")
+  linkedPtwIds         Json      @default("[]")
+  tapCount             Int?
+  durationMs           Int?
+  wasOffline           Boolean   @default(false)
+  appVersion           String?
+  deviceLang           String?
+  taxonomyVersion      Int?
+  createdAtClient      DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  isDeleted            Boolean   @default(false)
+  deletedAt            DateTime?
+  deletedBy            String?
+  deletionReason       String?
+
+  attachments CaptureAttachment[]
+
+  @@unique([tenantId, clientSubmissionId], map: "uq_CaptureSubmission_tenant_client")
+  @@index([tenantId, plantId, status, createdAt], map: "ix_CaptureSubmission_plant_status_created")
+  @@index([plantId, areaId, categoryL1Id], map: "ix_CaptureSubmission_cluster")
+  @@index([reporterId], map: "ix_CaptureSubmission_reporterId")
+  @@index([anonHash], map: "ix_CaptureSubmission_anonHash")
+  @@index([status], map: "ix_CaptureSubmission_status")
+  @@index([isDeleted], map: "ix_CaptureSubmission_isDeleted")
+}
+
+model CaptureAttachment {
+  id            String            @id @default(cuid())
+  submissionId  String
+  submission    CaptureSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  kind          String // PHOTO | VIDEO | VOICE | DOCUMENT
+  fileName      String
+  storagePath   String
+  fileSize      Int
+  mimeType      String
+  durationSec   Float?
+  caption       String?
+  sha256        String?
+  clientMediaId String?
+  uploadedById  String?
+  uploadedAt    DateTime  @default(now())
+  deletedAt     DateTime?
+
+  @@index([submissionId], map: "ix_CaptureAttachment_submissionId")
+  @@index([kind], map: "ix_CaptureAttachment_kind")
+  @@index([clientMediaId], map: "ix_CaptureAttachment_clientMediaId")
+  @@index([deletedAt], map: "ix_CaptureAttachment_deletedAt")
+}
+
+model CaptureTaxonomy {
+  id               String   @id @default(cuid())
+  tenantId         String? // null = global
+  kind             String // HAZARD | CAUSE | CONTROL
+  level            Int      @default(1)
+  parentId         String?
+  code             String
+  labels           Json     @default("{}") // { en, hi }
+  iconKey          String?
+  fishboneCategory String? // EQUIPMENT | PERSON | PROCESS | ENVIRONMENT | MATERIAL | MANAGEMENT
+  sortWeight       Int      @default(0)
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([kind, code], map: "uq_CaptureTaxonomy_kind_code")
+  @@index([kind], map: "ix_CaptureTaxonomy_kind")
+  @@index([parentId], map: "ix_CaptureTaxonomy_parentId")
+}
+
+model TaxonomyAlias {
+  id        String   @id @default(cuid())
+  kind      String
+  fromCode  String
+  toCode    String
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@unique([kind, fromCode], map: "uq_TaxonomyAlias_kind_from")
+}
+
+model RcaFieldRequest {
+  id                 String    @id @default(cuid())
+  rcaId              String
+  requestedById      String
+  plantId            String?
+  contextSummary     String    @default("")
+  hazardCategoryCode String?
+  technicianIds      Json      @default("[]")
+  dueAt              DateTime?
+  status             String    @default("OPEN") // OPEN | CLOSED | CANCELLED
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  isDeleted          Boolean   @default(false)
+  deletedAt          DateTime?
+  deletedBy          String?
+  deletionReason     String?
+
+  inputs RcaFieldInput[]
+
+  @@index([rcaId], map: "ix_RcaFieldRequest_rcaId")
+  @@index([plantId], map: "ix_RcaFieldRequest_plantId")
+  @@index([status], map: "ix_RcaFieldRequest_status")
+  @@index([isDeleted], map: "ix_RcaFieldRequest_isDeleted")
+}
+
+model RcaFieldInput {
+  id                   String          @id @default(cuid())
+  requestId            String
+  request              RcaFieldRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  rcaId                String
+  contributorId        String?
+  isAnonymous          Boolean   @default(false)
+  anonHash             String?
+  fishboneCategory     String?
+  causePath            Json      @default("[]")
+  controlSuggestionIds Json      @default("[]")
+  note                 String?
+  voiceStoragePath     String?
+  voiceLangCode        String?
+  transcriptOriginal   String?
+  transcriptEnglish    String?
+  promotedCauseId      String?
+  promotedById         String?
+  promotedAt           DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([requestId], map: "ix_RcaFieldInput_requestId")
+  @@index([rcaId], map: "ix_RcaFieldInput_rcaId")
+}
+
+model UploadSession {
+  id            String   @id @default(cuid())
+  ownerId       String?
+  clientMediaId String
+  fileName      String
+  mimeType      String
+  kind          String   @default("PHOTO")
+  totalSize     Int
+  chunkSize     Int
+  totalChunks   Int
+  sha256        String?
+  status        String   @default("PENDING") // PENDING | COMPLETE | FAILED
+  storagePath   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  chunks UploadChunk[]
+
+  @@index([ownerId], map: "ix_UploadSession_ownerId")
+  @@index([clientMediaId], map: "ix_UploadSession_clientMediaId")
+  @@index([sha256], map: "ix_UploadSession_sha256")
+  @@index([status], map: "ix_UploadSession_status")
+}
+
+model UploadChunk {
+  id         String        @id @default(cuid())
+  sessionId  String
+  session    UploadSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  chunkIndex Int
+  data       Bytes
+  createdAt  DateTime      @default(now())
+
+  @@unique([sessionId, chunkIndex], map: "uq_UploadChunk_session_index")
+}
+
+model DomainEvent {
+  id              String    @id @default(cuid())
+  tenantId        String    @default("default")
+  siteId          String?
+  eventType       String
+  entityType      String
+  entityId        String
+  entityRef       String?
+  actorId         String?
+  payload         Json      @default("{}")
+  occurredAt      DateTime  @default(now())
+  processedAt     DateTime?
+  processingError String?
+  correlationId   String?
+
+  @@index([eventType], map: "ix_DomainEvent_eventType")
+  @@index([siteId], map: "ix_DomainEvent_siteId")
+  @@index([occurredAt], map: "ix_DomainEvent_occurredAt")
+  @@index([processedAt], map: "ix_DomainEvent_processedAt")
+  @@index([entityType, entityId], map: "ix_DomainEvent_entity")
+}
+
+model Alert {
+  id               String    @id @default(cuid())
+  tenantId         String    @default("default")
+  siteId           String?
+  severity         String    @default("info") // critical | attention | info
+  title            String
+  bodyTemplateKey  String?
+  bodyParams       Json      @default("{}")
+  bodyText         String    @default("")
+  sourceEventType  String?
+  sourceEntityType String?
+  sourceEntityId   String?
+  impactedEntities Json      @default("[]")
+  deepLink         String?
+  dedupeKey        String
+  count            Int       @default(1)
+  status           String    @default("new") // new | acknowledged | resolved | muted
+  ackBy            String?
+  ackAt            DateTime?
+  mutedUntil       DateTime?
+  audienceRoles    Json      @default("[]")
+  audienceSiteIds  Json      @default("[]")
+  expiresAt        DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  isDeleted        Boolean   @default(false)
+  deletedAt        DateTime?
+  deletedBy        String?
+  deletionReason   String?
+
+  @@index([tenantId, siteId, status, createdAt], map: "ix_Alert_site_status_created")
+  @@index([dedupeKey], map: "ix_Alert_dedupeKey")
+  @@index([severity], map: "ix_Alert_severity")
+  @@index([status], map: "ix_Alert_status")
+  @@index([siteId], map: "ix_Alert_siteId")
+  @@index([isDeleted], map: "ix_Alert_isDeleted")
+}
+
+model AlertSubscription {
+  id          String   @id @default(cuid())
+  tenantId    String   @default("default")
+  roleCode    String
+  siteId      String?
+  channels    Json     @default("[]") // ["inapp","email"]
+  minSeverity String   @default("attention")
+  timezone    String   @default("Asia/Kolkata")
+  active      Boolean  @default(true)
+  lastSentOn  String? // YYYY-MM-DD in `timezone`
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  Incident Intelligence — Slice 2 (Features 3, 4, 6, 7, 8)
+// ═══════════════════════════════════════════════════════════════════════════
+
+// F7 — golden-thread traceability layer (records that a link exists, no biz data)
+model GoldenThreadLink {
+  id              String    @id @default(cuid())
+  sourceIncidentId String
+  targetType      String // risk_register | training_assignment | audit_checkpoint | capa
+  targetId        String
+  targetRef       String?
+  linkType        String    @default("created") // created | updated
+  triggeredBy     String    @default("system")
+  meta            Json?
+  reversedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([sourceIncidentId])
+  @@index([targetType, targetId])
+}
+
+// F7 — competency-to-cause mapping (empty by default; seed per plant)
+model CompetencyMapping {
+  id           String   @id @default(cuid())
+  causeKeyword String
+  competencyId String
+  note         String?
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([causeKeyword])
+  @@index([competencyId])
+}
+
+// F8 — per-plant configurable cost inputs
+model PlantCostConfig {
+  id                    String   @id @default(cuid())
+  plantId               String   @unique
+  hourlyProductionValue Float    @default(0)
+  loadedLaborRateByRole Json?
+  defaultLaborRate      Float    @default(0)
+  currency              String   @default("INR")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// F4 — statutory form definition + trigger rules + field mapping
+model StatutoryTemplate {
+  id                String   @id @default(cuid())
+  jurisdiction      String
+  formType          String
+  title             String
+  triggerConditions Json
+  fieldMapping      Json
+  templateFileRef   String?
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// F4 — immutable generated form; regeneration mints a new version
+model StatutoryFormInstance {
+  id            String   @id @default(cuid())
+  incidentId    String
+  formType      String
+  jurisdiction  String?
+  version       Int      @default(1)
+  fileName      String
+  storagePath   String?
+  fieldData     Json
+  generatedById String?
+  isCurrent     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+
+  @@index([incidentId])
+}
+
+// F6 — WhatsApp sender identity binding (verified before any incident create)
+model WhatsappSender {
+  id                 String    @id @default(cuid())
+  phoneNumber        String    @unique
+  employeeId         String?
+  plantId            String?
+  role               String?
+  verifiedAt         DateTime?
+  verificationMethod String?
+  otpHash            String?
+  otpExpiresAt       DateTime?
+  otpAttempts        Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
+// F6 — pre-approved message template registry
+model WhatsappTemplate {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String   @default("UTILITY")
+  language  String   @default("en")
+  body      String
+  status    String   @default("DRAFT")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// F6 — audit of every inbound WhatsApp message + what it produced
+model WhatsappInboundLog {
+  id                String   @id @default(cuid())
+  phoneNumber       String
+  senderId          String?
+  messageType       String   @default("text")
+  mediaId           String?
+  transcript        String?
+  transcriptLang    String?
+  createdIncidentId String?
+  status            String   @default("received")
+  detail            String?
+  createdAt         DateTime @default(now())
+
+  @@index([phoneNumber])
+}
+
+// ─────────────────────────────────────────────────────────────────────
+//  ASSURANCE INTEGRITY — auditor independence, competence, meetings, errata
+//
+//  Design: docs/cams/09-module-completion.md Part 2.
+//
+//  Premise: CAMS already modelled auditor and auditee correctly — both are
+//  ENGAGEMENT-SCOPED (ComplianceAudit.leadAuditorUserId / coAuditors / auditees
+//  plus the per-checkpoint assignedAuditorId / assignedOwnerId), and there is no
+//  global AUDITOR role in RBAC. What was missing was every GUARD over that
+//  model. These tables are those guards' records, not a new role model.
+//
+//  Schema is owned SQLAlchemy-side (app/models/assurance.py) and applied by
+//  scripts/add_assurance_integrity.py — NOT `prisma db push`, which would drop
+//  the Cams* tables due to known drift. This block exists so the two schemas do
+//  not diverge; divergence between them is the mechanism behind F-29, the worst
+//  defect in the module.
+// ─────────────────────────────────────────────────────────────────────
+
+/// Who is responsible for a discipline at a site (open question Q17).
+/// plantId NULL = estate-wide ownership: a group lead who owns Fire Safety
+/// across every factory should not audit Fire Safety anywhere.
+model DisciplineOwner {
+  id              String   @id @default(cuid())
+  plantId         String?
+  disciplineCode  String
+  disciplineLabel String   @default("")
+  ownerUserId     String
+  ownershipType   String   @default("ACCOUNTABLE") // ACCOUNTABLE | RESPONSIBLE
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  createdBy       String?
+
+  @@unique([plantId, disciplineCode, ownerUserId], name: "uq_DisciplineOwner_scope")
+  @@index([plantId, disciplineCode, isActive])
+  @@index([ownerUserId])
+}
+
+/// A governed, VISIBLE exception to an independence rule (§2.1.6).
+/// ISO 19011 acknowledges proportionality — small sites cannot always staff full
+/// independence. What matters is that the exception is visible, not impossible,
+/// so a justification and a named approver are required and the waiver is
+/// rendered in the engagement's report.
+model IndependenceWaiver {
+  id               String    @id @default(cuid())
+  engagementKind   String // AUDIT | INSPECTION
+  engagementId     String
+  subjectUserId    String
+  ruleViolated     String // OWN_WORK | SAME_ENGAGEMENT_DUAL_ROLE
+  conflictDetail   Json? // frozen copy of what the guard said at waiver time
+  justification    String
+  approvedByUserId String // must NOT be subjectUserId — enforced via segregation_ok
+  approvedAt       DateTime  @default(now())
+  scope            String    @default("ENGAGEMENT") // ENGAGEMENT | CHECKPOINT_SET
+  checkpointCodes  Json      @default("[]")
+  revokedAt        DateTime?
+  revokedByUserId  String?
+  createdAt        DateTime  @default(now())
+
+  @@index([engagementKind, engagementId])
+  @@index([subjectUserId, revokedAt])
+}
+
+/// What the Skill Matrix said about this auditor AT ASSIGNMENT TIME (§2.2).
+/// Same principle as the template snapshot: a live CompetencyRecord read cannot
+/// answer "was this person qualified when the audit was conducted?" after a
+/// revalidation, expiry or suspension.
+model EngagementCompetenceSnapshot {
+  id                           String    @id @default(cuid())
+  engagementKind               String
+  engagementId                 String
+  userId                       String
+  competencyId                 String
+  competencyCode               String    @default("")
+  competencyName               String    @default("")
+  state                        String?
+  validUntil                   DateTime?
+  externalCertificateReference String?
+  held                         Boolean   @default(false)
+  waivedGap                    Boolean   @default(false)
+  capturedAt                   DateTime  @default(now())
+  capturedByUserId             String?
+
+  @@index([engagementKind, engagementId, userId])
+}
+
+/// Opening / closing meeting record — ISO 19011 §6.4.2 and §6.4.9 (§2.3).
+/// ComplianceAudit.openingRemarks/closingRemarks are free text with no
+/// attendees, no time and no acknowledgement, so the report could only ever
+/// assert a meeting the product had no evidence of. This is the evidence.
+/// attendees is [{userId}] OR [{name, organisation, role}] — buyer auditors and
+/// certification assessors attend these meetings and are not platform users.
+model EngagementMeeting {
+  id                          String    @id @default(cuid())
+  engagementKind              String
+  engagementId                String
+  meetingType                 String // OPENING | CLOSING
+  heldAt                      DateTime
+  attendees                   Json      @default("[]")
+  scopeConfirmed              Boolean   @default(false)
+  findingsSummaryPresented    String?
+  auditeeAcknowledgedByUserId String?
+  auditeeAcknowledgedAt       DateTime?
+  notes                       String?
+  recordedByUserId            String
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  @@unique([engagementKind, engagementId, meetingType], name: "uq_EngagementMeeting_type")
+  @@index([engagementKind, engagementId])
+}
+
+/// An append-only correction to an ISSUED report (§2.5).
+/// Editing the snapshot would destroy the integrity hash's meaning; an erratum
+/// leaves the original snapshot and its hash untouched and renders as a dated
+/// block at the head of the report.
+model ReportErratum {
+  id               String   @id @default(cuid())
+  reportId         String
+  auditId          String
+  sequence         Int      @default(1)
+  text             String
+  raisedByUserId   String
+  approvedByUserId String
+  createdAt        DateTime @default(now())
+
+  @@unique([reportId, sequence], name: "uq_ReportErratum_seq")
+  @@index([reportId])
+  @@index([auditId])
 }

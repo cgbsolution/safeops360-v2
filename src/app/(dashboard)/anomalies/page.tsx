@@ -49,7 +49,11 @@ export default async function AnomaliesPage(props: { searchParams: Promise<{ sta
       plant: { select: { code: true, name: true } },
       reviewer: { select: { name: true } }
     },
-    orderBy: [{ status: "asc" }, { detectedAt: "desc" }],
+    // Newest-created first (platform-wide list convention). Anomaly has no
+    // createdAt — `detectedAt` IS its insert timestamp (server default now()).
+    // The old status-then-date grouping pushed freshly-detected anomalies
+    // below older open ones.
+    orderBy: [{ detectedAt: "desc" }, { id: "desc" }],
     take: 200
   });
 

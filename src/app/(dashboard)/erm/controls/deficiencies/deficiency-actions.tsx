@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import type { Deficiency } from "@/app/(dashboard)/erm/lib-t3";
 
 const NEXT_STATUS: Record<string, string[]> = {
@@ -56,32 +58,35 @@ export function DeficiencyRowActions({ def, canReport = true }: { def: Deficienc
     <div className="flex flex-col items-end gap-1">
       <div className="flex flex-wrap items-center justify-end gap-1.5">
         {!def.remediationCapaId && (
-          <button
+          <Button
             onClick={() => call(`/api/erm/controls/deficiencies/${def.id}/raise-capa`, "POST")}
             disabled={busy}
-            className="rounded-md border border-primary-300 bg-white px-2 py-1 text-[11px] font-medium text-primary-700 hover:bg-primary-50 disabled:opacity-50"
+            variant="outline"
+            className="border-primary-300 text-[11px] text-primary-700 hover:bg-primary-50"
           >
             Raise CAPA
-          </button>
+          </Button>
         )}
         {advances.map((s) => (
-          <button
+          <Button
             key={s}
             onClick={() => call(`/api/erm/controls/deficiencies/${def.id}?status=${s}`, "PATCH")}
             disabled={busy}
-            className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+            variant="outline"
+            className="text-[11px]"
           >
             {STATUS_LABEL[s] ?? s}
-          </button>
+          </Button>
         ))}
         {canReport && !def.reportedToAuditCommittee && (
-          <button
+          <Button
             onClick={() => setReportOpen(true)}
             disabled={busy}
-            className="rounded-md border border-rose-300 bg-white px-2 py-1 text-[11px] font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50"
+            variant="destructive"
+            className="text-[11px]"
           >
             Report to AC
-          </button>
+          </Button>
         )}
       </div>
       {error && <span className="max-w-[260px] text-right text-[10px] text-rose-600">{error}</span>}
@@ -106,25 +111,23 @@ function ReportModal({ onClose, onSubmit, busy }: { onClose: () => void; onSubmi
       <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Report to Audit Committee</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <label className="mb-1 block text-xs font-medium text-slate-600">Audit Committee reference</label>
-        <input
+        <Input
           value={ref}
           onChange={(e) => setRef(e.target.value)}
           placeholder="e.g. AC-2026-Q2-07"
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
         />
         <p className="mt-2 text-[11px] text-slate-400">CRO-only action. The deficiency is marked as reported on submit.</p>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button
+          <Button onClick={onClose} variant="outline">Cancel</Button>
+          <Button
             onClick={() => onSubmit(ref.trim())}
             disabled={busy || ref.trim().length < 1}
-            className="rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
           >
             {busy ? "Reporting…" : "Report"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

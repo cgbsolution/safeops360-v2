@@ -1,0 +1,17 @@
+{
+  "name": "SafeOps360 Field Capture",
+  "short_name": "SafeOps Field",
+  "description": "Report safety observations, near-misses and unsafe conditions — works offline.",
+  "id": "/capture",
+  "start_url": "/capture",
+  "scope": "/capture",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B1F4D",
+  "theme_color": "#0B1F4D",
+  "lang": "hi-IN",
+  "icons": [
+    { "src": "/capture-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/capture-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -22,6 +22,12 @@ import { Badge } from "@/components/ui/badge";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
 import { formatDateTime } from "@/lib/utils";
+import {
+  EvidenceCapture,
+  evidenceComplete,
+  evidencePayload,
+  useEvidenceCapture,
+} from "@/components/ptw/evidence-capture";
 
 type GasParam = { parameter: string; lowLimit?: number; highLimit?: number; unit?: string };
 type GasStatus = {
@@ -361,6 +367,15 @@ function ExtensionSection({
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [decidingId, setDecidingId] = useState<string | null>(null);
+  const [decision, setDecision] = useState<"APPROVED" | "REJECTED">("APPROVED");
+  // Closed-loop rebuild: extension request + decision are lifecycle actions —
+  // GPS + signature evidence required (photo optional).
+  const evidenceState = useEvidenceCapture();
+  const evidenceReady = evidenceComplete(evidenceState, {
+    requirePhoto: false,
+    requireDeclaration: false,
+  });
 
   const pending = extensions.filter((e) => e.status === "PENDING");
 
@@ -372,7 +387,7 @@ function ExtensionSection({
       const r = await fetch(`/api/ptw/${permitId}/active/extension`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newValidTo: isoTo, reason }),
+        body: JSON.stringify({ newValidTo: isoTo, reason, evidence: evidencePayload(evidenceState) }),
       });
       if (r.ok) {
         setShow(false);
@@ -386,16 +401,18 @@ function ExtensionSection({
     }
   }
 
-  async function decide(extId: string, decision: "APPROVED" | "REJECTED") {
+  async function decide(extId: string, d: "APPROVED" | "REJECTED") {
     setBusy(true);
     try {
       const r = await fetch(`/api/ptw/${permitId}/active/extension/${extId}/decide`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ decision }),
+        body: JSON.stringify({ decision: d, evidence: evidencePayload(evidenceState) }),
       });
-      if (r.ok) router.refresh();
-      else setError(await readApiError(r, "Failed to decide extension"));
+      if (r.ok) {
+        setDecidingId(null);
+        router.refresh();
+      } else setError(await readApiError(r, "Failed to decide extension"));
     } finally {
       setBusy(false);
     }
@@ -429,7 +446,7 @@ function ExtensionSection({
                   <div className="flex gap-1">
                     <Button
                       size="sm"
-                      onClick={() => decide(e.id, "APPROVED")}
+                      onClick={() => { setDecision("APPROVED"); setDecidingId(e.id); }}
                       disabled={busy}
                     >
                       Approve
@@ -437,7 +454,7 @@ function ExtensionSection({
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => decide(e.id, "REJECTED")}
+                      onClick={() => { setDecision("REJECTED"); setDecidingId(e.id); }}
                       disabled={busy}
                     >
                       Reject
@@ -463,7 +480,26 @@ function ExtensionSection({
           <div className="text-xs text-slate-500">No extension requests yet.</div>
         )}
 
-        {!show && pending.length === 0 && (
+        {decidingId && (
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+            <div className="text-xs font-medium text-slate-700">
+              {decision === "APPROVED" ? "Approve" : "Reject"} this extension —
+              field evidence is recorded on the permit's audit trail.
+            </div>
+            <EvidenceCapture permitId={permitId} requirePhoto={false} state={evidenceState} />
+            {error && <div className="text-xs text-rose-700">{error}</div>}
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => decide(decidingId, decision)} disabled={busy || !evidenceReady}>
+                Confirm {decision === "APPROVED" ? "Approval" : "Rejection"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setDecidingId(null)} disabled={busy}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!show && !decidingId && pending.length === 0 && (
           <Button size="sm" variant="outline" onClick={() => setShow(true)}>
             <Plus size={14} /> Request Extension
           </Button>
@@ -498,12 +534,13 @@ function ExtensionSection({
                 placeholder="Why does this permit need more time?"
               />
             </div>
+            <EvidenceCapture permitId={permitId} requirePhoto={false} state={evidenceState} />
             {error && <div className="text-xs text-rose-700">{error}</div>}
             <div className="flex gap-2">
               <Button
                 size="sm"
                 onClick={request}
-                disabled={busy || !newDate || reason.length < 5}
+                disabled={busy || !newDate || reason.length < 5 || !evidenceReady}
               >
                 Submit Request
               </Button>

@@ -32,6 +32,14 @@ const STD_5X5 = {
     non_routine: "MODERATE",
     emergency: "LOW"
   },
+  // ALARP tolerability bands: CRITICAL is intolerable; HIGH/MODERATE are
+  // tolerable only if reduction is demonstrated ALARP; LOW is broadly acceptable.
+  alarpBands: {
+    LOW: "BROADLY_ACCEPTABLE",
+    MODERATE: "TOLERABLE",
+    HIGH: "TOLERABLE",
+    CRITICAL: "UNACCEPTABLE"
+  },
   controlHierarchyEnforced: true,
   isActive: true,
   isDefault: true,
@@ -128,6 +136,7 @@ const STD_3X3 = {
   likelihoodLevels: 3,
   severityLevels: 3,
   acceptableResidual: { routine: "MODERATE", non_routine: "LOW", emergency: "LOW" },
+  alarpBands: { LOW: "BROADLY_ACCEPTABLE", MODERATE: "TOLERABLE", HIGH: "TOLERABLE", CRITICAL: "UNACCEPTABLE" },
   controlHierarchyEnforced: false,
   isActive: true,
   isDefault: false,
@@ -274,7 +283,7 @@ const HAZARDS = [
       { hierarchy: "ADMINISTRATIVE", description: "Hot work permit + fire watch + 11m clearance" }
     ]},
   { code: "FIRE_DUST_EXPLOSION", category: "fire_explosion", subcategory: "dust", name: "Combustible dust explosion",
-    description: "Accumulated combustible dust (cotton lint, fabric fly, yarn fibre fines) ignited by spark or flame.",
+    description: "Accumulated combustible dust (coal, sugar, flour, metal) ignited by spark or flame.",
     typicalHarmPotential: ["blast_injury", "fatality"],
     typicalAffectedPersons: ["operator", "occupants"],
     energyForm: "chemical",
@@ -324,7 +333,7 @@ const HAZARDS = [
       { hierarchy: "PPE", description: "Hearing protection with NRR matched to exposure" }
     ]},
   { code: "THERMAL_HOT_SURFACE", category: "thermal", subcategory: "hot", name: "Contact with hot surface (> 60°C)",
-    description: "Skin contact with steam pipes, fusing-machine plates, steam-press / ironing surfaces.",
+    description: "Skin contact with steam pipes, hot metal, kiln shell.",
     typicalHarmPotential: ["burn_thermal"],
     typicalAffectedPersons: ["operator", "maintenance"],
     energyForm: "thermal",
@@ -455,13 +464,13 @@ const HAZARDS = [
       { hierarchy: "ENGINEERING", description: "Gas detection with auto-shutoff valve" },
       { hierarchy: "ADMINISTRATIVE", description: "Monthly leak test of gas piping" }
     ]},
-  { code: "FIRE_MOLTEN_METAL", category: "fire_explosion", subcategory: "molten_metal", name: "Fabric / lint flash fire on the production floor (high fire load)",
-    description: "Rapid flame spread through accumulated cotton lint, stacked fabric rolls, and finished-garment stock when ignited by a spark, hot iron, or electrical fault on the sewing / finishing floor.",
+  { code: "FIRE_MOLTEN_METAL", category: "fire_explosion", subcategory: "molten_metal", name: "Molten metal splash / spill",
+    description: "Splash, runover, or escape of molten metal during casting, ladling, or pouring operations.",
     typicalHarmPotential: ["burn_thermal", "fatality"],
     typicalAffectedPersons: ["operator", "bystander"],
     energyForm: "thermal",
     typicalControlsSuggested: [
-      { hierarchy: "ENGINEERING", description: "Automatic sprinklers over the production floor + lint extraction at machines" },
+      { hierarchy: "ENGINEERING", description: "Splash-resistant containment + slag-collection trays" },
       { hierarchy: "PPE", description: "Aluminised heat-resistant suit + visor" }
     ]},
 
@@ -569,7 +578,7 @@ const HAZARDS = [
       { hierarchy: "ENGINEERING", description: "Lux-level survey; supplemental task lighting" }
     ]},
   { code: "ENV_DUST_AIRBORNE", category: "environmental", subcategory: "dust", name: "Airborne respirable dust",
-    description: "Respirable dust (cotton dust, fabric lint, fibre fly) exceeding occupational exposure limits.",
+    description: "Respirable dust (silica, coal, cement) exceeding occupational exposure limits.",
     typicalHarmPotential: ["respiratory_illness", "silicosis", "pneumoconiosis"],
     typicalAffectedPersons: ["operator", "maintenance"],
     energyForm: "chemical",
@@ -723,7 +732,7 @@ const HAZARDS = [
       { hierarchy: "PPE", description: "Welding helmet with shade-matched filter" }
     ]},
 
-  // ── Page Industries cross-industry set (File 2) — 90 hazards, sector-neutral ──
+  // ── Meridian cross-industry set (File 2) — 90 hazards, sector-neutral ──
 
   // Confined Space (File 2.1)
   { code: "CS-001", category: "confined_space", subcategory: "atmosphere", name: "Oxygen deficiency in confined space",
@@ -1025,7 +1034,7 @@ const HAZARDS = [
     typicalHarmPotential: ["burn_chemical", "environmental_damage"], typicalAffectedPersons: ["driver", "bystander"], energyForm: "chemical",
     typicalControlsSuggested: [{ hierarchy: "ADMINISTRATIVE", description: "Containers capped and secured during transport; spill kit on vehicle" }] },
   { code: "CHEM-011", category: "health", subcategory: "respirable_dust", name: "Respirable dust — prolonged inhalation causing occupational disease",
-    description: "Long-term inhalation of respirable cotton dust / fabric lint (byssinosis risk) above OEL.",
+    description: "Long-term inhalation of respirable dust (silica, coal, organic) above OEL.",
     typicalHarmPotential: ["pneumoconiosis", "chronic_health_effect"], typicalAffectedPersons: ["operator", "maintenance"], energyForm: "chemical",
     typicalControlsSuggested: [{ hierarchy: "ENGINEERING", description: "Wet suppression; LEV; sealed conveyors" }, { hierarchy: "PPE", description: "FFP3/P3 respirator; health surveillance programme" }] },
   { code: "CHEM-012", category: "health", subcategory: "asbestos", name: "Asbestos exposure — legacy insulation or lagging disturbance",
@@ -1261,6 +1270,7 @@ async function seedMatrix(
       likelihoodLevels: spec.likelihoodLevels,
       severityLevels: spec.severityLevels,
       acceptableResidual: spec.acceptableResidual,
+      alarpBands: spec.alarpBands,
       controlHierarchyEnforced: spec.controlHierarchyEnforced,
       isActive: spec.isActive,
       isDefault: spec.isDefault,
@@ -1270,6 +1280,7 @@ async function seedMatrix(
       name: spec.name,
       description: spec.description,
       acceptableResidual: spec.acceptableResidual,
+      alarpBands: spec.alarpBands,
       controlHierarchyEnforced: spec.controlHierarchyEnforced,
       isActive: spec.isActive,
       isDefault: spec.isDefault

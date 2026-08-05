@@ -138,17 +138,23 @@ const DEFINITIONS: DefInput[] = [
   },
 
   // ─── 3. PTW — General Cold Work ────────────────────────────────────────
+  // Cold work is the low-risk permit type and runs a 4-step chain: the
+  // Safety Officer Review that the high-risk types carry is deliberately
+  // NOT here. Issuer review plus receiver acknowledgement are the controls.
+  // Keep this at 4 steps — it is the shape live Cold Work instances run on
+  // (see scripts/ptw_cold_work_4_step.py in the backend repo, which made
+  // the same change in place so existing instances kept their step ids).
   {
     module: "PTW",
     recordType: "GENERAL_COLD",
     name: "PTW — Cold Work",
-    description: "Issuer → Safety Officer → FLRA → Active → Close",
+    description:
+      "Low-risk cold work — 4 steps: Originator submits → Issuer reviews → Receiver acknowledges (+ FLRA) → Issuer closes the permit.",
     steps: [
       { sequence: 1, stepType: "MAKER", name: "Originator Submits" },
       { sequence: 2, stepType: "CHECKER", name: "Issuer Review", approverRole: "PERMIT_ISSUER", slaHours: 4, escalationRole: "HSE_MANAGER" },
-      { sequence: 3, stepType: "CHECKER", name: "Safety Officer Review", approverRole: "SAFETY_OFFICER", slaHours: 4, escalationRole: "HSE_MANAGER" },
-      { sequence: 4, stepType: "ASSIGNEE_TASK", name: "Receiver Acknowledges + FLRA", approverField: "RECEIVER", slaHours: 8, escalationRole: "HSE_MANAGER" },
-      { sequence: 5, stepType: "CLOSURE", name: "Issuer Closes Permit", approverRole: "PERMIT_ISSUER", escalationRole: "HSE_MANAGER" }
+      { sequence: 3, stepType: "ASSIGNEE_TASK", name: "Receiver Acknowledges + FLRA", approverField: "RECEIVER", slaHours: 8, escalationRole: "HSE_MANAGER" },
+      { sequence: 4, stepType: "CLOSURE", name: "Issuer Closes Permit", approverRole: "PERMIT_ISSUER", escalationRole: "HSE_MANAGER" }
     ]
   },
 
@@ -226,6 +232,22 @@ const DEFINITIONS: DefInput[] = [
       { sequence: 3, stepType: "CHECKER", name: "Safety Officer Review", approverRole: "SAFETY_OFFICER", slaHours: 2, escalationRole: "HSE_MANAGER" },
       { sequence: 4, stepType: "CHECKER", name: "Plant Head Approval", approverRole: "PLANT_HEAD", slaHours: 4 },
       { sequence: 5, stepType: "ASSIGNEE_TASK", name: "Receiver Acknowledges + FLRA + LOTO", approverField: "RECEIVER", slaHours: 4, escalationRole: "HSE_MANAGER" },
+      { sequence: 6, stepType: "CLOSURE", name: "Safety Officer Closes", approverRole: "SAFETY_OFFICER", escalationRole: "HSE_MANAGER" }
+    ]
+  },
+
+  // ─── PTW — Lifting Operations (Plant Head approval required) ─────────
+  {
+    module: "PTW",
+    recordType: "LIFTING",
+    name: "PTW — Lifting Operations",
+    description: "Issuer → Safety Officer → Plant Head → Receiver + FLRA → Close",
+    steps: [
+      { sequence: 1, stepType: "MAKER", name: "Originator Submits" },
+      { sequence: 2, stepType: "CHECKER", name: "Issuer Review", approverRole: "PERMIT_ISSUER", slaHours: 2, escalationRole: "HSE_MANAGER" },
+      { sequence: 3, stepType: "CHECKER", name: "Safety Officer Review", approverRole: "SAFETY_OFFICER", slaHours: 2, escalationRole: "HSE_MANAGER" },
+      { sequence: 4, stepType: "CHECKER", name: "Plant Head Approval", approverRole: "PLANT_HEAD", slaHours: 4 },
+      { sequence: 5, stepType: "ASSIGNEE_TASK", name: "Receiver Acknowledges + FLRA", approverField: "RECEIVER", slaHours: 4, escalationRole: "HSE_MANAGER" },
       { sequence: 6, stepType: "CLOSURE", name: "Safety Officer Closes", approverRole: "SAFETY_OFFICER", escalationRole: "HSE_MANAGER" }
     ]
   },

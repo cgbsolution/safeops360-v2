@@ -2,7 +2,7 @@
 // Seed — CAMS (Compliance & Audit Management System)
 //
 // Layers the centralised audit/inspection engine demo data on top of the
-// Page Industries tenant (plants NW / SW). One engine for audits AND
+// Meridian Manufacturing tenant (plants NW / SW). One engine for audits AND
 // inspections — engagements carry `sourceModule` to prove the shared model.
 //
 // Seeds:
@@ -12,14 +12,11 @@
 //     inspections, contractor audit)
 //   • 4 APPROVED, clause-mapped templates (ISO 45001 / 14001 / 9001 / fire)
 //   • 3 recurrence rules (fire monthly, PPE quarterly, system audits annual)
-//   • 15 engagements across a rolling 12 months — closed (scored), in-progress,
-//     scheduled & planned; 4 raised by consumer modules (Fire / PPE / Sewing Line /
-//     EPC) with provenance; the North 88% vs South 79% HSE benchmarking story
-//   • ~12 findings (severity spread); MAJOR/CRITICAL carry an AUDIT-source CAPA;
-//     5 repeat findings at South Garment Unit (ISO 45001 clauses 8.1.2/8.2/6.1.2/9.1
-//     recurring across FY26-Q3 → FY26 → FY27-Q1) for recurrence detection
-//   • analytics snapshots (FY26-Q3/Q4/FY27-Q1) seeded by the companion Python
-//     script scripts/seed_cams_snapshots.py (precompute lives in the backend)
+//   • 14 engagements across a rolling 12 months — closed (scored), in-progress,
+//     scheduled & planned; 3 raised by consumer modules (Fire / PPE / Pharma)
+//     with provenance; the North 88% vs South 79% HSE benchmarking story
+//   • ~16 findings (severity spread); MAJOR/CRITICAL carry an AUDIT-source CAPA;
+//     a repeat finding pair at South Works (same ISO 45001 clause, two quarters)
 //
 // Idempotent: deletes prior CAMS demo rows (FK-safe order) + personas + the
 // AUDIT-source CAPAs this seed created (matched by /cams/findings/ ref) before
@@ -57,9 +54,6 @@ async function main() {
   if (!nw || !sw) throw new Error("NW/SW plants not found — run the base seed (Step 9) first");
 
   // ── Idempotent cleanup (FK-safe order) ─────────────────────────────────
-  await safeDelete("camsAnalyticsSnapshot", () => prisma.camsAnalyticsSnapshot.deleteMany({}));
-  await safeDelete("camsObligation", () => prisma.camsObligation.deleteMany({}));
-  await safeDelete("camsAssetLite", () => prisma.camsAssetLite.deleteMany({}));
   await safeDelete("camsComplianceLink", () => prisma.camsComplianceLink.deleteMany({}));
   await safeDelete("capa(CAMS audit findings)", () =>
     prisma.capa.deleteMany({ where: { sourceReferenceUrl: { contains: "/cams/findings/" } } }));
@@ -159,12 +153,12 @@ async function main() {
     mode: "PERCENT_CONFORMANCE", pass: 85,
     sections: [
       { title: "Compliance Obligations", questions: [
-        { text: "Are PCB consent-to-operate conditions met and evidenced?", clause: "ISO 14001:6.1.3" },
-        { text: "Is dye-house effluent within consented norms for COD/BOD/colour/TDS (ETP logs verified)?", clause: "ISO 14001:9.1.2" },
+        { text: "Are consent-to-operate conditions met and evidenced?", clause: "ISO 14001:6.1.3" },
+        { text: "Is effluent within consented norms (ETP logs verified)?", clause: "ISO 14001:9.1.2" },
       ]},
       { title: "Operational Control", questions: [
-        { text: "Is the ETP operated and maintained per SOP for the apparel effluent stream?", clause: "ISO 14001:8.1" },
-        { text: "Is emergency response for dye-chemical / effluent spill release in place?", clause: "ISO 14001:8.2" },
+        { text: "Is the ETP operated and maintained per SOP?", clause: "ISO 14001:8.1" },
+        { text: "Is emergency response for environmental release in place?", clause: "ISO 14001:8.2" },
         { text: "Are environmental nonconformities corrected?", clause: "ISO 14001:10.2" },
       ]},
     ],
@@ -190,9 +184,9 @@ async function main() {
     mode: "PERCENT_CONFORMANCE", pass: 80,
     sections: [
       { title: "Production Control", questions: [
-        { text: "Is sewing-line production controlled per plan for the target style and fabric GSM?", clause: "ISO 9001:8.5.1" },
-        { text: "Are monitoring & measuring resources (GSM, shade, fabric-width gauges) calibrated?", clause: "ISO 9001:7.1.5" },
-        { text: "Are nonconforming garments/lots controlled and segregated as rejects?", clause: "ISO 9001:8.7" },
+        { text: "Is production and service provision controlled per plan?", clause: "ISO 9001:8.5.1" },
+        { text: "Are monitoring & measuring resources calibrated?", clause: "ISO 9001:7.1.5" },
+        { text: "Are nonconforming outputs controlled?", clause: "ISO 9001:8.7" },
       ]},
       { title: "Improvement", questions: [
         { text: "Are internal audits conducted to programme?", clause: "ISO 9001:9.2" },
@@ -308,55 +302,38 @@ async function main() {
   }
 
   // Closed/scored — the North vs South HSE benchmarking story.
-  await engagement({ title: "Internal HSE System Audit — North Garment Unit FY26", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: nw, status: "CLOSED", lead: leadAuditor, plannedAgo: 150, score: 88, result: "MINOR_NC",
+  await engagement({ title: "Internal HSE System Audit — North Works FY26", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: nw, status: "CLOSED", lead: leadAuditor, plannedAgo: 150, score: 88, result: "MINOR_NC",
     findings: [{ title: "Worker consultation records incomplete for night shift", severity: "MINOR_NC", clause: "ISO 45001:5.4", status: "CLOSED", rca: "Consultation log not extended to the third shift roster." }] });
 
-  // FY26-Q3 BASELINE at South Garment Unit — the "first occurrences" the later audits recur against.
-  await engagement({ title: "Internal HSE System Audit — South Garment Unit FY26-Q3 (baseline)", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: sw, status: "CLOSED", lead: leadAuditor, plannedAgo: 210, score: 74, result: "MAJOR_NC",
+  await engagement({ title: "Internal HSE System Audit — South Works FY26", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: sw, status: "CLOSED", lead: leadAuditor, plannedAgo: 140, score: 79, result: "MAJOR_NC",
     findings: [
-      { title: "Machine guarding gap first identified at band-knife cutting line", severity: "MAJOR_NC", clause: "ISO 45001:8.1.2", status: "CLOSED", capaState: "CLOSED", ageDays: 205, rca: "Blade-guard interlock missing on retrofit band-knife cutter." },
-      { title: "Emergency drill not conducted in Q3", severity: "MINOR_NC", clause: "ISO 45001:8.2", status: "CLOSED" },
-      { title: "Hazard identification not refreshed for new fabric-cutting process", severity: "MAJOR_NC", clause: "ISO 45001:6.1.2", status: "CLOSED", capaState: "CLOSED", ageDays: 205, rca: "MOC not triggered for the band-knife cutting line change." },
-      { title: "OH&S performance metrics not reviewed in Q3", severity: "MINOR_NC", clause: "ISO 45001:9.1", status: "CLOSED" },
+      { title: "Hierarchy of controls not applied at packing line guarding", severity: "MAJOR_NC", clause: "ISO 45001:8.1.2", status: "CAPA_RAISED", capaState: "ACTIONS_IN_PROGRESS", ageDays: 130, rca: "Machine guarding upgrade deferred for budget." },
+      { title: "Emergency drill overdue at South Works", severity: "MINOR_NC", clause: "ISO 45001:8.2", status: "CLOSED" },
     ] });
 
-  await engagement({ title: "Internal HSE System Audit — South Garment Unit FY26", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: sw, status: "CLOSED", lead: leadAuditor, plannedAgo: 140, score: 79, result: "MAJOR_NC",
-    findings: [
-      { title: "Hierarchy of controls not applied at band-knife cutting line guarding", severity: "MAJOR_NC", clause: "ISO 45001:8.1.2", status: "CAPA_RAISED", capaState: "ACTIONS_IN_PROGRESS", repeat: true, ageDays: 130, rca: "Band-knife blade-guard upgrade deferred for budget." },
-      { title: "Emergency drill overdue at South Garment Unit", severity: "MINOR_NC", clause: "ISO 45001:8.2", status: "CLOSED", repeat: true },
-    ] });
-
-  // ETP South Garment Unit — MAJOR_NC tying to the water/consent risk story.
-  await engagement({ title: "ETP Compliance Audit — South Garment Unit", type: "COMPLIANCE_AUDIT", auditTypeId: atEtp.id, templateId: etpTpl.id, standards: ["ISO_14001"], plant: sw, status: "REPORT_ISSUED", lead: leadAuditor, plannedAgo: 45, score: 72, result: "MAJOR_NC",
-    findings: [{ title: "Dye-house effluent COD/colour exceeded consented norm on 3 days", severity: "MAJOR_NC", clause: "ISO 14001:9.1.2", status: "CAPA_RAISED", capaState: "ACTIONS_PLANNED", ageDays: 40, rca: "ETP dosing pump under-capacity during peak dye-bath effluent load." }] });
+  // ETP South Works — MAJOR_NC tying to the water/consent risk story.
+  await engagement({ title: "ETP Compliance Audit — South Works", type: "COMPLIANCE_AUDIT", auditTypeId: atEtp.id, templateId: etpTpl.id, standards: ["ISO_14001"], plant: sw, status: "REPORT_ISSUED", lead: leadAuditor, plannedAgo: 45, score: 72, result: "MAJOR_NC",
+    findings: [{ title: "Effluent COD exceeded consented norm on 3 days", severity: "MAJOR_NC", clause: "ISO 14001:9.1.2", status: "CAPA_RAISED", capaState: "ACTIONS_PLANNED", ageDays: 40, rca: "Dosing pump under-capacity during peak load." }] });
 
   // Quality system audit — North, clean.
-  await engagement({ title: "Quality System Audit — North Garment Unit", type: "INTERNAL_AUDIT", auditTypeId: atQms.id, templateId: qmsTpl.id, standards: ["ISO_9001"], plant: nw, status: "CLOSED", lead: leadAuditor, plannedAgo: 95, score: 91, result: "CONFORMING" });
+  await engagement({ title: "Quality System Audit — North Works", type: "INTERNAL_AUDIT", auditTypeId: atQms.id, templateId: qmsTpl.id, standards: ["ISO_9001"], plant: nw, status: "CLOSED", lead: leadAuditor, plannedAgo: 95, score: 91, result: "CONFORMING" });
 
-  // Recurrences — same ISO 45001 clauses recurring at South Garment Unit across quarters.
-  // Together with the FY26-Q3 baseline + FY26 audit above, the Analytics engine
-  // detects 5 repeat findings (clauses 8.1.2 ×2, 8.2, 6.1.2, 9.1) — §10.4.
-  await engagement({ title: "Internal HSE System Audit — South Garment Unit Q2", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: sw, status: "REPORT_ISSUED", lead: leadAuditor, plannedAgo: 30, score: 77, result: "MAJOR_NC",
-    findings: [{ title: "Machine guarding gap recurs at band-knife cutting line (repeat)", severity: "MAJOR_NC", clause: "ISO 45001:8.1.2", status: "CAPA_RAISED", capaState: "ACTIONS_PLANNED", repeat: true, ageDays: 25, rca: "Prior CAPA not yet effective — interim guard only." }] });
-
-  await engagement({ title: "Internal HSE System Audit — South Garment Unit FY27-Q1", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: sw, status: "REPORT_ISSUED", lead: leadAuditor, plannedAgo: 25, score: 78, result: "MAJOR_NC",
-    findings: [
-      { title: "Hazard identification still not refreshed for fabric-cutting process (repeat)", severity: "MAJOR_NC", clause: "ISO 45001:6.1.2", status: "CAPA_RAISED", capaState: "ACTIONS_PLANNED", repeat: true, ageDays: 20, rca: "Q3 corrective action not yet effective." },
-      { title: "OH&S performance metrics review still outstanding (repeat)", severity: "MINOR_NC", clause: "ISO 45001:9.1", status: "OPEN", repeat: true },
-    ] });
+  // Repeat finding pair — same ISO 45001 clause at South Works, two quarters apart.
+  await engagement({ title: "Internal HSE System Audit — South Works Q2", type: "INTERNAL_AUDIT", auditTypeId: atHse.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: sw, status: "REPORT_ISSUED", lead: leadAuditor, plannedAgo: 30, score: 77, result: "MAJOR_NC",
+    findings: [{ title: "Machine guarding gap recurs at packing line (repeat)", severity: "MAJOR_NC", clause: "ISO 45001:8.1.2", status: "CAPA_RAISED", capaState: "ACTIONS_PLANNED", repeat: true, ageDays: 25, rca: "Prior CAPA not yet effective — interim guard only." }] });
 
   // Consumer-raised engagements (provenance badges) — the shared-engine proof.
-  await engagement({ title: "Fire Equipment Inspection — North Garment Unit (June)", type: "INSPECTION", auditTypeId: atFire.id, templateId: fireTpl.id, standards: ["ISO_45001"], plant: nw, status: "CLOSED", lead: auditor, plannedAgo: 12, score: 100, result: "CONFORMING", sourceModule: "Fire Safety" });
-  await engagement({ title: "PPE Condition Inspection — South Garment Unit Q2", type: "INSPECTION", auditTypeId: atPpe.id, templateId: null, standards: ["ISO_45001"], plant: sw, status: "FIELDWORK_COMPLETE", lead: auditor, plannedAgo: 6, score: 94, result: "MINOR_NC", sourceModule: "PPE Management",
+  await engagement({ title: "Fire Equipment Inspection — North Works (June)", type: "INSPECTION", auditTypeId: atFire.id, templateId: fireTpl.id, standards: ["ISO_45001"], plant: nw, status: "CLOSED", lead: auditor, plannedAgo: 12, score: 100, result: "CONFORMING", sourceModule: "Fire Safety" });
+  await engagement({ title: "PPE Condition Inspection — South Works Q2", type: "INSPECTION", auditTypeId: atPpe.id, templateId: null, standards: ["ISO_45001"], plant: sw, status: "FIELDWORK_COMPLETE", lead: auditor, plannedAgo: 6, score: 94, result: "MINOR_NC", sourceModule: "PPE Management",
     findings: [{ title: "3 hard hats past replacement date in store B", severity: "MINOR_NC", status: "OPEN" }] });
-  await engagement({ title: "Style-Change Line Clearance Audit — Sewing Line 2 (Lot 2026-118)", type: "INSPECTION", auditTypeId: atQms.id, templateId: qmsTpl.id, standards: ["ISO_9001"], plant: nw, status: "CLOSED", lead: auditor, plannedAgo: 3, score: 100, result: "CONFORMING", sourceModule: "Sewing Line IMS" });
+  await engagement({ title: "Line Clearance Audit — Pharma Block (Batch 2026-118)", type: "INSPECTION", auditTypeId: atQms.id, templateId: qmsTpl.id, standards: ["ISO_9001"], plant: nw, status: "CLOSED", lead: auditor, plannedAgo: 3, score: 100, result: "CONFORMING", sourceModule: "Pharma IMS" });
 
   // In-progress / scheduled / planned (calendar forward fill).
-  await engagement({ title: "Environmental System Audit — North Garment Unit", type: "INTERNAL_AUDIT", auditTypeId: atEnv.id, templateId: etpTpl.id, standards: ["ISO_14001"], plant: nw, status: "IN_PROGRESS", lead: leadAuditor, plannedAgo: 2 });
+  await engagement({ title: "Environmental System Audit — North Works", type: "INTERNAL_AUDIT", auditTypeId: atEnv.id, templateId: etpTpl.id, standards: ["ISO_14001"], plant: nw, status: "IN_PROGRESS", lead: leadAuditor, plannedAgo: 2 });
   await engagement({ title: "Contractor Safety Audit — EPC Site A", type: "SUPPLIER_AUDIT", auditTypeId: atCon.id, templateId: hseTpl.id, standards: ["ISO_45001"], plant: sw, status: "SCHEDULED", lead: leadAuditor, plannedIn: 9, sourceModule: "EPC" });
-  await engagement({ title: "Fire Equipment Inspection — South Garment Unit (July)", type: "INSPECTION", auditTypeId: atFire.id, templateId: fireTpl.id, standards: ["ISO_45001"], plant: sw, status: "SCHEDULED", lead: auditor, plannedIn: 16 });
-  await engagement({ title: "Statutory Compliance Audit — North Garment Unit FY27", type: "COMPLIANCE_AUDIT", auditTypeId: atStat.id, templateId: etpTpl.id, standards: ["ISO_45001", "ISO_14001"], plant: nw, status: "PLANNED", lead: leadAuditor, plannedIn: 40 });
-  await engagement({ title: "Quality System Audit — South Garment Unit FY27", type: "INTERNAL_AUDIT", auditTypeId: atQms.id, templateId: qmsTpl.id, standards: ["ISO_9001"], plant: sw, status: "PLANNED", lead: leadAuditor, plannedIn: 55 });
+  await engagement({ title: "Fire Equipment Inspection — South Works (July)", type: "INSPECTION", auditTypeId: atFire.id, templateId: fireTpl.id, standards: ["ISO_45001"], plant: sw, status: "SCHEDULED", lead: auditor, plannedIn: 16 });
+  await engagement({ title: "Statutory Compliance Audit — North Works FY27", type: "COMPLIANCE_AUDIT", auditTypeId: atStat.id, templateId: etpTpl.id, standards: ["ISO_45001", "ISO_14001"], plant: nw, status: "PLANNED", lead: leadAuditor, plannedIn: 40 });
+  await engagement({ title: "Quality System Audit — South Works FY27", type: "INTERNAL_AUDIT", auditTypeId: atQms.id, templateId: qmsTpl.id, standards: ["ISO_9001"], plant: sw, status: "PLANNED", lead: leadAuditor, plannedIn: 55 });
 
   // ── Compliance links (§10.5) — audits/findings ↔ ERM obligations ─────────
   // Enrichment: only if the ERM obligations register is present (integrated mode).
@@ -365,10 +342,10 @@ async function main() {
     where: { isDeleted: false }, select: { id: true, obligationCode: true, siteId: true, title: true, status: true },
   }).catch(() => [] as { id: string; obligationCode: string; siteId: string | null; title: string; status: string }[]);
   if (obligations.length) {
-    const etp = await prisma.camsEngagement.findFirst({ where: { title: { contains: "ETP Compliance Audit — South Garment Unit" } } });
+    const etp = await prisma.camsEngagement.findFirst({ where: { title: { contains: "ETP Compliance Audit — South Works" } } });
     const etpFinding = etp ? await prisma.camsFinding.findFirst({ where: { engagementId: etp.id } }) : null;
-    const hseNorth = await prisma.camsEngagement.findFirst({ where: { title: { contains: "Internal HSE System Audit — North Garment Unit" } } });
-    const qmsNorth = await prisma.camsEngagement.findFirst({ where: { title: { contains: "Quality System Audit — North Garment Unit" } } });
+    const hseNorth = await prisma.camsEngagement.findFirst({ where: { title: { contains: "Internal HSE System Audit — North Works" } } });
+    const qmsNorth = await prisma.camsEngagement.findFirst({ where: { title: { contains: "Quality System Audit — North Works" } } });
 
     const nwObls = obligations.filter((o) => o.siteId === nw.id);
     const swObls = obligations.filter((o) => o.siteId === sw.id);
@@ -389,28 +366,6 @@ async function main() {
       linkCount++;
     }
   }
-
-  // ── Bundled standalone-mode providers (§12) — CAMS-owned obligations register
-  // + lite asset register. Unused in integrated mode (ERM register + Equipment
-  // Master win); they back the Compliance Tracker / asset picklist when
-  // CAMS_STANDALONE is set, so the standalone demo tells the same story.
-  await prisma.camsObligation.createMany({
-    data: [
-      { obligationCode: "OBL-SW-001", title: "Consent to Operate (Water Act)", obligationType: "STATUTORY", regulatorName: "State Pollution Control Board", siteId: sw.id, ownerId: auditMgr, frequency: "ANNUAL", status: "AT_RISK", validUntil: daysFromNow(120), createdBy: auditMgr },
-      { obligationCode: "OBL-SW-002", title: "Fire NOC", obligationType: "STATUTORY", regulatorName: "State Fire Department", siteId: sw.id, ownerId: auditMgr, frequency: "ANNUAL", status: "OVERDUE", validUntil: daysAgo(15), createdBy: auditMgr },
-      { obligationCode: "OBL-NW-001", title: "Hazardous Waste Authorisation", obligationType: "STATUTORY", regulatorName: "State Pollution Control Board", siteId: nw.id, ownerId: auditMgr, frequency: "ANNUAL", status: "COMPLIANT", validUntil: daysFromNow(240), createdBy: auditMgr },
-      { obligationCode: "OBL-NW-002", title: "Factory License (Factories Act)", obligationType: "STATUTORY", regulatorName: "Factories Inspectorate", siteId: nw.id, ownerId: auditMgr, frequency: "ANNUAL", status: "COMPLIANT", validUntil: daysFromNow(300), createdBy: auditMgr },
-    ],
-  });
-  await prisma.camsAssetLite.createMany({
-    data: [
-      { assetCode: "AST-NW-FE01", name: "Fire Extinguisher Bank — Block A", category: "FIRE_EQUIPMENT", siteId: nw.id, location: "Block A", createdBy: auditMgr },
-      { assetCode: "AST-NW-ETP01", name: "Effluent Treatment Plant", category: "ENVIRONMENTAL", siteId: nw.id, location: "Utilities Yard", createdBy: auditMgr },
-      { assetCode: "AST-SW-FE01", name: "Fire Hydrant Network", category: "FIRE_EQUIPMENT", siteId: sw.id, location: "Site Perimeter", createdBy: auditMgr },
-      { assetCode: "AST-SW-PKG01", name: "Band-Knife Cutting Line 3", category: "PRODUCTION", siteId: sw.id, location: "Cutting Section", createdBy: auditMgr },
-    ],
-  });
-  console.log("  bundled providers: 4 CamsObligation + 4 CamsAssetLite (standalone fallback)");
 
   const engCount = await prisma.camsEngagement.count();
   const fndCount = await prisma.camsFinding.count();

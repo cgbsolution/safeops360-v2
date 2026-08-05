@@ -5,6 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Save } from "lucide-react";
 import { KRI_STATUS_CHIP, type KriOut } from "@/app/(dashboard)/erm/lib-p2";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 // Compute a traffic-light status client-side, mirroring the spec rules.
 export function computeStatus(
@@ -125,50 +129,46 @@ export function KriEntryGrid({ items }: { items: KriOut[] }) {
           )}
           {savedMsg && <span className="ml-2 text-emerald-600">{savedMsg}</span>}
         </div>
-        <button
-          onClick={saveAll}
-          disabled={busy || changed.length === 0}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-        >
+        <Button type="button" onClick={saveAll} disabled={busy || changed.length === 0} className="gap-1.5">
           <Save size={14} /> {busy ? "Saving…" : "Save all"}
-        </button>
+        </Button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-5">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-              <th className="px-2 py-2">KRI</th>
-              <th className="px-2 py-2">Thresholds</th>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-2 py-2">KRI</TableHead>
+              <TableHead className="px-2 py-2">Thresholds</TableHead>
               {periods.map((p, i) => (
-                <th key={p} className="px-2 py-2 text-center">
+                <TableHead key={p} className="px-2 py-2 text-center">
                   {p}
                   {i === periods.length - 1 && (
                     <span className="ml-1 rounded bg-primary-50 px-1 text-[9px] font-semibold text-primary-700">CURRENT</span>
                   )}
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {items.map((k) => {
               const err = rowErrors[k.id];
               return (
-                <tr key={k.id} className="border-b border-slate-100 align-top">
-                  <td className="px-2 py-2">
+                <TableRow key={k.id}>
+                  <TableCell className="px-2 py-2">
                     <Link href={`/erm/kris/${k.id}`} className="block text-xs font-medium text-primary-700 hover:underline">
                       {k.kriCode}
                     </Link>
                     <span className="block max-w-[200px] truncate text-[11px] text-slate-500">{k.name}</span>
                     {k.unit && <span className="text-[10px] text-slate-400">{k.unit}</span>}
                     {err && <div className="mt-1 text-[10px] font-medium text-rose-600">{err}</div>}
-                  </td>
-                  <td className="px-2 py-2 text-[11px] text-slate-500">
+                  </TableCell>
+                  <TableCell className="px-2 py-2 text-[11px] text-slate-500">
                     <div>{k.direction === "HIGHER_IS_WORSE" ? "↑ worse" : "↓ worse"}</div>
                     <div className="tabular-nums">
                       G ≤ {k.thresholdGreen} · A ≤ {k.thresholdAmber}
                     </div>
-                  </td>
+                  </TableCell>
                   {periods.map((p) => {
                     const key = `${k.id}|${p}`;
                     const raw = values[key] ?? "";
@@ -176,20 +176,20 @@ export function KriEntryGrid({ items }: { items: KriOut[] }) {
                     const status = computeStatus(num, k.direction, k.thresholdGreen, k.thresholdAmber);
                     const missing = raw === "";
                     return (
-                      <td key={p} className="px-2 py-2 text-center">
+                      <TableCell key={p} className="px-2 py-2 text-center">
                         <div className="flex flex-col items-center gap-1">
-                          <input
+                          <Input
                             type="number"
                             value={raw}
                             onChange={(e) => setCell(k.id, p, e.target.value)}
-                            className={
-                              "w-20 rounded border p-1 text-center text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-primary-500 " +
-                              (missing
+                            className={cn(
+                              "w-20 text-center tabular-nums",
+                              missing
                                 ? "border-amber-300 bg-amber-50"
                                 : initial[key] !== raw
                                   ? "border-primary-300 bg-primary-50/40"
-                                  : "border-slate-300")
-                            }
+                                  : "border-slate-300"
+                            )}
                           />
                           <span
                             className={
@@ -200,14 +200,14 @@ export function KriEntryGrid({ items }: { items: KriOut[] }) {
                             {status === "NO_DATA" ? "—" : status}
                           </span>
                         </div>
-                      </td>
+                      </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
       <p className="text-[11px] text-slate-400">
         Amber-tinted cells are missing data for that period. Status chips are live previews computed from each KRI's direction and thresholds.

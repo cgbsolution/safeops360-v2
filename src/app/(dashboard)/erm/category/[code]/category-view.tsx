@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { HeatMap, BandBadge, KpiTile } from "@/components/erm/shared";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { STATE_CHIP, type Band, type HeatMapCell } from "../../lib";
 
 // Response shape of GET /api/erm/dashboard/category/{code}
@@ -91,46 +92,44 @@ export function CategoryDrilldownView({ data }: { data: CategoryDrilldown }) {
       {/* Risks table */}
       <div className="rounded-xl border border-slate-200 bg-white p-5">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Risks in this category</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-2 py-2">Code</th>
-                <th className="px-2 py-2">Title</th>
-                <th className="px-2 py-2">Residual</th>
-                <th className="px-2 py-2">State</th>
-              </tr>
-            </thead>
-            <tbody>
-              {risks.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="px-2 py-8 text-center text-sm text-slate-400">
-                    No risks in this category.
-                  </td>
-                </tr>
-              ) : (
-                risks.map((r) => (
-                  <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/70">
-                    <td className="px-2 py-2.5">
-                      <Link href={`/erm/register/${r.id}`} className="font-medium text-primary-700 hover:underline">
-                        {r.riskCode}
-                      </Link>
-                    </td>
-                    <td className="max-w-[360px] truncate px-2 py-2.5 text-slate-700">{r.title}</td>
-                    <td className="px-2 py-2.5">
-                      <BandBadge band={r.residualBand} score={r.residualScore} />
-                    </td>
-                    <td className="px-2 py-2.5">
-                      <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (STATE_CHIP[r.lifecycleState] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
-                        {r.lifecycleState.replace(/_/g, " ")}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Code</TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Residual</TableHead>
+              <TableHead>State</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {risks.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="py-8 text-center text-sm text-slate-400">
+                  No risks in this category.
+                </TableCell>
+              </TableRow>
+            ) : (
+              risks.map((r) => (
+                <TableRow key={r.id}>
+                  <TableCell>
+                    <Link href={`/erm/register/${r.id}`} className="font-medium text-primary-700 hover:underline">
+                      {r.riskCode}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="max-w-[360px] truncate text-slate-700">{r.title}</TableCell>
+                  <TableCell>
+                    <BandBadge band={r.residualBand} score={r.residualScore} />
+                  </TableCell>
+                  <TableCell>
+                    <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (STATE_CHIP[r.lifecycleState] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
+                      {r.lifecycleState.replace(/_/g, " ")}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

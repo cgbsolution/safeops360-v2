@@ -3,6 +3,7 @@ import { AlertTriangle } from "lucide-react";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { RATING_CHIP, STRENGTH_CHIP, RISK_BAND_CHIP, type RiskControlMatrix, type MatrixCell } from "@/app/(dashboard)/erm/lib-t3";
+import { resolvePlantContext } from "@/lib/plant-context";
 import { MatrixFilters } from "./matrix-view";
 
 export const dynamic = "force-dynamic";
@@ -49,6 +50,13 @@ export default async function RiskControlMatrixPage(props: {
     error = e?.message ?? "Failed to load risk-control matrix";
   }
 
+  // Names the site filter — it used to ask for a typed-in plant cuid.
+  const { plants } = await resolvePlantContext(null).catch(() => ({
+    plantId: null,
+    plants: [],
+    isOverride: false,
+  }));
+
   return (
     <div>
       <PageHeader
@@ -67,7 +75,7 @@ export default async function RiskControlMatrixPage(props: {
         </div>
       ) : (
         <>
-          <MatrixFilters />
+          <MatrixFilters plants={plants} />
 
           <div className="mb-4 flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
             <span className="font-semibold uppercase tracking-wider text-slate-400">Legend</span>

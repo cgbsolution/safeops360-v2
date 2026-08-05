@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
@@ -157,14 +158,16 @@ function AddCertForm({
 
   return (
     <div className="border-t">
-      <button
+      <Button
+        type="button"
+        variant="ghost"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50 w-full text-left"
+        className="h-auto w-full justify-start gap-1.5 px-4 py-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50 text-left"
       >
         {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         <Plus size={12} />
         Add Certificate
-      </button>
+      </Button>
       {open && (
         <form
           onSubmit={handleSubmit}
@@ -307,14 +310,16 @@ function AddCompetencyForm({
 
   return (
     <div className="border-t">
-      <button
+      <Button
+        type="button"
+        variant="ghost"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 px-4 py-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50 w-full text-left"
+        className="h-auto w-full justify-start gap-1.5 px-4 py-2.5 text-xs font-medium text-cyan-700 hover:bg-cyan-50 text-left"
       >
         {open ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
         <Plus size={12} />
         Add Competency Record
-      </button>
+      </Button>
       {open && (
         <form
           onSubmit={handleSubmit}
@@ -422,21 +427,21 @@ export default function CertificationsTab({
             No training certificates on record.
           </div>
         ) : (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-slate-50 border-b text-left">
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Program Code</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Program Name</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Issued</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Valid Until</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="text-xs">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Program Code</TableHead>
+                <TableHead>Program Name</TableHead>
+                <TableHead>Issued</TableHead>
+                <TableHead>Valid Until</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {certs.map((c, i) => (
-                <tr key={i} className="border-b last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-mono text-slate-500">{c.programCode}</td>
-                  <td className="px-4 py-2.5 font-medium text-slate-900">
+                <TableRow key={i}>
+                  <TableCell className="font-mono text-slate-500">{c.programCode}</TableCell>
+                  <TableCell className="font-medium text-slate-900">
                     {c.programName}
                     {c.certificateUrl && (
                       <a
@@ -448,16 +453,16 @@ export default function CertificationsTab({
                         View
                       </a>
                     )}
-                  </td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(c.issuedDate)}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(c.validUntil)}</td>
-                  <td className="px-4 py-2.5">
+                  </TableCell>
+                  <TableCell className="text-slate-600">{fmtDate(c.issuedDate)}</TableCell>
+                  <TableCell className="text-slate-600">{fmtDate(c.validUntil)}</TableCell>
+                  <TableCell>
                     <StatusBadge status={c.status} />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
         <AddCertForm workerId={workerId} existing={certs} onAdded={setCerts} />
       </div>
@@ -476,32 +481,32 @@ export default function CertificationsTab({
             No competency records on record.
           </div>
         ) : (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-slate-50 border-b text-left">
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Code</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Name</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Valid From</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Valid Until</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Status</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Assessor</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="text-xs">
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Valid From</TableHead>
+                <TableHead>Valid Until</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Assessor</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {comps.map((c, i) => (
-                <tr key={i} className="border-b last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-mono text-slate-500">{c.competencyCode}</td>
-                  <td className="px-4 py-2.5 font-medium text-slate-900">{c.competencyName}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(c.validFrom)}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(c.validUntil)}</td>
-                  <td className="px-4 py-2.5">
+                <TableRow key={i}>
+                  <TableCell className="font-mono text-slate-500">{c.competencyCode}</TableCell>
+                  <TableCell className="font-medium text-slate-900">{c.competencyName}</TableCell>
+                  <TableCell className="text-slate-600">{fmtDate(c.validFrom)}</TableCell>
+                  <TableCell className="text-slate-600">{fmtDate(c.validUntil)}</TableCell>
+                  <TableCell>
                     <StatusBadge status={c.status} />
-                  </td>
-                  <td className="px-4 py-2.5 text-slate-600">{c.assessor ?? "—"}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="text-slate-600">{c.assessor ?? "—"}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
         <AddCompetencyForm workerId={workerId} existing={comps} onAdded={setComps} />
       </div>
@@ -520,30 +525,30 @@ export default function CertificationsTab({
             No PPE issuances on record.
           </div>
         ) : (
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="bg-slate-50 border-b text-left">
-                <th className="px-4 py-2.5 font-semibold text-slate-600">PPE Type</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Item Serial</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Issued</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Expires</th>
-                <th className="px-4 py-2.5 font-semibold text-slate-600">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="text-xs">
+            <TableHeader>
+              <TableRow>
+                <TableHead>PPE Type</TableHead>
+                <TableHead>Item Serial</TableHead>
+                <TableHead>Issued</TableHead>
+                <TableHead>Expires</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {ppeIssuances.map((p, i) => (
-                <tr key={i} className="border-b last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-medium text-slate-900">{p.ppeType}</td>
-                  <td className="px-4 py-2.5 font-mono text-slate-500">{p.itemSerial ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(p.issuedDate)}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(p.expiryDate)}</td>
-                  <td className="px-4 py-2.5">
+                <TableRow key={i}>
+                  <TableCell className="font-medium text-slate-900">{p.ppeType}</TableCell>
+                  <TableCell className="font-mono text-slate-500">{p.itemSerial ?? "—"}</TableCell>
+                  <TableCell className="text-slate-600">{fmtDate(p.issuedDate)}</TableCell>
+                  <TableCell className="text-slate-600">{fmtDate(p.expiryDate)}</TableCell>
+                  <TableCell>
                     <StatusBadge status={p.status} />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </div>
     </div>

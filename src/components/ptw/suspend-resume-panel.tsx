@@ -8,6 +8,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PauseCircle, PlayCircle, AlertOctagon, Loader2 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import {
+  EvidenceCapture,
+  evidenceComplete,
+  evidencePayload,
+  useEvidenceCapture,
+} from "@/components/ptw/evidence-capture";
 
 // Visible to HSE Manager / Admin only.
 // - When permit is ACTIVE: shows a Suspend button (requires reason)
@@ -32,6 +38,13 @@ export function SuspendResumePanel({
   const [comments, setComments] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  // Closed-loop rebuild: suspension/resumption are lifecycle actions —
+  // GPS + signature evidence is required (photo optional).
+  const evidenceState = useEvidenceCapture();
+  const evidenceReady = evidenceComplete(evidenceState, {
+    requirePhoto: false,
+    requireDeclaration: false,
+  });
 
   if (status !== "ACTIVE" && status !== "SUSPENDED") return null;
 
@@ -45,7 +58,7 @@ export function SuspendResumePanel({
     const r = await fetch(`/api/ptw/${permitId}/suspend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ reason })
+      body: JSON.stringify({ reason, evidence: evidencePayload(evidenceState) })
     });
     setBusy(false);
     if (r.ok) {
@@ -54,7 +67,7 @@ export function SuspendResumePanel({
       router.refresh();
     } else {
       const j = await r.json().catch(() => ({}));
-      setError(j.error ?? "Suspend failed");
+      setError(j.error ?? j.detail ?? "Suspend failed");
     }
   }
 
@@ -64,7 +77,7 @@ export function SuspendResumePanel({
     const r = await fetch(`/api/ptw/${permitId}/resume`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comments: comments || undefined })
+      body: JSON.stringify({ comments: comments || undefined, evidence: evidencePayload(evidenceState) })
     });
     setBusy(false);
     if (r.ok) {
@@ -73,7 +86,7 @@ export function SuspendResumePanel({
       router.refresh();
     } else {
       const j = await r.json().catch(() => ({}));
-      setError(j.error ?? "Resume failed");
+      setError(j.error ?? j.detail ?? "Resume failed");
     }
   }
 
@@ -106,9 +119,10 @@ export function SuspendResumePanel({
                 <Label>Comments (site re-validated, etc.)</Label>
                 <Textarea rows={3} value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Notes on resumption..." />
               </div>
+              <EvidenceCapture permitId={permitId} requirePhoto={false} state={evidenceState} />
               {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
               <div className="flex gap-2">
-                <Button onClick={resume} disabled={busy} variant="success">
+                <Button onClick={resume} disabled={busy || !evidenceReady} variant="success">
                   {busy ? <Loader2 size={14} className="animate-spin" /> : <PlayCircle size={14} />} Confirm Resume
                 </Button>
                 <Button onClick={() => { setMode("idle"); setError(""); }} variant="outline">Cancel</Button>
@@ -150,9 +164,10 @@ export function SuspendResumePanel({
                 placeholder="Required. Why is work being stopped right now?"
               />
             </div>
+            <EvidenceCapture permitId={permitId} requirePhoto={false} state={evidenceState} />
             {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
             <div className="flex gap-2">
-              <Button onClick={suspend} disabled={busy || !reason.trim()} variant="destructive">
+              <Button onClick={suspend} disabled={busy || !reason.trim() || !evidenceReady} variant="destructive">
                 {busy ? <Loader2 size={14} className="animate-spin" /> : <PauseCircle size={14} />} Confirm Suspend
               </Button>
               <Button onClick={() => { setMode("idle"); setError(""); }} variant="outline">Cancel</Button>

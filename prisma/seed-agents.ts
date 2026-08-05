@@ -61,12 +61,19 @@ const HIRA_ASSISTANT_PROMPT_VERSION = 2;
 const CAPA_ASSISTANT_CODE = "CAPA_ASSISTANT";
 const CAPA_ASSISTANT_PROMPT_VERSION = 1;
 
+// The backend checkout sits alongside the frontend, but the directory name
+// differs per portal ("Safeops360-backend" here, "safeops_360_bakend" in the
+// original repo). Probe both so this works from either layout.
+const BACKEND_DIR_NAMES = ["Safeops360-backend", "safeops_360_bakend"];
+
 function promptFilePath(filename: string): string {
-  return path.resolve(
-    __dirname,
-    "..", "..", "safeops_360_bakend", "app", "services", "agents",
-    "prompts", filename
+  const candidates = BACKEND_DIR_NAMES.map((d) =>
+    path.resolve(
+      __dirname,
+      "..", "..", d, "app", "services", "agents", "prompts", filename
+    )
   );
+  return candidates.find((p) => fs.existsSync(p)) ?? candidates[0];
 }
 
 function loadPromptFile(filename: string): string {

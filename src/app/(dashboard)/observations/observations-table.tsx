@@ -8,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { DeleteObservationIconButton } from "@/components/observations/delete-icon-button";
+import { EditRecordIconButton } from "@/components/common/edit-icon-button";
+import { SignalChipGroup } from "@/components/ai/SignalChipGroup";
+import type { Signal } from "@/lib/insights";
 import { formatDate, statusColor, severityColor, humanize } from "@/lib/utils";
 
 export interface ObservationRow {
@@ -16,12 +19,15 @@ export interface ObservationRow {
   date: string; // ISO
   plantName: string;
   areaName: string | null;
+  areaId: string | null;
   type: string;
   category: string;
   description: string;
   severity: string;
+  status: string;
   workflowStep: string;
   workflowColor: string;
+  signals?: Signal[];
 }
 
 const columns: ColumnDef<ObservationRow>[] = [
@@ -95,8 +101,16 @@ const columns: ColumnDef<ObservationRow>[] = [
   {
     accessorKey: "workflowStep",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Workflow Step" />,
-    cell: ({ row }) => <Badge className={row.original.workflowColor}>{row.original.workflowStep}</Badge>,
-    size: 170
+    cell: ({ row }) => (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge className={row.original.workflowColor}>{row.original.workflowStep}</Badge>
+        <SignalChipGroup
+          signals={row.original.signals ?? []}
+          href={`/observations/${row.original.id}`}
+        />
+      </div>
+    ),
+    size: 220
   },
   {
     id: "actions",
@@ -111,6 +125,13 @@ const columns: ColumnDef<ObservationRow>[] = [
         >
           <Eye size={16} />
         </Link>
+        {row.original.status !== "CLOSED" && (
+          <EditRecordIconButton
+            href={`/observations/${row.original.id}/edit`}
+            permission="OBSERVATION.UPDATE"
+            label={`Edit ${row.original.number}`}
+          />
+        )}
         <DeleteObservationIconButton
           observationId={row.original.id}
           observationNumber={row.original.number}

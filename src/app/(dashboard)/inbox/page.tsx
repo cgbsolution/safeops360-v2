@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -9,8 +10,26 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, Eye, FileCheck, Hourglass, Inbox as InboxIcon, Send } from "lucide-react";
 import { formatDateTime, humanize, cn } from "@/lib/utils";
 import { WorkflowEngine } from "@/lib/workflow/engine";
+import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
+import { unreadInboxCounts } from "@/lib/workflow/read-state";
+import { MarkAllReadButton } from "./mark-all-read";
+import { formatPartyMeta, formatPartyName } from "@/lib/users/user-ref";
 
 export const dynamic = "force-dynamic";
+
+// Queue ordering. The work tabs are a *feed*: whatever just landed in your
+// inbox is what you're most likely looking for, so newest-assigned wins and
+// lateness is communicated by the SLA chip rather than by re-ranking the list.
+// Only the Overdue / Escalated tab ranks by lateness — there, "how long has
+// this been sitting past due" IS the sort key, so the oldest due date leads.
+const NEWEST_TASK_FIRST: Prisma.WorkflowTaskOrderByWithRelationInput[] = [
+  { assignedAt: "desc" },
+  { id: "desc" }
+];
+const MOST_OVERDUE_FIRST: Prisma.WorkflowTaskOrderByWithRelationInput[] = [
+  { dueAt: "asc" },
+  { assignedAt: "asc" }
+];
 
 // Throttle the SLA sweeps. Without this the three sweeps run on every
 // inbox navigation — costing ~500-1000ms per click even when nothing is
@@ -33,14 +52,25 @@ const TABS = [
   { key: "overdue", label: "Overdue / Escalated", icon: AlertTriangle }
 ] as const;
 
+// Every module the workflow engine mints tasks for MUST appear here. A module
+// missing from these maps renders a blank badge and links to /dashboard instead
+// of the record — the row becomes a dead end, and (since read state is stamped
+// by opening the record) it can never be marked read either. CAPA / MOC /
+// HIRA_STUDY were missing, stranding a large share of the queue.
 const MODULE_HREF: Record<string, string> = {
   OBSERVATION: "/observations",
   NEAR_MISS: "/near-miss",
   PTW: "/ptw",
   INCIDENT: "/incidents",
-  TRAINING: "/training",
+  // TRAINING tasks carry a TrainingSchedule id, NOT a TrainingRecord id —
+  // verified against the live table. "/training/{id}" is the record route, so
+  // every training row in the inbox 404'd. Schedules is the correct target.
+  TRAINING: "/training/schedules",
   INSPECTION: "/inspections",
-  MANHOURS: "/manhours"
+  MANHOURS: "/manhours",
+  CAPA: "/capa",
+  MOC: "/moc",
+  HIRA_STUDY: "/hira"
 };
 
 const MODULE_LABEL: Record<string, string> = {
@@ -50,7 +80,10 @@ const MODULE_LABEL: Record<string, string> = {
   INCIDENT: "Incident",
   TRAINING: "Training",
   INSPECTION: "Inspection",
-  MANHOURS: "Manhours"
+  MANHOURS: "Manhours",
+  CAPA: "CAPA",
+  MOC: "MOC",
+  HIRA_STUDY: "HIRA"
 };
 
 export default async function InboxPage(props: { searchParams: Promise<{ tab?: string }> }) {
@@ -81,7 +114,7 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
   // OVERDUE/ESCALATED status — the previous code summed all PENDING
   // tasks too, which made the badge show "2" even when nothing was
   // actually overdue.
-  const [taskCounts, submittedCount, overdueRealCount] = await Promise.all([
+  const [taskCounts, submittedCount, overdueRealCount, unread] = await Promise.all([
     prisma.workflowTask.groupBy({
       by: ["taskType"],
       where: { assignedToId: userId, status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
@@ -90,7 +123,8 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
     prisma.workflowInstance.count({ where: { initiatedById: userId } }),
     prisma.workflowTask.count({
       where: { assignedToId: userId, status: { in: ["OVERDUE", "ESCALATED"] } }
-    })
+    }),
+    unreadInboxCounts(userId)
   ]);
 
   const approvalCount = taskCounts.find((r) => r.taskType === "APPROVAL")?._count._all ?? 0;
@@ -106,6 +140,16 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
     overdue: overdueCount
   };
 
+  // Unread = the assignee has never opened the record. "Submitted by Me" has no
+  // unread state: those tasks belong to other people.
+  const unreadByTab: Record<(typeof TABS)[number]["key"], number> = {
+    approvals: unread.approvals,
+    tasks: unread.tasks,
+    verifications: unread.verifications,
+    submitted: 0,
+    overdue: unread.overdue
+  };
+
   // Only fetch the full rows for the active tab — avoids 5 concurrent queries
   let pendingApprovals: any[] = [];
   let executionTasks: any[] = [];
@@ -116,20 +160,20 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
   if (tab === "approvals") {
     pendingApprovals = await prisma.workflowTask.findMany({
       where: { assignedToId: userId, taskType: "APPROVAL", status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-      include: { instance: { include: { initiatedBy: true } } },
-      orderBy: [{ priority: "desc" }, { dueAt: "asc" }]
+      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
+      orderBy: NEWEST_TASK_FIRST
     });
   } else if (tab === "tasks") {
     executionTasks = await prisma.workflowTask.findMany({
       where: { assignedToId: userId, taskType: "EXECUTION", status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-      include: { instance: { include: { initiatedBy: true } } },
-      orderBy: [{ priority: "desc" }, { dueAt: "asc" }]
+      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
+      orderBy: NEWEST_TASK_FIRST
     });
   } else if (tab === "verifications") {
     verifications = await prisma.workflowTask.findMany({
       where: { assignedToId: userId, taskType: "VERIFICATION", status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-      include: { instance: { include: { initiatedBy: true } } },
-      orderBy: [{ priority: "desc" }, { dueAt: "asc" }]
+      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
+      orderBy: NEWEST_TASK_FIRST
     });
   } else if (tab === "submitted") {
     submitted = await prisma.workflowInstance.findMany({
@@ -140,8 +184,8 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
   } else if (tab === "overdue") {
     overdue = await prisma.workflowTask.findMany({
       where: { assignedToId: userId, status: { in: ["OVERDUE", "ESCALATED"] } },
-      include: { instance: true },
-      orderBy: { dueAt: "asc" }
+      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
+      orderBy: MOST_OVERDUE_FIRST
     });
   }
 
@@ -150,7 +194,19 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
       <PageHeader
         title="Inbox"
         description="Your action queue across every SafeOps360 workflow"
-        action={<Badge className="bg-primary-100 text-primary-800 border-primary-200">{counts.approvals + counts.tasks + counts.verifications} active</Badge>}
+        action={
+          <div className="flex items-center gap-2">
+            {unread.total > 0 && (
+              <>
+                <Badge className="bg-rose-600 text-white border-rose-600">{unread.total} unread</Badge>
+                <MarkAllReadButton />
+              </>
+            )}
+            <Badge className="bg-primary-100 text-primary-800 border-primary-200">
+              {counts.approvals + counts.tasks + counts.verifications} active
+            </Badge>
+          </div>
+        }
       />
 
       {/* Tabs */}
@@ -158,23 +214,33 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
         {TABS.map((t) => {
           const Icon = t.icon;
           const c = counts[t.key];
+          const u = unreadByTab[t.key];
           const active = tab === t.key;
           return (
             <Link
               key={t.key}
               href={`/inbox?tab=${t.key}`}
+              // The count badge keeps its meaning (open items). Unread is a
+              // SEPARATE signal — a rose pip — so a tab can't be misread as
+              // "5 unread" when it means "5 items, 2 of them new".
               className={cn(
-                "flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition",
+                "relative flex items-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition",
                 active
                   ? "bg-primary-700 text-white border-primary-700"
                   : "bg-white text-slate-700 border-slate-300 hover:border-primary-400"
               )}
+              title={u > 0 ? `${u} not opened yet` : undefined}
             >
               <Icon size={14} />
               {t.label}
               <span className={cn("ml-1 px-1.5 rounded text-xs", active ? "bg-white/20" : c > 0 ? "bg-primary-100 text-primary-800" : "bg-slate-100 text-slate-500")}>
                 {c}
               </span>
+              {u > 0 && (
+                <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold leading-4 text-white">
+                  {u > 99 ? "99+" : u}
+                </span>
+              )}
             </Link>
           );
         })}
@@ -209,34 +275,62 @@ function TaskList({ tasks, actionLabel, emptyText, overdueMode }: { tasks: any[]
         const slaInfo = computeSla(task.dueAt);
         const moduleHref = MODULE_HREF[task.module] ?? "/dashboard";
         const recordHref = `${moduleHref}/${task.recordId}`;
+        // Unread = never opened. Same visual language as the notification bell:
+        // tinted row + left accent + bolder title, cleared by opening the record.
+        const unread = !task.readAt;
         return (
           <Link
             key={task.id}
             href={recordHref}
             className={cn(
-              "block px-5 py-4 hover:bg-slate-50 transition",
-              overdueMode && "bg-rose-50/50"
+              "block border-l-[3px] px-5 py-4 transition hover:bg-slate-50",
+              unread ? "border-l-primary-600 bg-primary-50/40" : "border-l-transparent",
+              overdueMode && (unread ? "bg-rose-50" : "bg-rose-50/50")
             )}
           >
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px]">{MODULE_LABEL[task.module]}</Badge>
+                  {unread && (
+                    <span
+                      className="h-2 w-2 shrink-0 rounded-full bg-primary-600"
+                      aria-label="Not opened yet"
+                      title="Not opened yet"
+                    />
+                  )}
+                  <Badge className="bg-slate-100 text-slate-700 border-slate-200 text-[10px]">
+                    {MODULE_LABEL[task.module] ?? humanize(task.module)}
+                  </Badge>
                   <span className="font-mono text-xs text-slate-600">{task.recordNumber ?? task.recordId.slice(0, 8)}</span>
                   <Badge className={slaInfo.cls + " text-[10px]"}>{slaInfo.label}</Badge>
                   {task.priority !== "NORMAL" && (
                     <Badge className={priorityCls(task.priority) + " text-[10px]"}>{task.priority}</Badge>
                   )}
+                  {unread && (
+                    <Badge className="bg-primary-600 text-white border-primary-600 text-[10px] uppercase tracking-wide">New</Badge>
+                  )}
                 </div>
-                <div className="text-sm font-medium text-slate-900">{task.stepName}</div>
+                <div className={cn("text-sm", unread ? "font-semibold text-slate-900" : "font-medium text-slate-700")}>
+                  {task.stepName}
+                </div>
                 {task.recordTitle && (
                   <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">{task.recordTitle}</div>
                 )}
-                <div className="text-xs text-slate-500 mt-1">
-                  Initiated by <strong>{task.instance?.initiatedBy?.name ?? "—"}</strong>
-                  {task.assignedAt && <> · Received {formatDateTime(task.assignedAt)}</>}
-                  {task.dueAt && <> · Due {formatDateTime(task.dueAt)}</>}
-                </div>
+                {(() => {
+                  // Same identity contract as the "Awaiting Action" callout:
+                  // full name plus designation / role / department / plant, so
+                  // a task from "Process Operator" is attributable to a person.
+                  const initiator = toParty(task.instance?.initiatedBy);
+                  const meta = formatPartyMeta(initiator);
+                  return (
+                    <div className="text-xs text-slate-500 mt-1">
+                      Initiated by <strong>{formatPartyName(initiator)}</strong>
+                      {meta && <> <span className="text-slate-400">({meta})</span></>}
+                      {task.assignedAt && <> · Received {formatDateTime(task.assignedAt)}</>}
+                      {task.dueAt && <> · Due {formatDateTime(task.dueAt)}</>}
+                    </div>
+                  );
+                })()}
               </div>
               <div className="flex-shrink-0 self-center">
                 <span className="inline-flex items-center gap-1 text-sm font-medium text-primary-700">

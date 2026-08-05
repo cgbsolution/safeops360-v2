@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { resolvePlantContext } from "@/lib/plant-context";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import type { Item } from "../../page";
 
 export const dynamic = "force-dynamic";
@@ -148,28 +149,28 @@ export default async function PpeCatalogDetail(props: {
                 No items of this type at this plant yet. Use “Add Item” on the PPE page to commission stock.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="text-[10px] uppercase tracking-wider text-slate-400">
-                  <tr>
-                    <th className="py-1 text-left">Item</th>
-                    <th className="py-1 text-left">Serial</th>
-                    <th className="py-1 text-left">Status</th>
-                    <th className="py-1 text-left">Validity</th>
-                    <th className="py-1 text-left">Next inspection</th>
-                    <th className="py-1 text-left">Life left</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+              <Table className="w-full text-sm">
+                <TableHeader className="text-[10px] uppercase tracking-wider text-slate-400">
+                  <TableRow>
+                    <TableHead className="py-1 text-left">Item</TableHead>
+                    <TableHead className="py-1 text-left">Serial</TableHead>
+                    <TableHead className="py-1 text-left">Status</TableHead>
+                    <TableHead className="py-1 text-left">Validity</TableHead>
+                    <TableHead className="py-1 text-left">Next inspection</TableHead>
+                    <TableHead className="py-1 text-left">Life left</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {detail.items.map((i) => (
-                    <tr key={i.id}>
-                      <td className="py-1.5">
+                    <TableRow key={i.id}>
+                      <TableCell className="py-1.5">
                         <Link href={`/ppe/items/${i.id}`} className="font-medium text-cyan-700 hover:underline">
                           {i.itemNumber}
                         </Link>
-                      </td>
-                      <td className="py-1.5 font-mono text-xs text-slate-500">{i.serialNumber}</td>
-                      <td className="py-1.5 capitalize text-slate-600">{i.status.replace(/_/g, " ")}</td>
-                      <td className="py-1.5">
+                      </TableCell>
+                      <TableCell className="py-1.5 font-mono text-xs text-slate-500">{i.serialNumber}</TableCell>
+                      <TableCell className="py-1.5 capitalize text-slate-600">{i.status.replace(/_/g, " ")}</TableCell>
+                      <TableCell className="py-1.5">
                         <span
                           className={
                             i.validity === "pass"
@@ -181,19 +182,19 @@ export default async function PpeCatalogDetail(props: {
                         >
                           {i.validityReason}
                         </span>
-                      </td>
-                      <td className="py-1.5 text-slate-600">{fmt(i.nextInspectionDueDate)}</td>
-                      <td className="py-1.5 text-slate-600">
+                      </TableCell>
+                      <TableCell className="py-1.5 text-slate-600">{fmt(i.nextInspectionDueDate)}</TableCell>
+                      <TableCell className="py-1.5 text-slate-600">
                         {i.serviceLifeExceeded ? (
                           <span className="text-rose-600">exceeded</span>
                         ) : (
                           `${i.serviceLifeRemainingDays}d`
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </Card>
         </div>

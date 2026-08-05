@@ -8,7 +8,19 @@ export async function readApiError(res: Response, fallback = "Request failed"): 
     if (!text) return `${fallback} (HTTP ${res.status})`;
     try {
       const j = JSON.parse(text);
-      if (j && typeof j === "object" && j.error) return String(j.error);
+      if (j && typeof j === "object") {
+        // Node/proxy errors use {error}; FastAPI uses {detail}. Support both
+        // so backend validation messages (e.g. "Receiver X cannot hold this
+        // permit: …") actually reach the user instead of a generic status.
+        if (j.error) return String(j.error);
+        if (typeof j.detail === "string" && j.detail.trim()) return j.detail;
+        if (Array.isArray(j.detail)) {
+          // FastAPI 422 — array of {loc, msg, type}. Join the human messages.
+          const msgs = j.detail.map((d: any) => d?.msg).filter(Boolean);
+          if (msgs.length) return msgs.join("; ");
+        }
+        if (j.reason) return String(j.reason);
+      }
       return `${fallback} (HTTP ${res.status})`;
     } catch {
       // Non-JSON body. Truncate so we don't dump an HTML error page in the UI.

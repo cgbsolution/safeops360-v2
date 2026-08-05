@@ -4,6 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PhoneCall, Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
   EXERCISE_STATUS_CHIP,
@@ -98,22 +101,21 @@ export function ExerciseWorkspace({
           </div>
           <div className="flex flex-wrap gap-2">
             {exercise.exerciseType === "CALL_TREE_TEST" && !isCompleted && (
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => post(`${exercise.id}/run-call-tree-test`)}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-50"
+                className="gap-1.5 hover:border-primary-500"
               >
                 <PhoneCall size={15} /> Run call-tree test
-              </button>
+              </Button>
             )}
             {!isCompleted && (
-              <button
-                onClick={() => setModal("complete")}
-                disabled={busy}
-                className="rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-              >
+              <Button type="button" size="sm" onClick={() => setModal("complete")} disabled={busy}>
                 Complete exercise
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -203,13 +205,16 @@ export function ExerciseWorkspace({
           <div className="rounded-xl border border-slate-200 bg-white p-5">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Findings</h3>
-              <button
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => setModal("finding")}
                 disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-primary-500 disabled:opacity-50"
+                className="gap-1.5 hover:border-primary-500"
               >
                 <Plus size={14} /> Add finding
-              </button>
+              </Button>
             </div>
             {exercise.findings.length === 0 ? (
               <p className="py-6 text-center text-sm text-slate-400">
@@ -237,13 +242,15 @@ export function ExerciseWorkspace({
                             CAPA ↗
                           </Link>
                         ) : f.severity === "MAJOR_GAP" ? (
-                          <button
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
                             onClick={() => post(`findings/${f.id}/raise-capa`)}
                             disabled={busy}
-                            className="rounded-md bg-rose-600 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-rose-700 disabled:opacity-50"
                           >
                             Raise CAPA
-                          </button>
+                          </Button>
                         ) : null}
                       </div>
                     </div>
@@ -300,9 +307,16 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
         {children}
       </div>
@@ -328,36 +342,38 @@ function FindingModal({
           <label className="mb-1 block text-xs font-medium text-slate-600">Severity</label>
           <div className="grid grid-cols-3 gap-1.5">
             {FINDING_SEVERITIES.map((s) => (
-              <button
+              <Button
                 key={s}
+                type="button"
+                variant="ghost"
                 onClick={() => setSeverity(s)}
                 className={cn(
-                  "rounded-lg border px-2 py-2 text-xs font-medium",
+                  "h-auto rounded-lg border px-2 py-2 text-xs font-medium",
                   severity === s ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200",
                 )}
               >
                 {s.replace(/_/g, " ")}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
-          <textarea
+          <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             placeholder="What was observed and why it matters…"
           />
         </div>
-        <button
+        <Button
+          type="button"
           onClick={() => onSubmit({ description: description.trim(), severity })}
           disabled={busy || !description.trim()}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
           {busy ? "Saving…" : "Add finding"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -385,51 +401,47 @@ function CompleteModal({
           <label className="mb-1 block text-xs font-medium text-slate-600">Outcome</label>
           <div className="grid grid-cols-3 gap-1.5">
             {OUTCOMES.map((o) => (
-              <button
+              <Button
                 key={o}
+                type="button"
+                variant="ghost"
                 onClick={() => setOutcome(o)}
                 className={cn(
-                  "rounded-lg border px-2 py-2 text-xs font-medium",
+                  "h-auto rounded-lg border px-2 py-2 text-xs font-medium",
                   outcome === o ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200",
                 )}
               >
                 {o.replace(/_/g, " ")}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Conducted date</label>
-            <input
-              type="date"
-              value={conductedDate}
-              onChange={(e) => setConductedDate(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            />
+            <Input type="date" value={conductedDate} onChange={(e) => setConductedDate(e.target.value)} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">RTO achieved (hours)</label>
-            <input
+            <Input
               type="number"
               min={0}
               value={rtoAchievedHours}
               onChange={(e) => setRtoAchievedHours(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Report</label>
-          <textarea
+          <Textarea
             value={reportRichText}
             onChange={(e) => setReportRichText(e.target.value)}
             rows={4}
-            className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             placeholder="Summary of conduct, what worked, what failed, recommendations…"
           />
         </div>
-        <button
+        <Button
+          type="button"
           onClick={() =>
             onSubmit({
               outcome,
@@ -439,10 +451,10 @@ function CompleteModal({
             })
           }
           disabled={busy || !conductedDate}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
           {busy ? "Completing…" : "Complete exercise"}
-        </button>
+        </Button>
         <p className="text-[11px] text-slate-400">
           Completion is blocked if any MAJOR GAP finding lacks a linked CAPA — raise it on the Findings panel first.
         </p>

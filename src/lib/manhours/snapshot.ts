@@ -31,7 +31,7 @@ export interface KpiSnapshot {
 // snapshots keep their stored version; new snapshots get the new
 // version. Auditors can tell which formula generation produced any
 // given historical KPI.
-const REGISTRY_VERSION = "1.0.0";
+const REGISTRY_VERSION = "1.1.0";
 
 export async function captureKpiSnapshot(opts: {
   prisma: PrismaClient;

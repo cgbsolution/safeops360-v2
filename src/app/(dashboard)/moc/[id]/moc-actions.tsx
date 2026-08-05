@@ -33,7 +33,17 @@ const CLOSED = new Set([
   "rolled_back"
 ]);
 
-export function MocActions({ crId, status }: { crId: string; status: string }) {
+// States from which an emergency change may fast-track straight into
+// implementation (before full approval). Retroactive approval then becomes due.
+const EMERGENCY_STARTABLE = new Set([
+  "submitted",
+  "under_classification_review",
+  "under_impact_assessment",
+  "under_technical_review",
+  "under_approval"
+]);
+
+export function MocActions({ crId, status, urgency }: { crId: string; status: string; urgency?: string }) {
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
@@ -98,6 +108,20 @@ export function MocActions({ crId, status }: { crId: string; status: string }) {
       ) : next ? (
         <Button size="sm" disabled={busy} onClick={() => transition(next.to)}>{next.label}</Button>
       ) : null}
+
+      {urgency === "emergency" && EMERGENCY_STARTABLE.has(status) && (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={busy}
+          onClick={() => {
+            if (window.confirm("Start implementation now under emergency fast-track? Retroactive approval will be required within 72 hours."))
+              transition("implementation_in_progress", "Emergency fast-track — implementation started pre-approval");
+          }}
+        >
+          Start implementation (emergency)
+        </Button>
+      )}
 
       {status === "under_post_implementation_review" && (
         <Button size="sm" disabled={busy} onClick={() => transition("closed_successful")}>

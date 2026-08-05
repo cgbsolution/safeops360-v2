@@ -46,6 +46,14 @@ export function RcaEditor({
   readOnly?: boolean;
 }) {
   const emit = onChange ?? (() => {});
+  // A freshly-created RCA arrives with analysisPayload = {} (empty object). Each
+  // per-method editor guards with `value ?? emptyDataFor(...)`, which only catches
+  // null/undefined — so an empty {} slipped through and crashed the page on
+  // e.g. `data.whys.map()`. Treat an empty object as "no data yet" → emptyDataFor.
+  const v =
+    value && typeof value === "object" && Object.keys(value as Record<string, unknown>).length > 0
+      ? value
+      : null;
   if (!method) {
     return (
       <Card className="border-dashed border-2 border-slate-300 bg-slate-50">
@@ -60,17 +68,17 @@ export function RcaEditor({
   }
   switch (method) {
     case "FIVE_WHY":
-      return <FiveWhyEditor value={(value as FiveWhyData) ?? null} onChange={emit} readOnly={readOnly} />;
+      return <FiveWhyEditor value={(v as FiveWhyData) ?? null} onChange={emit} readOnly={readOnly} />;
     case "FISHBONE":
-      return <FishboneEditor value={(value as FishboneData) ?? null} onChange={emit} readOnly={readOnly} />;
+      return <FishboneEditor value={(v as FishboneData) ?? null} onChange={emit} readOnly={readOnly} />;
     case "FTA":
-      return <FaultTreeEditor value={(value as FtaData) ?? null} onChange={emit} readOnly={readOnly} />;
+      return <FaultTreeEditor value={(v as FtaData) ?? null} onChange={emit} readOnly={readOnly} />;
     case "BOWTIE":
-      return <BowtieEditor value={(value as BowtieData) ?? null} onChange={emit} readOnly={readOnly} />;
+      return <BowtieEditor value={(v as BowtieData) ?? null} onChange={emit} readOnly={readOnly} />;
     case "TAPROOT":
-      return <TapRootEditor value={(value as TapRootData) ?? null} onChange={emit} readOnly={readOnly} />;
+      return <TapRootEditor value={(v as TapRootData) ?? null} onChange={emit} readOnly={readOnly} />;
     case "CAUSE_MAP":
-      return <CauseMapEditor value={(value as CauseMapData) ?? null} onChange={emit} readOnly={readOnly} />;
+      return <CauseMapEditor value={(v as CauseMapData) ?? null} onChange={emit} readOnly={readOnly} />;
   }
 }
 

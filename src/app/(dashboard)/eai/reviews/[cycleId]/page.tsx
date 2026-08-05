@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { AccessRestricted } from "@/components/access-restricted";
 import { requirePermission } from "@/lib/auth/server";
 import { EaiReviewForm } from "./review-form";
 
@@ -37,6 +38,8 @@ export default async function EaiReviewCyclePage(
     cycle = await backendFetch<EaiReviewCycleOut>(`/api/eai/review-cycles/${cycleId}`);
   } catch (e) {
     if (e instanceof BackendError && e.status === 404) notFound();
+    if (e instanceof BackendError && e.status === 403)
+      return <AccessRestricted backHref="/eai/reviews" backLabel="← Back to review cycles" />;
     throw e;
   }
 

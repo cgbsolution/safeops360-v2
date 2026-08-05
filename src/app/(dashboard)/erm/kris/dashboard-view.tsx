@@ -168,7 +168,24 @@ export function KriDashboardView({ data, filters }: { data: KriListResponse; fil
                           {k.name}
                         </div>
                       </div>
-                      <StatusChip status={k.currentStatus} />
+                      <div className="flex items-center gap-1">
+                        {k.indicatorType && (
+                          <span
+                            title={k.indicatorType === "LEADING" ? "Leading — warns before the event" : k.indicatorType === "LAGGING" ? "Lagging — measures harm already done" : "Coincident"}
+                            className={
+                              "rounded border px-1.5 py-0.5 text-[9px] font-semibold " +
+                              (k.indicatorType === "LEADING"
+                                ? "border-sky-200 bg-sky-50 text-sky-700"
+                                : k.indicatorType === "LAGGING"
+                                  ? "border-slate-200 bg-slate-50 text-slate-500"
+                                  : "border-violet-200 bg-violet-50 text-violet-700")
+                            }
+                          >
+                            {k.indicatorType === "LEADING" ? "LEAD" : k.indicatorType === "LAGGING" ? "LAG" : "COIN"}
+                          </span>
+                        )}
+                        <StatusChip status={k.currentStatus} />
+                      </div>
                     </div>
                     <div className="flex items-baseline gap-1">
                       <span className="text-2xl font-bold tabular-nums text-slate-900">

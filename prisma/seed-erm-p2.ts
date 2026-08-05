@@ -3,7 +3,7 @@
 //
 // Layers the monitoring (KRI), governance (Appetite), compliance (Legal
 // Obligations) and evidence (Loss Events) demo data on top of the Phase 1
-// ERM register for the Page Industries demo tenant (plants NW / SW).
+// ERM register for the Meridian Manufacturing demo tenant (plants NW / SW).
 //
 // Phase 1 must already be seeded — this depends on:
 //   • the 24 enterprise risks  ERM-2026-0001 .. 0024
@@ -292,7 +292,7 @@ async function main() {
       code: "KRI-0012", name: "Raw material price index vs budget", catCode: "FIN", feedType: "MANUAL",
       metricProviderKey: null, unit: "index", direction: "HIGHER_IS_WORSE",
       targetStatus: "RED", linked: ["0006", "0024"], ownerId: meeraId,
-      description: "Blended cotton/imported-yarn price index relative to the budgeted basket (100 = on budget).",
+      description: "Blended steel/polymer price index relative to the budgeted basket (100 = on budget).",
       thresholdGreen: 105, thresholdAmber: 112, values: [104, 107, 110, 113, 116, 120],
     },
     {
@@ -329,14 +329,14 @@ async function main() {
       code: "KRI-0017", name: "Groundwater draw vs consented limit", catCode: "ESG", feedType: "MANUAL",
       metricProviderKey: null, unit: "%", direction: "HIGHER_IS_WORSE",
       targetStatus: "AMBER", linked: ["0021"], ownerId: lakshmiId,
-      description: "South Garment Unit groundwater abstraction as a percentage of the consented annual limit.",
+      description: "South Works groundwater abstraction as a percentage of the consented annual limit.",
       thresholdGreen: 75, thresholdAmber: 90, values: [72, 76, 80, 84, 86, 88],
     },
     {
       code: "KRI-0018", name: "Line 3 unplanned downtime", catCode: "OPS", feedType: "MANUAL",
       metricProviderKey: null, unit: "hrs/month", direction: "HIGHER_IS_WORSE",
       targetStatus: "GREEN", linked: ["0011"], ownerId: devendraId,
-      description: "Unplanned downtime hours on the critical North Garment Unit Line 3 per month.",
+      description: "Unplanned downtime hours on the critical North Works Line 3 per month.",
       thresholdGreen: 12, thresholdAmber: 24, values: [14, 12, 11, 10, 9, 8],
     },
   ];
@@ -581,28 +581,28 @@ async function main() {
 
   // 28 obligations: SW (10), NW (10), corporate (8).
   const OBLS: Obl[] = [
-    // ── South Garment Unit (10) ──
-    { code: "OBL-0001", title: "Consent to Operate (Water) — South Garment Unit", type: "CONSENT", statute: "Water (Prevention & Control of Pollution) Act, 1974, s.25/26", regulator: "State Pollution Control Board", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "UNDER_RENEWAL", validFromDays: -700, validUntilDays: 40, linked: ["0015"], conditions: ["Effluent within consented norms", "ETP operational log maintained"] },
-    { code: "OBL-0002", title: "Consent to Operate (Air) — South Garment Unit", type: "CONSENT", statute: "Air (Prevention & Control of Pollution) Act, 1981, s.21", regulator: "State Pollution Control Board", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "UNDER_RENEWAL", validFromDays: -700, validUntilDays: 40, conditions: ["Stack emission within norms", "CEMS calibration current"] },
-    { code: "OBL-0003", title: "Hazardous Waste Authorisation — South Garment Unit", type: "LICENCE", statute: "Hazardous & Other Wastes (M&TM) Rules, 2016", regulator: "State Pollution Control Board", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -300, validUntilDays: 400, conditions: ["Manifest system maintained", "TSDF tie-up valid"] },
-    { code: "OBL-0004", title: "Factory Licence — South Garment Unit", type: "LICENCE", statute: "Factories Act, 1948, s.6", regulator: "Directorate of Factories & Boilers", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -200, validUntilDays: 500, conditions: ["Approved max headcount", "Plan amendments filed"] },
-    { code: "OBL-0005", title: "Fire NOC — South Garment Unit", type: "LICENCE", statute: "State Fire Service Act / NBC 2016 Part 4", regulator: "State Fire & Emergency Services", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "OVERDUE", validFromDays: -740, validUntilDays: -12, conditions: ["Hydrant system pressure-tested", "Fire drills recorded"] },
-    { code: "OBL-0006", title: "Boiler Certificate — South Garment Unit", type: "LICENCE", statute: "Boilers Act, 1923, s.7", regulator: "Directorate of Boilers", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -120, validUntilDays: 240, conditions: ["IBR fittings certified", "Hydraulic test passed"] },
-    { code: "OBL-0007", title: "Contract Labour Licence — South Garment Unit", type: "LICENCE", statute: "Contract Labour (R&A) Act, 1970, s.12", regulator: "Office of Labour Commissioner", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "DUE_SOON", validFromDays: -330, validUntilDays: 55, conditions: ["Form-XIII register current", "Welfare amenities provided"] },
-    { code: "OBL-0008", title: "ESI Returns — South Garment Unit", type: "RETURN_FILING", statute: "Employees' State Insurance Act, 1948", regulator: "Employees' State Insurance Corporation", site: "SW", ownerId: lakshmiId, frequency: "MONTHLY", status: "COMPLIANT" },
-    { code: "OBL-0009", title: "PF Returns — South Garment Unit", type: "RETURN_FILING", statute: "EPF & MP Act, 1952", regulator: "Employees' Provident Fund Organisation", site: "SW", ownerId: lakshmiId, frequency: "MONTHLY", status: "COMPLIANT" },
-    { code: "OBL-0010", title: "Electrical Inspection — South Garment Unit", type: "STATUTORY_DUTY", statute: "Central Electricity Authority (M&S) Regulations, 2010", regulator: "Office of the Electrical Inspector", site: "SW", ownerId: lakshmiId, frequency: "ANNUAL", status: "DUE_SOON", validFromDays: -340, validUntilDays: 25 },
-    // ── North Garment Unit (10) ──
-    { code: "OBL-0011", title: "Consent to Operate (Water) — North Garment Unit", type: "CONSENT", statute: "Water (Prevention & Control of Pollution) Act, 1974, s.25/26", regulator: "State Pollution Control Board", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -300, validUntilDays: 420, conditions: ["Effluent within consented norms"] },
-    { code: "OBL-0012", title: "Consent to Operate (Air) — North Garment Unit", type: "CONSENT", statute: "Air (Prevention & Control of Pollution) Act, 1981, s.21", regulator: "State Pollution Control Board", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -300, validUntilDays: 420, conditions: ["Stack emission within norms"] },
-    { code: "OBL-0013", title: "Hazardous Waste Authorisation — North Garment Unit", type: "LICENCE", statute: "Hazardous & Other Wastes (M&TM) Rules, 2016", regulator: "State Pollution Control Board", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -250, validUntilDays: 450, conditions: ["Manifest system maintained"] },
-    { code: "OBL-0014", title: "Factory Licence — North Garment Unit", type: "LICENCE", statute: "Factories Act, 1948, s.6", regulator: "Directorate of Factories & Boilers", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "DUE_SOON", validFromDays: -320, validUntilDays: 45, conditions: ["Approved max headcount"] },
-    { code: "OBL-0015", title: "Fire NOC — North Garment Unit", type: "LICENCE", statute: "State Fire Service Act / NBC 2016 Part 4", regulator: "State Fire & Emergency Services", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -200, validUntilDays: 500, conditions: ["Fire drills recorded"] },
-    { code: "OBL-0016", title: "Boiler Certificate — North Garment Unit", type: "LICENCE", statute: "Boilers Act, 1923, s.7", regulator: "Directorate of Boilers", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -150, validUntilDays: 210 },
-    { code: "OBL-0017", title: "Contract Labour Licence — North Garment Unit", type: "LICENCE", statute: "Contract Labour (R&A) Act, 1970, s.12", regulator: "Office of Labour Commissioner", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -260, validUntilDays: 360, conditions: ["Form-XIII register current"] },
-    { code: "OBL-0018", title: "ESI Returns — North Garment Unit", type: "RETURN_FILING", statute: "Employees' State Insurance Act, 1948", regulator: "Employees' State Insurance Corporation", site: "NW", ownerId: devendraId, frequency: "MONTHLY", status: "COMPLIANT" },
-    { code: "OBL-0019", title: "PF Returns — North Garment Unit", type: "RETURN_FILING", statute: "EPF & MP Act, 1952", regulator: "Employees' Provident Fund Organisation", site: "NW", ownerId: devendraId, frequency: "MONTHLY", status: "COMPLIANT" },
-    { code: "OBL-0020", title: "Electrical Inspection — North Garment Unit", type: "STATUTORY_DUTY", statute: "Central Electricity Authority (M&S) Regulations, 2010", regulator: "Office of the Electrical Inspector", site: "NW", ownerId: devendraId, frequency: "ANNUAL", status: "COMPLIANT", validFromDays: -200, validUntilDays: 160 },
+    // ── South Works (10) ──
+    { code: "OBL-0001", title: "Consent to Operate (Water) — South Works", type: "CONSENT", statute: "Water (Prevention & Control of Pollution) Act, 1974, s.25/26", regulator: "State Pollution Control Board", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "UNDER_RENEWAL", validFromDays: -700, validUntilDays: 40, linked: ["0015"], conditions: ["Effluent within consented norms", "ETP operational log maintained"] },
+    { code: "OBL-0002", title: "Consent to Operate (Air) — South Works", type: "CONSENT", statute: "Air (Prevention & Control of Pollution) Act, 1981, s.21", regulator: "State Pollution Control Board", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "UNDER_RENEWAL", validFromDays: -700, validUntilDays: 40, conditions: ["Stack emission within norms", "CEMS calibration current"] },
+    { code: "OBL-0003", title: "Hazardous Waste Authorisation — South Works", type: "LICENCE", statute: "Hazardous & Other Wastes (M&TM) Rules, 2016", regulator: "State Pollution Control Board", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -300, validUntilDays: 400, conditions: ["Manifest system maintained", "TSDF tie-up valid"] },
+    { code: "OBL-0004", title: "Factory Licence — South Works", type: "LICENCE", statute: "Factories Act, 1948, s.6", regulator: "Directorate of Factories & Boilers", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -200, validUntilDays: 500, conditions: ["Approved max headcount", "Plan amendments filed"] },
+    { code: "OBL-0005", title: "Fire NOC — South Works", type: "LICENCE", statute: "State Fire Service Act / NBC 2016 Part 4", regulator: "State Fire & Emergency Services", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "OVERDUE", validFromDays: -740, validUntilDays: -12, conditions: ["Hydrant system pressure-tested", "Fire drills recorded"] },
+    { code: "OBL-0006", title: "Boiler Certificate — South Works", type: "LICENCE", statute: "Boilers Act, 1923, s.7", regulator: "Directorate of Boilers", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -120, validUntilDays: 240, conditions: ["IBR fittings certified", "Hydraulic test passed"] },
+    { code: "OBL-0007", title: "Contract Labour Licence — South Works", type: "LICENCE", statute: "Contract Labour (R&A) Act, 1970, s.12", regulator: "Office of Labour Commissioner", site: "SW", ownerId: lakshmiId, frequency: "PERIODIC_RENEWAL", status: "DUE_SOON", validFromDays: -330, validUntilDays: 55, conditions: ["Form-XIII register current", "Welfare amenities provided"] },
+    { code: "OBL-0008", title: "ESI Returns — South Works", type: "RETURN_FILING", statute: "Employees' State Insurance Act, 1948", regulator: "Employees' State Insurance Corporation", site: "SW", ownerId: lakshmiId, frequency: "MONTHLY", status: "COMPLIANT" },
+    { code: "OBL-0009", title: "PF Returns — South Works", type: "RETURN_FILING", statute: "EPF & MP Act, 1952", regulator: "Employees' Provident Fund Organisation", site: "SW", ownerId: lakshmiId, frequency: "MONTHLY", status: "COMPLIANT" },
+    { code: "OBL-0010", title: "Electrical Inspection — South Works", type: "STATUTORY_DUTY", statute: "Central Electricity Authority (M&S) Regulations, 2010", regulator: "Office of the Electrical Inspector", site: "SW", ownerId: lakshmiId, frequency: "ANNUAL", status: "DUE_SOON", validFromDays: -340, validUntilDays: 25 },
+    // ── North Works (10) ──
+    { code: "OBL-0011", title: "Consent to Operate (Water) — North Works", type: "CONSENT", statute: "Water (Prevention & Control of Pollution) Act, 1974, s.25/26", regulator: "State Pollution Control Board", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -300, validUntilDays: 420, conditions: ["Effluent within consented norms"] },
+    { code: "OBL-0012", title: "Consent to Operate (Air) — North Works", type: "CONSENT", statute: "Air (Prevention & Control of Pollution) Act, 1981, s.21", regulator: "State Pollution Control Board", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -300, validUntilDays: 420, conditions: ["Stack emission within norms"] },
+    { code: "OBL-0013", title: "Hazardous Waste Authorisation — North Works", type: "LICENCE", statute: "Hazardous & Other Wastes (M&TM) Rules, 2016", regulator: "State Pollution Control Board", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -250, validUntilDays: 450, conditions: ["Manifest system maintained"] },
+    { code: "OBL-0014", title: "Factory Licence — North Works", type: "LICENCE", statute: "Factories Act, 1948, s.6", regulator: "Directorate of Factories & Boilers", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "DUE_SOON", validFromDays: -320, validUntilDays: 45, conditions: ["Approved max headcount"] },
+    { code: "OBL-0015", title: "Fire NOC — North Works", type: "LICENCE", statute: "State Fire Service Act / NBC 2016 Part 4", regulator: "State Fire & Emergency Services", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -200, validUntilDays: 500, conditions: ["Fire drills recorded"] },
+    { code: "OBL-0016", title: "Boiler Certificate — North Works", type: "LICENCE", statute: "Boilers Act, 1923, s.7", regulator: "Directorate of Boilers", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -150, validUntilDays: 210 },
+    { code: "OBL-0017", title: "Contract Labour Licence — North Works", type: "LICENCE", statute: "Contract Labour (R&A) Act, 1970, s.12", regulator: "Office of Labour Commissioner", site: "NW", ownerId: devendraId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -260, validUntilDays: 360, conditions: ["Form-XIII register current"] },
+    { code: "OBL-0018", title: "ESI Returns — North Works", type: "RETURN_FILING", statute: "Employees' State Insurance Act, 1948", regulator: "Employees' State Insurance Corporation", site: "NW", ownerId: devendraId, frequency: "MONTHLY", status: "COMPLIANT" },
+    { code: "OBL-0019", title: "PF Returns — North Works", type: "RETURN_FILING", statute: "EPF & MP Act, 1952", regulator: "Employees' Provident Fund Organisation", site: "NW", ownerId: devendraId, frequency: "MONTHLY", status: "COMPLIANT" },
+    { code: "OBL-0020", title: "Electrical Inspection — North Works", type: "STATUTORY_DUTY", statute: "Central Electricity Authority (M&S) Regulations, 2010", regulator: "Office of the Electrical Inspector", site: "NW", ownerId: devendraId, frequency: "ANNUAL", status: "COMPLIANT", validFromDays: -200, validUntilDays: 160 },
     // ── Corporate (8) ──
     { code: "OBL-0021", title: "BRSR Filing — Corporate", type: "RETURN_FILING", statute: "SEBI (LODR) Regulations, 2015 — Reg. 34(2)(f)", regulator: "Securities and Exchange Board of India", site: null, ownerId: nandiniId, frequency: "ANNUAL", status: "DUE_SOON", linked: ["0020"] },
     { code: "OBL-0022", title: "Legal Metrology Registration — Corporate", type: "REGISTRATION", statute: "Legal Metrology Act, 2009", regulator: "Department of Legal Metrology", site: null, ownerId: nandiniId, frequency: "PERIODIC_RENEWAL", status: "COMPLIANT", validFromDays: -280, validUntilDays: 300 },
@@ -673,7 +673,7 @@ async function main() {
       const capa = await prisma.capa.create({
         data: {
           capaNumber: "CAPA-CMP-2026-SW-001",
-          title: "Renew lapsed Fire NOC — South Garment Unit",
+          title: "Renew lapsed Fire NOC — South Works",
           plantId: sw.id,
           sourceCategoryId: cmpCat.id,
           sourceTypeId: cmpType.id,
@@ -682,7 +682,7 @@ async function main() {
           sourceReferenceUrl: `/erm/compliance/${obl.id}`,
           sourceReferenceSummary: `${o.code} — ${o.title}`,
           sourceMetadata: { obligationCode: o.code, taskId: overdueTask.id, regulator: o.regulator } as any,
-          problemDescription: "The Fire NOC for South Garment Unit has lapsed (validity expired ~12 days ago). Operating without a valid Fire NOC exposes the site to a closure direction and prosecution risk. Hydrant pressure test and fire-drill records must be completed and the renewal application filed on priority.",
+          problemDescription: "The Fire NOC for South Works has lapsed (validity expired ~12 days ago). Operating without a valid Fire NOC exposes the site to a closure direction and prosecution risk. Hydrant pressure test and fire-drill records must be completed and the renewal application filed on priority.",
           detectionMethod: "COMPLIANCE_OVERDUE",
           detectedAt: daysAgo(12),
           detectedByUserId: lakshmiId,
@@ -840,12 +840,12 @@ async function main() {
     { code: "LE-2026-0006", title: "Spill clean-up — minor chemical release", description: "Minor chemical release during transfer; clean-up and disposal costs incurred. Pending full quantification.", daysAgo: 15, site: "SW", catCode: "OPS", source: "INCIDENT_AUTO", sourceIncidentIdx: 5, gross: 0, lossTypes: ["CLEAN_UP"], status: "DRAFT" },
     // ── MANUAL (10) ──
     { code: "LE-2026-0007", title: "SPCB penalty — effluent norm exceedance", description: "State Pollution Control Board levied a penalty following a transient effluent-norm exceedance at the SW ETP.", daysAgo: 80, site: "SW", catCode: "ESG", linked: ["0015"], source: "MANUAL", gross: 6 * L, lossTypes: ["FINE_PENALTY"], status: "QUANTIFIED" },
-    { code: "LE-2026-0008", title: "Customer quality claim — lot rejection", description: "Key retail / e-commerce customer raised a quality claim for a lot rejection / sort cost on a shade-variation and stitching defect.", daysAgo: 65, site: "NW", catCode: "OPS", linked: ["0012"], source: "MANUAL", gross: 48 * L, lossTypes: ["PRODUCT_QUALITY"], status: "QUANTIFIED" },
-    { code: "LE-2026-0009", title: "Customer quality claim — chargeback charge", description: "Second customer quality claim — chargeback and containment charge for a related defect family. Linked to the same garment-quality exposure.", daysAgo: 38, site: "NW", catCode: "OPS", linked: ["0012"], source: "MANUAL", gross: 70 * L, lossTypes: ["PRODUCT_QUALITY"], status: "QUANTIFIED" },
+    { code: "LE-2026-0008", title: "Customer quality claim — OEM field return", description: "Key OEM customer raised a quality claim for a field return / sort cost on a dimensional defect.", daysAgo: 65, site: "NW", catCode: "OPS", linked: ["0012"], source: "MANUAL", gross: 48 * L, lossTypes: ["PRODUCT_QUALITY"], status: "QUANTIFIED" },
+    { code: "LE-2026-0009", title: "Customer quality claim — line-stop charge (OEM)", description: "Second OEM quality claim — line-stop and containment charge for a related defect family. Linked to the same OEM-quality exposure.", daysAgo: 38, site: "NW", catCode: "OPS", linked: ["0012"], source: "MANUAL", gross: 70 * L, lossTypes: ["PRODUCT_QUALITY"], status: "QUANTIFIED" },
     { code: "LE-2026-0010", title: "Forex loss — unhedged USD payables", description: "Mark-to-market forex loss on unhedged USD import payables during a sharp INR depreciation window.", daysAgo: 58, site: null, catCode: "FIN", linked: ["0004"], source: "MANUAL", gross: 31 * L, lossTypes: ["OTHER"], status: "QUANTIFIED" },
-    { code: "LE-2026-0011", title: "Chemical air-freight premium — expedite", description: "Air-freight premium incurred to expedite reactive dyes & dye-house chemicals after a single-source vendor disruption.", daysAgo: 47, site: null, catCode: "SCM", linked: ["0022"], source: "MANUAL", gross: 19 * L, lossTypes: ["BUSINESS_INTERRUPTION"], status: "QUANTIFIED" },
+    { code: "LE-2026-0011", title: "Polymer air-freight premium — expedite", description: "Air-freight premium incurred to expedite speciality polymer after a single-source vendor disruption.", daysAgo: 47, site: null, catCode: "SCM", linked: ["0022"], source: "MANUAL", gross: 19 * L, lossTypes: ["BUSINESS_INTERRUPTION"], status: "QUANTIFIED" },
     { code: "LE-2026-0012", title: "Near-miss — phishing-led ransomware intrusion", description: "A phishing email led to credential compromise; intrusion was contained at the segmentation boundary before encryption. Credible worst case ≈ ₹5 Cr (multi-day plant shutdown + recovery).", daysAgo: 33, site: null, catCode: "TEC", linked: ["0018"], source: "MANUAL", isNearMiss: true, gross: 0, potential: 50000000, lossTypes: ["NEAR_MISS"], status: "QUANTIFIED" },
-    { code: "LE-2026-0013", title: "Line 3 gearbox failure — business interruption", description: "Critical gearbox failure on North Garment Unit Line 3 caused an extended outage; lost output plus expedited repair.", daysAgo: 50, site: "NW", catCode: "OPS", linked: ["0011"], source: "MANUAL", gross: 62 * L, lossTypes: ["BUSINESS_INTERRUPTION"], status: "QUANTIFIED" },
+    { code: "LE-2026-0013", title: "Line 3 gearbox failure — business interruption", description: "Critical gearbox failure on North Works Line 3 caused an extended outage; lost output plus expedited repair.", daysAgo: 50, site: "NW", catCode: "OPS", linked: ["0011"], source: "MANUAL", gross: 62 * L, lossTypes: ["BUSINESS_INTERRUPTION"], status: "QUANTIFIED" },
     { code: "LE-2026-0014", title: "Warehouse roof damage — storm (insured)", description: "Storm damaged a section of SW warehouse roof; property loss partly recovered under the property policy.", daysAgo: 100, site: "SW", catCode: "OPS", source: "MANUAL", gross: 20 * L, recovered: 12 * L, lossTypes: ["PROPERTY_DAMAGE"], status: "CLOSED" },
     { code: "LE-2026-0015", title: "Transit damage claim — recovered from carrier", description: "Finished-goods transit damage; loss recovered from the carrier under the logistics contract.", daysAgo: 90, site: null, catCode: "SCM", source: "MANUAL", gross: 9 * L, recovered: 7 * L, lossTypes: ["PROPERTY_DAMAGE"], status: "CLOSED" },
     { code: "LE-2026-0016", title: "Labour compliance penalty — register gap", description: "Minor penalty for a contractor statutory-register gap identified during a labour inspection.", daysAgo: 72, site: "NW", catCode: "CMP", linked: ["0013"], source: "MANUAL", gross: 3 * L, lossTypes: ["FINE_PENALTY"], status: "CLOSED" },
@@ -883,7 +883,7 @@ async function main() {
   console.log(`  loss events: ${lossCount}`);
 
   // ── Calibration note: ERM-2026-0012 linked net loss ─────────────────────
-  // 0012 receives LE-0008 (₹48L) + LE-0009 (₹70L) = ₹1.18 Cr (> ₹1 Cr) → UNDERSCORED flag (garment-quality exposure).
+  // 0012 receives LE-0008 (₹48L) + LE-0009 (₹70L) = ₹1.18 Cr (> ₹1 Cr) → UNDERSCORED flag.
   const linked0012 = LOSSES.filter((l) => (l.linked ?? []).includes("0012") && !l.isNearMiss && l.status !== "DRAFT");
   const net0012 = linked0012.reduce((s, l) => s + (l.gross - (l.recovered ?? 0)), 0);
   console.log(`  calibration: ERM-2026-0012 linked net loss = ₹${(net0012 / L).toFixed(0)}L (${net0012 >= 10000000 ? "≥ ₹1 Cr → UNDERSCORED" : "< ₹1 Cr"})`);

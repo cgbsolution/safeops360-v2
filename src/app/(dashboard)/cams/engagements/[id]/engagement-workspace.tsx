@@ -4,6 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ClipboardList, ListChecks, AlertTriangle, FileText, Loader2, Check, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ENGAGEMENT_STATUS_CHIP, RESULT_CHIP, SEVERITY_CHIP, FINDING_STATUS_CHIP,
   fmtDate, labelize, engagementTypeLabel,
@@ -40,11 +45,13 @@ export function EngagementWorkspace({
       <EngagementHeader engagement={engagement} perms={perms} />
       <div className="mt-4 flex gap-1 border-b border-slate-200">
         {tabs.map((t) => (
-          <button key={t.key} onClick={() => setTab(t.key)}
-            className={"flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors " +
-              (tab === t.key ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-800")}>
+          <Button key={t.key} type="button" variant="ghost" onClick={() => setTab(t.key)}
+            className={cn(
+              "h-auto flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              tab === t.key ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-800"
+            )}>
             <t.icon size={15} /> {t.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -97,11 +104,10 @@ function EngagementHeader({ engagement, perms }: { engagement: Engagement; perms
         {engagement.sourceModule && <span className="rounded bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">raised via {engagement.sourceModule}</span>}
         <div className="ml-auto flex flex-wrap gap-2">
           {actions.filter((a) => a.show).map((a) => (
-            <button key={a.to} disabled={busy} onClick={() => transition(a.to)}
-              className={"inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50 " +
-                (a.tone === "emerald" ? "bg-emerald-600 hover:bg-emerald-700" : "bg-primary-700 hover:bg-primary-800")}>
+            <Button key={a.to} type="button" variant={a.tone === "emerald" ? "success" : "default"} disabled={busy} onClick={() => transition(a.to)}
+              className="inline-flex items-center gap-1.5 text-sm font-medium disabled:opacity-50">
               {busy ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} {a.label}
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -152,11 +158,11 @@ function PlanTab({ engagement, approvedTemplates, perms }: { engagement: Engagem
         <p className="mb-3 text-xs text-slate-500">The approved template snapshots onto the engagement when fieldwork starts; later template edits never alter a conducted audit.</p>
         {editable ? (
           <div className="flex items-center gap-2">
-            <select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="flex-1 rounded-lg border border-slate-300 p-2 text-sm">
+            <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="flex-1">
               <option value="">— none —</option>
               {approvedTemplates.map((t) => <option key={t.id} value={t.id}>{t.templateCode} · {t.name} (v{t.version})</option>)}
-            </select>
-            <button disabled={busy} onClick={saveTemplate} className="rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">Save</button>
+            </Select>
+            <Button type="button" variant="default" disabled={busy} onClick={saveTemplate} className="text-sm font-medium disabled:opacity-50">Save</Button>
           </div>
         ) : (
           <p className="text-sm text-slate-700">{engagement.templateName ?? "No template assigned."}</p>
@@ -228,12 +234,12 @@ function ExecuteTab({ engagement, runner, perms }: { engagement: Engagement; run
         {runner.scorePercent != null && <span className="ml-2 rounded bg-slate-100 px-2 py-0.5 text-xs">Score {runner.scorePercent}%</span>}
         {canExecute && (
           <div className="ml-auto flex gap-2">
-            <button disabled={!!busy} onClick={() => save(false)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50">
+            <Button type="button" variant="outline" disabled={!!busy} onClick={() => save(false)} className="text-sm disabled:opacity-50">
               {busy === "save" ? "Saving…" : "Save progress"}
-            </button>
-            <button disabled={!!busy} onClick={() => save(true)} className="rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
+            </Button>
+            <Button type="button" variant="success" disabled={!!busy} onClick={() => save(true)} className="text-sm font-medium disabled:opacity-50">
               {busy === "complete" ? "Finalising…" : "Complete fieldwork"}
-            </button>
+            </Button>
           </div>
         )}
         {readOnly && <span className="ml-auto text-xs text-slate-400">Read-only ({labelize(engagement.status)})</span>}
@@ -271,13 +277,15 @@ function QuestionRow({ q, ans, readOnly, onChange }: { q: RunnerQuestion; ans: A
         {conformanceMode && (
           <div className="flex shrink-0 gap-1">
             {(["CONFORM", "NC", "NA"] as const).map((c) => (
-              <button key={c} type="button" disabled={readOnly} onClick={() => onChange({ conformance: c })}
-                className={"rounded border px-2 py-1 text-xs font-medium disabled:opacity-60 " +
-                  (ans.conformance === c
+              <Button key={c} type="button" variant="ghost" disabled={readOnly} onClick={() => onChange({ conformance: c })}
+                className={cn(
+                  "h-auto rounded border px-2 py-1 text-xs font-medium disabled:opacity-60",
+                  ans.conformance === c
                     ? (c === "CONFORM" ? "border-emerald-500 bg-emerald-50 text-emerald-700" : c === "NC" ? "border-rose-500 bg-rose-50 text-rose-700" : "border-slate-400 bg-slate-100 text-slate-600")
-                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-400")}>
+                    : "border-slate-200 bg-white text-slate-500 hover:border-slate-400"
+                )}>
                 {labels[c]}
-              </button>
+              </Button>
             ))}
           </div>
         )}
@@ -286,16 +294,16 @@ function QuestionRow({ q, ans, readOnly, onChange }: { q: RunnerQuestion; ans: A
       {!conformanceMode && (
         <div className="mt-2">
           {q.questionType === "NUMERIC" || q.questionType === "RATING_SCALE" ? (
-            <input type="number" disabled={readOnly} value={(ans.value as number) ?? ""} onChange={(e) => onChange({ value: e.target.value === "" ? null : Number(e.target.value) })}
-              className="w-32 rounded-lg border border-slate-300 p-1.5 text-sm" placeholder="value" />
+            <Input type="number" disabled={readOnly} value={(ans.value as number) ?? ""} onChange={(e) => onChange({ value: e.target.value === "" ? null : Number(e.target.value) })}
+              className="w-32" placeholder="value" />
           ) : q.questionType === "SINGLE_SELECT" || q.questionType === "MULTI_SELECT" ? (
-            <select disabled={readOnly} value={(ans.value as string) ?? ""} onChange={(e) => onChange({ value: e.target.value })} className="rounded-lg border border-slate-300 p-1.5 text-sm">
+            <Select disabled={readOnly} value={(ans.value as string) ?? ""} onChange={(e) => onChange({ value: e.target.value })}>
               <option value="">— select —</option>
               {(q.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
-            </select>
+            </Select>
           ) : (
-            <textarea disabled={readOnly} value={(ans.value as string) ?? ""} onChange={(e) => onChange({ value: e.target.value })} rows={2}
-              className="w-full rounded-lg border border-slate-300 p-1.5 text-sm" placeholder={q.questionType.includes("PHOTO") || q.questionType === "SIGNATURE" ? "Capture stubbed — record a note" : "Response"} />
+            <Textarea disabled={readOnly} value={(ans.value as string) ?? ""} onChange={(e) => onChange({ value: e.target.value })} rows={2}
+              placeholder={q.questionType.includes("PHOTO") || q.questionType === "SIGNATURE" ? "Capture stubbed — record a note" : "Response"} />
           )}
         </div>
       )}
@@ -303,16 +311,16 @@ function QuestionRow({ q, ans, readOnly, onChange }: { q: RunnerQuestion; ans: A
       {ans.conformance === "NC" && (
         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-rose-50/60 p-2">
           <span className="text-[11px] font-medium text-rose-700">NC severity</span>
-          <select disabled={readOnly} value={ans.ncSeverity ?? "MINOR_NC"} onChange={(e) => onChange({ ncSeverity: e.target.value })} className="rounded border border-rose-200 bg-white p-1 text-xs">
+          <Select disabled={readOnly} value={ans.ncSeverity ?? "MINOR_NC"} onChange={(e) => onChange({ ncSeverity: e.target.value })} className="border-rose-200 text-xs">
             {NC_SEVERITIES.map((s) => <option key={s} value={s}>{labelize(s)}</option>)}
-          </select>
+          </Select>
           {q.ncTriggersFinding && <span className="text-[11px] text-rose-600">→ a finding will be raised on completion{q.evidenceRequiredOnNc ? " (evidence required)" : ""}</span>}
         </div>
       )}
 
       {(ans.conformance === "NC" || conformanceMode) && (
-        <input disabled={readOnly} value={ans.note ?? ""} onChange={(e) => onChange({ note: e.target.value })}
-          className="mt-2 w-full rounded-lg border border-slate-200 p-1.5 text-xs" placeholder="Note / observation" />
+        <Input disabled={readOnly} value={ans.note ?? ""} onChange={(e) => onChange({ note: e.target.value })}
+          className="mt-2 border-slate-200 text-xs" placeholder="Note / observation" />
       )}
     </div>
   );
@@ -349,10 +357,10 @@ function FindingsTab({ engagement, findings, perms }: { engagement: Engagement; 
                 {f.capaNumber ? (
                   <Link href="/capa" className="rounded bg-blue-50 px-2 py-0.5 text-[11px] text-blue-700 hover:underline">{f.capaNumber} · {labelize(f.capaState ?? "")}</Link>
                 ) : perms.findingManage ? (
-                  <button disabled={busy === f.id} onClick={() => raiseCapa(f.id)}
-                    className="rounded-lg bg-primary-700 px-2.5 py-1 text-xs font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+                  <Button type="button" variant="default" disabled={busy === f.id} onClick={() => raiseCapa(f.id)}
+                    className="text-xs font-medium disabled:opacity-50">
                     {busy === f.id ? "Raising…" : "Raise CAPA"}
-                  </button>
+                  </Button>
                 ) : null}
               </div>
             </div>

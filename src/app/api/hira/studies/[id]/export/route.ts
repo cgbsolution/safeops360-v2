@@ -72,9 +72,21 @@ export async function GET(
         status: string;
         lastReviewedAt: string | null;
         nextReviewDue: string | null;
-        hazards: { hazardName: string | null; hazardCategory: string | null }[];
+        hazards: {
+          hazardName: string | null;
+          hazardCategory: string | null;
+          consequence: string | null;
+          regulationRef: string | null;
+          regulationSection: string | null;
+        }[];
         existingControls: { hierarchy: string; description: string }[];
-        recommendedControls: { hierarchy: string; description: string; status: string }[];
+        recommendedControls: {
+          hierarchy: string;
+          description: string;
+          status: string;
+          evidenceAttached: boolean;
+          documentReference: string | null;
+        }[];
         regulationRefs: { regulation: string; section: string | null }[];
       };
       type StudyDetail = {
@@ -184,6 +196,10 @@ export async function GET(
         { header: "Routine", key: "routine", width: 14 },
         { header: "Frequency", key: "frequency", width: 14 },
         { header: "Hazards", key: "hazards", width: 50 },
+        // Consequence and the per-hazard citation are ISO 45001 cl.6.1.2.1
+        // elements — they belong in the exported register, at hazard grain.
+        { header: "Consequences", key: "consequences", width: 50 },
+        { header: "Hazard Reg Refs", key: "hazardRegs", width: 34 },
         { header: "Init L", key: "iL", width: 8 },
         { header: "Init S", key: "iS", width: 8 },
         { header: "Init Risk", key: "iRisk", width: 10 },
@@ -195,7 +211,10 @@ export async function GET(
         { header: "Resid Level", key: "rLevel", width: 13 },
         { header: "Acceptable", key: "accept", width: 12 },
         { header: "Recommended", key: "rec", width: 60 },
-        { header: "Reg Refs", key: "regs", width: 30 },
+        { header: "Recommended Evidence", key: "recEvidence", width: 40 },
+        // Entry-level citations stay in their own column — deliberately NOT
+        // merged with the hazard-row ones, which cite the hazard not the activity.
+        { header: "Reg Refs (entry)", key: "regs", width: 30 },
         { header: "Status", key: "status", width: 16 },
         { header: "Last Reviewed", key: "lastReviewed", width: 14 },
         { header: "Next Review", key: "nextReview", width: 14 }
@@ -209,7 +228,9 @@ export async function GET(
       };
       reg.getRow(1).alignment = { vertical: "middle", horizontal: "left" };
       reg.views = [{ state: "frozen", ySplit: 1 }];
-      reg.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: 21 } };
+      // Keep in step with reg.columns above — 3 columns added in round 3
+      // (Consequences, Hazard Reg Refs, Recommended Evidence).
+      reg.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: reg.columns.length } };
 
       // Data rows
       for (const e of fullEntries) {
@@ -223,6 +244,18 @@ export async function GET(
             .map((h) => `${h.hazardName ?? ""}${h.hazardCategory ? ` [${h.hazardCategory}]` : ""}`)
             .filter((s) => s.trim())
             .join("; "),
+          // Labelled per hazard so a multi-hazard row stays readable, and an
+          // unrecorded consequence shows as a gap instead of vanishing.
+          consequences: e.hazards
+            .map((h) => `${h.hazardName ?? "Hazard"}: ${h.consequence?.trim() || "— not recorded —"}`)
+            .join("; "),
+          hazardRegs: e.hazards
+            .map((h) => {
+              const cite = [h.regulationRef, h.regulationSection].filter(Boolean).join(" ");
+              return cite ? `${h.hazardName ?? "Hazard"}: ${cite}` : null;
+            })
+            .filter(Boolean)
+            .join("; "),
           iL: e.initialLikelihoodScore,
           iS: e.initialSeverityScore,
           iRisk: e.initialRiskScore,
@@ -235,6 +268,10 @@ export async function GET(
           accept: e.residualAcceptable === null ? "" : e.residualAcceptable ? "Yes" : "No",
           rec: e.recommendedControls
             .map((c) => `[${c.status}] ${c.hierarchy}: ${c.description}`)
+            .join("; "),
+          recEvidence: e.recommendedControls
+            .filter((c) => c.evidenceAttached || c.documentReference)
+            .map((c) => `${c.hierarchy}: ${c.documentReference || "evidence on file"}`)
             .join("; "),
           regs: e.regulationRefs
             .map((r) => `${r.regulation}${r.section ? " " + r.section : ""}`)

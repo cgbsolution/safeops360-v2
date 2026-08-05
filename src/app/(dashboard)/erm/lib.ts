@@ -106,6 +106,20 @@ export type RiskListItem = {
   residualBand: string | null;
   priorResidualScore: number | null;
   priorResidualBand: string | null;
+  inherentExpectedLossInr?: number | null;
+  residualExpectedLossInr?: number | null;
+  residualWorstLossInr?: number | null;
+  controlEffectivenessPct?: number | null;
+  derivedResidualScore?: number | null;
+  derivedResidualBand?: string | null;
+  residualIsOverride?: boolean;
+  residualOverrideVariance?: number | null;
+  controlAlert?: boolean;
+  kriAlert?: boolean;
+  incidentAlert?: boolean;
+  targetScore?: number | null;
+  targetBand?: string | null;
+  targetExpectedLossInr?: number | null;
   nextReviewDate: string | null;
   reviewOverdueDays: number;
   reviewBadge: string | null;
@@ -150,6 +164,7 @@ export type Treatment = {
   primaryOwnerName: string | null;
   closureTargetDate: string | null;
   expectedResidualReduction: number | null;
+  completionPercent: number | null;
   isOpen: boolean;
   overdue: boolean;
 };
@@ -170,6 +185,20 @@ export type RiskDetail = RiskListItem & {
   escalatedAt: string | null;
   isRollup: boolean;
   version: number;
+  targetLikelihood?: number | null;
+  targetImpact?: number | null;
+  targetDate?: string | null;
+  targetRationale?: string | null;
+  controlAlertAt?: string | null;
+  derivedResidual?: DerivedResidual | null;
+  incidentAlertReason?: string | null;
+  openAppetiteBreaches?: { id: string; bandType: string; status: string; observedValue: number; thresholdValue: number }[];
+  bowtie?: Bowtie | null;
+  firstLineOwnerId?: string | null;
+  firstLineOwnerName?: string | null;
+  secondLineOwnerId?: string | null;
+  secondLineOwnerName?: string | null;
+  thirdLineAssurance?: string | null;
   currentInherent: Assessment | null;
   currentResidual: Assessment | null;
   assessmentHistory: Assessment[];
@@ -249,16 +278,51 @@ export type MovementRow = {
   direction: "UP" | "DOWN";
 };
 
+export type DepartmentBar = {
+  businessUnit: string;
+  low: number;
+  medium: number;
+  high: number;
+  critical: number;
+  total: number;
+};
+
+export type RootCauseSummary = {
+  label: string;
+  categoryCode: string | null;
+  categoryName: string | null;
+  occurrences: number;
+  riskReach: number;
+  isRecurringDriver: boolean;
+};
+
+export type PendingApprovalItem = {
+  type: string; // RISK | TREATMENT
+  code?: string | null;
+  title?: string | null;
+  href: string;
+  state?: string | null;
+  ownerName?: string | null;
+};
+
 export type DashboardSummary = {
   totalActiveRisks: number;
   criticalResidual: number;
   highResidual: number;
+  mediumResidual: number;
+  lowResidual: number;
   overdueReviews: number;
   openTreatments: number;
+  overdueTreatments: number;
+  mitigationProgressPct: number;
   escalatedThisQuarter: number;
+  pendingApprovals?: number;
+  pendingApprovalItems?: PendingApprovalItem[];
   inherentHeatMap: HeatMapCell[];
   residualHeatMap: HeatMapCell[];
   categoryBars: CategoryBar[];
+  departmentBars: DepartmentBar[];
+  topRootCauses: RootCauseSummary[];
   topRisks: TopRiskRow[];
   movement: MovementRow[];
 };
@@ -332,6 +396,11 @@ export type TreatmentTrackerRow = {
   overdue: boolean;
   expectedResidualReduction: number | null;
   achievedResidualReduction: number | null;
+  reductionShortfall?: boolean | null;
+  costInr?: number | null;
+  expectedLossReductionInr?: number | null;
+  riskReductionPerRupee?: number | null;
+  completionPercent?: number | null;
 };
 
 export type BoardPack = {
@@ -359,3 +428,141 @@ export function fmtDate(d: string | null | undefined): string {
     return "—";
   }
 }
+
+// ── ₹ formatting (Indian crore/lakh) — exposure & loss figures ──────────────
+export function fmtInr(n: number | null | undefined): string {
+  if (n == null) return "—";
+  const a = Math.abs(n);
+  if (a >= 1e7) return `₹${(n / 1e7).toFixed(2)} Cr`;
+  if (a >= 1e5) return `₹${(n / 1e5).toFixed(2)} L`;
+  if (a >= 1e3) return `₹${(n / 1e3).toFixed(0)} K`;
+  return `₹${Math.round(n)}`;
+}
+
+// ── ADVANCED (CRO-grade) contract types — mirror app/schemas/erm.py ──────────
+export type ControlContribution = {
+  controlId: string;
+  controlCode: string;
+  name: string;
+  controlType: string;
+  mitigationStrength: string;
+  rating: string;
+  axis: "LIKELIHOOD" | "IMPACT";
+  contribution: number;
+};
+
+export type DerivedResidual = {
+  inherentLikelihood: number | null;
+  inherentImpact: number | null;
+  inherentScore: number | null;
+  preventiveEffectivenessPct: number;
+  mitigatingEffectivenessPct: number;
+  combinedEffectivenessPct: number;
+  derivedLikelihood: number | null;
+  derivedImpact: number | null;
+  derivedResidualScore: number | null;
+  derivedResidualBand: string | null;
+  derivedResidualExpectedLossInr: number | null;
+  assertedResidualScore: number | null;
+  overrideVariance: number | null;
+  mappedControlCount: number;
+  ratedControlCount: number;
+  backTestedControlCount?: number;
+  contributingControls: ControlContribution[];
+  inherentExpectedLossInr: number | null;
+  controlRiskReductionInr: number | null;
+};
+
+export type BowtieBarrier = {
+  id: string;
+  description: string;
+  barrierType: "PREVENTIVE" | "MITIGATING";
+  controlId: string | null;
+  controlCode: string | null;
+  status: "WORKED" | "FAILED" | "ABSENT" | "UNTESTED";
+};
+export type Bowtie = {
+  topEvent: string;
+  threats: { id: string; description: string; preventiveBarriers: BowtieBarrier[] }[];
+  consequences: { id: string; description: string; mitigatingBarriers: BowtieBarrier[] }[];
+};
+
+export type ExposureRow = {
+  rank: number;
+  id: string;
+  riskCode: string;
+  title: string;
+  categoryCode: string | null;
+  categoryName: string | null;
+  residualBand: string | null;
+  residualExpectedLossInr: number;
+  residualWorstLossInr: number;
+  pctOfTotal: number;
+  cumulativePct: number;
+};
+export type EnterpriseExposure = {
+  totalExpectedLossInr: number;
+  totalWorstLossInr: number;
+  quantifiedRiskCount: number;
+  unquantifiedRiskCount: number;
+  topDrivers: ExposureRow[];
+  byCategory: { categoryCode: string; categoryName: string; colorHex: string | null; riskCount: number; expectedLossInr: number; pctOfTotal: number }[];
+  bySite: { plantId: string | null; plantName: string; riskCount: number; expectedLossInr: number; concentrationIndex: number }[];
+  portfolioConcentrationIndex: number;
+  top5SharePct: number;
+};
+
+export type MonteCarlo = {
+  iterations: number;
+  riskCount: number;
+  meanLossInr: number;
+  p50LossInr: number;
+  p90LossInr: number;
+  p95LossInr: number;
+  p99LossInr: number;
+  maxLossInr: number;
+  expectedLossInr: number;
+  correlated?: boolean;
+  linkageCount?: number;
+  independentP99LossInr?: number;
+  contagionTailUpliftInr?: number;
+  distribution: { bucketFromInr: number; bucketToInr: number | null; count: number; pct: number }[];
+};
+
+export type ReverseStress = {
+  thresholdInr: number;
+  breached: boolean;
+  minRisksToBreach: number | null;
+  combinedWorstLossInr: number;
+  breakingCombination: { riskId: string; riskCode: string; title: string; worstLossInr: number; residualBand: string | null }[];
+  portfolioWorstCaseInr: number;
+  headroomInr: number;
+};
+
+export type CorrelatedExposure = {
+  standaloneExpectedLossInr: number;
+  correlatedExpectedLossInr: number;
+  diversificationGapInr: number;
+  topContagionSources: {
+    sourceRiskId: string;
+    sourceRiskCode: string;
+    sourceExpectedLossInr: number;
+    directTargets: { riskId: string; riskCode: string; title: string; linkageType: string; addedExpectedLossInr: number; stressedExpectedLossInr: number }[];
+    totalAddedExpectedLossInr: number;
+    affectedCount: number;
+  }[];
+  linkageCount: number;
+};
+
+export type FrameworkCoverage = {
+  frameworks: {
+    framework: string;
+    version: string;
+    metCount: number;
+    partialCount: number;
+    gapCount: number;
+    coveragePct: number;
+    clauses: { clause: string; title: string; capability: string; status: "MET" | "PARTIAL" | "GAP"; evidence: string }[];
+  }[];
+  overallCoveragePct: number;
+};

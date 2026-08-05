@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { BandBadge } from "@/components/erm/shared";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { fmtDate } from "../../lib";
 import {
   OBLIGATION_STATUS_CHIP,
@@ -56,18 +61,20 @@ export function ObligationDetailView({ obligation }: { obligation: ObligationDet
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-200">
         {TABS.map((t) => (
-          <button
+          <Button
             key={t}
+            type="button"
+            variant="ghost"
             onClick={() => setTab(t)}
-            className={
-              "border-b-2 px-3 py-2 text-sm font-medium transition-colors " +
-              (tab === t ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700")
-            }
+            className={cn(
+              "h-auto border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+              tab === t ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700"
+            )}
           >
             {t}
             {t === "Tasks" && obligation.tasks.length > 0 && <span className="ml-1 text-[10px] text-slate-400">{obligation.tasks.length}</span>}
             {t === "Evidence" && obligation.attachments.length > 0 && <span className="ml-1 text-[10px] text-slate-400">{obligation.attachments.length}</span>}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -176,57 +183,55 @@ function TasksTab({ obligation, onChanged }: { obligation: ObligationDetail; onC
     return <p className="py-8 text-center text-sm text-slate-400">No compliance tasks generated for this obligation.</p>;
   }
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[960px] text-sm">
-        <thead>
-          <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-            <th className="px-2 py-2">Task</th>
-            <th className="px-2 py-2">Period</th>
-            <th className="px-2 py-2">Due</th>
-            <th className="px-2 py-2">Status</th>
-            <th className="px-2 py-2">Attested</th>
-            <th className="px-2 py-2">Verified</th>
-            <th className="px-2 py-2">Evidence</th>
-            <th className="px-2 py-2">CAPA</th>
-            <th className="px-2 py-2">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {obligation.tasks.map((t) => (
-            <tr key={t.id} className="border-b border-slate-100 align-top hover:bg-slate-50/70">
-              <td className="px-2 py-2 text-slate-700">{typeLabel(t.taskType)}</td>
-              <td className="px-2 py-2 text-xs text-slate-600">{t.periodLabel}</td>
-              <td className="px-2 py-2 text-xs tabular-nums text-slate-500">
-                {fmtDate(t.dueDate)}
-                {t.overdueDays > 0 && (
-                  <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">{t.overdueDays}d</span>
-                )}
-              </td>
-              <td className="px-2 py-2">
-                <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (TASK_STATUS_CHIP[t.status] ?? "")}>
-                  {t.status}
-                </span>
-              </td>
-              <td className="px-2 py-2 text-xs text-slate-600">{t.attestedByName ?? "—"}</td>
-              <td className="px-2 py-2 text-xs text-slate-600">{t.verifiedByName ?? "—"}</td>
-              <td className="px-2 py-2 text-center text-xs tabular-nums text-slate-600">{t.attachmentCount}</td>
-              <td className="px-2 py-2 text-xs">
-                {t.capaId ? (
-                  <Link href={`/capa/${t.capaId}`} className="font-medium text-primary-700 hover:underline">
-                    CAPA ↗
-                  </Link>
-                ) : (
-                  "—"
-                )}
-              </td>
-              <td className="px-2 py-2">
-                <TaskActions task={t} onChanged={onChanged} />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <Table className="min-w-[960px]">
+      <TableHeader>
+        <TableRow>
+          <TableHead>Task</TableHead>
+          <TableHead>Period</TableHead>
+          <TableHead>Due</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Attested</TableHead>
+          <TableHead>Verified</TableHead>
+          <TableHead>Evidence</TableHead>
+          <TableHead>CAPA</TableHead>
+          <TableHead>Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {obligation.tasks.map((t) => (
+          <TableRow key={t.id}>
+            <TableCell className="text-slate-700">{typeLabel(t.taskType)}</TableCell>
+            <TableCell className="text-xs text-slate-600">{t.periodLabel}</TableCell>
+            <TableCell className="text-xs tabular-nums text-slate-500">
+              {fmtDate(t.dueDate)}
+              {t.overdueDays > 0 && (
+                <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">{t.overdueDays}d</span>
+              )}
+            </TableCell>
+            <TableCell>
+              <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (TASK_STATUS_CHIP[t.status] ?? "")}>
+                {t.status}
+              </span>
+            </TableCell>
+            <TableCell className="text-xs text-slate-600">{t.attestedByName ?? "—"}</TableCell>
+            <TableCell className="text-xs text-slate-600">{t.verifiedByName ?? "—"}</TableCell>
+            <TableCell className="text-center text-xs tabular-nums text-slate-600">{t.attachmentCount}</TableCell>
+            <TableCell className="text-xs">
+              {t.capaId ? (
+                <Link href={`/capa/${t.capaId}`} className="font-medium text-primary-700 hover:underline">
+                  CAPA ↗
+                </Link>
+              ) : (
+                "—"
+              )}
+            </TableCell>
+            <TableCell>
+              <TaskActions task={t} onChanged={onChanged} />
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
   );
 }
 
@@ -335,16 +340,18 @@ export function ActionBtn({
   primary?: boolean;
 }) {
   return (
-    <button
+    <Button
+      type="button"
+      variant="ghost"
       onClick={onClick}
       disabled={disabled}
-      className={
-        "rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50 " +
-        (primary ? "bg-primary-700 text-white hover:bg-primary-800" : "border border-slate-300 bg-white text-slate-700 hover:border-primary-500")
-      }
+      className={cn(
+        "h-auto rounded-md px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50",
+        primary ? "bg-primary-700 text-white hover:bg-primary-800" : "border border-slate-300 bg-white text-slate-700 hover:border-primary-500"
+      )}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -354,9 +361,9 @@ function ModalShell({ title, onClose, children }: { title: string; onClose: () =
       <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700">
             <X size={18} />
-          </button>
+          </Button>
         </div>
         {children}
       </div>
@@ -380,24 +387,23 @@ export function EvidenceModal({
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">File name (required)</label>
-          <input
+          <Input
             value={fileName}
             onChange={(e) => setFileName(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
             placeholder="e.g. factory-licence-2026.pdf"
           />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Caption</label>
-          <textarea
+          <Textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
             rows={2}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
             placeholder="What does this evidence demonstrate?"
           />
         </div>
-        <button
+        <Button
+          variant="default"
           disabled={busy || !fileName.trim()}
           onClick={() =>
             onSubmit({
@@ -407,10 +413,10 @@ export function EvidenceModal({
               caption: caption.trim(),
             })
           }
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
           {busy ? "Saving…" : "Attach evidence"}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );
@@ -439,15 +445,16 @@ export function RemarksModal({
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
-          <textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+          <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
         </div>
-        <button
+        <Button
+          variant="default"
           disabled={busy || (required && !text.trim())}
           onClick={() => onSubmit(text.trim())}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
           {busy ? "Saving…" : confirmLabel}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );

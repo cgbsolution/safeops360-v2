@@ -77,7 +77,18 @@ async function pingBackend(url: string, timeoutMs: number): Promise<{
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Optional gate: when DIAGNOSTICS_TOKEN is set, require a matching ?token=
+  // and 404 otherwise so the endpoint isn't publicly discoverable. When unset,
+  // it stays open (still sanitised — presence + length only, no secret values).
+  const diagToken = process.env.DIAGNOSTICS_TOKEN;
+  if (diagToken) {
+    const provided = new URL(req.url).searchParams.get("token");
+    if (provided !== diagToken) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+  }
+
   const checks: Check[] = [];
 
   // ─── 1. Required env vars ─────────────────────────────────────────
@@ -144,7 +155,7 @@ export async function GET() {
     checks.push({
       name: "DATABASE_URL",
       status: "ok",
-      message: `Set (length ${db.length}, ends in …${(DATABASE_URL ?? "").slice(-30)}).`
+      message: `Set (length ${db.length}).`
     });
   }
 
@@ -168,7 +179,7 @@ export async function GET() {
     checks.push({
       name: "JWT_SECRET",
       status: "ok",
-      message: `Set (length ${jwt.length}, fingerprint ${jwt.preview}). Confirm Python's JWT_SECRET has the same length.`
+      message: `Set (length ${jwt.length}). Confirm Python's JWT_SECRET has the same length.`
     });
   }
 
@@ -192,7 +203,7 @@ export async function GET() {
     checks.push({
       name: "NEXTAUTH_SECRET",
       status: "ok",
-      message: `Set (length ${ns.length}, fingerprint ${ns.preview}).`
+      message: `Set (length ${ns.length}).`
     });
   }
 

@@ -19,7 +19,8 @@ export default async function FLRAPage() {
       leader: { select: { name: true } },
       permit: { select: { id: true, number: true } }
     },
-    orderBy: { date: "desc" },
+    // Newest-created first (platform-wide list convention).
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     take: 100
   });
 

@@ -3,7 +3,8 @@ import { AlertTriangle, ShieldCheck } from "lucide-react";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { ErmHomeView } from "./home-view";
-import type { DashboardSummary } from "./lib";
+import type { DashboardSummary, EnterpriseExposure } from "./lib";
+import { fmtInr } from "./lib";
 import type { BcmDashboard } from "./lib-p3";
 import type { Tier3Summary } from "./lib-t3";
 
@@ -13,12 +14,18 @@ const fallback: DashboardSummary = {
   totalActiveRisks: 0,
   criticalResidual: 0,
   highResidual: 0,
+  mediumResidual: 0,
+  lowResidual: 0,
   overdueReviews: 0,
   openTreatments: 0,
+  overdueTreatments: 0,
+  mitigationProgressPct: 0,
   escalatedThisQuarter: 0,
   inherentHeatMap: [],
   residualHeatMap: [],
   categoryBars: [],
+  departmentBars: [],
+  topRootCauses: [],
   topRisks: [],
   movement: [],
 };
@@ -46,6 +53,8 @@ export default async function ErmHomePage() {
   ]);
   // Tier 3 (Controls / Vendor / Insurance) — degrade gracefully if not licensed/seeded.
   const tier3 = await backendFetch<Tier3Summary>("/api/erm/tier3-summary").catch(noop(null as Tier3Summary | null));
+  // ADVANCED — enterprise ₹ exposure headline (degrades if no ₹ data seeded).
+  const exposure = await backendFetch<EnterpriseExposure>("/api/erm/exposure").catch(noop(null as EnterpriseExposure | null));
   const qStart = quarterStart(new Date());
   const netLossQtd = (lossList.items ?? [])
     .filter((e) => !e.isNearMiss && ["QUANTIFIED", "CLOSED"].includes(e.status) && new Date(e.eventDate) >= qStart)
@@ -70,6 +79,19 @@ export default async function ErmHomePage() {
         </div>
       ) : (
         <>
+          {/* ADVANCED — enterprise ₹ exposure headline banner */}
+          {exposure && exposure.totalExpectedLossInr > 0 && (
+            <Link
+              href="/erm/exposure"
+              className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-xl border border-slate-200 bg-gradient-to-r from-slate-900 to-slate-700 px-5 py-3 text-white transition-shadow hover:shadow-md"
+            >
+              <span className="inline-flex items-center gap-2 text-sm font-semibold">Enterprise Risk Exposure</span>
+              <span className="text-sm"><span className="text-xl font-bold tabular-nums">{fmtInr(exposure.totalExpectedLossInr)}</span><span className="ml-1 text-xs opacity-80">expected loss / yr</span></span>
+              <span className="text-xs opacity-90">top-5 drive <span className="font-semibold">{exposure.top5SharePct}%</span></span>
+              <span className="text-xs opacity-90">concentration HHI <span className="font-semibold">{exposure.portfolioConcentrationIndex.toFixed(3)}</span></span>
+              <span className="ml-auto text-xs font-medium uppercase tracking-wider opacity-90">Exposure & VaR →</span>
+            </Link>
+          )}
           {/* E-01 — BCM integration: active-crisis banner + continuity coverage */}
           {bcm && bcm.activeCrises > 0 && (
             <Link

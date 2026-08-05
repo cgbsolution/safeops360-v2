@@ -3,6 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Printer, ShieldCheck, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import {
   CLAIM_STATUS_CHIP,
   GAP_TYPE_CHIP,
@@ -81,30 +87,40 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
           )}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => window.print()} className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <Button type="button" variant="outline" onClick={() => window.print()} className="gap-1.5 px-3">
             <Printer size={15} /> Export
-          </button>
-          <button onClick={() => setNewOpen(true)} className="inline-flex items-center gap-1.5 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800">
+          </Button>
+          <Button type="button" onClick={() => setNewOpen(true)} className="gap-1.5">
             <Plus size={16} /> New assessment
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Sub tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
-        <button
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setSub("assessment")}
-          className={"-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors " + (sub === "assessment" ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700")}
+          className={cn(
+            "h-auto gap-0 rounded-none -mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+            sub === "assessment" ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700"
+          )}
         >
           Coverage assessment
-        </button>
-        <button
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
           onClick={() => setSub("claims")}
-          className={"-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors " + (sub === "claims" ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700")}
+          className={cn(
+            "h-auto gap-0 rounded-none -mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+            sub === "claims" ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700"
+          )}
         >
           Claims log
           {openClaims.length > 0 && <span className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] tabular-nums text-slate-600">{openClaims.length}</span>}
-        </button>
+        </Button>
       </div>
 
       {sub === "assessment" && (
@@ -115,59 +131,60 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
             </div>
           )}
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[940px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Risk</th>
-                  <th className="px-3 py-2.5">Gap type</th>
-                  <th className="px-3 py-2.5 text-right">Covered by</th>
-                  <th className="px-3 py-2.5">Notes</th>
-                  <th className="px-3 py-2.5">Recommended action</th>
-                  <th className="px-3 py-2.5 text-right">Transfer</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="min-w-[940px]">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Risk</TableHead>
+                  <TableHead>Gap type</TableHead>
+                  <TableHead className="text-right">Covered by</TableHead>
+                  <TableHead>Notes</TableHead>
+                  <TableHead>Recommended action</TableHead>
+                  <TableHead className="text-right">Transfer</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {lines.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={6} className="py-10 text-center text-sm text-slate-400">
                       No lines in the latest assessment. Use “New assessment” to map critical risks against cover.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   lines.map((ln) => {
                     const highlight = ln.gapType === "UNCOVERED" || ln.gapType === "PARTIALLY_COVERED";
                     return (
-                      <tr key={ln.riskId} className={"border-t border-slate-100 align-top " + (highlight ? "bg-rose-50/60" : "hover:bg-slate-50/70")}>
-                        <td className="px-3 py-2.5">
+                      <TableRow key={ln.riskId} className={highlight ? "bg-rose-50/60" : undefined}>
+                        <TableCell>
                           <span className="font-medium text-slate-800">{ln.riskCode ?? ln.riskId.slice(0, 8)}</span>
                           {ln.title && <span className="block max-w-[220px] truncate text-xs text-slate-500">{ln.title}</span>}
                           {ln.residualBand && (
                             <span className="mt-0.5 inline-block rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600">{ln.residualBand}</span>
                           )}
-                        </td>
-                        <td className="px-3 py-2.5">{gapChip(ln.gapType)}</td>
-                        <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-600">{ln.coveredByPolicyIds.length}</td>
-                        <td className="max-w-[240px] px-3 py-2.5 text-xs text-slate-600">{ln.gapNotes || "—"}</td>
-                        <td className="max-w-[200px] px-3 py-2.5 text-xs text-slate-600">{ln.recommendedAction || "—"}</td>
-                        <td className="px-3 py-2.5 text-right">
+                        </TableCell>
+                        <TableCell>{gapChip(ln.gapType)}</TableCell>
+                        <TableCell className="text-right text-xs tabular-nums text-slate-600">{ln.coveredByPolicyIds.length}</TableCell>
+                        <TableCell className="max-w-[240px] text-xs text-slate-600">{ln.gapNotes || "—"}</TableCell>
+                        <TableCell className="max-w-[200px] text-xs text-slate-600">{ln.recommendedAction || "—"}</TableCell>
+                        <TableCell className="text-right">
                           {highlight ? (
-                            <button
+                            <Button
+                              type="button"
                               onClick={() => raiseTransfer(ln.riskId)}
                               disabled={raising === ln.riskId}
-                              className="inline-flex items-center gap-1 rounded-md bg-primary-700 px-2 py-1 text-[11px] font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+                              className="h-auto gap-1 px-2 py-1 text-[11px]"
                             >
                               <ShieldCheck size={12} /> {raising === ln.riskId ? "Raising…" : "Raise transfer"}
-                            </button>
+                            </Button>
                           ) : (
                             <span className="text-xs text-slate-300">—</span>
                           )}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </>
       )}
@@ -180,30 +197,30 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
             <p className="py-6 text-center text-sm text-slate-400">No open claims.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[520px] text-sm">
-                <thead className="bg-slate-50/95">
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                    <th className="px-3 py-2">Claim</th>
-                    <th className="px-3 py-2">Policy</th>
-                    <th className="px-3 py-2 text-right">Claimed</th>
-                    <th className="px-3 py-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-[520px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Claim</TableHead>
+                    <TableHead>Policy</TableHead>
+                    <TableHead className="text-right">Claimed</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {openClaims.map((c) => (
-                    <tr key={c.claimCode} className="border-t border-slate-100 hover:bg-slate-50/70">
-                      <td className="px-3 py-2 font-medium text-slate-800">{c.claimCode}</td>
-                      <td className="px-3 py-2 text-xs text-slate-600">{c.policyCode ?? "—"}</td>
-                      <td className="px-3 py-2 text-right text-xs tabular-nums text-slate-700">{inrCompact(c.claimedAmountInr)}</td>
-                      <td className="px-3 py-2">
+                    <TableRow key={c.claimCode}>
+                      <TableCell className="font-medium text-slate-800">{c.claimCode}</TableCell>
+                      <TableCell className="text-xs text-slate-600">{c.policyCode ?? "—"}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums text-slate-700">{inrCompact(c.claimedAmountInr)}</TableCell>
+                      <TableCell>
                         <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (CLAIM_STATUS_CHIP[c.status] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                           {c.status.replace(/_/g, " ")}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
@@ -298,18 +315,20 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
       <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New coverage-gap assessment</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">
+            <X size={18} />
+          </Button>
         </div>
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Assessment cycle label</label>
-              <input value={assessmentCycleLabel} onChange={(e) => setAssessmentCycleLabel(e.target.value)} placeholder="e.g. FY2026-27 Annual" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+              <Input value={assessmentCycleLabel} onChange={(e) => setAssessmentCycleLabel(e.target.value)} placeholder="e.g. FY2026-27 Annual" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Review date</label>
-              <input type="date" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+              <Input type="date" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} />
             </div>
           </div>
 
@@ -334,18 +353,18 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
                         {r.residualBand && <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600">{r.residualBand}</span>}
                       </div>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <select value={ls.gapType} onChange={(e) => update(r.riskId, { gapType: e.target.value })} className="rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-primary-500">
+                        <Select value={ls.gapType} onChange={(e) => update(r.riskId, { gapType: e.target.value })}>
                           {GAP_TYPES.map((g) => (
                             <option key={g} value={g}>{GAP_LABEL[g]}</option>
                           ))}
-                        </select>
-                        <input value={ls.recommendedAction} onChange={(e) => update(r.riskId, { recommendedAction: e.target.value })} placeholder="Recommended action (optional)" className="rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-primary-500" />
+                        </Select>
+                        <Input value={ls.recommendedAction} onChange={(e) => update(r.riskId, { recommendedAction: e.target.value })} placeholder="Recommended action (optional)" />
                       </div>
-                      <input
+                      <Input
                         value={ls.gapNotes}
                         onChange={(e) => update(r.riskId, { gapNotes: e.target.value })}
                         placeholder={needsNote ? "Justification (required for uninsurable-accepted)" : "Gap notes"}
-                        className={"mt-2 w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:border-primary-500 " + (needsNote && !ls.gapNotes.trim() ? "border-rose-300" : "border-slate-300")}
+                        className={cn("mt-2", needsNote && !ls.gapNotes.trim() ? "border-rose-300" : "border-slate-300")}
                       />
                     </div>
                   );
@@ -356,17 +375,17 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Summary notes</label>
-            <textarea value={summaryNotes} onChange={(e) => setSummaryNotes(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+            <Textarea value={summaryNotes} onChange={(e) => setSummaryNotes(e.target.value)} rows={2} />
           </div>
 
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={busy || !valid} className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" onClick={submit} disabled={busy || !valid}>
             {busy ? "Saving…" : "Save assessment"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

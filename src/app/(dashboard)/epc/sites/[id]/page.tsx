@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   Building2,
   Users,
@@ -371,34 +372,34 @@ export default function SiteDetailPage() {
                 No mobilizations found for this site.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                    <th className="px-4 py-2.5">Mob. No.</th>
-                    <th className="px-4 py-2.5">Worker</th>
-                    <th className="px-4 py-2.5">Trade</th>
-                    <th className="px-4 py-2.5">Company</th>
-                    <th className="px-4 py-2.5">Status</th>
-                    <th className="px-4 py-2.5">Mob. Date</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mob. No.</TableHead>
+                    <TableHead>Worker</TableHead>
+                    <TableHead>Trade</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Mob. Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {mobilizations.map((m) => (
-                    <tr key={m.id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{m.mobilizationNumber}</td>
-                      <td className="px-4 py-2.5 font-medium text-slate-900">{m.workerName}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{m.trade}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{m.companyName}</td>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={m.id}>
+                      <TableCell className="font-mono text-xs text-slate-500">{m.mobilizationNumber}</TableCell>
+                      <TableCell className="font-medium text-slate-900">{m.workerName}</TableCell>
+                      <TableCell className="text-slate-600">{m.trade}</TableCell>
+                      <TableCell className="text-slate-600">{m.companyName}</TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(m.status)}`}>
                           {humanizeStatus(m.status)}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600">{fmtDate(m.mobilisationDate)}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="text-slate-600">{fmtDate(m.mobilisationDate)}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </TabsContent>
@@ -416,34 +417,34 @@ export default function SiteDetailPage() {
                 No gate activity today.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                    <th className="px-4 py-2.5">Time</th>
-                    <th className="px-4 py-2.5">Worker</th>
-                    <th className="px-4 py-2.5">Code</th>
-                    <th className="px-4 py-2.5">Result</th>
-                    <th className="px-4 py-2.5">Gate Pass</th>
-                    <th className="px-4 py-2.5">Method</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Time</TableHead>
+                    <TableHead>Worker</TableHead>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Result</TableHead>
+                    <TableHead>Gate Pass</TableHead>
+                    <TableHead>Method</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {gateLog.map((entry) => (
-                    <tr key={entry.id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 text-xs text-slate-500 whitespace-nowrap">{fmtDateTime(entry.checkedAt)}</td>
-                      <td className="px-4 py-2.5 font-medium text-slate-900">{entry.workerName}</td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{entry.workerCode}</td>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={entry.id}>
+                      <TableCell className="text-xs text-slate-500 whitespace-nowrap">{fmtDateTime(entry.checkedAt)}</TableCell>
+                      <TableCell className="font-medium text-slate-900">{entry.workerName}</TableCell>
+                      <TableCell className="font-mono text-xs text-slate-500">{entry.workerCode}</TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${gateResultClass(entry.result)}`}>
                           {humanizeStatus(entry.result)}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{entry.gatePassNumber ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500">{humanizeStatus(entry.checkMethod)}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="font-mono text-xs text-slate-500">{entry.gatePassNumber ?? "—"}</TableCell>
+                      <TableCell className="text-xs text-slate-500">{humanizeStatus(entry.checkMethod)}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </TabsContent>
@@ -484,34 +485,34 @@ export default function SiteDetailPage() {
                 <p className="text-xs text-slate-400 mt-1">Companies appear here when their workers are mobilized.</p>
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                    <th className="px-4 py-2.5">Company Code</th>
-                    <th className="px-4 py-2.5">Company Name</th>
-                    <th className="px-4 py-2.5">Workers</th>
-                    <th className="px-4 py-2.5">Status</th>
-                    <th className="px-4 py-2.5"></th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Company Code</TableHead>
+                    <TableHead>Company Name</TableHead>
+                    <TableHead>Workers</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {contractors.map((c, i) => (
-                    <tr key={i} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{c.companyCode ?? "—"}</td>
-                      <td className="px-4 py-2.5 font-medium text-slate-900">{c.companyName}</td>
-                      <td className="px-4 py-2.5 text-slate-600 tabular-nums">{c.workerCount}</td>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={i}>
+                      <TableCell className="font-mono text-xs text-slate-500">{c.companyCode ?? "—"}</TableCell>
+                      <TableCell className="font-medium text-slate-900">{c.companyName}</TableCell>
+                      <TableCell className="text-slate-600 tabular-nums">{c.workerCount}</TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(c.prequalificationStatus)}`}>
                           {humanizeStatus(c.prequalificationStatus)}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5">
+                      </TableCell>
+                      <TableCell>
                         <Link href={`/epc/contractors`} className="text-xs text-cyan-700 hover:underline">View</Link>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
           <p className="text-xs text-slate-400 mt-2">Derived from active mobilization records at this site.</p>
@@ -678,38 +679,38 @@ export default function SiteDetailPage() {
                 No mobilization records found.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                    <th className="px-4 py-2.5">Mob. Number</th>
-                    <th className="px-4 py-2.5">Worker</th>
-                    <th className="px-4 py-2.5">Trade</th>
-                    <th className="px-4 py-2.5">Company</th>
-                    <th className="px-4 py-2.5">Status</th>
-                    <th className="px-4 py-2.5">Mobilised</th>
-                    <th className="px-4 py-2.5">Demobilised</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Mob. Number</TableHead>
+                    <TableHead>Worker</TableHead>
+                    <TableHead>Trade</TableHead>
+                    <TableHead>Company</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Mobilised</TableHead>
+                    <TableHead>Demobilised</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {mobilizations.map((m) => (
-                    <tr key={m.id} className="border-b last:border-0 hover:bg-slate-50">
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{m.mobilizationNumber}</td>
-                      <td className="px-4 py-2.5 font-medium text-slate-900">{m.workerName}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{m.trade}</td>
-                      <td className="px-4 py-2.5 text-slate-600">{m.companyName}</td>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={m.id}>
+                      <TableCell className="font-mono text-xs text-slate-500">{m.mobilizationNumber}</TableCell>
+                      <TableCell className="font-medium text-slate-900">{m.workerName}</TableCell>
+                      <TableCell className="text-slate-600">{m.trade}</TableCell>
+                      <TableCell className="text-slate-600">{m.companyName}</TableCell>
+                      <TableCell>
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(m.status)}`}>
                           {humanizeStatus(m.status)}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500">{fmtDate(m.mobilisationDate)}</td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500">
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-500">{fmtDate(m.mobilisationDate)}</TableCell>
+                      <TableCell className="text-xs text-slate-500">
                         {(m as any).actualDemobilisationDate ? fmtDate((m as any).actualDemobilisationDate) : "—"}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </div>
         </TabsContent>

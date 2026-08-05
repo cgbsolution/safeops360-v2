@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { Play, Eye, Plus, Pencil, X, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { BandBadge } from "@/components/erm/shared";
 import { fmtDate, type RollupRule } from "@/app/(dashboard)/erm/lib";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 const SOURCE_MODULES = ["HIRA", "EAI", "QUALITY_NCR"] as const;
 const MIN_BANDS = ["", "HIGH", "CRITICAL"] as const;
@@ -107,9 +113,16 @@ export function RollupAdminView({ rules }: { rules: RollupRule[] }) {
         >
           {banner.tone === "ok" ? <CheckCircle2 size={16} className="mt-0.5 shrink-0" /> : <AlertCircle size={16} className="mt-0.5 shrink-0" />}
           <span className="flex-1">{banner.text}</span>
-          <button onClick={() => setBanner(null)} className="text-current opacity-60 hover:opacity-100">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setBanner(null)}
+            aria-label="Dismiss"
+            className="h-6 w-6 text-current opacity-60 hover:opacity-100"
+          >
             <X size={15} />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -117,12 +130,9 @@ export function RollupAdminView({ rules }: { rules: RollupRule[] }) {
         <span className="text-xs text-slate-500">
           {rules.length} rule{rules.length === 1 ? "" : "s"}
         </span>
-        <button
-          onClick={() => setEditor({})}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800"
-        >
+        <Button type="button" onClick={() => setEditor({})} className="gap-1.5">
           <Plus size={16} /> New Rule
-        </button>
+        </Button>
       </div>
 
       {rules.length === 0 ? (
@@ -199,19 +209,22 @@ export function RollupAdminView({ rules }: { rules: RollupRule[] }) {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <button
+                  <Button
+                    type="button"
                     onClick={() => runNow(rule)}
                     disabled={busyId === rule.id}
-                    className="inline-flex items-center gap-1 rounded-lg bg-primary-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+                    className="h-auto gap-1 px-3 py-1.5 text-xs font-medium"
                   >
                     <Play size={13} /> {busyId === rule.id ? "Running…" : "Run Now"}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => setEditor({ rule })}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:border-primary-500"
+                    className="h-auto gap-1 px-3 py-1.5 text-xs font-medium"
                   >
                     <Pencil size={13} /> Edit
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
@@ -248,9 +261,16 @@ function PreviewPanel({
       <div className="max-h-[88vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-1 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Preview — {preview.ruleName || "unsaved rule"}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
         <p className="mb-4 text-xs text-slate-500">
           {preview.matched} operational entr{preview.matched === 1 ? "y" : "ies"} match this rule. Nothing is created
@@ -259,38 +279,35 @@ function PreviewPanel({
         {preview.entries.length === 0 ? (
           <p className="py-8 text-center text-sm text-slate-400">No matching entries.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-2 py-1.5">Module</th>
-                <th className="px-2 py-1.5">Activity</th>
-                <th className="px-2 py-1.5">Site</th>
-                <th className="px-2 py-1.5">Residual</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-slate-500">Module</TableHead>
+                <TableHead className="text-slate-500">Activity</TableHead>
+                <TableHead className="text-slate-500">Site</TableHead>
+                <TableHead className="text-slate-500">Residual</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {preview.entries.map((e) => (
-                <tr key={e.id} className="border-b border-slate-100">
-                  <td className="px-2 py-1.5">
+                <TableRow key={e.id}>
+                  <TableCell>
                     <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium">{e.sourceModule}</span>
-                  </td>
-                  <td className="max-w-[360px] px-2 py-1.5 text-slate-700">{e.activityDescription}</td>
-                  <td className="px-2 py-1.5 text-xs text-slate-500">{e.plantId}</td>
-                  <td className="px-2 py-1.5">
+                  </TableCell>
+                  <TableCell className="max-w-[360px]">{e.activityDescription}</TableCell>
+                  <TableCell className="text-xs text-slate-500">{e.plantId}</TableCell>
+                  <TableCell>
                     <BandBadge band={e.residualBand} score={e.residualScore} />
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
         <div className="mt-5 flex justify-end">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-slate-400"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -362,18 +379,24 @@ function RuleEditor({
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{rule ? `Edit ${rule.name}` : "New rollup rule"}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Rule name (required)</label>
-            <input
+            <Input
               value={f.name}
               onChange={(e) => setF({ ...f, name: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               placeholder="HSE high-risk activities → enterprise HSE risk"
             />
           </div>
@@ -389,11 +412,10 @@ function RuleEditor({
                     (f.sourceModules.includes(m) ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-600")
                   }
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={f.sourceModules.includes(m)}
                     onChange={() => toggleModule(m)}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-primary-700 focus:ring-primary-500"
+                    className="h-3.5 w-3.5"
                   />
                   {m}
                 </label>
@@ -405,24 +427,23 @@ function RuleEditor({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Minimum residual band</label>
-              <select
+              <Select
                 value={f.minRiskBand}
                 onChange={(e) => setF({ ...f, minRiskBand: e.target.value })}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               >
                 {MIN_BANDS.map((b) => (
                   <option key={b} value={b}>
                     {b === "" ? "Any (no minimum)" : b}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Target sub-category code (required)</label>
-              <input
+              <Input
                 value={f.targetSubCategoryCode}
                 onChange={(e) => setF({ ...f, targetSubCategoryCode: e.target.value.toUpperCase() })}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm font-mono"
+                className="font-mono"
                 placeholder="OPS-HSE"
               />
             </div>
@@ -433,17 +454,18 @@ function RuleEditor({
               <label className="mb-1 block text-xs font-medium text-slate-600">Aggregation mode</label>
               <div className="grid grid-cols-2 gap-1.5">
                 {AGG_MODES.map((m) => (
-                  <button
+                  <Button
                     key={m}
                     type="button"
+                    variant="ghost"
                     onClick={() => setF({ ...f, aggregationMode: m })}
-                    className={
-                      "rounded-lg border px-2 py-2 text-xs font-medium " +
-                      (f.aggregationMode === m ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-600")
-                    }
+                    className={cn(
+                      "h-auto rounded-lg border px-2 py-2 text-xs font-medium",
+                      f.aggregationMode === m ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-600"
+                    )}
                   >
                     {m === "GROUPED" ? "Grouped" : "One-to-one"}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -451,17 +473,18 @@ function RuleEditor({
               <label className="mb-1 block text-xs font-medium text-slate-600">Scoring mode</label>
               <div className="grid grid-cols-2 gap-1.5">
                 {SCORING_MODES.map((m) => (
-                  <button
+                  <Button
                     key={m}
                     type="button"
+                    variant="ghost"
                     onClick={() => setF({ ...f, scoringMode: m })}
-                    className={
-                      "rounded-lg border px-2 py-2 text-xs font-medium " +
-                      (f.scoringMode === m ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-600")
-                    }
+                    className={cn(
+                      "h-auto rounded-lg border px-2 py-2 text-xs font-medium",
+                      f.scoringMode === m ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-600"
+                    )}
                   >
                     {m === "MAX" ? "Max" : "Weighted avg"}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </div>
@@ -469,39 +492,39 @@ function RuleEditor({
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Site IDs (optional, comma-separated)</label>
-            <input
+            <Input
               value={f.siteIds}
               onChange={(e) => setF({ ...f, siteIds: e.target.value })}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               placeholder="leave empty = all sites"
             />
           </div>
 
           <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={f.isActive}
               onChange={(e) => setF({ ...f, isActive: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-primary-700 focus:ring-primary-500"
             />
             Active
           </label>
 
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
-            <button
+            <Button
+              type="button"
+              variant="outline"
               onClick={doPreview}
               disabled={busy || !f.targetSubCategoryCode.trim()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-50"
+              className="gap-1.5"
             >
               <Eye size={15} /> Preview matches
-            </button>
-            <button
+            </Button>
+            <Button
+              type="button"
               onClick={save}
               disabled={busy || !valid}
-              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+              className="ml-auto gap-1.5"
             >
               {busy ? "Saving…" : rule ? "Save changes" : "Create rule"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

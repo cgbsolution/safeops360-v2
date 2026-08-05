@@ -10,6 +10,12 @@ import { resolvePlantContext } from "@/lib/plant-context";
 import { PlantSwitcher } from "@/components/plant-switcher";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { EaiAnalyticsStrip } from "@/components/eai/analytics-strip";
+import { InsightBar } from "@/components/ai/InsightBar";
+import { SignalChip } from "@/components/ai/SignalChip";
+import { InsightHero } from "@/components/observations/insight-hero";
+import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
+import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
+import { fetchInsights } from "@/lib/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +68,7 @@ type FeatureFlag = {
 };
 
 export default async function EaiStudiesPage(
-  props: { searchParams: Promise<{ status?: string; plantId?: string }> }
+  props: { searchParams: Promise<{ status?: string; plantId?: string; insight?: string }> }
 ) {
   const searchParams = await props.searchParams;
   const { plantId, plants } = await resolvePlantContext(searchParams.plantId);
@@ -96,14 +102,71 @@ export default async function EaiStudiesPage(
     );
   }
 
-  const data = await backendFetch<StudyListResponse>("/api/eai/studies", {
-    query: {
-      plantId,
-      status: searchParams.status ?? null
-    }
-  }).catch(() => ({ items: [], total: 0 } as StudyListResponse));
+  const [data, insights] = await Promise.all([
+    backendFetch<StudyListResponse>("/api/eai/studies", {
+      query: {
+        plantId,
+        status: searchParams.status ?? null
+      }
+    }).catch(() => ({ items: [], total: 0 } as StudyListResponse)),
+    fetchInsights("eai", { plant: plantId })
+  ]);
 
   const studies = data.items;
+
+  // Insight-card click-through: narrow the list to the active insight's studies.
+  const activeInsight = searchParams.insight
+    ? insights.bar.find((i) => i.id === searchParams.insight)
+    : undefined;
+  const visibleStudies = activeInsight
+    ? studies.filter((s) => activeInsight.recordRefs.includes(s.number))
+    : studies;
+
+  // "This week's focus" hero + panels — reuse the shared builder + component.
+  const EAI_DONE = ["ACTIVE", "ARCHIVED", "SUPERSEDED"];
+  const eaiOpen = studies.filter((s) => !EAI_DONE.includes(s.status));
+  const eaiHero = buildHeroFromRecords(
+    studies.map((s) => ({
+      date: new Date(s.initiatedAt),
+      open: !EAI_DONE.includes(s.status),
+      severity: s.status,
+      group: s.scopeType || "Plant-wide"
+    })),
+    {
+      type: "eai progress",
+      critical: ["DRAFT", "IN_PROGRESS"],
+      highSeverities: ["TEAM_REVIEW", "APPROVAL_PENDING"],
+      headline: (n) => `${n} environmental aspect studies still in progress`,
+      qualifier: "not yet active",
+      actionHref: `/eai?plantId=${plantId}&status=IN_PROGRESS`,
+      railTitle: "By scope",
+      closing: (d) => `Oldest opened ${d} days ago.`,
+      statLabels: { critical: "drafting", high: "in review" }
+    }
+  );
+  const eNow = Date.now();
+  const eaiScopeAgg = new Map<string, { count: number; areas: Set<string> }>();
+  eaiOpen.forEach((s) => {
+    const g = s.scopeType || "OTHER";
+    const e = eaiScopeAgg.get(g) ?? { count: 0, areas: new Set<string>() };
+    e.count += 1;
+    if (s.areaId) e.areas.add(s.areaId);
+    eaiScopeAgg.set(g, e);
+  });
+  const eaiCategory = Array.from(eaiScopeAgg.entries())
+    .map(([category, v]) => ({ category, count: v.count, areaCount: v.areas.size }))
+    .sort((a, b) => b.count - a.count);
+  const eaiStatusAgg = new Map<string, { count: number; totalDays: number }>();
+  eaiOpen.forEach((s) => {
+    const days = Math.max(0, Math.floor((eNow - new Date(s.initiatedAt).getTime()) / 86_400_000));
+    const e = eaiStatusAgg.get(s.status) ?? { count: 0, totalDays: 0 };
+    e.count += 1;
+    e.totalDays += days;
+    eaiStatusAgg.set(s.status, e);
+  });
+  const eaiBottleneck = Array.from(eaiStatusAgg.entries())
+    .map(([step, v]) => ({ step: step.replace(/_/g, " "), count: v.count, avgDays: Math.round((v.totalDays / v.count) * 10) / 10 }))
+    .sort((a, b) => b.avgDays - a.avgDays);
 
   return (
     <div>
@@ -129,6 +192,18 @@ export default async function EaiStudiesPage(
           <EaiAnalyticsStrip />
         </Suspense>
       </div>
+
+      {eaiHero ? <InsightHero hero={eaiHero} /> : <InsightBar insights={insights.bar} />}
+
+      {(eaiBottleneck.length > 0 || eaiCategory.length > 0) && (
+        <ObservationAnalyticsPanels
+          bottleneck={eaiBottleneck}
+          category={eaiCategory}
+          activeCategory={null}
+          basePath="/eai"
+          concentratedTitle="By scope"
+        />
+      )}
 
       <FilterTabsList label="Status" className="mb-4">
         <FilterTab
@@ -167,7 +242,7 @@ export default async function EaiStudiesPage(
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {studies.map((s) => (
+              {visibleStudies.map((s) => (
                 <tr key={s.id} className="hover:bg-emerald-50/40">
                   <td className="px-4 py-3">
                     <Link
@@ -186,13 +261,18 @@ export default async function EaiStudiesPage(
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-block px-2 py-0.5 text-xs rounded border ${
-                        STATUS_CHIP[s.status] ?? "bg-slate-100 text-slate-800 border-slate-200"
-                      }`}
-                    >
-                      {s.status.replace(/_/g, " ")}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`inline-block px-2 py-0.5 text-xs rounded border ${
+                          STATUS_CHIP[s.status] ?? "bg-slate-100 text-slate-800 border-slate-200"
+                        }`}
+                      >
+                        {s.status.replace(/_/g, " ")}
+                      </span>
+                      {insights.signalByRecord.get(s.id) && (
+                        <SignalChip signal={insights.signalByRecord.get(s.id)!} href={`/eai/${s.id}`} />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-700">{s.entryCount}</td>
                   <td className="px-4 py-3 text-slate-700">

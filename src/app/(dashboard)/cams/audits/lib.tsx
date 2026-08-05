@@ -1,0 +1,703 @@
+// Shared types + UI helpers for the Audit & Compliance module.
+// Types mirror the FastAPI serialization in
+// safeops_360_bakend/app/services/audit_compliance.py.
+
+import { cn } from "@/lib/utils";
+
+export type AuditValue = "pass" | "partial" | "fail" | "na" | "yes" | "no" | null;
+
+/**
+ * A photo stored inline on a checkpoint response. One entry = one thumbnail.
+ * An annotated capture is a SINGLE entry pointing at the marked render, with
+ * `originalStoragePath` holding the untouched original — stored, not shown, so
+ * the evidence survives the markup without the checkpoint sprouting a second
+ * near-identical thumbnail. Mirrors AuditPhoto in upload-photo.ts.
+ */
+export type StoredPhoto = {
+  url: string;
+  storagePath?: string;
+  caption?: string;
+  originalStoragePath?: string;
+  originalUrl?: string;
+};
+
+export type CheckpointResponse = {
+  id: string;
+  checkpointCode: string;
+  checkpointQuestion: string;
+  guidance: string;
+  requirementReference: string;
+  standard: string;
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  criticality: string;
+  responseType: string;
+  sequence: number;
+  orderIndex: number;
+  requiresPhotoOnFail: boolean;
+  autoTriggerCapaOnFail: boolean;
+  capaSeverity: string | null;
+  linkedSafeopsModule: string | null;
+  routedToUserId: string | null;
+  // Ownership + two-axis state + ad-hoc (audit-lifecycle v2). assignedOwnerId =
+  // auditee (responds to findings); assignedAuditorId = auditor who conducts it.
+  assignedOwnerId: string | null;
+  assignedAuditorId: string | null;
+  assignedById: string | null;
+  assignedAt: string | null;
+  isAdHoc: boolean;
+  addedById: string | null;
+  assessmentStatus: string; // NOT_ASSESSED | PASS | PARTIAL | FAIL | NA
+  workflowState: string; // OPEN | PASSED | AWAITING_AUDITEE | AUDITEE_RESPONDED | MORE_INFO_REQUESTED | RESOLVED | ACCEPTED_WITH_CAPA | ESCALATED_PM | FINALIZED
+  currentRound: number;
+  observation: string | null;
+  auditorNote: string | null;
+  auditorEvidenceIds: string[];
+  auditeeEvidenceIds: string[];
+  capaId: string | null;
+  finalizedAt: string | null;
+  auditorResponse: {
+    value: AuditValue;
+    text_observation?: string;
+    auditor_notes?: string;
+    photos?: StoredPhoto[];
+    is_saved?: boolean;
+    responded_at?: string;
+  } | null;
+  auditeeResponse: {
+    respondent_user_id?: string;
+    response_text?: string;
+    action_taken?: string;
+    action_date?: string | null;
+    photos?: StoredPhoto[];
+    status?: string;
+    responded_at?: string;
+  } | null;
+  plantManagerReview: {
+    reviewer_user_id?: string;
+    decision?: string;
+    comments?: string;
+    reviewed_at?: string;
+  } | null;
+  capa: {
+    auto_triggered?: boolean;
+    capa_id?: string;
+    capa_number?: string;
+    capa_status?: string;
+  } | null;
+  overallStatus: string;
+  answeredAt: string | null;
+  interactions?: CheckpointInteraction[];
+};
+
+export type CheckpointInteraction = {
+  id: string;
+  round: number;
+  actorId: string;
+  actorRole: string; // AUDITOR | AUDITEE | PLANT_MANAGER | LEAD_AUDITOR
+  action: string;
+  comment: string | null;
+  evidenceIds: string[];
+  resultingState: string;
+  timestamp: string;
+};
+
+export type Finalizability = {
+  finalizable: boolean;
+  submitted?: boolean;
+  total: number;
+  terminal: number;
+  blockerCount: number;
+  blockers: { checkpointCode: string; categoryName: string; workflowState: string; assessmentStatus: string }[];
+};
+
+export type CategoryScore = {
+  category_id: string;
+  category_name: string;
+  total: number;
+  passed: number;
+  partial: number;
+  failed: number;
+  na: number;
+  score_pct: number;
+};
+
+export type AuditScore = {
+  total_checkpoints: number;
+  answered: number;
+  passed: number;
+  partially_passed: number;
+  failed: number;
+  not_applicable: number;
+  overall_score_pct: number;
+  category_scores: CategoryScore[];
+  critical_failures: number;
+  major_failures: number;
+  minor_failures: number;
+  audit_passed: boolean | null;
+};
+
+/**
+ * The audited party on a supplier audit (WP-45).
+ *
+ * `plantId` on the audit is ALWAYS the owning plant — the site that holds the
+ * vendor relationship — so the register must read `subjectType` to know whether
+ * a row is an audit of our own factory or of someone else's.
+ */
+export type AuditSupplier = {
+  vendorProfileId: string;
+  vendorCode: string | null;
+  legalName: string;
+  criticality: string | null;
+  tier: string | null;
+  criticalityAtScheduling: string | null;
+  vendorSiteRef: string | null;
+  /** The vendor was re-tiered after this audit was scheduled. */
+  riskPostureChanged: boolean;
+};
+
+export type AuditSubjectType = "OWN_SITE" | "VENDOR";
+
+export type AuditRow = {
+  id: string;
+  auditNumber: string;
+  title: string;
+  subjectType: AuditSubjectType;
+  subjectLabel: string | null;
+  supplier: AuditSupplier | null;
+  plantId: string;
+  templateId: string | null;
+  industryCode: string;
+  auditType: string;
+  status: string;
+  scheduledDate: string | null;
+  selectedDisciplineIds: string[];
+  scopePresetUsed: string | null;
+  materializedCheckpointCount: number | null;
+  adHocCount: number;
+  leadAuditorUserId: string;
+  plantManagerUserId: string | null;
+  auditees: { userId: string; responsibleCategories: string[] }[];
+  totalCheckpoints: number | null;
+  answeredCheckpoints: number;
+  overallCompliancePct: number | null;
+  auditPassed: boolean | null;
+  openCapaCount: number;
+  criticalFailureCount: number;
+  submittedAt: string | null;
+  closedAt: string | null;
+};
+
+/** The full supplier block on the detail screen (WP-45). */
+export type SupplierDetail = {
+  linkId: string;
+  vendorProfileId: string;
+  vendorCode: string | null;
+  legalName: string;
+  category: string | null;
+  criticality: string | null;
+  tier: string | null;
+  criticalityAtScheduling: string | null;
+  tierAtScheduling: string | null;
+  riskPostureChanged: boolean;
+  vendorSiteRef: string | null;
+  supplierContactName: string | null;
+  supplierContactEmail: string | null;
+  isSingleSource: boolean;
+  relationshipOwnerId: string | null;
+  // Derived from whether a portal token actually exists and is live — never
+  // assumed, so the panel cannot claim the supplier can respond when they can't.
+  responseChannel: "PORTAL" | "OUT_OF_BAND";
+  responseChannelNote: string;
+  portalTokenIssued?: boolean;
+  portalExpired?: boolean;
+  portalTokenId?: string;
+  portalExpiresAt?: string;
+  portalContactEmail?: string;
+  portalLastAccessedAt?: string | null;
+  portalSubmissionCount?: number;
+};
+
+export type AuditDetail = AuditRow & {
+  supplierDetail?: SupplierDetail | null;
+  // A-03 overview enrichment.
+  plantName?: string;
+  plantCode?: string | null;
+  factoryProfileId?: string | null;
+  templateName?: string | null;
+  templateVersion?: string | null;
+  standards?: string[];
+  ownerCount?: number;
+  userNames?: Record<string, string>;
+  team?: AuditTeam;
+  scopeDepartments: string[];
+  scopeAreas: string[];
+  scopeDescription: string;
+  scheduledStartTime: string;
+  estimatedDurationHours: number;
+  coAuditors: (string | CoAuditorAssignment)[];
+  actualStartAt: string | null;
+  actualEndAt: string | null;
+  score: AuditScore | null;
+  openingRemarks: string;
+  closingRemarks: string;
+  // Slim payload (1500-checkpoint safe): `responses` is now a BOUNDED review set
+  // (findings / in-flight rows with threads), NOT the full checkpoint list. Use
+  // the paginated GET /{id}/checkpoints endpoint to reach every checkpoint.
+  responses: CheckpointResponse[];
+  responsesTruncated?: boolean;
+  disciplineRollup: DisciplineRollup[];
+  allocationSummary?: { assigned: number; unassigned: number; total: number };
+  progress: {
+    total: number;
+    answered: number;
+    completionPct: number;
+    categories: { categoryId: string; categoryName: string; categoryColor: string; total: number; answered: number; failed: number; partial: number }[];
+  };
+  finalizability?: Finalizability;
+};
+
+// Per-discipline rollup (drives the conduct navigator + detail RAG without
+// loading any checkpoint rows). Mirrors svc._discipline_rollup.
+export type DisciplineRollup = {
+  categoryId: string;
+  categoryName: string;
+  categoryColor: string;
+  total: number;
+  answered: number;
+  passed: number;
+  partial: number;
+  failed: number;
+  na: number;
+  criticalFailed: number;
+  majorFailed: number;
+  minorFailed: number;
+};
+
+// Paginated checkpoint slice (GET /{id}/checkpoints).
+export type CheckpointPage = {
+  items: CheckpointResponse[];
+  nextCursor: string | null;
+  total: number;
+  returned: number;
+};
+
+export type ProgrammeDashboard = {
+  total: number;
+  open: number;
+  closed: number;
+  averageCompliancePct: number | null;
+  openCapas: number;
+  criticalFindings: number;
+  byStatus: Record<string, number>;
+  byType: Record<string, number>;
+  nextScheduled: { id: string; auditNumber: string; title: string; auditType: string; scheduledDate: string } | null;
+};
+
+export type AuditDashboard = {
+  auditId: string;
+  auditNumber: string;
+  title: string;
+  status: string;
+  score: AuditScore;
+  criticalCompliance: { total: number; compliant: number; pct: number };
+  donut: { pass: number; partial: number; fail: number; na: number; not_answered: number };
+};
+
+/**
+ * Which audit subject a checkpoint library is written for. Derived on the
+ * backend (`library_subject_scope`) so there is exactly one classifier.
+ *
+ * A supplier audit scoped against an OWN_SITE library asks a supplier about our
+ * kiln refractories — the report then reads as an internal plant inspection.
+ * The scheduling wizard therefore branches on this, and `create_audit` rejects
+ * the mismatch server-side as well.
+ */
+export type LibrarySubjectScope = "OWN_SITE" | "VENDOR" | "BOTH";
+
+export type AuditLibrary = {
+  id: string;
+  industryCode: string;
+  industryName: string;
+  version: string;
+  checkpointCount: number;
+  subjectScope?: LibrarySubjectScope;
+  /** Correctly scoped AND has checkpoints loaded. Structure alone is not enough. */
+  isSelectable?: boolean;
+  categories: { category_code: string; category_name: string; category_color: string; category_icon: string; checkpointCount: number }[];
+};
+
+export type AuditTemplate = {
+  id: string;
+  name: string;
+  description: string;
+  auditType: string;
+  baseIndustry: string;
+  checkpointConfiguration: any;
+  version: string;
+};
+
+export type PlantUser = { id: string; name: string; role: string; department: string };
+
+// Co-auditor with per-discipline scope. coAuditors on an audit may be this
+// structured shape or (legacy) a plain user-id string.
+export type CoAuditorAssignment = { userId: string; disciplineIds: string[] };
+
+/**
+ * Resolved cast of an audit, from the backend's audit_assignment.audit_team().
+ * `role` is the person's job title; `authorised` is whether they still hold
+ * `permission` at this plant. They differ when a grant changed after the audit
+ * was scheduled — the panel shows the seat AND whether it can still be worked.
+ */
+export type AuditTeamMember = {
+  userId: string;
+  name: string;
+  role: string | null;
+  department: string;
+  permission: string;
+  authorised: boolean;
+  /** Present on the per-discipline seats (co-auditors, auditees). */
+  disciplines?: { id: string; name: string }[];
+};
+export type AuditTeam = {
+  leadAuditor: AuditTeamMember | null;
+  plantManager: AuditTeamMember | null;
+  coAuditors: AuditTeamMember[];
+  auditees: AuditTeamMember[];
+  permissions: Record<string, string>;
+  memberCount?: number;
+  unauthorisedCount?: number;
+};
+
+// A-07 — Interim / Final reports.
+export type ReportFinding = {
+  checkpointCode: string; discipline: string; severity: string; assessmentStatus: string;
+  workflowState: string; round: number; ownerId: string | null; question: string; observation: string | null;
+  standard: string; requirementReference: string; capaNumber: string | null; capaStatus: string | null; isAdHoc: boolean;
+};
+export type ReportOpenIteration = { checkpointCode: string; discipline: string; workflowState: string; round: number; ownerId: string | null; unassigned: boolean };
+export type ReportRegisterEntry = {
+  checkpointCode: string; discipline: string; question: string; severity: string; assessmentStatus: string;
+  workflowState: string; standard: string; requirementReference: string; observation: string | null; isAdHoc: boolean;
+  ownerId: string | null; capaNumber: string | null; auditorEvidenceIds: string[]; auditeeEvidenceIds: string[];
+  interactions: CheckpointInteraction[];
+};
+export type AuditReportSnapshot = {
+  reportType: string; auditCode: string; title: string; siteId: string; industryCode: string; auditType: string;
+  leadAuditorId: string; plantManagerId: string | null; templateId: string | null; scopePresetUsed: string | null;
+  disciplinesInScope: string[]; plannedDate: string | null; submittedAt: string | null; closedAt: string | null;
+  overallScorePct: number | null; overallResult: string; auditPassed: boolean | null;
+  checkpointsTotal: number; checkpointsAssessed: number; passCount: number; failCount: number; partialCount: number; naCount: number;
+  categoryScores: CategoryScore[]; criticalFailures: number; majorFailures: number; minorFailures: number;
+  openIterationsCount: number; criticalOpenCount: number; adHocCount: number;
+  capaSummary: { total: number; open: number; overdue: number };
+  findings: ReportFinding[]; openIterations: ReportOpenIteration[];
+  // The full register is no longer inlined into the FINAL snapshot (1500-cp
+  // safe); it is served lazily from /reports/{id}/register when hasFullRegister.
+  checkpointRegister?: ReportRegisterEntry[]; hasFullRegister?: boolean;
+  standardsRollup?: { standard: string; total: number; pass: number; partial: number; fail: number; na: number; scorePct: number }[];
+  finalizability?: Finalizability; generatedAt: string; snapshotHash: string;
+  plantName?: string; plantCode?: string | null; userNames?: Record<string, string>;
+
+  // WP-50 (F-30): `disciplinesInScope == []` is a SENTINEL for "the full
+  // library", so its raw length printed "0 discipline(s)". The backend now
+  // derives a label from the materialised rows. Optional — reports generated
+  // before the fix do not carry it and fall back to the length.
+  disciplinesInScopeCount?: number;
+  disciplinesInScopeLabel?: string;
+
+  // A closed audit cannot legitimately have open items; when rows still read
+  // non-terminal that is a defect in the RECORD, not outstanding work.
+  dataIntegrityFlags?: { code: string; count: number; message: string }[];
+
+  // Checkpoints nobody has reached yet — distinct from open iterations, which
+  // are findings awaiting a response. Conflating them reported 81 unassessed
+  // checkpoints as 81 open iterations.
+  notAssessedCount?: number;
+
+  // Grade-suppression decision from `services/scoring_rules.grade_visibility`.
+  // Optional: snapshots frozen before it shipped do not carry it.
+  grade?: {
+    showGrade: boolean;
+    assessed: number;
+    applicable: number;
+    assessedPct: number;
+    threshold: number;
+    label: string;
+  };
+  gate?: { band: string; passed: boolean; explanation: string; rules: Record<string, number | string> };
+
+  // Assurance blocks frozen into the snapshot (docs/cams/09 §2.1.6, §2.2–2.3).
+  independence?: {
+    count: number;
+    statement: string;
+    waivers: {
+      id: string; subject: string; ruleViolated: string; conflict?: string | null;
+      justification: string; approvedBy: string; approvedAt: string | null; scope: string;
+    }[];
+  };
+  meetings?: {
+    opening: ReportMeeting;
+    closing: ReportMeeting;
+  };
+  competence?: {
+    userId: string; userName?: string | null; competencyCode: string; competencyName: string;
+    state: string | null; held: boolean; waivedGap: boolean; validUntil: string | null;
+    externalCertificateReference: string | null; capturedAt: string | null;
+  }[];
+  reopenHistory?: {
+    count: number; lastReopenedAt: string | null; lastReason: string | null; statement: string;
+  };
+
+  // docs/cams/09 §2.4 — the auditable artefact is the justification.
+  samplingApproach?: string;
+  samplingJustification?: string | null;
+
+  // WP-12 certification-grade sections. All DERIVED from the record, so the
+  // report cannot claim a method the audit did not follow.
+  methodology?: {
+    criteria: string[];
+    method: string;
+    scopeDescription: string;
+    scopeAreas: string[];
+    scopeDepartments: string[];
+    // The part that earns trust: what the audit could NOT establish.
+    limitations: string[];
+  };
+  clauseIndex?: {
+    standard: string; clause: string; total: number;
+    pass: number; fail: number; partial: number; na: number; notAssessed: number;
+    checkpointCodes: string[];
+  }[];
+  /**
+   * Where this library's clause citations came from. Most are AI drafts, and
+   * the clause index above cannot tell a drafted citation from a sourced one —
+   * so the index must not be rendered without this caveat beside it.
+   */
+  citationProvenance?: {
+    total: number;
+    cited: number;
+    uncited: number;
+    unverified: number;
+    priorityReview: number;
+    verifiedPct: number;
+    statement: string;
+    byStatus: Record<string, number>;
+    footnote: {
+      unverifiedCount: number;
+      totalCitations: number;
+      priorityReviewCount: number;
+      statement: string;
+    } | null;
+  };
+  distributionList?: { userId: string; role: string; name?: string }[];
+  revisionHistory?: {
+    reportCode: string; reportType: string; generatedAt: string | null;
+    superseded: boolean; snapshotHash?: string | null;
+  }[];
+  revision?: number;
+};
+
+export type ReportMeeting = {
+  recorded: boolean;
+  meetingType: "OPENING" | "CLOSING";
+  heldAt?: string | null;
+  attendees?: { name: string; organisation?: string; role?: string | null; external?: boolean }[];
+  attendeeCount?: number;
+  scopeConfirmed?: boolean;
+  findingsSummaryPresented?: string | null;
+  auditeeAcknowledged?: boolean;
+  auditeeAcknowledgedBy?: string | null;
+  auditeeAcknowledgedAt?: string | null;
+  notes?: string | null;
+};
+
+// Lazy paginated register page (GET /reports/{id}/register).
+export type ReportRegisterPage = {
+  auditId: string; siteId: string; register: ReportRegisterEntry[];
+  nextCursor: string | null; total: number; returned: number;
+};
+export type AuditReport = {
+  id: string; auditId: string; siteId: string; reportType: string; reportCode: string;
+  generatedById: string; generatedAt: string; snapshot: AuditReportSnapshot;
+  signOffs: { role: string; userId: string; signedAt?: string }[] | null;
+  pdfAttachmentId: string | null; isSuperseded: boolean;
+};
+
+export const REPORT_RESULT_META: Record<string, { label: string; chip: string }> = {
+  CONFORMING: { label: "Conforming", chip: "bg-emerald-100 text-emerald-800" },
+  MINOR_NC: { label: "Minor NC", chip: "bg-amber-100 text-amber-800" },
+  MAJOR_NC: { label: "Major NC", chip: "bg-orange-100 text-orange-800" },
+  CRITICAL_NC: { label: "Critical NC", chip: "bg-rose-100 text-rose-700" },
+  NOT_ASSESSED: { label: "Not assessed", chip: "bg-slate-100 text-slate-500" },
+};
+
+// A-06 — auditee "My Assigned Checkpoints".
+export type MyCheckpointItem = CheckpointResponse & { needsResponse: boolean };
+export type MyScorecard = { total: number; pass: number; partial: number; fail: number; na: number; not_assessed: number; needsResponse: number };
+export type MyAuditGroup = {
+  auditId: string; auditNumber: string; title: string; status: string; plantId: string; industryCode: string;
+  items: MyCheckpointItem[]; scorecard: MyScorecard;
+};
+export type MyCheckpointsResponse = { audits: MyAuditGroup[]; totals: { total: number; needsResponse: number; audits: number } };
+
+// Scope-preset shortcuts (audit-lifecycle v2). A preset is a keyword matcher
+// over discipline (category) names; selecting one pre-ticks the matching
+// disciplines. Keyword-based so it degrades gracefully across industries —
+// a preset that matches nothing leaves the current selection untouched.
+export type ScopePreset = { key: string; label: string; desc: string; match: (categoryName: string) => boolean };
+
+export const SCOPE_PRESETS: ScopePreset[] = [
+  { key: "FULL", label: "Full library", desc: "Every discipline", match: () => true },
+  { key: "FIRE_FOCUSED", label: "Fire-Focused", desc: "Fire & emergency", match: (n) => /fire|emergency/i.test(n) },
+  {
+    key: "SA8000_ISO45001",
+    label: "SA8000 + ISO 45001",
+    desc: "Social + OHS management",
+    match: (n) => /worker welfare|sa8000|social|training|competency|incident|near.?miss|environmental|legal/i.test(n),
+  },
+  {
+    key: "WORKER_WELFARE",
+    label: "Worker Welfare",
+    desc: "Welfare, housekeeping & PPE",
+    match: (n) => /worker welfare|sa8000|social|housekeeping|ergonomic|working environment|ppe|welfare/i.test(n),
+  },
+];
+
+/** Discipline (category) codes a preset selects within a given library's categories. */
+export function presetDisciplineCodes(
+  preset: ScopePreset,
+  categories: { category_code: string; category_name: string }[],
+): string[] {
+  return categories.filter((c) => preset.match(c.category_name)).map((c) => c.category_code);
+}
+
+// ── UI helpers ───────────────────────────────────────────────────────
+
+export const STATUS_CHIP: Record<string, string> = {
+  scheduled: "bg-slate-100 text-slate-600",
+  in_progress: "bg-sky-100 text-sky-800",
+  submitted_pending_response: "bg-amber-100 text-amber-900",
+  response_in_progress: "bg-amber-100 text-amber-900",
+  under_review: "bg-indigo-100 text-indigo-800",
+  closed: "bg-emerald-100 text-emerald-800",
+  cancelled: "bg-slate-100 text-slate-400",
+};
+
+export const STATUS_LABEL: Record<string, string> = {
+  scheduled: "Scheduled",
+  in_progress: "In Progress",
+  submitted_pending_response: "Awaiting Responses",
+  response_in_progress: "Responses In Progress",
+  under_review: "Under Review",
+  closed: "Closed",
+  cancelled: "Cancelled",
+};
+
+export const CRITICALITY_CHIP: Record<string, string> = {
+  critical: "bg-rose-100 text-rose-700",
+  major: "bg-amber-100 text-amber-800",
+  minor: "bg-slate-100 text-slate-600",
+  observation: "bg-sky-100 text-sky-700",
+  informational: "bg-sky-100 text-sky-700",
+};
+export const CRITICALITY_FALLBACK = "bg-slate-100 text-slate-600";
+
+// Iteration workflow-state chip (A-05). Terminal states are greenish/closed.
+export const WORKFLOW_STATE_META: Record<string, { label: string; chip: string }> = {
+  OPEN: { label: "Open", chip: "bg-slate-100 text-slate-600" },
+  PASSED: { label: "Passed", chip: "bg-emerald-100 text-emerald-800" },
+  AWAITING_AUDITEE: { label: "Awaiting auditee", chip: "bg-amber-100 text-amber-900" },
+  AUDITEE_RESPONDED: { label: "Responded", chip: "bg-sky-100 text-sky-800" },
+  MORE_INFO_REQUESTED: { label: "More info requested", chip: "bg-orange-100 text-orange-800" },
+  RESOLVED: { label: "Resolved", chip: "bg-emerald-100 text-emerald-800" },
+  ACCEPTED_WITH_CAPA: { label: "Accepted · CAPA", chip: "bg-violet-100 text-violet-800" },
+  ESCALATED_PM: { label: "Escalated to PM", chip: "bg-rose-100 text-rose-700" },
+  FINALIZED: { label: "Finalized", chip: "bg-slate-200 text-slate-700" },
+};
+
+// Interaction action → human label for the thread timeline.
+export const INTERACTION_LABEL: Record<string, string> = {
+  ASSESSED: "Auditor assessed",
+  ROUTED_TO_OWNER: "Routed to owner",
+  AUDITEE_RESPONSE: "Auditee responded",
+  REQUEST_MORE_INFO: "More info requested",
+  AUDITOR_ACCEPT: "Auditor accepted",
+  RAISE_CAPA: "CAPA raised",
+  ESCALATE_PM: "Escalated to plant manager",
+  PM_DECISION: "Plant manager decision",
+  REOPEN: "Reopened",
+  ADHOC_ADDED: "Ad-hoc checkpoint added",
+};
+
+export const VALUE_META: Record<string, { label: string; chip: string; dot: string }> = {
+  pass: { label: "Pass", chip: "bg-emerald-100 text-emerald-800", dot: "bg-emerald-500" },
+  partial: { label: "Partial", chip: "bg-amber-100 text-amber-800", dot: "bg-amber-500" },
+  fail: { label: "Fail", chip: "bg-rose-100 text-rose-700", dot: "bg-rose-500" },
+  na: { label: "N/A", chip: "bg-slate-100 text-slate-500", dot: "bg-slate-400" },
+};
+
+export function fmtDate(s: string | null | undefined): string {
+  if (!s) return "—";
+  return new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+// Date + time, for audit-trail events (thread, report register, generated, sign-off)
+// where same-day ordering matters.
+export function fmtDateTime(s: string | null | undefined): string {
+  if (!s) return "—";
+  return new Date(s).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+// Read the best human message from an API/proxy error body. The catch-all proxy
+// returns {error, reason} (not detail) for 502/504/503, so fall through.
+export function apiErrorMessage(j: unknown, status?: number): string {
+  const o = (j ?? {}) as Record<string, unknown>;
+  return (o.detail as string) ?? (o.error as string) ?? (o.reason as string) ?? (status ? `Error ${status}` : "Please try again.");
+}
+
+export function Chip({ map, value, label, className }: { map: Record<string, string>; value: string; label?: string; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium capitalize", map[value] ?? "bg-slate-100 text-slate-600", className)}>
+      {(label ?? value).replace(/_/g, " ")}
+    </span>
+  );
+}
+
+export function complianceColor(pct: number | null | undefined): string {
+  if (pct == null) return "text-slate-400";
+  if (pct >= 90) return "text-emerald-600";
+  if (pct >= 75) return "text-amber-600";
+  return "text-rose-600";
+}
+
+export function complianceBg(pct: number | null | undefined): string {
+  if (pct == null) return "bg-slate-300";
+  if (pct >= 90) return "bg-emerald-500";
+  if (pct >= 75) return "bg-amber-500";
+  return "bg-rose-500";
+}
+
+// A-03 RAG thresholds (green ≥85 / amber 75–84 / red <75 / grey = not started).
+export function ragBar(pct: number | null | undefined): string {
+  if (pct == null) return "bg-slate-200";
+  if (pct >= 85) return "bg-emerald-500";
+  if (pct >= 75) return "bg-amber-500";
+  return "bg-rose-500";
+}
+export function ragText(pct: number | null | undefined): string {
+  if (pct == null) return "text-slate-400";
+  if (pct >= 85) return "text-emerald-600";
+  if (pct >= 75) return "text-amber-600";
+  return "text-rose-600";
+}
+
+export const INDUSTRY_LABEL: Record<string, string> = {
+  GARMENTS_TEXTILE: "Garments / Textile",
+  CEMENT: "Cement",
+  STEEL_METALS: "Steel & Metals",
+  CHEMICAL_PROCESS: "Chemical / Process",
+  MANUFACTURING_GENERIC: "Manufacturing",
+  PHARMA_LIFE_SCIENCES: "Pharma / Life Sciences",
+};

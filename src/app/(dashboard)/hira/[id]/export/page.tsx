@@ -65,6 +65,9 @@ type EntryFull = {
     id: string;
     hazardId: string;
     contextualDescription: string | null;
+    consequence: string | null;
+    regulationRef: string | null;
+    regulationSection: string | null;
     hazardCode: string | null;
     hazardCategory: string | null;
     hazardName: string | null;
@@ -84,6 +87,8 @@ type EntryFull = {
     estimatedCostBand: string | null;
     proposedImplementationDate: string | null;
     status: string;
+    evidenceAttached: boolean;
+    documentReference: string | null;
   }[];
   regulationRefs: { id: string; regulation: string; section: string | null; requirementSummary: string | null }[];
 };
@@ -248,6 +253,24 @@ export default async function HiraReportPage(
                       {h.contextualDescription}
                     </div>
                   )}
+                  {/* Consequence prints unconditionally — an auditor needs to see
+                      that it is missing, not have it quietly omitted. */}
+                  <div className="text-xs mt-0.5 pl-2 border-l-2 border-slate-200">
+                    <span className="font-medium text-slate-700">Consequence: </span>
+                    {h.consequence?.trim() ? (
+                      <span className="text-slate-600">{h.consequence}</span>
+                    ) : (
+                      <span className="text-slate-400 italic">not recorded</span>
+                    )}
+                  </div>
+                  {(h.regulationRef || h.regulationSection) && (
+                    <div className="text-xs mt-0.5 pl-2 border-l-2 border-slate-200">
+                      <span className="font-medium text-slate-700">Regulation: </span>
+                      <span className="text-slate-600">
+                        {[h.regulationRef, h.regulationSection].filter(Boolean).join(" · ")}
+                      </span>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -331,6 +354,7 @@ export default async function HiraReportPage(
                     <th className="text-left px-2 py-1">Hierarchy</th>
                     <th className="text-left px-2 py-1">Description</th>
                     <th className="text-left px-2 py-1">Status</th>
+                    <th className="text-left px-2 py-1">Evidence</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -339,6 +363,9 @@ export default async function HiraReportPage(
                       <td className="px-2 py-1 font-medium">{c.hierarchy}</td>
                       <td className="px-2 py-1">{c.description}</td>
                       <td className="px-2 py-1 text-xs">{c.status.replace(/_/g, " ")}</td>
+                      <td className="px-2 py-1 text-xs">
+                        {c.documentReference || (c.evidenceAttached ? "On file" : "—")}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -348,7 +375,11 @@ export default async function HiraReportPage(
 
           {e.regulationRefs.length > 0 && (
             <>
-              <h4 className="text-xs uppercase font-semibold text-slate-700 mt-3 mb-1">Regulatory References</h4>
+              {/* Activity-level citations. Hazard-specific ones print against
+                  their hazard above — the two are not interchangeable. */}
+              <h4 className="text-xs uppercase font-semibold text-slate-700 mt-3 mb-1">
+                Regulatory References (activity)
+              </h4>
               <ul className="text-xs space-y-0.5">
                 {e.regulationRefs.map((r) => (
                   <li key={r.id}>

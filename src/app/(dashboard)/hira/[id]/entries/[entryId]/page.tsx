@@ -1,7 +1,11 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { canApprove, can } from "@/lib/auth/permissions";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { AccessRestricted } from "@/components/access-restricted";
 import { EntryEditor } from "./entry-editor";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +49,30 @@ type EntryOut = {
   residualRiskColor: string | null;
   residualAcceptable: boolean | null;
   residualAcceptanceRationale: string | null;
+  residualAutoCalculated: boolean | null;
+  initialAlarpRegion: string | null;
+  residualAlarpRegion: string | null;
+  alarpStatus: string | null;
+  alarpFurtherControlsConsidered: boolean | null;
+  alarpFurtherControlsDescription: string | null;
+  alarpRiskReductionBenefit: string | null;
+  alarpCostBand: string | null;
+  alarpGrosslyDisproportionate: boolean | null;
+  alarpJustification: string | null;
+  alarpDemonstratedById: string | null;
+  alarpDemonstratedAt: string | null;
+  targetLikelihoodScore: number | null;
+  targetSeverityScore: number | null;
+  targetRiskScore: number | null;
+  targetRiskLevel: string | null;
+  targetRiskColor: string | null;
+  targetAlarpRegion: string | null;
+  targetRationale: string | null;
+  unacceptableOverrideById: string | null;
+  unacceptableOverrideAt: string | null;
+  unacceptableOverrideJustification: string | null;
+  unacceptableOverrideExpiresAt: string | null;
+  unacceptableOverrideActive: boolean;
   status: string;
   versionNumber: number;
   triggersTrainingProgramIds: string[] | null;
@@ -62,10 +90,14 @@ type EntryOut = {
     hazardId: string;
     contextualDescription: string | null;
     consequence: string | null;
+    regulationRef: string | null;
+    regulationSection: string | null;
     sortOrder: number;
     hazardCode: string | null;
     hazardCategory: string | null;
     hazardName: string | null;
+    hazardRequiresPermit: boolean;
+    hazardPermitTypes: string[] | null;
   }[];
   existingControls: {
     id: string;
@@ -90,6 +122,8 @@ type EntryOut = {
     responsibleId: string | null;
     status: string;
     capaId: string | null;
+    evidenceAttached: boolean;
+    documentReference: string | null;
   }[];
   regulationRefs: {
     id: string;
@@ -111,6 +145,7 @@ type StudyOut = {
 type MatrixOut = {
   id: string;
   acceptableResidual: Record<string, string>;
+  alarpBands: Record<string, string> | null;
   likelihoods: { id: string; score: number; label: string; description: string }[];
   severities: { id: string; score: number; label: string; description: string }[];
   cells: {
@@ -144,6 +179,8 @@ export default async function HiraEntryDetailPage(
     ]);
   } catch (e) {
     if (e instanceof BackendError && e.status === 404) notFound();
+    if (e instanceof BackendError && e.status === 403)
+      return <AccessRestricted backHref="/hira" backLabel="← Back to HIRA register" />;
     throw e;
   }
   if (entry.studyId !== studyId) notFound();
@@ -173,7 +210,38 @@ export default async function HiraEntryDetailPage(
     }
   }
 
+  // Section 7 cross-module picker options. Best-effort: if the caller can't read
+  // a registry (or none is seeded), the editor falls back to a raw-id input.
+  const [trainingPrograms, inspectionTemplates] = await Promise.all([
+    backendFetch<{ items: { id: string; name: string | null; programName?: string | null }[] }>(
+      "/api/training/programs"
+    )
+      .then((r) => r.items.map((p) => ({ id: p.id, name: p.name ?? p.programName ?? p.id })))
+      .catch(() => [] as { id: string; name: string }[]),
+    backendFetch<{ items: { id: string; name: string | null; templateCode?: string | null }[] }>(
+      "/api/cams/templates?status=APPROVED"
+    )
+      .then((r) =>
+        r.items.map((t) => ({ id: t.id, name: [t.templateCode, t.name].filter(Boolean).join(" · ") || t.id }))
+      )
+      .catch(() => [] as { id: string; name: string }[])
+  ]);
+
   const isEditable = ["DRAFT", "IN_PROGRESS"].includes(study.status);
+
+  // Drives whether the re-approval action renders. The backend re-checks
+  // HIRA.APPROVE on the endpoint regardless — this only avoids showing a
+  // button that would 403.
+  const session = await getServerSession(authOptions);
+  const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
+  const userCanApprove = sessionUserId
+    ? (await canApprove(sessionUserId, "HIRA", entry.id)).allowed
+    : false;
+  // Elevated tier (Plant Head / Corporate HSE) — gates the Unacceptable-risk
+  // override. Backend re-enforces HIRA.OVERRIDE_UNACCEPTABLE regardless.
+  const userCanOverride = sessionUserId
+    ? (await can(sessionUserId, "HIRA.OVERRIDE_UNACCEPTABLE", { plantId: study.plantId })).allowed
+    : false;
 
   // Shape the entry for the EntryEditor client component
   const editorEntry = {
@@ -196,6 +264,10 @@ export default async function HiraEntryDetailPage(
       hazardId: h.hazardId,
       contextualDescription: h.contextualDescription,
       consequence: h.consequence,
+      regulationRef: h.regulationRef ?? null,
+      regulationSection: h.regulationSection ?? null,
+      hazardRequiresPermit: h.hazardRequiresPermit ?? false,
+      hazardPermitTypes: h.hazardPermitTypes ?? [],
       hazard: {
         id: h.hazardId,
         code: h.hazardCode ?? "",
@@ -206,7 +278,9 @@ export default async function HiraEntryDetailPage(
     recommendedControls: entry.recommendedControls.map((c) => ({
       ...c,
       proposedImplementationDate: c.proposedImplementationDate ? new Date(c.proposedImplementationDate) : null,
-      responsibleId: c.responsibleId
+      responsibleId: c.responsibleId,
+      evidenceAttached: c.evidenceAttached ?? false,
+      documentReference: c.documentReference ?? null
     })),
     capas: capas,
     study: { riskMatrixId: study.riskMatrixId }
@@ -246,10 +320,15 @@ export default async function HiraEntryDetailPage(
           likelihoods: matrix.likelihoods,
           severities: matrix.severities,
           cells: matrix.cells,
-          acceptableResidual: matrix.acceptableResidual
+          acceptableResidual: matrix.acceptableResidual,
+          alarpBands: matrix.alarpBands
         }}
         controlLibrary={controlLibrary}
         requireChangeReason={!isEditable}
+        canApprove={userCanApprove}
+        canOverride={userCanOverride}
+        trainingPrograms={trainingPrograms}
+        inspectionTemplates={inspectionTemplates}
       />
     </div>
   );

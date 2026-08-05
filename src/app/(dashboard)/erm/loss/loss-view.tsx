@@ -17,6 +17,14 @@ import {
 } from "recharts";
 import { Plus, X, Zap, Pencil, ArrowUpRight } from "lucide-react";
 import { KpiTile, BandBadge } from "@/components/erm/shared";
+import { RcaLossPanel } from "@/components/erm/rca-loss-panel";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { fmtDate, type Category, type RiskListItem } from "@/app/(dashboard)/erm/lib";
 import {
   LOSS_STATUS_CHIP,
@@ -94,12 +102,9 @@ export function LossView({
           ))}
         </div>
         {tab === "register" && (
-          <button
-            onClick={() => setShowNew(true)}
-            className="mb-1 inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800"
-          >
+          <Button type="button" onClick={() => setShowNew(true)} className="mb-1 gap-1.5">
             <Plus size={16} /> New Loss Event
-          </button>
+          </Button>
         )}
       </div>
 
@@ -223,73 +228,73 @@ function RegisterTab({
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[1100px] text-sm">
-          <thead className="bg-slate-50/95">
-            <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-              <th className="px-3 py-2.5">Code</th>
-              <th className="px-3 py-2.5">Date</th>
-              <th className="px-3 py-2.5">Title</th>
-              <th className="px-3 py-2.5">Category</th>
-              <th className="px-3 py-2.5">Site</th>
-              <th className="px-3 py-2.5">Src</th>
-              <th className="px-3 py-2.5 text-right">Gross</th>
-              <th className="px-3 py-2.5 text-right">Recovered</th>
-              <th className="px-3 py-2.5 text-right">Net</th>
-              <th className="px-3 py-2.5">Status</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="min-w-[1100px]">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-3 py-2.5">Code</TableHead>
+              <TableHead className="px-3 py-2.5">Date</TableHead>
+              <TableHead className="px-3 py-2.5">Title</TableHead>
+              <TableHead className="px-3 py-2.5">Category</TableHead>
+              <TableHead className="px-3 py-2.5">Site</TableHead>
+              <TableHead className="px-3 py-2.5">Src</TableHead>
+              <TableHead className="px-3 py-2.5 text-right">Gross</TableHead>
+              <TableHead className="px-3 py-2.5 text-right">Recovered</TableHead>
+              <TableHead className="px-3 py-2.5 text-right">Net</TableHead>
+              <TableHead className="px-3 py-2.5">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {list.items.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
+              <TableRow>
+                <TableCell colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
                   No loss events match the current filter.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               list.items.map((e) => (
-                <tr
+                <TableRow
                   key={e.id}
                   onClick={() => onRowClick(e)}
-                  className="cursor-pointer border-t border-slate-100 align-top hover:bg-slate-50/70"
+                  className="cursor-pointer"
                 >
-                  <td className="px-3 py-2.5 font-medium text-primary-700">{e.eventCode}</td>
-                  <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(e.eventDate)}</td>
-                  <td className="max-w-[260px] px-3 py-2.5">
+                  <TableCell className="px-3 py-2.5 font-medium text-primary-700">{e.eventCode}</TableCell>
+                  <TableCell className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(e.eventDate)}</TableCell>
+                  <TableCell className="max-w-[260px] px-3 py-2.5">
                     <span className="text-slate-700">{e.title}</span>
                     {e.isNearMiss && (
                       <span className="ml-1.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
                         NEAR MISS
                       </span>
                     )}
-                  </td>
-                  <td className="px-3 py-2.5">
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5">
                     <span
                       className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
                       style={{ backgroundColor: e.categoryColor ?? "#64748b" }}
                     >
                       {e.categoryCode ?? e.categoryName ?? "—"}
                     </span>
-                  </td>
-                  <td className="px-3 py-2.5 text-xs text-slate-600">{e.siteName ?? "—"}</td>
-                  <td
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-xs text-slate-600">{e.siteName ?? "—"}</TableCell>
+                  <TableCell
                     className="px-3 py-2.5 text-center text-base text-slate-500"
                     title={e.source === "INCIDENT_AUTO" ? "From incident" : "Manual"}
                   >
                     {e.source === "INCIDENT_AUTO" ? "⚡" : "✎"}
-                  </td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-slate-600">{fmtInr(e.grossLossInr)}</td>
-                  <td className="px-3 py-2.5 text-right tabular-nums text-slate-600">{fmtInr(e.recoveredInr)}</td>
-                  <td className="px-3 py-2.5 text-right font-semibold tabular-nums text-slate-900">{fmtInr(e.netLossInr)}</td>
-                  <td className="px-3 py-2.5">
+                  </TableCell>
+                  <TableCell className="px-3 py-2.5 text-right tabular-nums text-slate-600">{fmtInr(e.grossLossInr)}</TableCell>
+                  <TableCell className="px-3 py-2.5 text-right tabular-nums text-slate-600">{fmtInr(e.recoveredInr)}</TableCell>
+                  <TableCell className="px-3 py-2.5 text-right font-semibold tabular-nums text-slate-900">{fmtInr(e.netLossInr)}</TableCell>
+                  <TableCell className="px-3 py-2.5">
                     <span className={"inline-block rounded border px-2 py-0.5 text-[11px] font-medium " + (LOSS_STATUS_CHIP[e.status] ?? "")}>
                       {e.status}
                     </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );
@@ -394,9 +399,9 @@ function DetailDrawer({
               </div>
               <h2 className="mt-1 text-lg font-bold text-slate-900">{ev.title}</h2>
             </div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+            <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700">
               <X size={18} />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -467,6 +472,8 @@ function DetailDrawer({
             )}
           </div>
 
+          <RcaLossPanel lossEventId={ev.id} eventCode={ev.eventCode} title={ev.title} />
+
           {ev.closureNotes && (
             <div>
               <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Closure notes</h3>
@@ -478,27 +485,27 @@ function DetailDrawer({
           {closing && (
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
               <label className="mb-1 block text-xs font-medium text-slate-600">Closure notes</label>
-              <textarea
+              <Textarea
                 value={closureNotes}
                 onChange={(e) => setClosureNotes(e.target.value)}
                 rows={3}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                 placeholder="How was this loss event resolved / what was learned…"
               />
               <div className="mt-2 flex gap-2">
-                <button
+                <Button
+                  type="button"
                   disabled={busy}
                   onClick={() => action("close", { closureNotes })}
-                  className="rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
                 >
                   {busy ? "Closing…" : "Confirm close"}
-                </button>
-                <button
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setClosing(false)}
-                  className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -539,18 +546,20 @@ function ActionBtn({
   primary?: boolean;
 }) {
   return (
-    <button
+    <Button
+      type="button"
+      variant="ghost"
       onClick={onClick}
       disabled={disabled}
-      className={
-        "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 " +
-        (primary
+      className={cn(
+        "h-auto rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50",
+        primary
           ? "bg-primary-700 text-white hover:bg-primary-800"
-          : "border border-slate-300 bg-white text-slate-700 hover:border-primary-500")
-      }
+          : "border border-slate-300 bg-white text-slate-700 hover:border-primary-500"
+      )}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -667,44 +676,40 @@ function LossFormModal({
           <h2 className="text-base font-semibold text-slate-900">
             {mode === "create" ? "New loss event" : `Edit ${ev?.eventCode}`}
           </h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700">
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4">
           <Field label="Title (required)">
-            <input
+            <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               placeholder="e.g. Boiler tube failure — Unit 2"
             />
           </Field>
 
           <Field label="Description">
-            <textarea
+            <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
             />
           </Field>
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Event date (required)">
-              <input
+              <Input
                 type="date"
                 value={eventDate}
                 onChange={(e) => setEventDate(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               />
             </Field>
             <Field label="Site ID (optional)">
-              <input
+              <Input
                 value={siteId}
                 onChange={(e) => setSiteId(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                 placeholder="Plant / site identifier"
               />
             </Field>
@@ -712,13 +717,12 @@ function LossFormModal({
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Category (required)">
-              <select
+              <Select
                 value={categoryId}
                 onChange={(e) => {
                   setCategoryId(e.target.value);
                   setSubCategoryId("");
                 }}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               >
                 <option value="">Select category…</option>
                 {categories.map((c) => (
@@ -726,14 +730,14 @@ function LossFormModal({
                     {c.code} — {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label="Sub-category (optional)">
-              <select
+              <Select
                 value={subCategoryId}
                 onChange={(e) => setSubCategoryId(e.target.value)}
                 disabled={!subCategories.length}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm disabled:bg-slate-50"
+                className="disabled:bg-slate-50"
               >
                 <option value="">{subCategories.length ? "None" : "—"}</option>
                 {subCategories.map((s) => (
@@ -741,41 +745,38 @@ function LossFormModal({
                     {s.code} — {s.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
           </div>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={isNearMiss} onChange={(e) => setIsNearMiss(e.target.checked)} />
+            <Checkbox checked={isNearMiss} onChange={(e) => setIsNearMiss(e.target.checked)} />
             This was a near miss (no / minimal realised loss, but real potential)
           </label>
 
           <div className="grid grid-cols-3 gap-4">
             <Field label="Gross loss (₹)">
-              <input
+              <Input
                 type="number"
                 min={0}
                 value={grossLossInr}
                 onChange={(e) => setGrossLossInr(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               />
             </Field>
             <Field label="Recovered (₹)">
-              <input
+              <Input
                 type="number"
                 min={0}
                 value={recoveredInr}
                 onChange={(e) => setRecoveredInr(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               />
             </Field>
             <Field label="Potential (₹)">
-              <input
+              <Input
                 type="number"
                 min={0}
                 value={potentialLossInr}
                 onChange={(e) => setPotentialLossInr(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                 placeholder="near-miss"
               />
             </Field>
@@ -789,19 +790,20 @@ function LossFormModal({
           <Field label="Loss types (multi-select)">
             <div className="flex flex-wrap gap-1.5">
               {LOSS_TYPES.map((t) => (
-                <button
+                <Button
                   key={t}
                   type="button"
+                  variant="ghost"
                   onClick={() => toggleLossType(t)}
-                  className={
-                    "rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors " +
-                    (lossTypes.includes(t)
+                  className={cn(
+                    "h-auto rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors",
+                    lossTypes.includes(t)
                       ? "border-primary-600 bg-primary-50 text-primary-700"
-                      : "border-slate-200 text-slate-600 hover:border-slate-400")
-                  }
+                      : "border-slate-200 text-slate-600 hover:border-slate-400"
+                  )}
                 >
                   {lossTypeLabel(t)}
-                </button>
+                </Button>
               ))}
             </div>
           </Field>
@@ -813,8 +815,7 @@ function LossFormModal({
               ) : (
                 risks.map((r) => (
                   <label key={r.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-slate-50">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={linkedRiskIds.includes(r.id)}
                       onChange={() => toggleRisk(r.id)}
                     />
@@ -826,13 +827,14 @@ function LossFormModal({
             </div>
           </Field>
 
-          <button
+          <Button
+            type="button"
             disabled={busy || !valid}
             onClick={submit}
-            className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+            className="w-full"
           >
             {busy ? "Saving…" : mode === "create" ? "Create loss event" : "Save changes"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -910,28 +912,28 @@ function AnalyticsTab({ analytics }: { analytics: LossAnalytics | null }) {
           {analytics.topLosses.length === 0 ? (
             <p className="py-8 text-center text-xs text-slate-400">No losses recorded.</p>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-2 py-2">#</th>
-                  <th className="px-2 py-2">Code</th>
-                  <th className="px-2 py-2">Title</th>
-                  <th className="px-2 py-2">Category</th>
-                  <th className="px-2 py-2 text-right">Net loss</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-2 py-2">#</TableHead>
+                  <TableHead className="px-2 py-2">Code</TableHead>
+                  <TableHead className="px-2 py-2">Title</TableHead>
+                  <TableHead className="px-2 py-2">Category</TableHead>
+                  <TableHead className="px-2 py-2 text-right">Net loss</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {analytics.topLosses.map((l, i) => (
-                  <tr key={l.eventCode} className="border-b border-slate-100">
-                    <td className="px-2 py-2 font-semibold tabular-nums text-slate-400">{i + 1}</td>
-                    <td className="px-2 py-2 font-medium text-slate-700">{l.eventCode}</td>
-                    <td className="max-w-[280px] truncate px-2 py-2 text-slate-700">{l.title}</td>
-                    <td className="px-2 py-2 text-xs text-slate-500">{l.categoryCode ?? "—"}</td>
-                    <td className="px-2 py-2 text-right font-semibold tabular-nums text-slate-900">{fmtInr(l.netLoss)}</td>
-                  </tr>
+                  <TableRow key={l.eventCode}>
+                    <TableCell className="px-2 py-2 font-semibold tabular-nums text-slate-400">{i + 1}</TableCell>
+                    <TableCell className="px-2 py-2 font-medium text-slate-700">{l.eventCode}</TableCell>
+                    <TableCell className="max-w-[280px] truncate px-2 py-2 text-slate-700">{l.title}</TableCell>
+                    <TableCell className="px-2 py-2 text-xs text-slate-500">{l.categoryCode ?? "—"}</TableCell>
+                    <TableCell className="px-2 py-2 text-right font-semibold tabular-nums text-slate-900">{fmtInr(l.netLoss)}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
 
@@ -979,36 +981,36 @@ function CalibrationView({ rows }: { rows: CalibrationRow[] }) {
         <p className="py-8 text-center text-xs text-slate-400">No calibration data yet.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-3 py-2">Risk</th>
-                <th className="px-3 py-2">Title</th>
-                <th className="px-3 py-2">Residual</th>
-                <th className="px-3 py-2 text-right">Actual net loss (12m)</th>
-                <th className="px-3 py-2 text-center">Events</th>
-                <th className="px-3 py-2">Calibration</th>
-                <th className="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="min-w-[900px]">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="px-3 py-2">Risk</TableHead>
+                <TableHead className="px-3 py-2">Title</TableHead>
+                <TableHead className="px-3 py-2">Residual</TableHead>
+                <TableHead className="px-3 py-2 text-right">Actual net loss (12m)</TableHead>
+                <TableHead className="px-3 py-2 text-center">Events</TableHead>
+                <TableHead className="px-3 py-2">Calibration</TableHead>
+                <TableHead className="px-3 py-2"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {sorted.map((r) => {
                 const flagged = r.flag === "UNDERSCORED" || r.flag === "WATCH";
                 return (
-                  <tr
+                  <TableRow
                     key={r.riskId}
-                    className={"border-b border-slate-100 " + (flagged ? "bg-rose-50/30" : "")}
+                    className={flagged ? "bg-rose-50/30" : ""}
                   >
-                    <td className="px-3 py-2 font-medium text-primary-700">{r.riskCode}</td>
-                    <td className="max-w-[260px] truncate px-3 py-2 text-slate-700">{r.title}</td>
-                    <td className="px-3 py-2">
+                    <TableCell className="px-3 py-2 font-medium text-primary-700">{r.riskCode}</TableCell>
+                    <TableCell className="max-w-[260px] truncate px-3 py-2 text-slate-700">{r.title}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <BandBadge band={r.residualBand} score={r.residualScore} />
-                    </td>
-                    <td className="px-3 py-2 text-right font-semibold tabular-nums text-slate-900">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right font-semibold tabular-nums text-slate-900">
                       {fmtInr(r.actualNetLoss12m)}
-                    </td>
-                    <td className="px-3 py-2 text-center tabular-nums text-slate-600">{r.lossEventCount}</td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-center tabular-nums text-slate-600">{r.lossEventCount}</TableCell>
+                    <TableCell className="px-3 py-2">
                       {r.flag === "UNDERSCORED" ? (
                         <span className="inline-block rounded border border-rose-300 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
                           Underscored — review
@@ -1020,8 +1022,8 @@ function CalibrationView({ rows }: { rows: CalibrationRow[] }) {
                       ) : (
                         <span className="text-[11px] text-slate-400">Aligned</span>
                       )}
-                    </td>
-                    <td className="px-3 py-2 text-right">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right">
                       {flagged && (
                         <Link
                           href={`/erm/register/${r.riskId}`}
@@ -1030,12 +1032,12 @@ function CalibrationView({ rows }: { rows: CalibrationRow[] }) {
                           Review risk <ArrowUpRight size={12} />
                         </Link>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
     </div>

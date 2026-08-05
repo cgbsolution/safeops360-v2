@@ -912,10 +912,15 @@ export function RelatedItemsSection({ incident }: { incident: any }) {
 
 // ─── Sidebar — incident metadata ─────────────────────────────────────
 
-export function IncidentMetadataSidebar({ incident }: { incident: any }) {
+export function IncidentMetadataSidebar({ incident, canSeeScore = false }: { incident: any; canSeeScore?: boolean }) {
   const occurred = incident.occurredAt ?? incident.date;
   const reported = incident.reportedAt;
   const delayMin = incident.reportingDelayMinutes;
+  // Feature 5 — numeric 5×5 severity score (visible to Plant Head and above).
+  const sd = incident.severityDetail as
+    | { score?: number; likelihoodOfRecurrence?: number; consequenceScore?: number; band?: string;
+        escalationTriggered?: boolean; escalationLog?: any[] }
+    | null;
 
   return (
     <Card>
@@ -950,6 +955,30 @@ export function IncidentMetadataSidebar({ incident }: { incident: any }) {
             }>{incident.severity}</Badge>
           } />}
           <MetaRow label="Reportable" value={incident.isReportable ? "Yes" : "No"} />
+          {canSeeScore && sd?.score != null && (
+            <MetaRow label="Risk Score" value={
+              <span className="inline-flex items-center gap-1.5">
+                <span className="font-mono font-semibold tabular-nums">{sd.score}</span>
+                <span className="text-xs text-slate-500">/25</span>
+                <span className="text-xs text-slate-400">
+                  (L{sd.likelihoodOfRecurrence}×C{sd.consequenceScore})
+                </span>
+              </span>
+            } />
+          )}
+          {sd?.escalationTriggered && (
+            <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs text-rose-800">
+              <div className="flex items-center gap-1.5 font-semibold">
+                <ShieldAlert size={13} /> Escalated to Corporate HSE
+              </div>
+              {canSeeScore && (sd.escalationLog ?? []).slice(-2).map((e: any, idx: number) => (
+                <div key={idx} className="mt-1 text-[11px] text-rose-700 leading-snug">
+                  {e.reason}
+                  {e.triggeredAt ? ` · ${formatDateTime(e.triggeredAt)}` : ""}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
         {incident.classifiedAt && (
           <div className="pt-2 mt-2 border-t border-slate-200">
