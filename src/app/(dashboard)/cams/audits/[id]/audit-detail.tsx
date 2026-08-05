@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { uploadAuditPhoto, deleteAuditPhoto } from "../upload-photo";
 import { EvidenceStrip } from "../evidence-strip";
+import { TeamEditor } from "./team-editor";
+import { AllocationWorkspace } from "./allocation-workspace";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   PlayCircle, CheckCircle2, XCircle, AlertTriangle, Lock,
@@ -57,6 +59,7 @@ export function AuditDetailView({
   const canUpdate = usePermission("AUDIT_COMPLIANCE.UPDATE");
   const canExport = usePermission("AUDIT_COMPLIANCE.EXPORT");
   const [showAllocate, setShowAllocate] = useState(false);
+  const [showTeam, setShowTeam] = useState(false);
 
   const name = (id: string | null | undefined) => (id ? userMap[id] ?? "—" : "—");
 
@@ -192,7 +195,14 @@ export function AuditDetailView({
       </div>
 
       {/* Who is on this audit, in which seat, over which disciplines. */}
-      {audit.team && <TeamPanel team={audit.team} />}
+      {audit.team && (
+        <TeamPanel
+          team={audit.team}
+          // Editable right up until closure. The auditees on a real audit are
+          // usually identified at the opening meeting, not a week beforehand.
+          onEdit={canAllocate ? () => setShowTeam(true) : undefined}
+        />
+      )}
 
       {/* Finalize gate banner */}
       {isReviewable && canClose && audit.finalizability && (
@@ -403,73 +413,31 @@ export function AuditDetailView({
       )}
 
       {showAllocate && (
-        <AllocationModal
+        <AllocationWorkspace
           auditId={audit.id}
+          plantId={audit.plantId}
           disciplines={audit.disciplineRollup ?? []}
-          users={users}
           onClose={() => setShowAllocate(false)}
           onChanged={() => router.refresh()}
+        />
+      )}
+
+      {showTeam && (
+        <TeamEditor
+          audit={audit}
+          disciplines={audit.disciplineRollup ?? []}
+          onClose={() => setShowTeam(false)}
+          onSaved={() => router.refresh()}
         />
       )}
     </div>
   );
 }
 
-// A-04 — checkpoint allocation: per-discipline assign, bulk multi-select, per-row.
-// A-04 — discipline-level allocation. Scales to large audits: assign a whole
-// discipline's checkpoints to an owner in one call (per-row owner is shown in
-// the conduct worklist). Maps to the auditee responsible-by-discipline model.
-function AllocationModal({ auditId, disciplines, users, onClose, onChanged }: {
-  auditId: string; disciplines: DisciplineRollup[]; users: PlantUser[]; onClose: () => void; onChanged: () => void;
-}) {
-  const { toast } = useToast();
-  const [busy, setBusy] = useState<string | null>(null);
-
-  async function assignDiscipline(disciplineId: string, ownerId: string) {
-    setBusy(disciplineId);
-    const res = await fetch(`/api/audit-compliance/${auditId}/allocate`, {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ disciplineId, ownerId: ownerId || null }),
-    });
-    setBusy(null);
-    if (!res.ok) { const j = await res.json().catch(() => ({})); toast({ variant: "error", title: "Allocation failed", description: apiErrorMessage(j, res.status) }); return; }
-    const j = await res.json();
-    toast({ variant: "success", title: "Allocation updated", description: `${j.updated} checkpoint(s) ${ownerId ? "assigned" : "unassigned"}.` });
-    onChanged();
-  }
-
-  return (
-    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-xl gap-0 p-0">
-        <DialogHeader className="border-b px-5 py-3">
-          <DialogTitle className="flex items-center gap-2 text-base"><Users2 size={18} className="text-primary-700" /> Manage checkpoint allocation</DialogTitle>
-          <DialogDescription className="sr-only">Assign each discipline&apos;s checkpoints to an owner who will respond to findings.</DialogDescription>
-        </DialogHeader>
-        <div className="border-b bg-slate-50 px-5 py-2 text-[12px] text-slate-500">
-          Assign each discipline to the owner who will respond to its findings. Per-checkpoint owners can be set in the conduct worklist.
-        </div>
-        <div className="max-h-[60vh] divide-y divide-slate-100 overflow-y-auto">
-          {disciplines.map((g) => (
-            <div key={g.categoryId} className="flex items-center gap-2 px-5 py-2.5">
-              <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoryColor || "#94a3b8" }} />
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-700">{g.categoryName}</span>
-              <span className="text-[11px] text-slate-400">{g.total} cp</span>
-              <Select defaultValue="" disabled={busy === g.categoryId} onChange={(e) => { assignDiscipline(g.categoryId, e.target.value); e.target.value = ""; }} className="h-8 w-44 text-xs">
-                <option value="">Assign owner →</option>
-                {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-                <option value="">— unassign —</option>
-              </Select>
-            </div>
-          ))}
-          {disciplines.length === 0 && <div className="p-6 text-center text-sm text-slate-400">No disciplines materialized.</div>}
-        </div>
-        <DialogFooter className="border-t px-5 py-3">
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Done</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+// Allocation moved to ./allocation-workspace.tsx. The modal that lived here
+// could only assign a whole discipline, and only the auditee — which forced
+// every cross-departmental checkpoint to sit with the wrong owner and gave
+// the auditor axis no home at all.
 
 function Meta({ label, value }: { label: string; value: string }) {
   return (
@@ -492,7 +460,7 @@ function Meta({ label, value }: { label: string; value: string }) {
  * Showing it here is what explains a missing Start Audit button, instead of
  * leaving the scheduler to guess.
  */
-function TeamPanel({ team }: { team: AuditTeam }) {
+function TeamPanel({ team, onEdit }: { team: AuditTeam; onEdit?: () => void }) {
   const groups: { key: string; title: string; note: string; members: AuditTeamMember[] }[] = [
     { key: "lead", title: "Lead auditor", note: "Conducts every discipline not assigned to a co-auditor", members: team.leadAuditor ? [team.leadAuditor] : [] },
     { key: "pm", title: "Plant manager (reviewer)", note: "Accepts, sends back or escalates auditee responses", members: team.plantManager ? [team.plantManager] : [] },
@@ -511,7 +479,21 @@ function TeamPanel({ team }: { team: AuditTeam }) {
             <AlertTriangle size={10} /> {team.unauthorisedCount} no longer authorised
           </span>
         )}
+        {onEdit && (
+          <Button type="button" variant="outline" size="sm" className="ml-auto h-7 text-xs" onClick={onEdit}>
+            <Users2 size={13} /> Edit team
+          </Button>
+        )}
       </div>
+      {onEdit && team.auditees.length === 0 && (
+        // The state this whole edit path exists for: an audit scheduled before
+        // anyone knew who would answer for it. Saying so beats an empty list
+        // that reads like a loading failure.
+        <p className="mb-3 rounded-lg border border-dashed border-amber-300 bg-amber-50/60 px-3 py-2 text-[12px] text-amber-900">
+          No auditees named yet. They are usually identified at the opening meeting — add them
+          whenever they are known and the findings will route to them.
+        </p>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2">
         {groups.map((g) => (

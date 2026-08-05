@@ -87,8 +87,15 @@ export default async function TemplateLibraryPage(props: {
           <div className="px-4 py-6 text-center text-sm text-slate-400">No audit libraries yet. Import one to enable the audit flow (supports ≈1500 checkpoints).</div>
         ) : (
           <div className="grid grid-cols-1 gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* The card is the way in to the editor. A library that could only
+                be replaced by re-pasting its whole JSON was, in practice, not
+                maintainable — one wrong question meant re-authoring 120. */}
             {libraries.map((lib) => (
-              <div key={lib.industryCode} className="rounded-lg border border-slate-200 p-3">
+              <Link
+                key={lib.industryCode}
+                href={`/cams/templates/library/${encodeURIComponent(lib.industryCode)}`}
+                className="rounded-lg border border-slate-200 p-3 transition hover:border-primary-400 hover:shadow-sm"
+              >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-slate-800">{lib.industryName}</span>
                   <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">{lib.checkpointCount} cp</span>
@@ -103,7 +110,8 @@ export default async function TemplateLibraryPage(props: {
                   ))}
                   {lib.categories.length > 6 && <span className="text-[10px] text-slate-400">+{lib.categories.length - 6} more</span>}
                 </div>
-              </div>
+                <div className="mt-2 text-[11px] font-medium text-primary-700">Open editor →</div>
+              </Link>
             ))}
           </div>
         )}
