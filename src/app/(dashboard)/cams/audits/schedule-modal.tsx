@@ -38,6 +38,11 @@ type AssignableSlots = {
   auditee: PlantUser[];
 };
 
+/** The own-facility checklist for this instance — the Page Industries internal
+ *  audit (HR / EHS / Production). There is no industry selector: this library
+ *  is resolved, and the scheduler chooses disciplines within it. */
+const PAGE_LIBRARY_CODE = "PAGE_INDUSTRIES";
+
 export function ScheduleModal({
   plantId, templates, libraries, users, onClose, defaultTitle, dialogTitle,
 }: {
@@ -85,10 +90,24 @@ export function ScheduleModal({
   // plant checklists.
   const libsForSubject = useMemo(() => {
     const wanted = subjectType === "VENDOR" ? "VENDOR" : "OWN_SITE";
-    return libraries.filter((l) => {
+    const scoped = libraries.filter((l) => {
       const scope = l.subjectScope ?? "OWN_SITE";
       return scope === wanted || scope === "BOTH";
     });
+    // Removing the industry PICKER is not the same as removing the industry
+    // CHOICE. The older libraries are still rows in the database (audits
+    // already materialised from them keep rendering), so if they stayed in this
+    // list an own-facility audit could still land on Garments or Cement purely
+    // by whichever sorted first. On this instance an own-facility audit means
+    // the Page Industries checklist and nothing else.
+    if (subjectType !== "VENDOR") {
+      const page = scoped.filter((l) => l.industryCode === PAGE_LIBRARY_CODE);
+      // Fall through to the full scoped list only if the Page library is
+      // genuinely absent — an honest empty state beats a silent wrong one, but
+      // a demo with no checklist at all is worse than either.
+      if (page.length > 0) return page;
+    }
+    return scoped;
   }, [libraries, subjectType]);
 
   // Structure without content is not selectable: the buyer regimes ship with
@@ -106,10 +125,19 @@ export function ScheduleModal({
     [libsForSubject],
   );
 
+  // There is no industry to choose on this instance. An own-facility audit runs
+  // the Page Industries internal-audit checklist (HR / EHS / Production); a
+  // supplier audit runs whichever supplier-scoped checklist is configured. The
+  // library is therefore RESOLVED rather than picked — the scheduler's real
+  // choice is which disciplines are in scope, which is the field below.
+  //
+  // The ordering still matters: `orderedLibs[0]` is what every reset seeds
+  // from, so pinning PAGE_INDUSTRIES first is what makes "the default" correct
+  // rather than alphabetical.
   const orderedLibs = useMemo(() => {
-    const g = selectableLibs.filter((l) => l.industryCode === "GARMENTS_TEXTILE");
-    const rest = selectableLibs.filter((l) => l.industryCode !== "GARMENTS_TEXTILE");
-    return [...g, ...rest];
+    const page = selectableLibs.filter((l) => l.industryCode === PAGE_LIBRARY_CODE);
+    const rest = selectableLibs.filter((l) => l.industryCode !== PAGE_LIBRARY_CODE);
+    return [...page, ...rest];
   }, [selectableLibs]);
 
   const [title, setTitle] = useState(defaultTitle ?? "");
@@ -199,8 +227,8 @@ export function ScheduleModal({
   const library = orderedLibs.find((l) => l.industryCode === industryCode);
   const industryTemplates = useMemo(() => templates.filter((t) => t.baseIndustry === industryCode), [templates, industryCode]);
 
-  // When the industry changes, reset template + select all of the new
-  // library's disciplines (= "Full library" preset).
+  // When the resolved library changes, reset template + select all of its
+  // disciplines (= "Full library" preset).
   useEffect(() => {
     setTemplateId("");
     setSelectedDisc(library ? library.categories.map((c) => c.category_code) : []);
@@ -210,9 +238,9 @@ export function ScheduleModal({
 
   // Changing the SUBJECT invalidates the checklist choice.
   //
-  // This is the sharp edge of the bug, not the visible list: hiding the
-  // own-facility chips is not enough, because `industryCode` would still hold
-  // "GARMENTS_TEXTILE" from before the toggle and submit would post it. The
+  // This is the sharp edge of the bug, not the visible list: narrowing the
+  // own-facility options is not enough, because `industryCode` would still hold
+  // the own-facility code from before the toggle and submit would post it. The
   // selection is therefore cleared and re-seeded from the libraries that are
   // valid for the new subject — and left EMPTY when none are, so there is no
   // path to scheduling against a checklist the subject cannot use.
@@ -259,14 +287,15 @@ export function ScheduleModal({
   // something the scheduler can fix by choosing differently. Worded so it points
   // at the person who can fix it.
   const noLibraryForSubject = orderedLibs.length === 0;
+  // With the checklist resolved rather than chosen, the only remaining failure
+  // is that no checklist EXISTS for this subject — a content gap for an admin
+  // to fix, never something the scheduler can correct by choosing differently.
   const industryError = noLibraryForSubject
     ? subjectType === "VENDOR"
       ? "No supplier compliance checklist is configured yet — contact your admin."
-      : "No checklist library is available."
+      : "No checklist library is available — contact your admin."
     : !industryCode || !library
-      ? subjectType === "VENDOR"
-        ? "Pick a supplier compliance checklist."
-        : "Pick an industry."
+      ? "The checklist could not be resolved — reload and try again."
       : null;
   const leadError = !leadAuditorUserId ? "Pick a lead auditor." : null;
   const disciplineError = selectedDisc.length === 0 ? "Select at least one discipline." : null;
@@ -432,7 +461,7 @@ export function ScheduleModal({
           <DialogTitle className="flex items-center gap-2 text-base">
             <ClipboardList size={18} className="text-primary-700" /> {dialogTitle ?? "Schedule Audit"}
           </DialogTitle>
-          <DialogDescription className="sr-only">Schedule an audit: pick industry, disciplines, lead auditor and auditees.</DialogDescription>
+          <DialogDescription className="sr-only">Schedule an audit: choose disciplines in scope, lead auditor and auditees.</DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[68vh] space-y-3 overflow-y-auto px-5 py-1">
@@ -545,62 +574,44 @@ export function ScheduleModal({
             </div>
           )}
 
-          {/* Checklist switcher — the options are scoped to the audit subject.
-              For a supplier audit the own-facility industry libraries are
-              EXCLUDED, not deprioritised: leaving them reachable is what let a
-              supplier audit be scoped against plant checkpoints. */}
-          <Field
-            label={subjectType === "VENDOR" ? "Supplier compliance checklist" : "Industry"}
-            required
-            error={touched ? industryError : null}
-          >
-            {noLibraryForSubject ? (
-              // Honest empty state. Deliberately NOT a fallback to the
-              // own-facility list — a supplier audit scoped against a plant
-              // checklist produces a report that reads as an internal
-              // inspection, which is worse than not scheduling at all.
-              <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-3">
-                <p className="text-[12px] font-medium text-amber-900">
-                  {subjectType === "VENDOR"
-                    ? "Supplier compliance checklist not yet configured — contact your admin."
-                    : "No checklist library is available."}
+          {/* There is NO checklist field. This instance audits one thing — the
+              Page Industries internal checklist (HR / EHS / Production) for an
+              own-facility audit, the supplier checklist for a supplier audit —
+              so `industryCode` is resolved above and never shown. The
+              scheduler's real choice is the discipline scope below.
+
+              The empty state survives, because "no checklist exists for this
+              subject" is a content gap an admin has to fix and silently
+              scheduling against nothing would be worse than saying so. */}
+          {noLibraryForSubject && (
+            <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-3">
+              <p className="text-[12px] font-medium text-amber-900">
+                {subjectType === "VENDOR"
+                  ? "Supplier compliance checklist not yet configured — contact your admin."
+                  : "The Page Industries checklist is not loaded — contact your admin."}
+              </p>
+              {subjectType === "VENDOR" && (
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+                  {awaitingContentLibs.length > 0 ? (
+                    <>
+                      {awaitingContentLibs.length} supplier regime
+                      {awaitingContentLibs.length === 1 ? " is" : "s are"} set up (
+                      {awaitingContentLibs.map((l) => l.industryName).join(", ")}) but
+                      {awaitingContentLibs.length === 1 ? " has" : " have"} no
+                      checkpoints loaded yet. The own-facility checklist is not offered
+                      here — it would audit this supplier against our own plant
+                      requirements.
+                    </>
+                  ) : (
+                    <>
+                      The own-facility checklist is not offered for supplier audits —
+                      it would audit this supplier against our own plant requirements.
+                    </>
+                  )}
                 </p>
-                {subjectType === "VENDOR" && (
-                  <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
-                    {awaitingContentLibs.length > 0 ? (
-                      <>
-                        {awaitingContentLibs.length} supplier regime
-                        {awaitingContentLibs.length === 1 ? " is" : "s are"} set up (
-                        {awaitingContentLibs.map((l) => l.industryName).join(", ")}) but
-                        {awaitingContentLibs.length === 1 ? " has" : " have"} no
-                        checkpoints loaded yet. Own-facility checklists are not offered
-                        here — they would audit this supplier against our own plant
-                        requirements.
-                      </>
-                    ) : (
-                      <>
-                        Own-facility checklists are not offered for supplier audits —
-                        they would audit this supplier against our own plant
-                        requirements.
-                      </>
-                    )}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-wrap gap-1.5">
-                {orderedLibs.map((l) => {
-                  const on = l.industryCode === industryCode;
-                  return (
-                    <Button key={l.industryCode} type="button" size="sm" variant={on ? "default" : "outline"} onClick={() => setIndustryCode(l.industryCode)} className="rounded-full">
-                      {l.industryName.split(",")[0].split("&")[0].trim()}
-                      <Badge className={cn("ml-1 border-0 px-1.5 py-0", on ? "bg-white/25 text-white" : "bg-slate-100 text-slate-500")}>{l.checkpointCount}</Badge>
-                    </Button>
-                  );
-                })}
-              </div>
-            )}
-          </Field>
+              )}
+            </div>
+          )}
 
           {/* Discipline scope — selectable chips + preset shortcuts */}
           {library && (

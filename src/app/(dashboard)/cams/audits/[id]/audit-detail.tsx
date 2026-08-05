@@ -23,7 +23,8 @@ import { usePermission } from "@/components/auth/can";
 import {
   AuditDetail, AuditDashboard, AuditTeam, AuditTeamMember, CheckpointResponse, CheckpointInteraction, Finalizability, PlantUser, AuditReport, DisciplineRollup, StoredPhoto,
   STATUS_CHIP, STATUS_LABEL, CRITICALITY_CHIP, CRITICALITY_FALLBACK, VALUE_META,
-  WORKFLOW_STATE_META, INTERACTION_LABEL, Chip, fmtDate, fmtDateTime, apiErrorMessage, complianceColor, ragBar, ragText, INDUSTRY_LABEL,
+  GRADE_META, STATUS_META, RISK_META, REQUIREMENT_TYPE_META, scoreBandLabel,
+  WORKFLOW_STATE_META, INTERACTION_LABEL, Chip, fmtDate, fmtDateTime, apiErrorMessage, complianceColor, ragBar, ragText,
 } from "../lib";
 import { FileText, Download } from "lucide-react";
 import { MeetingRecords } from "@/components/assurance/meeting-record";
@@ -124,7 +125,6 @@ export function AuditDetailView({
               <Building2 size={14} /> {audit.plantName ?? audit.plantId}
             </span>
           )}
-          <Meta label="Industry" value={INDUSTRY_LABEL[audit.industryCode] ?? audit.industryCode} />
           <Meta label="Template" value={audit.templateName ? `${audit.templateName}${audit.templateVersion ? ` · v${audit.templateVersion}` : ""}` : "—"} />
           <Meta label="Lead auditor" value={name(audit.leadAuditorUserId)} />
           <Meta label="Plant manager" value={name(audit.plantManagerUserId)} />
@@ -220,18 +220,33 @@ export function AuditDetailView({
       {dashboard && audit.answeredCheckpoints > 0 && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           <div className="rounded-xl border border-slate-200 bg-white p-5">
-            <div className="text-xs font-medium uppercase tracking-wide text-slate-400">Overall compliance</div>
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-400">Overall score</div>
             {summary.notAssessed ? (
               <div className="mt-3 text-sm text-slate-400">No assessable checkpoints yet — <span className="font-medium text-slate-500">Not assessed</span> (all N/A).</div>
             ) : (
               <div className="mt-3 flex items-center gap-4">
-                <Gauge pct={dashboard.score.overall_score_pct} />
+                {/* The gauge is clamped at 0 by its own arc maths; the number
+                    beside it is not. A repeat-heavy discipline really can score
+                    below zero, and rounding that up to 0% would flatter it. */}
+                <Gauge pct={Math.max(0, dashboard.score.overall_score_pct)} />
                 <div>
                   <div className={cn("text-3xl font-extrabold tabular-nums", complianceColor(dashboard.score.overall_score_pct))}>{dashboard.score.overall_score_pct}%</div>
+                  {/* Points, so the percentage can be reconciled against the
+                      customer's own workbook instead of taken on trust. */}
+                  {dashboard.score.score_allotted != null && dashboard.score.score_allotted > 0 && (
+                    <div className="text-[11px] tabular-nums text-slate-500">
+                      {dashboard.score.score_obtained}/{dashboard.score.score_allotted} points · {scoreBandLabel(dashboard.score.overall_score_pct)}
+                    </div>
+                  )}
                   {audit.auditPassed != null && (
                     <span className={cn("mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold", audit.auditPassed ? "bg-emerald-100 text-emerald-800" : "bg-rose-100 text-rose-700")}>
                       {audit.auditPassed ? <CheckCircle2 size={12} /> : <XCircle size={12} />} {audit.auditPassed ? "PASS" : "CONDITIONAL / FAIL"}
                     </span>
+                  )}
+                  {(dashboard.score.repeat_findings ?? 0) > 0 && (
+                    <div className="mt-1 text-[11px] font-medium text-rose-700">
+                      {dashboard.score.repeat_findings} repeat finding{dashboard.score.repeat_findings === 1 ? "" : "s"} · scored −1 each
+                    </div>
                   )}
                 </div>
               </div>
@@ -599,8 +614,13 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
   const ws = r.workflowState;
   const inFlight = ["AWAITING_AUDITEE", "AUDITEE_RESPONDED", "MORE_INFO_REQUESTED", "ESCALATED_PM"].includes(ws);
   const [open, setOpen] = useState(inFlight);
+  // The grade is what the auditor chose; the pass/partial/fail bucket is what
+  // the engine derived from it. Show the grade — falling back to the bucket
+  // only for rows graded before this vocabulary existed.
   const val = r.auditorResponse?.value ?? null;
-  const meta = (val && VALUE_META[val]) || { label: "Not assessed", chip: "bg-slate-100 text-slate-500", dot: "bg-slate-300" };
+  const meta = (r.gradeAwarded && GRADE_META[r.gradeAwarded])
+    || (val && VALUE_META[val])
+    || { label: "Not graded", chip: "bg-slate-100 text-slate-500", dot: "bg-slate-300" };
   const wmeta = WORKFLOW_STATE_META[ws];
   const name = (id: string | null | undefined) => (id ? userMap[id] ?? "—" : "—");
 
@@ -611,8 +631,31 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[11px] text-slate-500">{r.checkpointCode}</span>
+            {r.requirementType && (
+              <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", REQUIREMENT_TYPE_META[r.requirementType].chip)}
+                title={REQUIREMENT_TYPE_META[r.requirementType].label}>
+                {REQUIREMENT_TYPE_META[r.requirementType].short}
+              </span>
+            )}
             <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", CRITICALITY_CHIP[r.criticality] ?? CRITICALITY_FALLBACK)}>{r.criticality}</span>
-            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.chip)}>{meta.label}</span>
+            {/* Grade + the points it earned — the two workbook columns a
+                reviewer scanning the finding list actually reads. */}
+            <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.chip)}>
+              {meta.label}
+              {r.scoreAllotted !== null && r.scoreObtained !== null && (
+                <span className="ml-1 tabular-nums opacity-70">{r.scoreObtained}/{r.scoreAllotted}</span>
+              )}
+            </span>
+            {r.complianceStatus && (
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", STATUS_META[r.complianceStatus].chip)}>
+                {STATUS_META[r.complianceStatus].label}
+              </span>
+            )}
+            {r.riskGrade && (
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", RISK_META[r.riskGrade].chip)}>
+                {RISK_META[r.riskGrade].label} risk
+              </span>
+            )}
             {wmeta && ws !== "OPEN" && ws !== "PASSED" && <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", wmeta.chip)}>{wmeta.label}</span>}
             {r.currentRound > 0 && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Round {r.currentRound}</span>}
             {r.isAdHoc && <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-violet-700">Custom</span>}

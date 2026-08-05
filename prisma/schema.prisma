@@ -7168,6 +7168,11 @@ model AuditCheckpointResponse {
   responseType         String @default("pass_partial_fail")
   sequence             Int    @default(0)
 
+  // Page Industries checklist column I. Master data snapshotted from the
+  // library checkpoint — a factory licence is statutory regardless of who
+  // audits it — so the auditor sees it read-only.
+  requirementType String? // STATUTORY_REGULATORY | INTERNAL_REQUIREMENT
+
   // Denormalized per-checkpoint rules (so submit/save never re-parse the library).
   requiresPhotoOnFail   Boolean @default(false)
   autoTriggerCapaOnFail Boolean @default(false)
@@ -7198,6 +7203,19 @@ model AuditCheckpointResponse {
   assessmentStatus String @default("NOT_ASSESSED") // NOT_ASSESSED | PASS | PARTIAL | FAIL | NA
   workflowState    String @default("OPEN") // OPEN | PASSED | AWAITING_AUDITEE | AUDITEE_RESPONDED | MORE_INFO_REQUESTED | RESOLVED | ACCEPTED_WITH_CAPA | ESCALATED_PM | FINALIZED
   currentRound     Int    @default(0)
+
+  // Page Industries grading (checklist columns C–F, H). First-class columns
+  // rather than keys in auditorResponse: the discipline rollup and the audit
+  // score are SQL aggregates, and summing points out of a JSON blob would force
+  // a full row load on every navigator repaint. assessmentStatus above stays
+  // the engine's verdict and is DERIVED from gradeAwarded.
+  // scoreAllotted is null on an N/A checkpoint — that is what removes it from
+  // the score denominator.
+  gradeAwarded     String? // C — EFFECTIVE | SOME_IMPROVEMENT_NEEDED | MAJOR_IMPROVEMENT_NEEDED | UNSATISFACTORY | NA
+  scoreAllotted    Int? // D — 3, or null for N/A
+  scoreObtained    Int? // E — 3 | 2 | 1 | 0 | -1
+  complianceStatus String? // F — COMPLIED | NON_COMPLIANCE | REPEATED_NON_COMPLIANCE | NEW_OBSERVATION | REPEATED_OBSERVATION | NA | MAS_NA
+  riskGrade        String? // H — HIGH | MEDIUM | LOW
 
   // Carousel capture fields (first-class, mirrored into auditorResponse Json
   // for back-compat with the existing conduct screen).
@@ -7233,6 +7251,7 @@ model AuditCheckpointResponse {
   @@index([auditId, assignedAuditorId])
   @@index([auditId, workflowState])
   @@index([auditId, sequence])
+  @@index([auditId, gradeAwarded])
 }
 
 // ─────────────────────────────────────────────────────────────────────

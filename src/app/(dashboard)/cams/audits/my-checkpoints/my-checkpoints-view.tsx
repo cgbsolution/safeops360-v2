@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import {
   MyCheckpointsResponse, MyAuditGroup, MyCheckpointItem,
   STATUS_CHIP, STATUS_LABEL, CRITICALITY_CHIP, CRITICALITY_FALLBACK, VALUE_META, Chip,
+  GRADE_META, RISK_META,
 } from "../lib";
 
 export function MyCheckpointsView({ data }: { data: MyCheckpointsResponse }) {
@@ -106,10 +107,15 @@ function AuditCard({ a }: { a: MyAuditGroup }) {
 }
 
 function Row({ auditId, i }: { auditId: string; i: MyCheckpointItem }) {
+  // Show the auditor's GRADE — that is the word they used and the word the
+  // auditee will be answering. The engine bucket is the fallback for rows
+  // graded before this vocabulary existed.
   const raw = i.auditorResponse?.value ?? null;
   const val = raw === "yes" ? "pass" : raw === "no" ? "fail" : raw; // normalize like the scorecard
-  const meta = (val && VALUE_META[val]) || { label: "Not assessed", chip: "bg-slate-100 text-slate-500", dot: "bg-slate-300" };
-  const actionable = i.needsResponse; // fail/partial awaiting my response
+  const meta = (i.gradeAwarded && GRADE_META[i.gradeAwarded])
+    || (val && VALUE_META[val])
+    || { label: "Not assessed", chip: "bg-slate-100 text-slate-500", dot: "bg-slate-300" };
+  const actionable = i.needsResponse; // a finding awaiting my response
 
   return (
     <div className="flex items-center gap-2 px-4 py-2">
@@ -118,6 +124,11 @@ function Row({ auditId, i }: { auditId: string; i: MyCheckpointItem }) {
       <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", CRITICALITY_CHIP[i.criticality] ?? CRITICALITY_FALLBACK)}>{i.criticality}</span>
       {i.isAdHoc && <span className="rounded bg-violet-100 px-1 text-[9px] font-semibold uppercase text-violet-700">custom</span>}
       <span className="min-w-0 flex-1 truncate text-[13px] text-slate-700">{i.checkpointQuestion}</span>
+      {i.riskGrade && (
+        <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-semibold", RISK_META[i.riskGrade].chip)}>
+          {RISK_META[i.riskGrade].label}
+        </span>
+      )}
       <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", meta.chip)}>{meta.label}</span>
       {actionable ? (
         <Link href={`/cams/audits/${auditId}`} className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500 px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-amber-600">
