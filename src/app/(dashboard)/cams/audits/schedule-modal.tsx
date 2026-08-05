@@ -574,65 +574,44 @@ export function ScheduleModal({
             </div>
           )}
 
-          {/* The checklist is RESOLVED from the audit subject, not picked: an
-              own-facility audit runs the Page Industries internal checklist, a
-              supplier audit runs the supplier checklist. Own-facility libraries
-              stay EXCLUDED from supplier audits rather than deprioritised —
-              leaving them reachable is what let a supplier audit be scoped
-              against plant checkpoints.
+          {/* There is NO checklist field. This instance audits one thing — the
+              Page Industries internal checklist (HR / EHS / Production) for an
+              own-facility audit, the supplier checklist for a supplier audit —
+              so `industryCode` is resolved above and never shown. The
+              scheduler's real choice is the discipline scope below.
 
-              The field is still rendered, because "which checklist is this
-              audit against" is on the report and the scheduler should see it
-              before committing — it just has nothing to choose. */}
-          <Field
-            label="Checklist"
-            error={touched ? industryError : null}
-          >
-            {noLibraryForSubject ? (
-              // Honest empty state. Deliberately NOT a fallback to the
-              // own-facility list — a supplier audit scoped against a plant
-              // checklist produces a report that reads as an internal
-              // inspection, which is worse than not scheduling at all.
-              <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-3">
-                <p className="text-[12px] font-medium text-amber-900">
-                  {subjectType === "VENDOR"
-                    ? "Supplier compliance checklist not yet configured — contact your admin."
-                    : "No checklist library is available."}
+              The empty state survives, because "no checklist exists for this
+              subject" is a content gap an admin has to fix and silently
+              scheduling against nothing would be worse than saying so. */}
+          {noLibraryForSubject && (
+            <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-3">
+              <p className="text-[12px] font-medium text-amber-900">
+                {subjectType === "VENDOR"
+                  ? "Supplier compliance checklist not yet configured — contact your admin."
+                  : "The Page Industries checklist is not loaded — contact your admin."}
+              </p>
+              {subjectType === "VENDOR" && (
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+                  {awaitingContentLibs.length > 0 ? (
+                    <>
+                      {awaitingContentLibs.length} supplier regime
+                      {awaitingContentLibs.length === 1 ? " is" : "s are"} set up (
+                      {awaitingContentLibs.map((l) => l.industryName).join(", ")}) but
+                      {awaitingContentLibs.length === 1 ? " has" : " have"} no
+                      checkpoints loaded yet. The own-facility checklist is not offered
+                      here — it would audit this supplier against our own plant
+                      requirements.
+                    </>
+                  ) : (
+                    <>
+                      The own-facility checklist is not offered for supplier audits —
+                      it would audit this supplier against our own plant requirements.
+                    </>
+                  )}
                 </p>
-                {subjectType === "VENDOR" && (
-                  <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
-                    {awaitingContentLibs.length > 0 ? (
-                      <>
-                        {awaitingContentLibs.length} supplier regime
-                        {awaitingContentLibs.length === 1 ? " is" : "s are"} set up (
-                        {awaitingContentLibs.map((l) => l.industryName).join(", ")}) but
-                        {awaitingContentLibs.length === 1 ? " has" : " have"} no
-                        checkpoints loaded yet. Own-facility checklists are not offered
-                        here — they would audit this supplier against our own plant
-                        requirements.
-                      </>
-                    ) : (
-                      <>
-                        Own-facility checklists are not offered for supplier audits —
-                        they would audit this supplier against our own plant
-                        requirements.
-                      </>
-                    )}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
-                <span className="text-[13px] font-medium text-slate-700">{library?.industryName}</span>
-                <Badge className="border-0 bg-slate-200 px-1.5 py-0 text-slate-600">
-                  {library?.checkpointCount} checkpoints
-                </Badge>
-                <span className="ml-auto text-[11px] text-slate-400">
-                  {library?.categories.length} disciplines
-                </span>
-              </div>
-            )}
-          </Field>
+              )}
+            </div>
+          )}
 
           {/* Discipline scope — selectable chips + preset shortcuts */}
           {library && (
