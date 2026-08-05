@@ -24,7 +24,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { usePermission } from "@/components/auth/can";
 import {
   AuditRow, ProgrammeDashboard, AuditLibrary, AuditTemplate, PlantUser,
-  STATUS_CHIP, STATUS_LABEL, Chip, fmtDate, complianceColor, complianceBg, INDUSTRY_LABEL,
+  STATUS_CHIP, STATUS_LABEL, Chip, fmtDate, complianceColor, complianceBg,
 } from "./lib";
 import { ScheduleModal } from "./schedule-modal";
 
@@ -54,7 +54,7 @@ export function AuditRegisterView({
           (!status || a.status === status) &&
           (!subject || a.subjectType === subject) &&
           (!q ||
-            `${a.auditNumber} ${a.title} ${a.industryCode} ${a.subjectLabel ?? ""}`
+            `${a.auditNumber} ${a.title} ${a.subjectLabel ?? ""}`
               .toLowerCase()
               .includes(q.toLowerCase())),
       ),
@@ -191,7 +191,6 @@ export function AuditRegisterView({
               <TableRow>
                 <TableHead>Audit</TableHead>
                 <TableHead>Audited party</TableHead>
-                <TableHead>Industry</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Progress</TableHead>
                 <TableHead>Compliance</TableHead>
@@ -232,7 +231,6 @@ export function AuditRegisterView({
                         </span>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-slate-600">{INDUSTRY_LABEL[a.industryCode] ?? a.industryCode}</TableCell>
                     <TableCell><Chip map={STATUS_CHIP} value={a.status} label={STATUS_LABEL[a.status] ?? a.status} /></TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

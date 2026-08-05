@@ -70,7 +70,7 @@ export default async function TemplateLibraryPage(props: {
     <div>
       <PageHeader
         title="Templates & Libraries"
-        description="Two checklist sources: audit checkpoint libraries (per-industry discipline→checkpoint sets the audit flow materializes from — supports ≈1500 checkpoints via import) and clause-mapped inspection templates."
+        description="Two checklist sources: audit checkpoint libraries (the discipline→checkpoint sets the audit flow materializes from — supports ≈1500 checkpoints via import) and clause-mapped inspection templates."
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Templates" }]}
         action={<Can permission="CAMS.TEMPLATE_AUTHOR"><NewTemplateButton ownerId={ownerId ?? ""} /></Can>}
       />
@@ -80,7 +80,7 @@ export default async function TemplateLibraryPage(props: {
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
           <h2 className="text-sm font-semibold text-slate-800">Audit Checkpoint Libraries</h2>
           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{libraries.length}</span>
-          <span className="text-xs text-slate-500">— per-industry discipline → checkpoint sets that audits materialize from</span>
+          <span className="text-xs text-slate-500">— the discipline → checkpoint sets that audits materialize from</span>
           <div className="ml-auto"><Can permission="AUDIT_COMPLIANCE.CREATE"><ImportLibraryButton /></Can></div>
         </div>
         {libraries.length === 0 ? (

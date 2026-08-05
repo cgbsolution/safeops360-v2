@@ -4,9 +4,24 @@
 // THE SHOWPIECE — on-site conduct UI engineered for LARGE audits (≈1500
 // checkpoints). Discipline-scoped, server-paginated worklist: the screen never
 // holds more than one discipline's page in memory. Left/top discipline
-// navigator (from the rollup — no row load), status filter + search, inline
-// Pass/Partial/Fail/NA per card with auto-save, and bulk "mark discipline" fast
-// paths. Every checkpoint is reachable; nothing is rendered until scoped to.
+// navigator (from the rollup — no row load), grade filter + search, inline
+// grading per card with auto-save, and bulk "mark discipline" fast paths. Every
+// checkpoint is reachable; nothing is rendered until scoped to.
+//
+// Grading is the Page Industries internal-audit model — the seven columns their
+// auditors already fill in on the workbook:
+//
+//   C Grade Awarded    the one control that decides everything else
+//   D Score Allotted   3, or nothing for an N/A checkpoint
+//   E Score Obtained   auto-filled from the grade, overridable
+//   F Status           auto-suggested from the grade, overridable
+//   G Audit Findings   the auditor's comment (required on any finding)
+//   H Risk Grade       the auditor's read on what they found
+//   I Requirement Type master data, read-only
+//
+// The card is laid out so a fully-compliant checkpoint is ONE tap: pick
+// Effective and the score, status and (absent) risk grade all settle
+// themselves. The extra fields only unfold when the grade makes them matter.
 // ──────────────────────────────────────────────────────────────────────
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -27,8 +42,12 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import {
-  AuditDetail, CheckpointResponse, AuditValue, DisciplineRollup,
-  CRITICALITY_CHIP, CRITICALITY_FALLBACK, VALUE_META, PlantUser, apiErrorMessage,
+  AuditDetail, CheckpointResponse, DisciplineRollup,
+  CRITICALITY_CHIP, CRITICALITY_FALLBACK, PlantUser, apiErrorMessage,
+  GradeAwarded, ComplianceStatus, RiskGrade,
+  GRADE_META, GRADE_ORDER, GRADE_TO_VALUE, STATUS_META, STATUS_ORDER,
+  RISK_META, RISK_ORDER, REQUIREMENT_TYPE_META,
+  SCORE_CHOICES, FULL_SCORE, suggestScore, suggestStatus, requiresRiskGrade,
 } from "../../lib";
 import { uploadAuditPhoto, deleteAuditPhoto } from "../../upload-photo";
 // WP-44: annotation + QR jump. Both reuse existing platform pieces rather
@@ -37,19 +56,29 @@ import { PhotoAnnotator } from "@/components/assurance/photo-annotator";
 import { QrJumpButton } from "@/components/assurance/qr-jump";
 
 type Resp = CheckpointResponse;
-type StatusFilter = "all" | "unanswered" | "pass" | "partial" | "fail" | "na";
+/** "ungraded" filters on the absence of a grade; the rest are grade codes. */
+type GradeFilter = "all" | "ungraded" | GradeAwarded;
 type Bucket = "passed" | "partial" | "failed" | "na";
 
 const SEVERITIES = ["critical", "major", "minor", "observation"] as const;
 const PAGE = 40;
 
-// auditorResponse.value → rollup bucket key (null = unanswered).
-function bucketOf(v: AuditValue | undefined | null): Bucket | null {
-  if (v === "pass" || v === "yes") return "passed";
+const GRADE_TABS: { key: GradeFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "ungraded", label: "Not graded" },
+  ...GRADE_ORDER.map((g) => ({ key: g as GradeFilter, label: GRADE_META[g].short })),
+];
+
+// Grade → rollup bucket key (null = not graded). The rollup still counts in the
+// engine's four buckets, so the navigator and the RAG bars keep working exactly
+// as before — the grade is a richer face on the same verdict.
+function bucketOfGrade(g: GradeAwarded | null | undefined): Bucket | null {
+  if (!g) return null;
+  const v = GRADE_TO_VALUE[g];
+  if (v === "pass") return "passed";
   if (v === "partial") return "partial";
-  if (v === "fail" || v === "no") return "failed";
-  if (v === "na") return "na";
-  return null;
+  if (v === "fail") return "failed";
+  return "na";
 }
 
 export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users?: PlantUser[] }) {
@@ -79,7 +108,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     const firstOpen = (audit.disciplineRollup ?? []).find((c) => c.answered < c.total);
     return firstOpen?.categoryId ?? audit.disciplineRollup?.[0]?.categoryId ?? "ALL";
   });
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [gradeFilter, setGradeFilter] = useState<GradeFilter>("all");
   const [q, setQ] = useState("");
   // WP-44: a captured photo held for markup before it is attached. The
   // ORIGINAL is always uploaded; the annotated copy is uploaded alongside it.
@@ -114,7 +143,10 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     async (reset: boolean, cur: string | null) => {
       const params = new URLSearchParams();
       if (disciplineId !== "ALL") params.set("disciplineId", disciplineId);
-      if (statusFilter !== "all") params.set("value", statusFilter);
+      // "Not graded" is still the engine's unanswered filter — a checkpoint has
+      // no grade for exactly as long as it has no verdict.
+      if (gradeFilter === "ungraded") params.set("value", "unanswered");
+      else if (gradeFilter !== "all") params.set("grade", gradeFilter);
       if (qDebounced) params.set("q", qDebounced);
       if (mineOnly) params.set("mine", "true");
       params.set("limit", String(PAGE));
@@ -136,28 +168,42 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         setLoadingMore(false);
       }
     },
-    [audit.id, disciplineId, statusFilter, qDebounced, mineOnly, toast],
+    [audit.id, disciplineId, gradeFilter, qDebounced, mineOnly, toast],
   );
 
   // Refetch when scope/filter/search changes.
   useEffect(() => {
     fetchPage(true, null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disciplineId, statusFilter, qDebounced, mineOnly]);
+  }, [disciplineId, gradeFilter, qDebounced, mineOnly]);
 
   function patchItem(id: string, fn: (r: Resp) => Resp) {
     setItems((prev) => prev.map((r) => (r.id === id ? fn(r) : r)));
   }
 
-  // Apply a verdict change to the live rollup (keeps navigator + progress live
-  // without a refetch). oldB/newB are rollup bucket keys (or null=unanswered).
-  function applyDelta(catId: string, oldB: Bucket | null, newB: Bucket | null, crit: boolean) {
-    if (oldB === newB) return;
+  // Apply a grading change to the live rollup (keeps navigator + progress +
+  // discipline score live without a refetch). oldB/newB are rollup bucket keys
+  // (or null = not graded); the score deltas are points.
+  function applyDelta(
+    catId: string, oldB: Bucket | null, newB: Bucket | null, crit: boolean,
+    scoreDelta = 0, allottedDelta = 0,
+  ) {
+    if (oldB === newB && !scoreDelta && !allottedDelta) return;
     setRollup((prev) => prev.map((c) => {
       if (c.categoryId !== catId) return c;
       const n = { ...c };
-      if (oldB) { n[oldB] = Math.max(0, n[oldB] - 1); n.answered = Math.max(0, n.answered - 1); if (oldB === "failed" && crit) n.criticalFailed = Math.max(0, n.criticalFailed - 1); }
-      if (newB) { n[newB] = n[newB] + 1; n.answered = n.answered + 1; if (newB === "failed" && crit) n.criticalFailed = n.criticalFailed + 1; }
+      if (oldB !== newB) {
+        if (oldB) { n[oldB] = Math.max(0, n[oldB] - 1); n.answered = Math.max(0, n.answered - 1); if (oldB === "failed" && crit) n.criticalFailed = Math.max(0, n.criticalFailed - 1); }
+        if (newB) { n[newB] = n[newB] + 1; n.answered = n.answered + 1; if (newB === "failed" && crit) n.criticalFailed = n.criticalFailed + 1; }
+      }
+      n.scoreObtained += scoreDelta;
+      n.scoreAllotted += allottedDelta;
+      // Recomputed rather than nudged: the percentage is a ratio of two running
+      // totals, and drifting it independently is how a live number stops
+      // matching the one the server would return.
+      n.scorePct = n.scoreAllotted
+        ? Math.round((n.scoreObtained / n.scoreAllotted) * 1000) / 10
+        : 0;
       return n;
     }));
   }
@@ -184,21 +230,78 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     [audit.id, toast],
   );
 
-  async function setVerdict(item: Resp, v: AuditValue) {
-    const cur = item.auditorResponse?.value ?? null;
-    const next = cur === v ? null : v;
-    const oldB = bucketOf(cur), newB = bucketOf(next);
-    const ok = await saveField(item, { value: next }, (r) => ({ ...r, auditorResponse: { ...(r.auditorResponse ?? { value: null }), value: next } }));
-    if (ok) applyDelta(item.categoryId, oldB, newB, item.criticality === "critical");
+  /**
+   * Column C — the grade, and everything that follows from it.
+   *
+   * Tapping the current grade again clears it, matching the old verdict
+   * buttons. Clearing takes the status, score and risk grade with it: a
+   * checkpoint with a Non Compliance status and no grade is a state the
+   * workbook has no row for, and leaving one behind would quietly keep the
+   * checkpoint in the score denominator.
+   */
+  async function setGrade(item: Resp, g: GradeAwarded) {
+    const cur = item.gradeAwarded ?? null;
+    const next = cur === g ? null : g;
+    const oldB = bucketOfGrade(cur), newB = bucketOfGrade(next);
+
+    // Status is only auto-suggested when the auditor has not already chosen
+    // one — re-grading must never downgrade a Repeated Non Compliance.
+    const status = next === null ? null : (item.complianceStatus ?? suggestStatus(next));
+    const score = suggestScore(next, status);
+    const allotted = next === null || next === "NA" ? null : FULL_SCORE;
+    const risk = requiresRiskGrade(next) ? item.riskGrade : null;
+
+    const ok = await saveField(
+      item,
+      { gradeAwarded: next, complianceStatus: status, riskGrade: risk },
+      (r) => ({
+        ...r, gradeAwarded: next, complianceStatus: status, riskGrade: risk,
+        scoreObtained: score, scoreAllotted: allotted,
+        auditorResponse: { ...(r.auditorResponse ?? { value: null }), value: next ? GRADE_TO_VALUE[next] : null },
+      }),
+    );
+    if (ok) {
+      applyDelta(
+        item.categoryId, oldB, newB, item.criticality === "critical",
+        (score ?? 0) - (item.scoreObtained ?? 0),
+        (allotted ?? 0) - (item.scoreAllotted ?? 0),
+      );
+    }
   }
 
-  // Debounced observation save.
+  /** Column F. Changing to (or away from) a Repeated status re-derives the
+   *  score, which is where the workbook's −1 comes from. */
+  async function setStatus(item: Resp, s: ComplianceStatus) {
+    const next = item.complianceStatus === s ? null : s;
+    const score = suggestScore(item.gradeAwarded ?? null, next);
+    const ok = await saveField(
+      item,
+      { complianceStatus: next },
+      (r) => ({ ...r, complianceStatus: next, scoreObtained: score }),
+    );
+    if (ok) applyDelta(item.categoryId, null, null, false, (score ?? 0) - (item.scoreObtained ?? 0), 0);
+  }
+
+  /** Column H — the auditor's read on the finding. */
+  async function setRiskGrade(item: Resp, rg: RiskGrade) {
+    const next = item.riskGrade === rg ? null : rg;
+    await saveField(item, { riskGrade: next }, (r) => ({ ...r, riskGrade: next }));
+  }
+
+  /** Column E — the override. Sent explicitly so the server keeps it rather
+   *  than re-deriving from the grade ladder. */
+  async function setScore(item: Resp, score: number) {
+    const ok = await saveField(item, { scoreObtained: score }, (r) => ({ ...r, scoreObtained: score }));
+    if (ok) applyDelta(item.categoryId, null, null, false, score - (item.scoreObtained ?? 0), 0);
+  }
+
+  // Debounced audit-findings save (column G).
   const obsTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   function setObservation(item: Resp, text: string) {
     patchItem(item.id, (r) => ({ ...r, auditorResponse: { ...(r.auditorResponse ?? { value: null }), text_observation: text } }));
     const m = obsTimers.current;
     if (m.get(item.id)) clearTimeout(m.get(item.id)!);
-    m.set(item.id, setTimeout(() => saveField(item, { textObservation: text }, (r) => r), 700));
+    m.set(item.id, setTimeout(() => saveField(item, { auditFindings: text }, (r) => r), 700));
   }
 
   // Offer markup first. Images only — a PDF has nothing to draw on, so it
@@ -273,8 +376,23 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     const j = await res.json();
     const moved = j.updated ?? 0;
     const bucket: Bucket = value === "pass" ? "passed" : "na";
-    setRollup((prev) => prev.map((c) => c.categoryId === disciplineId ? { ...c, [bucket]: c[bucket] + moved, answered: c.answered + moved } : c));
-    toast({ variant: "success", title: `Marked ${moved} checkpoint${moved === 1 ? "" : "s"} ${value === "pass" ? "Pass" : "N/A"}`, description: selectedDisc.categoryName });
+    // Bulk-marking grades too: Pass becomes Effective (3 of 3), N/A becomes
+    // N/A (nothing of nothing). The rollup has to move both the counts and the
+    // points or the discipline would read "complete" at 0%.
+    const points = value === "pass" ? moved * FULL_SCORE : 0;
+    setRollup((prev) => prev.map((c) => {
+      if (c.categoryId !== disciplineId) return c;
+      const n = { ...c, [bucket]: c[bucket] + moved, answered: c.answered + moved };
+      n.scoreObtained += points;
+      n.scoreAllotted += points;
+      n.scorePct = n.scoreAllotted ? Math.round((n.scoreObtained / n.scoreAllotted) * 1000) / 10 : 0;
+      return n;
+    }));
+    toast({
+      variant: "success",
+      title: `Marked ${moved} checkpoint${moved === 1 ? "" : "s"} ${value === "pass" ? "Effective" : "N/A"}`,
+      description: selectedDisc.categoryName,
+    });
     fetchPage(true, null);
   }
 
@@ -294,11 +412,12 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     }
   }
 
-  const STATUS_TABS: { key: StatusFilter; label: string }[] = [
-    { key: "all", label: "All" }, { key: "unanswered", label: "Unanswered" },
-    { key: "pass", label: "Pass" }, { key: "partial", label: "Partial" },
-    { key: "fail", label: "Fail" }, { key: "na", label: "N/A" },
-  ];
+  // Live audit score in the header — the workbook's own arithmetic, summed
+  // across disciplines. Shown as points AND percent because a percentage on
+  // its own is not checkable against the sheet the customer already keeps.
+  const scoreObtained = rollup.reduce((s, c) => s + (c.scoreObtained ?? 0), 0);
+  const scoreAllotted = rollup.reduce((s, c) => s + (c.scoreAllotted ?? 0), 0);
+  const scorePct = scoreAllotted ? Math.round((scoreObtained / scoreAllotted) * 1000) / 10 : null;
 
   return (
     <div className="mx-auto max-w-6xl pb-28">
@@ -310,9 +429,20 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
             <div className="truncate text-sm font-semibold text-slate-800">{audit.title}</div>
             <div className="text-[11px] text-slate-400">{audit.auditNumber}</div>
           </div>
-          <div className="text-right">
-            <div className="text-sm font-bold tabular-nums text-violet-700">{pct}%</div>
-            <div className="text-[11px] tabular-nums text-slate-400">{answeredTotal}/{grandTotal}</div>
+          <div className="flex items-center gap-3 text-right">
+            {scorePct !== null && (
+              <div className="border-r border-slate-200 pr-3">
+                <div className={cn("text-sm font-bold tabular-nums",
+                  scorePct >= 90 ? "text-emerald-600" : scorePct >= 80 ? "text-amber-600" : "text-rose-600")}>
+                  {scorePct}%
+                </div>
+                <div className="text-[11px] tabular-nums text-slate-400">{scoreObtained}/{scoreAllotted} pts</div>
+              </div>
+            )}
+            <div>
+              <div className="text-sm font-bold tabular-nums text-violet-700">{pct}%</div>
+              <div className="text-[11px] tabular-nums text-slate-400">{answeredTotal}/{grandTotal}</div>
+            </div>
           </div>
         </div>
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -339,10 +469,10 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
           {/* Toolbar */}
           <div className="mb-3 space-y-2">
             <div className="flex flex-wrap items-center gap-1.5">
-              {STATUS_TABS.map((t) => (
-                <Button key={t.key} type="button" variant="ghost" onClick={() => setStatusFilter(t.key)}
+              {GRADE_TABS.map((t) => (
+                <Button key={t.key} type="button" variant="ghost" onClick={() => setGradeFilter(t.key)}
                   className={cn("h-auto rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
-                    statusFilter === t.key ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
+                    gradeFilter === t.key ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
                   {t.label}
                 </Button>
               ))}
@@ -375,12 +505,22 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
             {disciplineId !== "ALL" && selectedDisc && (
               <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px]">
                 <span className="font-medium text-slate-700">{selectedDisc.categoryName}</span>
-                <span className="text-slate-400">{selectedDisc.answered}/{selectedDisc.total} assessed</span>
+                <span className="text-slate-400">{selectedDisc.answered}/{selectedDisc.total} graded</span>
+                {selectedDisc.scoreAllotted > 0 && (
+                  <span className="tabular-nums text-slate-500">
+                    {selectedDisc.scoreObtained}/{selectedDisc.scoreAllotted} pts · {selectedDisc.scorePct}%
+                  </span>
+                )}
                 {selectedDisc.failed > 0 && <span className="rounded-full bg-rose-100 px-1.5 text-rose-700">{selectedDisc.failed}✕</span>}
+                {selectedDisc.repeatFindings > 0 && (
+                  <span className="rounded-full bg-rose-200 px-1.5 font-medium text-rose-900">
+                    {selectedDisc.repeatFindings} repeat
+                  </span>
+                )}
                 <div className="ml-auto flex items-center gap-1.5">
                   <span className="text-[11px] text-slate-400">Mark remaining:</span>
                   <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!!bulkBusy || selectedDisc.answered >= selectedDisc.total} onClick={() => bulkMark("pass")}>
-                    {bulkBusy === "pass" ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Pass
+                    {bulkBusy === "pass" ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Effective
                   </Button>
                   <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!!bulkBusy || selectedDisc.answered >= selectedDisc.total} onClick={() => bulkMark("na")}>
                     N/A
@@ -400,10 +540,15 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="text-[11px] text-slate-400">{total} checkpoint{total === 1 ? "" : "s"}{statusFilter !== "all" ? ` · ${statusFilter}` : ""}</div>
+              <div className="text-[11px] text-slate-400">
+                {total} checkpoint{total === 1 ? "" : "s"}
+                {gradeFilter !== "all" && ` · ${GRADE_TABS.find((t) => t.key === gradeFilter)?.label ?? gradeFilter}`}
+              </div>
               {items.map((item) => (
                 <CheckpointCard key={item.id} item={item} saving={savingIds.has(item.id)} ownerName={userName(item.assignedOwnerId)}
-                  onVerdict={(v) => setVerdict(item, v)} onObservation={(t) => setObservation(item, t)}
+                  onGrade={(g) => setGrade(item, g)} onStatus={(s) => setStatus(item, s)}
+                  onRiskGrade={(r) => setRiskGrade(item, r)} onScore={(n) => setScore(item, n)}
+                  onObservation={(t) => setObservation(item, t)}
                   onAddPhoto={(f) => addPhoto(item, f)} onRemovePhoto={(i) => removePhoto(item, i)} />
               ))}
               {cursor && (
@@ -433,8 +578,9 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
             <DialogDescription className="sr-only">Review and submit the audit; failed/partial checkpoints route to auditees.</DialogDescription>
           </DialogHeader>
           <p className="text-sm text-slate-600">
-            {answeredTotal === grandTotal ? "All checkpoints answered." : `${grandTotal - answeredTotal} checkpoint(s) are unanswered and will be marked not assessed.`}
-            {" "}Failed and partial checkpoints route to auditees; critical failures auto-spawn CAPA. Fail/partial checkpoints must have an observation — the server will flag any that don&apos;t.
+            {answeredTotal === grandTotal ? "All checkpoints graded." : `${grandTotal - answeredTotal} checkpoint(s) are ungraded and will be marked not assessed.`}
+            {scorePct !== null && <> Score stands at <span className="font-semibold text-slate-800">{scoreObtained}/{scoreAllotted} ({scorePct}%)</span>.</>}
+            {" "}Every checkpoint below Effective routes to its auditee; critical ones auto-spawn CAPA. Each needs audit findings and a risk grade — the server will flag any that don&apos;t.
           </p>
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={() => setShowSubmit(false)}>Cancel</Button>
@@ -509,18 +655,29 @@ function DiscButton({ label, color, active, answered, total, failed, onClick }: 
   );
 }
 
-function CheckpointCard({ item, saving, ownerName, onVerdict, onObservation, onAddPhoto, onRemovePhoto }: {
+function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrade, onScore, onObservation, onAddPhoto, onRemovePhoto }: {
   item: Resp; saving: boolean; ownerName: string | null;
-  onVerdict: (v: AuditValue) => void; onObservation: (t: string) => void;
+  onGrade: (g: GradeAwarded) => void;
+  onStatus: (s: ComplianceStatus) => void;
+  onRiskGrade: (r: RiskGrade) => void;
+  onScore: (n: number) => void;
+  onObservation: (t: string) => void;
   onAddPhoto: (f: File) => void; onRemovePhoto: (i: number) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
-  const cval = item.auditorResponse?.value ?? null;
+  const grade = item.gradeAwarded ?? null;
   const photos = item.auditorResponse?.photos ?? [];
-  const isAdverse = cval === "fail" || cval === "partial";
-  const obsMissing = isAdverse && !(item.auditorResponse?.text_observation ?? "").trim();
+  // "Adverse" = anything below Effective that is not N/A: the grades that
+  // produce a finding, and therefore the ones that owe findings text and a
+  // risk grade before the audit can be submitted.
+  const isAdverse = requiresRiskGrade(grade);
+  const findingsMissing = isAdverse && !(item.auditorResponse?.text_observation ?? "").trim();
+  const riskMissing = isAdverse && !item.riskGrade;
   const needsPhoto = item.requiresPhotoOnFail && isAdverse && photos.length === 0;
+  const reqType = item.requirementType ? REQUIREMENT_TYPE_META[item.requirementType] : null;
+  const scoreOverridden =
+    item.scoreObtained !== null && item.scoreObtained !== suggestScore(grade, item.complianceStatus ?? null);
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; e.target.value = "";
@@ -532,6 +689,12 @@ function CheckpointCard({ item, saving, ownerName, onVerdict, onObservation, onA
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">{item.checkpointCode}</span>
+        {/* Column I — master data, so it is a label and not a control. */}
+        {reqType && (
+          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", reqType.chip)} title={reqType.label}>
+            {reqType.short}
+          </span>
+        )}
         <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", CRITICALITY_CHIP[item.criticality] ?? CRITICALITY_FALLBACK)}>
           {item.criticality === "critical" && <AlertTriangle size={11} />} {item.criticality}
         </span>
@@ -553,35 +716,89 @@ function CheckpointCard({ item, saving, ownerName, onVerdict, onObservation, onA
         {ownerName && <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-slate-500"><UserRound size={11} /> {ownerName}</span>}
       </div>
 
-      {/* Verdict buttons */}
-      <div className="mt-3 grid grid-cols-4 gap-2">
-        {(["pass", "partial", "fail", "na"] as const).map((v) => {
-          const meta = VALUE_META[v]; const on = cval === v;
-          return (
-            <Button key={v} type="button" variant="outline" onClick={() => onVerdict(v)}
-              className={cn("h-auto flex-col gap-1 rounded-xl border-2 py-2.5 text-xs font-semibold",
-                on ? v === "pass" ? "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-50"
-                  : v === "partial" ? "border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-50"
-                    : v === "fail" ? "border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-50"
-                      : "border-slate-400 bg-slate-100 text-slate-600 hover:bg-slate-100"
-                  : "border-slate-200 text-slate-500")}>
-              <span className={cn("flex size-5 items-center justify-center rounded-full text-white", on ? meta.dot : "bg-slate-200")}>
-                {v === "pass" ? <Check size={13} /> : v === "fail" ? <X size={13} /> : v === "partial" ? "~" : "–"}
-              </span>
-              {meta.label}
-            </Button>
-          );
-        })}
+      {/* Column C — Grade Awarded. The one control that drives the rest. */}
+      <div className="mt-3">
+        <label className="mb-1 block text-xs font-medium text-slate-600">Grade Awarded <span className="text-rose-500">*</span></label>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+          {GRADE_ORDER.map((g) => {
+            const meta = GRADE_META[g]; const on = grade === g;
+            return (
+              <Button key={g} type="button" variant="outline" onClick={() => onGrade(g)} title={meta.label}
+                className={cn("h-auto flex-col gap-1 rounded-xl border-2 py-2 text-[11px] font-semibold leading-tight",
+                  on ? meta.ring : "border-slate-200 text-slate-500")}>
+                <span className={cn("flex size-5 items-center justify-center rounded-full text-[11px] font-bold text-white", on ? meta.dot : "bg-slate-200")}>
+                  {meta.score === null ? "–" : meta.score}
+                </span>
+                {meta.short}
+              </Button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Observation (required on fail/partial) */}
+      {/* Columns D–F, H. Only unfold once a grade exists — an ungraded
+          checkpoint has nothing to say about status, score or risk. */}
+      {grade && (
+        <div className="mt-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2">
+          {/* Column F — Status */}
+          <div className="space-y-1">
+            <Label className="text-[11px] font-medium text-slate-600">Status</Label>
+            <Select value={item.complianceStatus ?? ""} onChange={(e) => onStatus(e.target.value as ComplianceStatus)} className="h-8 text-xs">
+              <option value="">— select —</option>
+              {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
+            </Select>
+            {item.complianceStatus && STATUS_META[item.complianceStatus].isRepeat && (
+              <p className="text-[10px] font-medium text-rose-600">Repeat finding — scored −1.</p>
+            )}
+          </div>
+
+          {/* Columns D + E — Score obtained out of allotted */}
+          <div className="space-y-1">
+            <Label className="text-[11px] font-medium text-slate-600">
+              Score {item.scoreAllotted === null ? <span className="text-slate-400">(not scored)</span> : <span className="text-slate-400">out of {item.scoreAllotted}</span>}
+            </Label>
+            {item.scoreAllotted === null ? (
+              <div className="flex h-8 items-center rounded-md border border-slate-200 bg-slate-100 px-2 text-xs text-slate-500">NA</div>
+            ) : (
+              <Select value={String(item.scoreObtained ?? "")} onChange={(e) => onScore(Number(e.target.value))} className="h-8 text-xs">
+                {SCORE_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
+              </Select>
+            )}
+            {scoreOverridden && item.scoreAllotted !== null && (
+              <p className="text-[10px] text-amber-700">Overridden — the grade suggests {suggestScore(grade, item.complianceStatus ?? null)}.</p>
+            )}
+          </div>
+
+          {/* Column H — Risk Grade. Only a finding carries one. */}
+          {isAdverse && (
+            <div className="space-y-1 sm:col-span-2">
+              <Label className="text-[11px] font-medium text-slate-600">Risk Grade <span className="text-rose-500">*</span></Label>
+              <div className="grid grid-cols-3 gap-2">
+                {RISK_ORDER.map((r) => {
+                  const meta = RISK_META[r]; const on = item.riskGrade === r;
+                  return (
+                    <Button key={r} type="button" variant="outline" size="sm" onClick={() => onRiskGrade(r)}
+                      className={cn("h-7 rounded-lg border-2 text-[11px] font-semibold",
+                        on ? meta.ring : riskMissing ? "border-rose-200 text-slate-500" : "border-slate-200 text-slate-500")}>
+                      {meta.label}
+                    </Button>
+                  );
+                })}
+              </div>
+              {riskMissing && <p className="text-[10px] text-rose-600">A risk grade is required before this audit can be submitted.</p>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Column G — Audit Findings (the auditor's comment) */}
       {(isAdverse || (item.auditorResponse?.text_observation ?? "").length > 0) && (
         <div className="mt-3">
-          <label className="mb-1 block text-xs font-medium text-slate-600">Observation {isAdverse && <span className="text-rose-500">*</span>}</label>
+          <label className="mb-1 block text-xs font-medium text-slate-600">Audit Findings {isAdverse && <span className="text-rose-500">*</span>}</label>
           <Textarea defaultValue={item.auditorResponse?.text_observation ?? ""} onChange={(e) => onObservation(e.target.value)} rows={2}
-            placeholder={isAdverse ? "Required for a fail / partial — what did you observe?" : "What did you observe?"}
-            className={cn("min-h-[54px]", obsMissing && "border-rose-300 focus-visible:ring-rose-300")} />
-          {obsMissing && <p className="mt-1 text-[11px] text-rose-600">An observation is required for a {cval} response.</p>}
+            placeholder={isAdverse ? `Required for a ${GRADE_META[grade!].label.toLowerCase()} grade — what did you observe?` : "What did you observe?"}
+            className={cn("min-h-[54px]", findingsMissing && "border-rose-300 focus-visible:ring-rose-300")} />
+          {findingsMissing && <p className="mt-1 text-[11px] text-rose-600">Audit findings are required for a {GRADE_META[grade!].label} grade.</p>}
         </div>
       )}
 
@@ -603,7 +820,7 @@ function CheckpointCard({ item, saving, ownerName, onVerdict, onObservation, onA
           <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className={cn(needsPhoto && "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100")}>
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />} {uploading ? "Uploading…" : "Add photo"}
           </Button>
-          {needsPhoto && <span className="text-[11px] text-rose-600">Evidence photo required for this {cval}</span>}
+          {needsPhoto && <span className="text-[11px] text-rose-600">Evidence photo required for this grade</span>}
         </div>
       </div>
     </div>

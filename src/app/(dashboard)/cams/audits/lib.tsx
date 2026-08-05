@@ -35,6 +35,16 @@ export type CheckpointResponse = {
   responseType: string;
   sequence: number;
   orderIndex: number;
+  // Page Industries grading (checklist columns C–F, H, I). `requirementType` is
+  // master data snapshotted from the library; the rest is what the auditor
+  // captures. `scoreAllotted` is null on an N/A checkpoint — that is what takes
+  // it out of the score denominator.
+  requirementType: RequirementType | null;
+  gradeAwarded: GradeAwarded | null;
+  scoreAllotted: number | null;
+  scoreObtained: number | null;
+  complianceStatus: ComplianceStatus | null;
+  riskGrade: RiskGrade | null;
   requiresPhotoOnFail: boolean;
   autoTriggerCapaOnFail: boolean;
   capaSeverity: string | null;
@@ -120,7 +130,11 @@ export type CategoryScore = {
   partial: number;
   failed: number;
   na: number;
+  /** Σ obtained / Σ allotted for this discipline. Can be negative — a repeat
+   *  non-compliance scores −1 against an allotment of 3. */
   score_pct: number;
+  score_obtained?: number;
+  score_allotted?: number;
 };
 
 export type AuditScore = {
@@ -130,12 +144,20 @@ export type AuditScore = {
   partially_passed: number;
   failed: number;
   not_applicable: number;
+  /** POINTS-based: Σ score obtained / Σ score allotted, NOT a pass-ratio. */
   overall_score_pct: number;
   category_scores: CategoryScore[];
   critical_failures: number;
   major_failures: number;
   minor_failures: number;
   audit_passed: boolean | null;
+  // Page grading rollup — the workbook's own arithmetic, so the percentage can
+  // be checked rather than taken on trust.
+  score_obtained?: number;
+  score_allotted?: number;
+  score_band?: string;
+  repeat_findings?: number;
+  statutory_findings?: number;
 };
 
 /**
@@ -273,6 +295,13 @@ export type DisciplineRollup = {
   criticalFailed: number;
   majorFailed: number;
   minorFailed: number;
+  // Page grading, summed server-side: the discipline's points out of its
+  // allotment, plus the two counts a reviewer looks for first.
+  scoreAllotted: number;
+  scoreObtained: number;
+  scorePct: number;
+  repeatFindings: number;
+  statutoryFindings: number;
 };
 
 // Paginated checkpoint slice (GET /{id}/checkpoints).
@@ -371,13 +400,25 @@ export type AuditTeam = {
 };
 
 // A-07 — Interim / Final reports.
-export type ReportFinding = {
+/** The Page grading columns as they appear on a frozen report row. Optional
+ *  throughout: reports generated before this vocabulary existed are still
+ *  readable, and a snapshot is immutable so they can never be backfilled. */
+export type ReportGrading = {
+  requirementType?: RequirementType | null;
+  gradeAwarded?: GradeAwarded | null;
+  scoreAllotted?: number | null;
+  scoreObtained?: number | null;
+  complianceStatus?: ComplianceStatus | null;
+  riskGrade?: RiskGrade | null;
+};
+export type ReportFinding = ReportGrading & {
   checkpointCode: string; discipline: string; severity: string; assessmentStatus: string;
   workflowState: string; round: number; ownerId: string | null; question: string; observation: string | null;
   standard: string; requirementReference: string; capaNumber: string | null; capaStatus: string | null; isAdHoc: boolean;
+  isRepeat?: boolean;
 };
 export type ReportOpenIteration = { checkpointCode: string; discipline: string; workflowState: string; round: number; ownerId: string | null; unassigned: boolean };
-export type ReportRegisterEntry = {
+export type ReportRegisterEntry = ReportGrading & {
   checkpointCode: string; discipline: string; question: string; severity: string; assessmentStatus: string;
   workflowState: string; standard: string; requirementReference: string; observation: string | null; isAdHoc: boolean;
   ownerId: string | null; capaNumber: string | null; auditorEvidenceIds: string[]; auditeeEvidenceIds: string[];
@@ -638,6 +679,148 @@ export const VALUE_META: Record<string, { label: string; chip: string; dot: stri
   na: { label: "N/A", chip: "bg-slate-100 text-slate-500", dot: "bg-slate-400" },
 };
 
+// ──────────────────────────────────────────────────────────────────────
+// Page Industries grading — the internal-audit checklist's columns C–I.
+//
+// The canonical definition lives in the backend
+// (app/services/page_grading.py, served at /grading-vocabulary). These are the
+// PRESENTATION halves: labels short enough for a button, and the colour each
+// grade carries. Codes must match the server's; the labels are ours to shape.
+// ──────────────────────────────────────────────────────────────────────
+
+export type GradeAwarded =
+  | "EFFECTIVE" | "SOME_IMPROVEMENT_NEEDED" | "MAJOR_IMPROVEMENT_NEEDED"
+  | "UNSATISFACTORY" | "NA";
+
+export type ComplianceStatus =
+  | "COMPLIED" | "NON_COMPLIANCE" | "REPEATED_NON_COMPLIANCE"
+  | "NEW_OBSERVATION" | "REPEATED_OBSERVATION" | "NA" | "MAS_NA";
+
+export type RiskGrade = "HIGH" | "MEDIUM" | "LOW";
+export type RequirementType = "STATUTORY_REGULATORY" | "INTERNAL_REQUIREMENT";
+
+/** Column C. `short` is what fits on a conduct-screen button; `label` is the
+ *  workbook's own wording, used everywhere there is room for it. */
+export const GRADE_META: Record<GradeAwarded, {
+  label: string; short: string; score: number | null;
+  chip: string; dot: string; ring: string;
+}> = {
+  EFFECTIVE: {
+    label: "Effective", short: "Effective", score: 3,
+    chip: "bg-emerald-100 text-emerald-800", dot: "bg-emerald-500",
+    ring: "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-50",
+  },
+  SOME_IMPROVEMENT_NEEDED: {
+    label: "Some Improvement Needed", short: "Some Imp.", score: 2,
+    chip: "bg-amber-100 text-amber-800", dot: "bg-amber-500",
+    ring: "border-amber-500 bg-amber-50 text-amber-800 hover:bg-amber-50",
+  },
+  MAJOR_IMPROVEMENT_NEEDED: {
+    label: "Major Improvement Needed", short: "Major Imp.", score: 1,
+    chip: "bg-orange-100 text-orange-800", dot: "bg-orange-500",
+    ring: "border-orange-500 bg-orange-50 text-orange-800 hover:bg-orange-50",
+  },
+  UNSATISFACTORY: {
+    label: "Unsatisfactory", short: "Unsat.", score: 0,
+    chip: "bg-rose-100 text-rose-700", dot: "bg-rose-500",
+    ring: "border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-50",
+  },
+  NA: {
+    label: "N/A", short: "N/A", score: null,
+    chip: "bg-slate-100 text-slate-500", dot: "bg-slate-400",
+    ring: "border-slate-400 bg-slate-100 text-slate-600 hover:bg-slate-100",
+  },
+};
+
+/** Button order — worst to best, matching the workbook's dropdown. */
+export const GRADE_ORDER: GradeAwarded[] = [
+  "UNSATISFACTORY", "MAJOR_IMPROVEMENT_NEEDED", "SOME_IMPROVEMENT_NEEDED", "EFFECTIVE", "NA",
+];
+
+/** Column F. `isRepeat` is what drives the −1 score; `isNa` takes the
+ *  checkpoint out of the denominator. */
+export const STATUS_META: Record<ComplianceStatus, {
+  label: string; chip: string; isRepeat: boolean; isNa: boolean;
+}> = {
+  COMPLIED: { label: "Complied", chip: "bg-emerald-100 text-emerald-800", isRepeat: false, isNa: false },
+  NON_COMPLIANCE: { label: "Non Compliance", chip: "bg-rose-100 text-rose-700", isRepeat: false, isNa: false },
+  REPEATED_NON_COMPLIANCE: { label: "Repeated Non Compliance", chip: "bg-rose-200 text-rose-900", isRepeat: true, isNa: false },
+  NEW_OBSERVATION: { label: "New Observation", chip: "bg-sky-100 text-sky-800", isRepeat: false, isNa: false },
+  REPEATED_OBSERVATION: { label: "Repeated Observation", chip: "bg-sky-200 text-sky-900", isRepeat: true, isNa: false },
+  NA: { label: "N/A", chip: "bg-slate-100 text-slate-500", isRepeat: false, isNa: true },
+  MAS_NA: { label: "MAS (N/A)", chip: "bg-slate-100 text-slate-500", isRepeat: false, isNa: true },
+};
+
+export const STATUS_ORDER: ComplianceStatus[] = [
+  "COMPLIED", "NON_COMPLIANCE", "REPEATED_NON_COMPLIANCE",
+  "NEW_OBSERVATION", "REPEATED_OBSERVATION", "NA", "MAS_NA",
+];
+
+/** Column H — the auditor's assessment of the finding they raised. */
+export const RISK_META: Record<RiskGrade, { label: string; chip: string; ring: string }> = {
+  HIGH: { label: "High", chip: "bg-rose-100 text-rose-700", ring: "border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-50" },
+  MEDIUM: { label: "Medium", chip: "bg-amber-100 text-amber-800", ring: "border-amber-500 bg-amber-50 text-amber-800 hover:bg-amber-50" },
+  LOW: { label: "Low", chip: "bg-sky-100 text-sky-800", ring: "border-sky-500 bg-sky-50 text-sky-800 hover:bg-sky-50" },
+};
+
+export const RISK_ORDER: RiskGrade[] = ["HIGH", "MEDIUM", "LOW"];
+
+/** Column I — checkpoint master data, shown read-only during conduct. */
+export const REQUIREMENT_TYPE_META: Record<RequirementType, { label: string; short: string; chip: string }> = {
+  STATUTORY_REGULATORY: { label: "Statutory/Regulatory", short: "Statutory", chip: "bg-violet-100 text-violet-800" },
+  INTERNAL_REQUIREMENT: { label: "Internal Requirement", short: "Internal", chip: "bg-slate-100 text-slate-600" },
+};
+
+/** Every scored checkpoint is allotted the same 3 points. */
+export const FULL_SCORE = 3;
+export const SCORE_CHOICES = [3, 2, 1, 0, -1] as const;
+
+export const GRADE_TO_VALUE: Record<GradeAwarded, AuditValue> = {
+  EFFECTIVE: "pass",
+  SOME_IMPROVEMENT_NEEDED: "partial",
+  MAJOR_IMPROVEMENT_NEEDED: "fail",
+  UNSATISFACTORY: "fail",
+  NA: "na",
+};
+
+/** Mirrors page_grading.suggest_score — the ladder, with the repeat penalty on
+ *  top. Duplicated client-side ONLY so the score field can fill in the instant
+ *  a grade is tapped; the server recomputes it and the server's answer wins. */
+export function suggestScore(grade: GradeAwarded | null, status: ComplianceStatus | null): number | null {
+  if (!grade) return null;
+  const base = GRADE_META[grade].score;
+  if (base === null) return null;
+  if (status && STATUS_META[status].isRepeat && base < FULL_SCORE) return -1;
+  return base;
+}
+
+/** Mirrors page_grading.suggest_status. Only ever applied when the auditor has
+ *  not already chosen a status — a Repeated Non Compliance must not be quietly
+ *  downgraded by a re-grade. */
+export function suggestStatus(grade: GradeAwarded | null): ComplianceStatus | null {
+  if (!grade) return null;
+  return ({
+    EFFECTIVE: "COMPLIED", SOME_IMPROVEMENT_NEEDED: "NEW_OBSERVATION",
+    MAJOR_IMPROVEMENT_NEEDED: "NON_COMPLIANCE", UNSATISFACTORY: "NON_COMPLIANCE",
+    NA: "NA",
+  } as Record<GradeAwarded, ComplianceStatus>)[grade];
+}
+
+/** A finding needs a risk grade; an Effective or N/A checkpoint does not. */
+export function requiresRiskGrade(grade: GradeAwarded | null): boolean {
+  return grade === "UNSATISFACTORY" || grade === "MAJOR_IMPROVEMENT_NEEDED"
+    || grade === "SOME_IMPROVEMENT_NEEDED";
+}
+
+/** Score band label, mirroring page_grading.band. */
+export function scoreBandLabel(pct: number | null | undefined): string {
+  if (pct == null) return "—";
+  if (pct >= 90) return "Effective";
+  if (pct >= 80) return "Some Improvement Needed";
+  if (pct >= 50) return "Major Improvement Needed";
+  return "Unsatisfactory";
+}
+
 export function fmtDate(s: string | null | undefined): string {
   if (!s) return "—";
   return new Date(s).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -693,11 +876,8 @@ export function ragText(pct: number | null | undefined): string {
   return "text-rose-600";
 }
 
-export const INDUSTRY_LABEL: Record<string, string> = {
-  GARMENTS_TEXTILE: "Garments / Textile",
-  CEMENT: "Cement",
-  STEEL_METALS: "Steel & Metals",
-  CHEMICAL_PROCESS: "Chemical / Process",
-  MANUFACTURING_GENERIC: "Manufacturing",
-  PHARMA_LIFE_SCIENCES: "Pharma / Life Sciences",
-};
+// INDUSTRY_LABEL was removed with the industry selector. `industryCode` is
+// still on the audit row and still identifies which checkpoint library an audit
+// materialised from — it is simply not something a user chooses or reads any
+// more, so nothing renders it. Do not reintroduce a label map here without
+// first deciding what an industry would mean on a single-checklist instance.

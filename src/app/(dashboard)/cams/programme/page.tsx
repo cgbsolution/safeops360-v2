@@ -20,6 +20,10 @@ type RawLibrary = {
   categories: { category_code: string; category_name: string; checkpointCount: number }[];
 };
 
+/** The one checklist this instance audits against — see the audit scheduler,
+ *  which resolves the same library rather than offering a choice. */
+const PAGE_LIBRARY_CODE = "PAGE_INDUSTRIES";
+
 /**
  * Annual Audit Programme — the register.
  *
@@ -49,7 +53,14 @@ export default async function ProgrammeListPage() {
       f({ libraries: [] as RawLibrary[] }),
     ),
   ]);
-  const libraries: WizardLibrary[] = libs.libraries.map((l) => ({
+  // Narrowed to the Page Industries checklist, the same as the audit
+  // scheduler. The wizard renders a library selector whenever it is handed more
+  // than one, so leaving the older libraries in this list would put the
+  // industry choice back on screen in the one place it is hardest to notice —
+  // and a programme is what an auditor scopes a whole YEAR of audits against.
+  // Falls through to everything only if the Page library is genuinely absent.
+  const pageLibs = libs.libraries.filter((l) => l.industryCode === PAGE_LIBRARY_CODE);
+  const libraries: WizardLibrary[] = (pageLibs.length > 0 ? pageLibs : libs.libraries).map((l) => ({
     industryCode: l.industryCode,
     industryName: l.industryName,
     categories: (l.categories ?? []).map((c) => ({

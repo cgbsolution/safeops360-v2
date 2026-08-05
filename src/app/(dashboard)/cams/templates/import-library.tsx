@@ -10,20 +10,21 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 
-// Bulk-import / replace a per-industry checkpoint library — the source the audit
+// Bulk-import / replace a checkpoint library — the source the audit
 // flow materializes from. Paste the discipline→checkpoint JSON (this is how a
 // ~1500-checkpoint library is authored in one shot).
 const SAMPLE = `{
-  "industryCode": "MY_INDUSTRY",
-  "industryName": "My Industry",
+  "industryCode": "MY_LIBRARY",
+  "industryName": "My Checklist",
   "version": "2026.1",
   "categories": [
     {
-      "category_code": "FIRE-LIFE-SAFETY",
-      "category_name": "Fire & Life Safety",
-      "category_color": "#ef4444",
+      "category_code": "EHS",
+      "category_name": "Environment, Health & Safety",
+      "category_color": "#DC2626",
       "checkpoints": [
-        { "code": "FLS-001", "question": "Are fire exits unobstructed?", "criticality": "critical",
+        { "code": "EHS-001", "question": "Are fire exits unobstructed?", "criticality": "critical",
+          "requirement_type": "STATUTORY_REGULATORY",
           "guidance": "Walk every exit route.", "standard": "NFPA 101", "requires_photo_on_fail": true }
       ]
     }
@@ -72,7 +73,7 @@ export function ImportLibraryButton() {
           <DialogHeader>
             <DialogTitle className="text-base">Import / replace audit checkpoint library</DialogTitle>
             <DialogDescription>
-              Paste the discipline → checkpoint JSON. This is the source the audit flow materializes from — the way a large (≈1500-checkpoint) library is authored. Upserts by industryCode.
+              Paste the discipline → checkpoint JSON. This is the source the audit flow materializes from — the way a large (≈1500-checkpoint) library is authored. Each checkpoint may carry a requirement_type (STATUTORY_REGULATORY | INTERNAL_REQUIREMENT), which the auditor sees read-only. Upserts by industryCode.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2">

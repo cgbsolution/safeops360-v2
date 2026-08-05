@@ -6,7 +6,8 @@ import { ArrowLeft, Printer, Loader2, ChevronDown, FileDown } from "lucide-react
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  AuditReport, ReportRegisterEntry, ReportRegisterPage, REPORT_RESULT_META, WORKFLOW_STATE_META, INTERACTION_LABEL, INDUSTRY_LABEL,
+  AuditReport, ReportRegisterEntry, ReportRegisterPage, REPORT_RESULT_META, WORKFLOW_STATE_META, INTERACTION_LABEL,
+  GRADE_META, STATUS_META, RISK_META, REQUIREMENT_TYPE_META,
   CRITICALITY_CHIP, CRITICALITY_FALLBACK, ragBar, ragText, complianceColor, fmtDate, fmtDateTime, apiErrorMessage,
 } from "../../../lib";
 import { useToast } from "@/components/ui/toast";
@@ -119,7 +120,6 @@ export function ReportView({
             {/* Mirrors report_pdf.py — the on-screen report and the PDF must
                 name the same site, and neither prints the cuid. */}
             <Meta label="Factory / Site" value={s.plantName ?? "Unknown site"} />
-            <Meta label="Industry" value={INDUSTRY_LABEL[s.industryCode] ?? s.industryCode} />
             <Meta label="Audit type" value={s.auditType.replace(/_/g, " ")} />
             <Meta label="Lead auditor" value={name(s.leadAuditorId)} />
             <Meta label="Plant manager" value={name(s.plantManagerId)} />
@@ -202,14 +202,42 @@ export function ReportView({
                 <div key={f.checkpointCode} className="rounded-lg border border-slate-200 p-2.5 text-[12px]">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono text-slate-500">{f.checkpointCode}</span>
+                    {f.requirementType && (
+                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", REQUIREMENT_TYPE_META[f.requirementType].chip)}
+                        title={REQUIREMENT_TYPE_META[f.requirementType].label}>
+                        {REQUIREMENT_TYPE_META[f.requirementType].short}
+                      </span>
+                    )}
                     <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", CRITICALITY_CHIP[f.severity] ?? CRITICALITY_FALLBACK)}>{f.severity}</span>
+                    {/* The grade and the points it cost. Absent on reports
+                        frozen before this vocabulary existed — a snapshot is
+                        immutable, so those rows show what they always showed
+                        rather than a backfilled guess. */}
+                    {f.gradeAwarded && (
+                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", GRADE_META[f.gradeAwarded].chip)}>
+                        {GRADE_META[f.gradeAwarded].label}
+                        {f.scoreAllotted != null && f.scoreObtained != null && (
+                          <span className="ml-1 tabular-nums opacity-70">{f.scoreObtained}/{f.scoreAllotted}</span>
+                        )}
+                      </span>
+                    )}
+                    {f.complianceStatus && (
+                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", STATUS_META[f.complianceStatus].chip)}>
+                        {STATUS_META[f.complianceStatus].label}
+                      </span>
+                    )}
+                    {f.riskGrade && (
+                      <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", RISK_META[f.riskGrade].chip)}>
+                        {RISK_META[f.riskGrade].label} risk
+                      </span>
+                    )}
                     {f.isAdHoc && <span className="rounded bg-violet-100 px-1 text-[10px] font-semibold uppercase text-violet-700">custom</span>}
                     <span className="text-slate-400">{f.discipline}</span>
                     {WORKFLOW_STATE_META[f.workflowState] && <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", WORKFLOW_STATE_META[f.workflowState].chip)}>{WORKFLOW_STATE_META[f.workflowState].label}{f.round > 0 ? ` · R${f.round}` : ""}</span>}
                     {f.capaNumber && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-800">{f.capaNumber}</span>}
                   </div>
                   <div className="mt-1 text-slate-700">{f.question}</div>
-                  {f.observation && <div className="mt-0.5 text-slate-500">Observation: {f.observation}</div>}
+                  {f.observation && <div className="mt-0.5 text-slate-500">Audit findings: {f.observation}</div>}
                   {(f.standard || f.requirementReference) && <div className="mt-0.5 text-[11px] text-slate-400">{[f.requirementReference, f.standard].filter(Boolean).join(" · ")}</div>}
                 </div>
               ))}
@@ -609,7 +637,35 @@ function FinalRegister({ reportId, userMap }: { reportId: string; userMap: Recor
             <div key={e.checkpointCode} className="break-inside-avoid rounded-lg border border-slate-200 p-2.5 text-[12px]">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-slate-500">{e.checkpointCode}</span>
-                <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", e.assessmentStatus === "PASS" ? "bg-emerald-100 text-emerald-800" : e.assessmentStatus === "FAIL" ? "bg-rose-100 text-rose-700" : e.assessmentStatus === "PARTIAL" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500")}>{e.assessmentStatus}</span>
+                {e.requirementType && (
+                  <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", REQUIREMENT_TYPE_META[e.requirementType].chip)}
+                    title={REQUIREMENT_TYPE_META[e.requirementType].label}>
+                    {REQUIREMENT_TYPE_META[e.requirementType].short}
+                  </span>
+                )}
+                {/* Grade + points where the row carries them; the engine's own
+                    verdict where it does not (a report frozen before the
+                    grading vocabulary shipped). */}
+                {e.gradeAwarded ? (
+                  <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", GRADE_META[e.gradeAwarded].chip)}>
+                    {GRADE_META[e.gradeAwarded].label}
+                    {e.scoreAllotted != null && e.scoreObtained != null && (
+                      <span className="ml-1 tabular-nums opacity-70">{e.scoreObtained}/{e.scoreAllotted}</span>
+                    )}
+                  </span>
+                ) : (
+                  <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", e.assessmentStatus === "PASS" ? "bg-emerald-100 text-emerald-800" : e.assessmentStatus === "FAIL" ? "bg-rose-100 text-rose-700" : e.assessmentStatus === "PARTIAL" ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500")}>{e.assessmentStatus}</span>
+                )}
+                {e.complianceStatus && (
+                  <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", STATUS_META[e.complianceStatus].chip)}>
+                    {STATUS_META[e.complianceStatus].label}
+                  </span>
+                )}
+                {e.riskGrade && (
+                  <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", RISK_META[e.riskGrade].chip)}>
+                    {RISK_META[e.riskGrade].label} risk
+                  </span>
+                )}
                 {e.isAdHoc && <span className="rounded bg-violet-100 px-1 text-[10px] font-semibold uppercase text-violet-700">custom</span>}
                 <span className="text-slate-400">{e.discipline}</span>
                 {WORKFLOW_STATE_META[e.workflowState] && <span className="text-[11px] text-slate-400">{WORKFLOW_STATE_META[e.workflowState].label}</span>}

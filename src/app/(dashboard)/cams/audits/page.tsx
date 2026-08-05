@@ -28,7 +28,7 @@ export default async function AuditCompliancePage(props: { searchParams: Promise
       <PageHeader
         title="Audit & Compliance"
         breadcrumbs={[{ label: "Audit & Compliance" }]}
-        description="Industry-specific checklist audits — schedule, conduct on-site across 100+ checkpoints, route findings to auditees, review and close. Critical failures auto-spawn CAPA."
+        description="Internal audits against the Page Industries checklist — schedule, conduct on-site across HR, EHS and Production, grade each checkpoint, route findings to auditees, review and close. Critical failures auto-spawn CAPA."
         action={<PlantSwitcher plants={plants} currentPlantId={plantId} />}
       />
       <AuditRegisterView
