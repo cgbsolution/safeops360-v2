@@ -2,8 +2,15 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Plus, Pencil, X, ChevronDown, ChevronRight } from "lucide-react";
+import { Lock, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight } from "lucide-react";
 import type { Category } from "@/app/(dashboard)/erm/lib";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+
+type SubCategory = Category["subCategories"][number];
 
 type CategoryForm = {
   code: string;
@@ -24,18 +31,19 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
     | { kind: "new-category" }
     | { kind: "edit-category"; category: Category }
     | { kind: "new-sub"; category: Category }
+    | { kind: "edit-sub"; category: Category; sub: SubCategory }
   >(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const sorted = [...categories].sort((a, b) => a.displayOrder - b.displayOrder);
 
-  async function send(path: string, method: "POST" | "PATCH", body: unknown) {
+  async function send(path: string, method: "POST" | "PATCH" | "DELETE", body?: unknown) {
     setBusy(true);
     try {
       const res = await fetch(`/api/erm/${path}`, {
         method,
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(body),
+        body: body === undefined ? undefined : JSON.stringify(body),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -61,6 +69,15 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
     });
   }
 
+  async function toggleSubActive(s: SubCategory) {
+    await send(`sub-categories/${s.id}`, "PATCH", { isActive: !s.isActive });
+  }
+
+  async function deleteSub(s: SubCategory) {
+    if (!confirm(`Delete sub-category "${s.code} — ${s.name}"? This cannot be undone.`)) return;
+    await send(`sub-categories/${s.id}`, "DELETE");
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -68,12 +85,9 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
           {categories.length} categor{categories.length === 1 ? "y" : "ies"} ·{" "}
           {categories.reduce((n, c) => n + c.subCategories.length, 0)} sub-categories
         </span>
-        <button
-          onClick={() => setModal({ kind: "new-category" })}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800"
-        >
+        <Button type="button" onClick={() => setModal({ kind: "new-category" })} className="gap-1.5">
           <Plus size={16} /> New Category
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-2.5">
@@ -120,32 +134,34 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={c.isActive}
                       disabled={busy}
                       onChange={() => toggleActive(c)}
-                      className="h-4 w-4 rounded border-slate-300 text-primary-700 focus:ring-primary-500"
                     />
                     Active
                   </label>
-                  <button
+                  <Button
+                    type="button"
+                    variant="outline"
                     onClick={() => setModal({ kind: "edit-category", category: c })}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-primary-500"
+                    className="h-auto gap-1 px-2.5 py-1.5 text-xs font-medium"
                   >
                     <Pencil size={13} /> Edit
-                  </button>
+                  </Button>
                 </div>
               </div>
 
               <div className="mt-3 border-t border-slate-100 pt-3">
-                <button
+                <Button
+                  type="button"
+                  variant="ghost"
                   onClick={() => setExpanded((p) => ({ ...p, [c.id]: !open }))}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:text-slate-700"
+                  className="h-auto gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 hover:bg-transparent hover:text-slate-700"
                 >
                   {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
                   Sub-categories ({c.subCategories.length})
-                </button>
+                </Button>
                 {open && (
                   <div className="mt-2 space-y-1.5">
                     {c.subCategories.length === 0 ? (
@@ -154,29 +170,72 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
                       c.subCategories.map((s) => (
                         <div
                           key={s.id}
-                          className="flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-1.5"
+                          className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2"
                         >
-                          <span className="rounded bg-white px-1.5 py-0.5 text-[11px] font-mono font-medium text-slate-600 ring-1 ring-slate-200">
-                            {s.code}
-                          </span>
-                          <span className="text-sm text-slate-700">{s.name}</span>
-                          {!s.isActive && (
-                            <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-700">
-                              inactive
+                          <div className="flex items-start gap-2">
+                            <span className="mt-0.5 rounded bg-white px-1.5 py-0.5 text-[11px] font-mono font-medium text-slate-600 ring-1 ring-slate-200">
+                              {s.code}
                             </span>
-                          )}
-                          {s.description && (
-                            <span className="ml-auto truncate text-xs italic text-slate-400">{s.description}</span>
-                          )}
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-medium text-slate-700">{s.name}</span>
+                                {!s.isActive && (
+                                  <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-700">
+                                    inactive
+                                  </span>
+                                )}
+                              </div>
+                              {/* Full definition (no longer truncated) so the detail
+                                  that was defined is fully viewable. */}
+                              {s.description && (
+                                <p className="mt-0.5 text-xs text-slate-500">{s.description}</p>
+                              )}
+                            </div>
+                            <div className="flex shrink-0 items-center gap-1.5">
+                              <label
+                                className="inline-flex cursor-pointer items-center gap-1 text-[11px] text-slate-500"
+                                title="Active"
+                              >
+                                <Checkbox
+                                  checked={s.isActive}
+                                  disabled={busy}
+                                  onChange={() => toggleSubActive(s)}
+                                  className="h-3.5 w-3.5"
+                                />
+                              </label>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setModal({ kind: "edit-sub", category: c, sub: s })}
+                                className="h-auto gap-1 rounded px-2 py-1 text-[11px] font-medium"
+                              >
+                                <Pencil size={12} /> Edit
+                              </Button>
+                              {/* Compact hover-red delete icon (p-1, 13px) inside a dense repeated row —
+                                  the always-on solid `destructive` fill would be visually louder than
+                                  the original subtle hover-only treatment across every sub-category row;
+                                  left raw rather than guess. */}
+                              <button
+                                onClick={() => deleteSub(s)}
+                                disabled={busy}
+                                className="inline-flex items-center rounded border border-slate-200 bg-white p-1 text-slate-400 hover:border-rose-300 hover:text-rose-600"
+                                title="Delete sub-category"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       ))
                     )}
-                    <button
+                    <Button
+                      type="button"
+                      variant="outline"
                       onClick={() => setModal({ kind: "new-sub", category: c })}
-                      className="inline-flex items-center gap-1 rounded-lg border border-dashed border-slate-300 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-primary-500 hover:text-primary-700"
+                      className="h-auto gap-1 rounded-lg border-dashed px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:border-primary-500 hover:text-primary-700"
                     >
                       <Plus size={13} /> Add sub-category
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -217,6 +276,27 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
           onSubmit={(f) => send("sub-categories", "POST", { categoryId: modal.category.id, ...f })}
         />
       )}
+      {modal?.kind === "edit-sub" && (
+        <SubCategoryModal
+          category={modal.category}
+          busy={busy}
+          initial={{
+            code: modal.sub.code,
+            name: modal.sub.name,
+            description: modal.sub.description ?? "",
+            isActive: modal.sub.isActive,
+          }}
+          onClose={() => setModal(null)}
+          // code is immutable — patch name/description/isActive only
+          onSubmit={(f) =>
+            send(`sub-categories/${modal.sub.id}`, "PATCH", {
+              name: f.name,
+              description: f.description,
+              isActive: f.isActive,
+            })
+          }
+        />
+      )}
     </div>
   );
 }
@@ -227,9 +307,16 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
         {children}
       </div>
@@ -268,40 +355,38 @@ function CategoryModal({
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Code (required)">
-            <input
+            <Input
               value={f.code}
               onChange={(e) => setF({ ...f, code: e.target.value.toUpperCase() })}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm font-mono"
+              className="font-mono"
               placeholder="OPS"
             />
           </Field>
           <Field label="Display order">
-            <input
+            <Input
               type="number"
               value={f.displayOrder}
               onChange={(e) => setF({ ...f, displayOrder: Number(e.target.value) })}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
             />
           </Field>
         </div>
         <Field label="Name (required)">
-          <input
+          <Input
             value={f.name}
             onChange={(e) => setF({ ...f, name: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
             placeholder="Operational"
           />
         </Field>
         <Field label="Description">
-          <textarea
+          <Textarea
             value={f.description}
             onChange={(e) => setF({ ...f, description: e.target.value })}
             rows={2}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
         </Field>
         <div className="flex items-end gap-4">
           <Field label="Colour">
+            {/* type=color has no Input equivalent — native swatch control, left raw */}
             <input
               type="color"
               value={f.colorHex}
@@ -311,22 +396,21 @@ function CategoryModal({
           </Field>
           <span className="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-600">{f.colorHex}</span>
           <label className="ml-auto inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-            <input
-              type="checkbox"
+            <Checkbox
               checked={f.isActive}
               onChange={(e) => setF({ ...f, isActive: e.target.checked })}
-              className="h-4 w-4 rounded border-slate-300 text-primary-700 focus:ring-primary-500"
             />
             Active
           </label>
         </div>
-        <button
+        <Button
+          type="button"
           disabled={busy || !valid}
           onClick={() => onSubmit(f)}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
           {busy ? "Saving…" : "Save category"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );
@@ -334,60 +418,61 @@ function CategoryModal({
 
 function SubCategoryModal({
   category,
+  initial,
   busy,
   onClose,
   onSubmit,
 }: {
   category: Category;
+  initial?: SubForm;
   busy: boolean;
   onClose: () => void;
   onSubmit: (f: SubForm) => void;
 }) {
-  const [f, setF] = useState<SubForm>({ code: "", name: "", description: "", isActive: true });
+  const isEdit = !!initial;
+  const [f, setF] = useState<SubForm>(initial ?? { code: "", name: "", description: "", isActive: true });
   const valid = f.code.trim() && f.name.trim();
   return (
-    <Modal title={`Add sub-category to ${category.code}`} onClose={onClose}>
+    <Modal title={isEdit ? `Edit ${f.code}` : `Add sub-category to ${category.code}`} onClose={onClose}>
       <div className="space-y-3">
-        <Field label="Code (required)">
-          <input
+        <Field label={isEdit ? "Code (not editable — referenced by rollup rules)" : "Code (required)"}>
+          <Input
             value={f.code}
             onChange={(e) => setF({ ...f, code: e.target.value.toUpperCase() })}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm font-mono"
+            disabled={isEdit}
+            className={cn("font-mono", isEdit && "cursor-not-allowed bg-slate-100 text-slate-500")}
             placeholder="OPS-HSE"
           />
         </Field>
         <Field label="Name (required)">
-          <input
+          <Input
             value={f.name}
             onChange={(e) => setF({ ...f, name: e.target.value })}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
             placeholder="Health, Safety & Environment"
           />
         </Field>
         <Field label="Description">
-          <textarea
+          <Textarea
             value={f.description}
             onChange={(e) => setF({ ...f, description: e.target.value })}
             rows={2}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
           />
         </Field>
         <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
-          <input
-            type="checkbox"
+          <Checkbox
             checked={f.isActive}
             onChange={(e) => setF({ ...f, isActive: e.target.checked })}
-            className="h-4 w-4 rounded border-slate-300 text-primary-700 focus:ring-primary-500"
           />
           Active
         </label>
-        <button
+        <Button
+          type="button"
           disabled={busy || !valid}
           onClick={() => onSubmit(f)}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+          className="w-full"
         >
-          {busy ? "Saving…" : "Add sub-category"}
-        </button>
+          {busy ? "Saving…" : isEdit ? "Save changes" : "Add sub-category"}
+        </Button>
       </div>
     </Modal>
   );

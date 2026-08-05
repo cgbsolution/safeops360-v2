@@ -28,7 +28,14 @@ export const STATUS_LABEL: Record<string, string> = {
   closed_rejected: "Rejected",
   withdrawn: "Withdrawn",
   expired: "Expired",
-  rolled_back: "Rolled back"
+  rolled_back: "Rolled back",
+  // Legacy short-form statuses from earlier seeds — kept so pre-canonical rows
+  // still render proper-case chips (the raw-enum bug) without a re-seed.
+  impact_assessment_complete: "Impact assessment",
+  approved: "Approved",
+  executing: "Implementing",
+  verifying: "Pending verification",
+  closed: "Closed — successful"
 };
 
 export const STATUS_CHIP: Record<string, string> = {
@@ -48,7 +55,13 @@ export const STATUS_CHIP: Record<string, string> = {
   closed_rejected: "bg-rose-100 text-rose-800 border-rose-200",
   withdrawn: "bg-slate-200 text-slate-600 border-slate-300",
   expired: "bg-rose-100 text-rose-800 border-rose-200",
-  rolled_back: "bg-orange-100 text-orange-800 border-orange-200"
+  rolled_back: "bg-orange-100 text-orange-800 border-orange-200",
+  // Legacy short-form statuses (see STATUS_LABEL).
+  impact_assessment_complete: "bg-indigo-100 text-indigo-800 border-indigo-200",
+  approved: "bg-teal-100 text-teal-800 border-teal-200",
+  executing: "bg-violet-100 text-violet-800 border-violet-200",
+  verifying: "bg-cyan-100 text-cyan-800 border-cyan-200",
+  closed: "bg-emerald-100 text-emerald-800 border-emerald-200"
 };
 
 export const CATEGORIES = [
@@ -117,4 +130,79 @@ export const DEP_STATUS_CHIP: Record<string, string> = {
   in_progress: "bg-amber-100 text-amber-800 border-amber-200",
   completed: "bg-emerald-100 text-emerald-800 border-emerald-200",
   not_applicable_confirmed: "bg-slate-100 text-slate-500 border-slate-200"
+};
+
+// ── Gensuite-parity 5-step wizard constants ──────────────────────────
+
+export const URGENCIES = ["standard", "emergency"] as const;
+export const URGENCY_LABEL: Record<string, string> = {
+  standard: "Standard",
+  emergency: "Emergency — fast-track"
+};
+
+// Hazard categories for the Step-2 checklist.
+export const HAZARD_CATEGORIES = [
+  "fire_explosion",
+  "chemical_exposure",
+  "mechanical",
+  "electrical",
+  "ergonomic",
+  "environmental_release",
+  "other"
+] as const;
+export const HAZARD_LABEL: Record<string, string> = {
+  fire_explosion: "Fire / Explosion",
+  chemical_exposure: "Chemical Exposure",
+  mechanical: "Mechanical",
+  electrical: "Electrical",
+  ergonomic: "Ergonomic",
+  environmental_release: "Environmental Release",
+  other: "Other"
+};
+
+// The six departments in the Step-3 impact checklist. Each, if Affected, drives
+// a required reviewer in Step-4 routing.
+export const IMPACT_DEPARTMENTS = [
+  "safety",
+  "engineering",
+  "operations",
+  "quality",
+  "environmental",
+  "maintenance"
+] as const;
+export const IMPACT_DEPT_LABEL: Record<string, string> = {
+  safety: "Safety",
+  engineering: "Engineering",
+  operations: "Operations",
+  quality: "Quality",
+  environmental: "Environmental",
+  maintenance: "Maintenance"
+};
+
+// Risk-matrix band chips (Combined Risk Register convention: low 1-4 /
+// moderate 5-9 / high 10-15 / critical 16-25). MOC stores lowercase bands.
+export function bandForScore(score: number | null | undefined): string | null {
+  if (score == null) return null;
+  if (score <= 4) return "low";
+  if (score <= 9) return "moderate";
+  if (score <= 15) return "high";
+  return "critical";
+}
+
+export const ATTACHMENT_CATEGORIES: { value: string; label: string }[] = [
+  { value: "drawing", label: "Drawing" },
+  { value: "pid", label: "P&ID" },
+  { value: "vendor_spec", label: "Vendor spec" },
+  { value: "risk_assessment", label: "Risk assessment" },
+  { value: "other", label: "Other" }
+];
+
+// PSSR checklist verdicts (reused pass/fail pattern).
+export const PSSR_VERDICTS = ["pass", "fail", "partial", "na"] as const;
+export const PSSR_OUTCOMES = ["go", "conditional_go", "no_go", "deferred"] as const;
+export const PSSR_OUTCOME_LABEL: Record<string, string> = {
+  go: "Go",
+  conditional_go: "Conditional go",
+  no_go: "No-go",
+  deferred: "Deferred"
 };

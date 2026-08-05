@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { AttachmentCountBadge } from "@/components/evidence/AttachmentCountBadge";
 import { requirePermission } from "@/lib/auth/server";
 import {
   SEVERITY_CHIP, FINDING_STATUS_CHIP, fmtDate, labelize,
@@ -29,9 +30,26 @@ export default async function FindingsRegisterPage(props: {
   let data: FindingListResponse = { items: [], total: 0, severityCounts: {}, statusCounts: {}, repeatCount: 0 };
   let error: string | null = null;
   try {
-    data = await backendFetch<FindingListResponse>("/api/cams/findings", { query });
+    data = await backendFetch<FindingListResponse>("/api/cams/unified-findings", { query });
   } catch (e: any) {
     error = e?.message ?? "Failed to load findings";
+  }
+
+  // Per-finding evidence counts for the row paperclip badge (spec §5.2).
+  // Tolerant: non-fatal if the evidence endpoint is unavailable. Only native
+  // CAMS findings resolve as `cams_finding`; merged audit rows simply return 0.
+  let attachmentCounts: Record<string, number> = {};
+  if (data.items.length) {
+    try {
+      const ids = data.items.map((f) => f.id).join(",");
+      const cres = await backendFetch<{ counts: Record<string, number> }>(
+        "/api/evidence/cams_finding/counts",
+        { query: { ids } }
+      );
+      attachmentCounts = cres.counts ?? {};
+    } catch {
+      /* non-fatal — badges just won't render */
+    }
   }
 
   const spStr: Record<string, string> = {};
@@ -107,11 +125,17 @@ export default async function FindingsRegisterPage(props: {
                   data.items.map((f) => (
                     <tr key={f.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
                       <td className="px-3 py-2.5">
-                        <Link href={`/cams/findings/${f.id}`} className="font-medium text-primary-700 hover:underline">{f.findingCode}</Link>
+                        <Link href={f.href ?? `/cams/findings/${f.id}`} className="font-medium text-primary-700 hover:underline">{f.findingCode}</Link>
                         {f.isRepeatFinding && <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">repeat</span>}
+                        {f.href?.startsWith("/cams/audits") && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] font-semibold text-violet-700">audit</span>}
                       </td>
-                      <td className="max-w-[260px] px-3 py-2.5 text-slate-700">{f.title}</td>
-                      <td className="px-3 py-2.5 text-xs"><Link href={`/cams/engagements/${f.engagementId}`} className="text-primary-700 hover:underline">{f.engagementCode}</Link></td>
+                      <td className="max-w-[260px] px-3 py-2.5 text-slate-700">
+                        <span className="flex items-center gap-1.5">
+                          <span className="truncate">{f.title}</span>
+                          <AttachmentCountBadge count={attachmentCounts[f.id] ?? 0} />
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs"><Link href={f.href ?? `/cams/engagements/${f.engagementId}`} className="text-primary-700 hover:underline">{f.engagementCode}</Link></td>
                       <td className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (SEVERITY_CHIP[f.severity] ?? "")}>{labelize(f.severity)}</span></td>
                       <td className="px-3 py-2.5 text-xs text-slate-600">{f.standardClauseRef ?? "—"}</td>
                       <td className="px-3 py-2.5 text-xs text-slate-600">{f.siteName ?? "—"}</td>

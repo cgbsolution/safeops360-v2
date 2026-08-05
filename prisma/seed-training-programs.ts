@@ -1,5 +1,5 @@
 // ────────────────────────────────────────────────────────────────────────
-// Seeds 25+ realistic garment-factory training programs.
+// Seeds 25+ realistic cement-plant training programs.
 // Idempotent: re-running upserts on programCode.
 //
 // Coverage:
@@ -189,7 +189,7 @@ const PROGRAMS: ProgramSeed[] = [
     refresherProgramCode: "PTW_HOT_WORK_HOLDER",
     language: ["English", "Hindi"],
     learningObjectives: [
-      "Identify hot-work hazards in garment unit operations",
+      "Identify hot-work hazards in cement plant operations",
       "Establish a hot-work area: cleaning, screens, fire watch",
       "Verify the area is gas-free before starting hot work",
       "Respond to a hot-work incident within the first 60 seconds"
@@ -199,7 +199,7 @@ const PROGRAMS: ProgramSeed[] = [
     programCode: "PTW_CONFINED_SPACE_HOLDER",
     programName: "Confined Space Entry",
     description:
-      "Required for any worker entering a confined space (soft-flow dye machines, dye vessels, ETP tanks, boiler drums, storage tanks). Covers atmospheric testing, ventilation, rescue planning, and entry/exit logging.",
+      "Required for any worker entering a confined space (silos, kilns, ducts, vessels). Covers atmospheric testing, ventilation, rescue planning, and entry/exit logging.",
     category: "TECHNICAL",
     type: "CERTIFICATION",
     isMandatoryForPermitTypes: ["CONFINED_SPACE"],
@@ -370,7 +370,7 @@ const PROGRAMS: ProgramSeed[] = [
     programCode: "PROCESS_EQUIPMENT_SAFETY",
     programName: "Process Equipment Safety — Operators",
     description:
-      "Specialized safety training for process equipment operators covering hazardous energy, pressure systems, hot stenter / fusing surfaces, steam-press and ironing burn hazards, emergency shutdown procedures, and safe start-up / shutdown sequences.",
+      "Specialized safety training for process equipment operators covering hazardous energy, pressure systems, hot surfaces, thermal runaway, emergency shutdown procedures, and safe start-up / shutdown sequences.",
     category: "TECHNICAL",
     type: "BLENDED",
     durationHours: 40,
@@ -419,7 +419,7 @@ const PROGRAMS: ProgramSeed[] = [
     programCode: "INCIDENT_INVESTIGATOR",
     programName: "Incident Investigation & Root Cause Analysis",
     description:
-      "Trains HSE personnel and supervisors in 5-Why, Fishbone, and TapRoot RCA methods. Includes mock investigations from garment unit incidents.",
+      "Trains HSE personnel and supervisors in 5-Why, Fishbone, and TapRoot RCA methods. Includes mock investigations from heavy manufacturing incidents.",
     category: "TECHNICAL",
     type: "CERTIFICATION",
     durationHours: 24,
@@ -502,7 +502,7 @@ const PROGRAMS: ProgramSeed[] = [
     language: ["English", "Hindi"]
   },
 
-  // ── Page Industries cross-industry set (File 7) — generic mandatory programs ──
+  // ── Meridian cross-industry set (File 7) — generic mandatory programs ──
 
   {
     programCode: "INDUCTION-GEN",

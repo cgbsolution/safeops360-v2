@@ -8,6 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, AlertCircle, ShieldAlert, AlertTriangle } from "lucide-react";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
+import { ActionRecordPanel } from "@/components/workflow/action-record";
+import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
+import { markRecordTasksRead } from "@/lib/workflow/read-state";
 import { ApprovalPanel } from "@/components/workflow/approval-panel";
 import { VerificationPanel } from "@/components/workflow/execution-panel";
 import { ResubmitPanel } from "@/components/workflow/resubmit-panel";
@@ -61,6 +64,10 @@ export default async function InspectionDetailPage(props: { params: Promise<{ id
   });
   if (!i) return notFound();
 
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksRead({ module: "INSPECTION", recordId: i.id, userId });
+
   // Self-heal: if this inspection's executor task was left PENDING by an
   // older code path (the items endpoint used to skip the workflow advance),
   // close it now so the UI doesn't keep showing it as awaiting action.
@@ -74,12 +81,15 @@ export default async function InspectionDetailPage(props: { params: Promise<{ id
     where: { module_recordId: { module: "INSPECTION", recordId: i.id } },
     include: {
       definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: true }, orderBy: { performedAt: "asc" } },
-      pendingTasks: { include: { assignedTo: true } }
+      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
+      pendingTasks: { include: { assignedTo: { include: PARTY_INCLUDE } } }
     }
   });
 
-  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && t.status === "PENDING");
+  // Include OVERDUE/ESCALATED so an assignee can still act once a task
+  // slips past its due date (mirrors the near-miss page).
+  const OPEN_TASK_STATUSES = ["PENDING", "OVERDUE", "ESCALATED"];
+  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && OPEN_TASK_STATUSES.includes(t.status));
   const isInitiator = !!instance && instance.initiatedById === userId;
   const showResubmit = !!instance && instance.status === "REJECTED" && isInitiator;
   const lastRejection = instance?.history
@@ -145,7 +155,7 @@ export default async function InspectionDetailPage(props: { params: Promise<{ id
               action: h.action,
               performedAt: h.performedAt,
               comments: h.comments,
-              performedBy: { name: h.performedBy.name, designation: h.performedBy.designation }
+              performedBy: toParty(h.performedBy)
             }))}
             pendingTasks={instance.pendingTasks.map((t) => ({
               id: t.id,
@@ -153,7 +163,7 @@ export default async function InspectionDetailPage(props: { params: Promise<{ id
               stepName: t.stepName,
               status: t.status,
               dueAt: t.dueAt,
-              assignedTo: { name: t.assignedTo.name, designation: t.assignedTo.designation, department: t.assignedTo.department }
+              assignedTo: toParty(t.assignedTo)
             }))}
             currentStepId={instance.currentStepId}
             status={instance.status}
@@ -170,6 +180,24 @@ export default async function InspectionDetailPage(props: { params: Promise<{ id
               rejectionReason={lastRejection?.comments ?? null}
               rejectedBy={lastRejection?.performedBy?.name ?? null}
               rejectedAt={lastRejection?.performedAt ?? null}
+            />
+          )}
+
+          {/* The narrative each actor wrote when completing their step. Was
+              only reachable by expanding the Audit Trail. */}
+          {instance && (
+            <ActionRecordPanel
+              history={instance.history.map((h) => ({
+                id: h.id,
+                stepId: h.stepId,
+                stepName: h.stepName,
+                action: h.action,
+                performedAt: h.performedAt,
+                comments: h.comments,
+                attachments: h.attachments,
+                performedBy: toParty(h.performedBy)
+              }))}
+              steps={instance.definition.steps.map((s) => ({ id: s.id, stepType: s.stepType }))}
             />
           )}
 

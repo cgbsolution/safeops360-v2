@@ -4,6 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, X, Users, PhoneCall, CheckCircle2 } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import type { TeamRole, CallTree } from "@/app/(dashboard)/erm/lib-p3";
 
@@ -36,12 +41,9 @@ export function AdminView({ roster, callTrees, plants }: { roster: TeamRole[]; c
           <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
             <Users size={18} className="text-slate-400" /> Crisis roster
           </h2>
-          <button
-            onClick={() => setAddRole(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800"
-          >
+          <Button type="button" onClick={() => setAddRole(true)} className="gap-1.5">
             <Plus size={16} /> Add role
-          </button>
+          </Button>
         </div>
 
         {roster.length === 0 ? (
@@ -53,37 +55,35 @@ export function AdminView({ roster, callTrees, plants }: { roster: TeamRole[]; c
             {groupEntries.map(([key, g]) => (
               <div key={key} className="rounded-xl border border-slate-200 bg-white">
                 <div className="border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">{g.siteName}</div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                        <th className="px-4 py-2">Esc.</th>
-                        <th className="px-4 py-2">Role</th>
-                        <th className="px-4 py-2">Primary</th>
-                        <th className="px-4 py-2">Alternate</th>
-                        <th className="px-4 py-2">Responsibilities</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {g.roles.map((r) => (
-                        <tr key={r.id} className="border-t border-slate-100">
-                          <td className="px-4 py-2 tabular-nums text-xs text-slate-500">{r.escalationOrder}</td>
-                          <td className="px-4 py-2 font-medium text-slate-800">
-                            {r.roleName}
-                            {r.vacancy && (
-                              <span className="ml-2 rounded border border-rose-300 bg-rose-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-rose-900">
-                                Vacancy
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2 text-slate-700">{r.primaryUserName ?? <span className="text-rose-600">— unassigned</span>}</td>
-                          <td className="px-4 py-2 text-slate-700">{r.alternateUserName ?? <span className="text-rose-600">— unassigned</span>}</td>
-                          <td className="max-w-[320px] px-4 py-2 text-xs text-slate-500">{r.responsibilities || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                      <TableHead>Esc.</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Primary</TableHead>
+                      <TableHead>Alternate</TableHead>
+                      <TableHead>Responsibilities</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {g.roles.map((r) => (
+                      <TableRow key={r.id}>
+                        <TableCell className="tabular-nums text-xs text-slate-500">{r.escalationOrder}</TableCell>
+                        <TableCell className="font-medium text-slate-800">
+                          {r.roleName}
+                          {r.vacancy && (
+                            <span className="ml-2 rounded border border-rose-300 bg-rose-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-rose-900">
+                              Vacancy
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>{r.primaryUserName ?? <span className="text-rose-600">— unassigned</span>}</TableCell>
+                        <TableCell>{r.alternateUserName ?? <span className="text-rose-600">— unassigned</span>}</TableCell>
+                        <TableCell className="max-w-[320px] text-xs text-slate-500">{r.responsibilities || "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
             ))}
           </div>
@@ -96,12 +96,9 @@ export function AdminView({ roster, callTrees, plants }: { roster: TeamRole[]; c
           <h2 className="flex items-center gap-2 text-base font-semibold text-slate-900">
             <PhoneCall size={18} className="text-slate-400" /> Call trees
           </h2>
-          <button
-            onClick={() => setNewTree(true)}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800"
-          >
+          <Button type="button" onClick={() => setNewTree(true)} className="gap-1.5">
             <Plus size={16} /> New call tree
-          </button>
+          </Button>
         </div>
 
         {callTrees.length === 0 ? (
@@ -164,13 +161,15 @@ function CallTreeCard({ tree, plants }: { tree: CallTree; plants: Plant[] }) {
         <p className="mt-2 text-xs text-amber-700">{tree.staleContacts} stale contact(s) — verify before relying on this tree.</p>
       )}
       {err && <p className="mt-2 text-xs text-rose-600">{err}</p>}
-      <button
+      <Button
+        type="button"
+        variant="outline"
         onClick={publish}
         disabled={busy}
-        className="mt-3 w-full rounded-lg border border-slate-300 bg-white py-2 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-50"
+        className="mt-3 w-full text-slate-700 hover:border-primary-500"
       >
         {busy ? "Publishing…" : tree.publishedAt ? "Re-publish" : "Publish"}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -182,7 +181,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         {children}
       </div>
@@ -192,12 +191,12 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 function SiteSelect({ value, onChange, plants }: { value: string; onChange: (v: string) => void; plants: Plant[] }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
+    <Select value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">Corporate (no single site)</option>
       {plants.map((p) => (
         <option key={p.id} value={p.id}>{p.name}</option>
       ))}
-    </select>
+    </Select>
   );
 }
 
@@ -245,7 +244,7 @@ function AddRoleModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Role name</label>
-          <input value={roleName} onChange={(e) => setRoleName(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. Site Incident Controller" />
+          <Input value={roleName} onChange={(e) => setRoleName(e.target.value)} placeholder="e.g. Site Incident Controller" />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Site</label>
@@ -262,17 +261,17 @@ function AddRoleModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-1">
             <label className="mb-1 block text-xs font-medium text-slate-600">Escalation order</label>
-            <input type="number" min={0} value={escalationOrder} onChange={(e) => setEscalationOrder(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+            <Input type="number" min={0} value={escalationOrder} onChange={(e) => setEscalationOrder(e.target.value)} />
           </div>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Responsibilities</label>
-          <textarea value={responsibilities} onChange={(e) => setResponsibilities(e.target.value)} rows={2} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="What this role owns during a crisis…" />
+          <Textarea value={responsibilities} onChange={(e) => setResponsibilities(e.target.value)} rows={2} placeholder="What this role owns during a crisis…" />
         </div>
         {err && <p className="text-xs text-rose-600">{err}</p>}
-        <button disabled={busy || !valid} onClick={submit} className="w-full rounded-lg bg-primary-700 py-2.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+        <Button type="button" disabled={busy || !valid} onClick={submit} className="w-full">
           {busy ? "Saving…" : "Add role"}
-        </button>
+        </Button>
         {!valid && <p className="text-center text-[11px] text-slate-400">Role name, primary and alternate are all required.</p>}
       </div>
     </Modal>
@@ -332,7 +331,7 @@ function NewTreeModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Tree name</label>
-          <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. North Works Tier-1 cascade" />
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. North Works Tier-1 cascade" />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Site</label>
@@ -342,9 +341,9 @@ function NewTreeModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
         <div>
           <div className="mb-1 flex items-center justify-between">
             <label className="text-xs font-medium text-slate-600">Nodes</label>
-            <button onClick={() => setNodes((ns) => [...ns, newNode()])} className="inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline">
+            <Button type="button" variant="ghost" onClick={() => setNodes((ns) => [...ns, newNode()])} className="gap-1 text-xs text-primary-700 hover:underline">
               <Plus size={12} /> Add node
-            </button>
+            </Button>
           </div>
           {nodes.length === 0 ? (
             <p className="rounded-lg border border-dashed border-slate-200 p-3 text-center text-xs text-slate-400">
@@ -356,27 +355,26 @@ function NewTreeModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
                 <div key={n.id} className="rounded-lg border border-slate-200 p-2">
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-slate-500">Node {i + 1}</span>
-                    <button onClick={() => setNodes((ns) => ns.filter((x) => x.id !== n.id))} className="text-slate-400 hover:text-rose-600">
+                    <Button type="button" variant="ghost" size="icon" onClick={() => setNodes((ns) => ns.filter((x) => x.id !== n.id))} className="h-8 w-8 text-slate-400 hover:text-rose-600">
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                   <div className="space-y-1.5">
                     <UserPicker value={n.userId} onChange={(id) => updateNode(n.id, { userId: id })} placeholder="Person (or leave blank and use group)" />
-                    <input value={n.groupName ?? ""} onChange={(e) => updateNode(n.id, { groupName: e.target.value })} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Group name (alternative to person)" />
+                    <Input value={n.groupName ?? ""} onChange={(e) => updateNode(n.id, { groupName: e.target.value })} placeholder="Group name (alternative to person)" />
                     <div className="grid grid-cols-2 gap-1.5">
-                      <input value={n.contactPhone} onChange={(e) => updateNode(n.id, { contactPhone: e.target.value })} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Phone" />
-                      <input value={n.contactEmail} onChange={(e) => updateNode(n.id, { contactEmail: e.target.value })} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Email" />
+                      <Input value={n.contactPhone} onChange={(e) => updateNode(n.id, { contactPhone: e.target.value })} placeholder="Phone" />
+                      <Input value={n.contactEmail} onChange={(e) => updateNode(n.id, { contactEmail: e.target.value })} placeholder="Email" />
                     </div>
-                    <select
+                    <Select
                       value={n.parentNodeId ?? ""}
                       onChange={(e) => updateNode(n.id, { parentNodeId: e.target.value || null })}
-                      className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                     >
                       <option value="">No parent (top of cascade)</option>
                       {nodes.filter((o) => o.id !== n.id).map((o) => (
                         <option key={o.id} value={o.id}>Parent: Node {nodes.findIndex((x) => x.id === o.id) + 1}{o.groupName ? ` (${o.groupName})` : ""}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
                 </div>
               ))}
@@ -385,9 +383,9 @@ function NewTreeModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
         </div>
 
         {err && <p className="text-xs text-rose-600">{err}</p>}
-        <button disabled={busy || !name.trim()} onClick={submit} className="w-full rounded-lg bg-primary-700 py-2.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+        <Button type="button" disabled={busy || !name.trim()} onClick={submit} className="w-full">
           {busy ? "Saving…" : "Create call tree"}
-        </button>
+        </Button>
       </div>
     </Modal>
   );

@@ -6,7 +6,12 @@ export const dynamic = "force-dynamic";
 export async function GET(req: NextRequest) {
   const auth = req.headers.get("authorization");
   const expected = process.env.CRON_SECRET ? `Bearer ${process.env.CRON_SECRET}` : null;
-  if (expected && auth !== expected) {
+  if (!expected) {
+    // Fail closed: without a configured CRON_SECRET this endpoint would be
+    // world-triggerable. Refuse rather than run the privileged job.
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 });
+  }
+  if (auth !== expected) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const cronUserId = process.env.CRON_USER_ID;

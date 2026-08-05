@@ -1,0 +1,61 @@
+# Next.js frontend image for on-prem delivery.
+# Build context = the frontend repo root (safeops_360). Build with:
+#   docker build -f deploy/Dockerfile.frontend -t safeops360-frontend .
+#
+# Produces a self-contained `standalone` server (next.config.js emits it when
+# DOCKER_BUILD=1). Multi-stage so the final image carries only the runtime.
+# syntax=docker/dockerfile:1.7
+
+# ── deps ──────────────────────────────────────────────────────────────────
+FROM node:20-slim AS deps
+WORKDIR /app
+# OpenSSL is required by Prisma's query engine.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY package.json package-lock.json ./
+RUN npm ci
+
+# ── build ─────────────────────────────────────────────────────────────────
+FROM node:20-slim AS build
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# DOCKER_BUILD switches next.config.js to `output: standalone`.
+ENV DOCKER_BUILD=1
+ENV NEXT_TELEMETRY_DISABLED=1
+# Build-time placeholders so `prisma generate` + `next build` never need a live
+# DB or real secrets (all real values are injected at RUNTIME via env).
+ENV DATABASE_URL="postgresql://placeholder:placeholder@localhost:5432/placeholder"
+ENV NEXTAUTH_SECRET="build-time-placeholder"
+ENV NEXTAUTH_URL="http://localhost:3000"
+# `npm run build` = prisma generate && next build
+RUN npm run build
+
+# ── runner ────────────────────────────────────────────────────────────────
+FROM node:20-slim AS runner
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+
+# Standalone server + static assets + public dir.
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+# Prisma client + engine (legacy Prisma data paths the frontend still uses).
+# Belt-and-suspenders over standalone tracing — copy the generated client.
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
+
+RUN useradd --create-home --uid 1001 nextjs && chown -R nextjs:nextjs /app
+USER nextjs
+
+EXPOSE 3000
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:3000/login || exit 1
+
+CMD ["node", "server.js"]

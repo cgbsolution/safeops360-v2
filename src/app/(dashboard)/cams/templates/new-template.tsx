@@ -3,15 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { ENGAGEMENT_TYPES, STANDARDS, SCORING_MODES, labelize } from "../lib-cams";
 
 export function NewTemplateButton({ ownerId }: { ownerId: string }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800">
+      <Button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5">
         <Plus size={16} /> New Template
-      </button>
+      </Button>
       {open && <NewTemplateModal ownerId={ownerId} onClose={() => setOpen(false)} />}
     </>
   );
@@ -53,26 +58,26 @@ function NewTemplateModal({ ownerId, onClose }: { ownerId: string; onClose: () =
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Template</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-auto w-auto text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         {err && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
         <div className="space-y-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Name (required)</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. Internal HSE System Audit — ISO 45001" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Internal HSE System Audit — ISO 45001" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Applicable engagement types</label>
             <div className="flex flex-wrap gap-2">
               {ENGAGEMENT_TYPES.map((t) => (
-                <button key={t.value} type="button" onClick={() => toggle(types, t.value, setTypes)}
-                  className={"rounded-full border px-2.5 py-1 text-xs " + (types.includes(t.value) ? "border-primary-700 bg-primary-50 text-primary-700" : "border-slate-200 bg-white text-slate-600")}>
+                <Button key={t.value} type="button" variant="ghost" onClick={() => toggle(types, t.value, setTypes)}
+                  className={cn("h-auto rounded-full border px-2.5 py-1 text-xs", types.includes(t.value) ? "border-primary-700 bg-primary-50 text-primary-700" : "border-slate-200 bg-white text-slate-600")}>
                   {t.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -80,28 +85,28 @@ function NewTemplateModal({ ownerId, onClose }: { ownerId: string; onClose: () =
             <label className="mb-1 block text-xs font-medium text-slate-600">Standards assessed</label>
             <div className="flex flex-wrap gap-2">
               {STANDARDS.map((s) => (
-                <button key={s} type="button" onClick={() => toggle(standards, s, setStandards)}
-                  className={"rounded-full border px-2.5 py-1 text-xs " + (standards.includes(s) ? "border-primary-700 bg-primary-50 text-primary-700" : "border-slate-200 bg-white text-slate-600")}>
+                <Button key={s} type="button" variant="ghost" onClick={() => toggle(standards, s, setStandards)}
+                  className={cn("h-auto rounded-full border px-2.5 py-1 text-xs", standards.includes(s) ? "border-primary-700 bg-primary-50 text-primary-700" : "border-slate-200 bg-white text-slate-600")}>
                   {s.replace("_", " ")}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Scoring mode</label>
-              <select value={mode} onChange={(e) => setMode(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
+              <Select value={mode} onChange={(e) => setMode(e.target.value)}>
                 {SCORING_MODES.map((m) => <option key={m} value={m}>{labelize(m)}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Pass threshold %</label>
-              <input type="number" min={0} max={100} value={passThreshold} onChange={(e) => setPassThreshold(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+              <Input type="number" min={0} max={100} value={passThreshold} onChange={(e) => setPassThreshold(e.target.value)} />
             </div>
           </div>
-          <button disabled={busy || !name.trim()} onClick={submit} className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button disabled={busy || !name.trim()} onClick={submit} className="w-full">
             {busy ? "Creating…" : "Create draft & open builder"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

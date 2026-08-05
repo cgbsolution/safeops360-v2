@@ -37,7 +37,9 @@ export default async function InspectionsPage(props: { searchParams: Promise<{ s
         equipment: { select: { name: true, category: true, frequency: true } },
         inspector: { select: { name: true } }
       },
-      orderBy: { scheduledDate: "desc" },
+      // Newest-created first (platform-wide list convention) — a just-raised
+      // inspection must lead, even when scheduled for a past date.
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 100
     }),
     prisma.inspection.groupBy({ by: ["status"], _count: true })

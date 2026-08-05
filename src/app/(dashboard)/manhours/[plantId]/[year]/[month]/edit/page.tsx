@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { can } from "@/lib/auth/permissions";
 import { ManhoursWizard } from "@/components/manhours/wizard";
+import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
 import { periodBounds } from "@/lib/manhours/server";
 import type {
   WizardSubmission,
@@ -136,8 +137,8 @@ export default async function ManhoursWizardPage(props: {
       where: { module_recordId: { module: "MANHOURS", recordId: submissionId } },
       include: {
         definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-        history: { include: { performedBy: true }, orderBy: { performedAt: "asc" } },
-        pendingTasks: { include: { assignedTo: true } }
+        history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
+        pendingTasks: { include: { assignedTo: { include: PARTY_INCLUDE } } }
       }
     }),
     // Capability flags — drive the action panel's render branch.
@@ -198,10 +199,7 @@ export default async function ManhoursWizardPage(props: {
                   action: h.action,
                   performedAt: h.performedAt.toISOString(),
                   comments: h.comments,
-                  performedBy: {
-                    name: h.performedBy.name,
-                    designation: h.performedBy.designation
-                  }
+                  performedBy: toParty(h.performedBy)
                 })),
                 pendingTasks: workflowInstance.pendingTasks.map((t) => ({
                   id: t.id,
@@ -209,11 +207,7 @@ export default async function ManhoursWizardPage(props: {
                   stepName: t.stepName,
                   status: t.status,
                   dueAt: t.dueAt?.toISOString() ?? null,
-                  assignedTo: {
-                    name: t.assignedTo.name,
-                    designation: t.assignedTo.designation,
-                    department: t.assignedTo.department
-                  }
+                  assignedTo: toParty(t.assignedTo)
                 })),
                 currentStepId: workflowInstance.currentStepId,
                 status: workflowInstance.status

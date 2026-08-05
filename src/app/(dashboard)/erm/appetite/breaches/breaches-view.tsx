@@ -4,6 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { X, AlertTriangle, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { BREACH_STATUS_CHIP, type AppetiteBreach } from "@/app/(dashboard)/erm/lib-p2";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 
@@ -171,9 +175,9 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
               {bandLabel(breach.bandType)} · detected {fmtDate(breach.detectedAt)}
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-5 p-5">
@@ -268,19 +272,20 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
 
             <div className="mb-3 grid grid-cols-2 gap-1.5">
               {ACTIONS.map((a) => (
-                <button
+                <Button
                   key={a.action}
                   type="button"
+                  variant="ghost"
                   onClick={() => setAction(a.action)}
-                  className={
-                    "rounded-lg border px-2 py-2 text-xs font-medium " +
-                    (action === a.action
+                  className={cn(
+                    "h-auto rounded-lg border px-2 py-2 text-xs font-medium",
+                    action === a.action
                       ? "border-primary-600 bg-primary-50 text-primary-700"
-                      : "border-slate-200 text-slate-600 hover:border-slate-400")
-                  }
+                      : "border-slate-200 text-slate-600 hover:border-slate-400"
+                  )}
                 >
                   {a.label}
-                </button>
+                </Button>
               ))}
             </div>
 
@@ -289,11 +294,10 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
                 <label className="mb-1 block text-xs font-medium text-slate-600">
                   Committee decision (required)
                 </label>
-                <textarea
+                <Textarea
                   value={committeeDecision}
                   onChange={(e) => setCommitteeDecision(e.target.value)}
                   rows={3}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                   placeholder="Rationale, conditions, owner…"
                 />
               </div>
@@ -302,23 +306,18 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
                   <label className="mb-1 block text-xs font-medium text-slate-600">
                     Review-by date (≤ 90 days)
                   </label>
-                  <input
+                  <Input
                     type="date"
                     value={reviewByDate}
                     min={today}
                     max={maxReviewBy}
                     onChange={(e) => setReviewByDate(e.target.value)}
-                    className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
                   />
                 </div>
               )}
-              <button
-                onClick={submit}
-                disabled={busy}
-                className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-              >
+              <Button onClick={submit} disabled={busy} className="w-full text-sm font-medium text-white disabled:opacity-50">
                 {busy ? "Recording…" : "Record decision"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

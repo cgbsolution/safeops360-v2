@@ -128,7 +128,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
       scheduleNumber: `TRN-SCH-${P}-DEMO-001`,
       programId: pgInduction.id, plantId: plant.id,
       startDate: sch1Date, endDate: hoursAfter(sch1Date, 8),
-      venue: `${P === "NW" ? "North Garment Unit" : "South Garment Unit"} — Training Room 1`,
+      venue: `${P === "NW" ? "North Works" : "South Works"} — Training Room 1`,
       language: "English", trainerId: trainer.id, isExternalTrainer: false,
       maxParticipants: 15, status: "completed",
       publishedAt: daysAgo(65),
@@ -186,7 +186,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
           issuedAt: hoursAfter(sch1Date, 24), issuedById: ldManager.id,
           finalAssessmentScore: score, attendancePercent: 100,
           validFrom: hoursAfter(sch1Date, 24), validTo: daysFromNow(365 - 60),
-          status: "active", isRenewable: true,
+          status: "ACTIVE", isRenewable: true,
         },
       });
     }
@@ -202,7 +202,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
       scheduleNumber: `TRN-SCH-${P}-DEMO-002`,
       programId: pgHotWork.id, plantId: plant.id,
       startDate: sch2Date, endDate: hoursAfter(sch2Date, 16),
-      venue: `${P === "NW" ? "North Garment Unit" : "South Garment Unit"} — Training Room 2 + Workshop Bay`,
+      venue: `${P === "NW" ? "North Works" : "South Works"} — Training Room 2 + Workshop Bay`,
       language: "English", trainerId: trainer.id, isExternalTrainer: false,
       maxParticipants: 10, status: "completed",
       publishedAt: daysAgo(38),
@@ -237,7 +237,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
     }
     await prisma.trainingAssessment.create({ data: { registrationId: reg.id, attemptNumber: 1, startedAt: hoursAfter(sch2Date, 16), submittedAt: hoursAfter(sch2Date, 17.5), durationMinutes: 90, totalScore: score, totalMarks: 100, scorePercent: score, passed, assessedById: trainer.id, remediationRequired: !passed, retakeAllowed: !passed } });
     if (passed) {
-      await prisma.trainingCertificate.create({ data: { certificateNumber: `CERT-${P}-HWPH-${String(i + 1).padStart(3, "0")}-2026`, programId: pgHotWork.id, userId: u.id, registrationId: reg.id, issuedAt: hoursAfter(sch2Date, 24), issuedById: ldManager.id, finalAssessmentScore: score, attendancePercent: 100, validFrom: hoursAfter(sch2Date, 24), validTo: daysFromNow(365 - 30), status: "active", isRenewable: true } });
+      await prisma.trainingCertificate.create({ data: { certificateNumber: `CERT-${P}-HWPH-${String(i + 1).padStart(3, "0")}-2026`, programId: pgHotWork.id, userId: u.id, registrationId: reg.id, issuedAt: hoursAfter(sch2Date, 24), issuedById: ldManager.id, finalAssessmentScore: score, attendancePercent: 100, validFrom: hoursAfter(sch2Date, 24), validTo: daysFromNow(365 - 30), status: "ACTIVE", isRenewable: true } });
     }
   }
   await createTrainingWorkflow({ scheduleId: sch2.id, scheduleNumber: `TRN-SCH-${P}-DEMO-002`, scheduleTitle: pgHotWork.name, scheduleDate: daysAgo(38), status: "COMPLETED", stepsCompleted: 999, actors: { initiator: ldManager.id, checker: hse.id, trainer: trainer.id, ldManager: ldManager.id } });
@@ -251,7 +251,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
       scheduleNumber: `TRN-SCH-${P}-DEMO-003`,
       programId: pgBasicSafety.id, plantId: plant.id,
       startDate: sch3Date, endDate: hoursAfter(sch3Date, 8),
-      venue: `${P === "NW" ? "North Garment Unit" : "South Garment Unit"} — Training Room 1`,
+      venue: `${P === "NW" ? "North Works" : "South Works"} — Training Room 1`,
       language: "English", trainerId: trainer.id, isExternalTrainer: false,
       maxParticipants: 20, status: "scheduled",
       publishedAt: daysAgo(10),
@@ -329,7 +329,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
             personUserId: u.id, competencyId: comp.id,
             assessmentType: "practical" as any,
             scheduledAt: validFrom, conductedAt: validFrom,
-            location: `${P === "NW" ? "North Garment Unit" : "South Garment Unit"} — Training Centre`,
+            location: `${P === "NW" ? "North Works" : "South Works"} — Training Centre`,
             assessorUserId: trainer.id, assessorRole: "Certified Assessor",
             questionsCount: 10, durationMinutes: 45,
             status: "passed" as any,
@@ -350,7 +350,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
               personUserId: u.id, competencyId: comp.id,
               activityDescription: `Supervised practical demonstration of ${comp.name} competency`,
               activityDate: hoursAfter(validFrom, -24),
-              activityLocation: `Knitting Section — ${P === "NW" ? "North Garment Unit" : "South Garment Unit"}`,
+              activityLocation: `Process Area A — ${P === "NW" ? "North Works" : "South Works"}`,
               supervisorUserId: supervisor.id,
               supervisorCompetencyToSupervise: comp.code,
               performanceRating: "competent_independent" as any,
@@ -392,7 +392,7 @@ async function seedPlant(plantCode: "NW" | "SW") {
     data: {
       plantId: plant.id,
       cycleNumber: `RECERT-${P}-DEMO-2026-Q2`,
-      name: `Q2 2026 Competency Revalidation Cycle — ${P === "NW" ? "North Garment Unit" : "South Garment Unit"}`,
+      name: `Q2 2026 Competency Revalidation Cycle — ${P === "NW" ? "North Works" : "South Works"}`,
       status: "IN_PROGRESS" as any,
       scopeCompetencyIds: competencies.map(c => c.id),
       scopeRoleIds: [], scopeDepartmentIds: [], scopePlantIds: [plant.id],

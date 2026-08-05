@@ -119,6 +119,49 @@ async function resolveUserId(opts: BackendFetchOptions): Promise<string> {
   return id;
 }
 
+/**
+ * Turn a FastAPI error body into something a human can act on.
+ *
+ * FastAPI uses `detail` for two very different shapes:
+ *   - HTTPException      → a string ("Consequence is required for each hazard…")
+ *   - RequestValidation  → a LIST of { loc, msg, type } objects
+ *
+ * This used to be `String(data.detail)`, which rendered the list as the literal
+ * text "[object Object]" — the user saw a red banner that told them nothing, and
+ * a missing-required-field bug stayed invisible behind it. Field paths are
+ * flattened and the `body`/`query` prefix dropped, so a validation failure reads
+ * as `studyId: Field required`.
+ */
+export function formatBackendDetail(detail: unknown): string | null {
+  if (detail === undefined || detail === null) return null;
+  if (typeof detail === "string") return detail.trim() || null;
+
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (typeof item === "string") return item;
+        const rec = item as Record<string, unknown>;
+        const loc = Array.isArray(rec?.loc)
+          ? rec.loc.filter((p) => p !== "body" && p !== "query").join(".")
+          : "";
+        const msg = typeof rec?.msg === "string" ? rec.msg : JSON.stringify(item);
+        return loc ? `${loc}: ${msg}` : msg;
+      })
+      .filter(Boolean);
+    return parts.length ? parts.join("; ") : null;
+  }
+
+  if (typeof detail === "object") {
+    const rec = detail as Record<string, unknown>;
+    if (typeof rec.msg === "string") return rec.msg;
+    if (typeof rec.message === "string") return rec.message;
+    if (typeof rec.detail === "string") return rec.detail;
+    return JSON.stringify(detail);
+  }
+
+  return String(detail);
+}
+
 export async function backendFetch<T = unknown>(
   path: string,
   opts: BackendFetchOptions = {}
@@ -158,8 +201,8 @@ export async function backendFetch<T = unknown>(
     try {
       const data = await res.json();
       detail = data;
-      if (data?.detail) message = String(data.detail);
-      else if (data?.error) message = String(data.error);
+      const formatted = formatBackendDetail(data?.detail) ?? formatBackendDetail(data?.error);
+      if (formatted) message = formatted;
     } catch {
       // body wasn't JSON; keep generic message
     }

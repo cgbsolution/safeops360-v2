@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
@@ -51,6 +51,25 @@ export function NewRiskWizard({ categories, matrix }: { categories: Category[]; 
   const [inherent, setInherent] = useState<any | null>(null);
   const [residual, setResidual] = useState<any | null>(null);
   const [wantResidual, setWantResidual] = useState(false);
+
+  // Business unit / department master (canonical list from the backend).
+  const [businessUnits, setBusinessUnits] = useState<string[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/erm/business-units")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows: unknown) => {
+        if (!cancelled && Array.isArray(rows)) {
+          setBusinessUnits(rows.filter((x): x is string => typeof x === "string"));
+        }
+      })
+      .catch(() => {
+        /* non-fatal — the field falls back to whatever is already selected */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const selectedCategory = useMemo(
     () => categories.find((c) => c.id === categoryId) ?? null,
@@ -215,6 +234,7 @@ export function NewRiskWizard({ categories, matrix }: { categories: Category[]; 
             setOrgLevel={setOrgLevel}
             businessUnit={businessUnit}
             setBusinessUnit={setBusinessUnit}
+            businessUnits={businessUnits}
             plantId={plantId}
             setPlantId={setPlantId}
             velocity={velocity}
@@ -311,6 +331,7 @@ function IdentifyStep(props: {
   setOrgLevel: (v: (typeof ORG_LEVELS)[number]) => void;
   businessUnit: string;
   setBusinessUnit: (v: string) => void;
+  businessUnits: string[];
   plantId: string;
   setPlantId: (v: string) => void;
   velocity: string;
@@ -335,6 +356,7 @@ function IdentifyStep(props: {
     setOrgLevel,
     businessUnit,
     setBusinessUnit,
+    businessUnits,
     plantId,
     setPlantId,
     velocity,
@@ -420,12 +442,21 @@ function IdentifyStep(props: {
         </Field>
 
         <Field label="Business unit">
-          <input
+          <select
             value={businessUnit}
             onChange={(e) => setBusinessUnit(e.target.value)}
             className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-            placeholder="Optional — e.g. Petrochemicals"
-          />
+          >
+            <option value="">Select a business unit…</option>
+            {businessUnit && !businessUnits.includes(businessUnit) && (
+              <option value={businessUnit}>{businessUnit}</option>
+            )}
+            {businessUnits.map((bu) => (
+              <option key={bu} value={bu}>
+                {bu}
+              </option>
+            ))}
+          </select>
         </Field>
 
         <Field label="Plant / site id">

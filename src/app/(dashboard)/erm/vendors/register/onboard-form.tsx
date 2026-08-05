@@ -4,6 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   VENDOR_CRITICALITIES,
   VENDOR_TIERS,
@@ -19,12 +24,9 @@ export function OnboardVendorButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800"
-      >
+      <Button onClick={() => setOpen(true)}>
         <Plus size={16} /> Onboard Vendor
-      </button>
+      </Button>
       {open && <OnboardModal onClose={() => setOpen(false)} />}
     </>
   );
@@ -100,39 +102,43 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Onboard Vendor</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Legal name</label>
-            <input
+            <Input
               value={legalName}
               onChange={(e) => setLegalName(e.target.value)}
               placeholder="e.g. Aravali Logistics Pvt Ltd"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
-              <input
+              <Input
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
                 placeholder="e.g. Logistics, Raw Material"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Master data ref</label>
-              <input
+              <Input
                 value={masterDataRef}
                 onChange={(e) => setMasterDataRef(e.target.value)}
                 placeholder="ERP vendor code (optional)"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
             </div>
           </div>
@@ -140,31 +146,29 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Criticality</label>
-              <select
+              <Select
                 value={criticality}
                 onChange={(e) => setCriticality(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               >
                 {VENDOR_CRITICALITIES.map((c) => (
                   <option key={c} value={c}>
                     {c.charAt(0) + c.slice(1).toLowerCase()}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Tier</label>
-              <select
+              <Select
                 value={tier}
                 onChange={(e) => setTier(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               >
                 {VENDOR_TIERS.map((t) => (
                   <option key={t} value={t}>
                     {TIER_LABEL[t] ?? t}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -180,21 +184,18 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Annual spend (₹)</label>
-              <input
+              <Input
                 type="number"
                 value={annualSpend}
                 onChange={(e) => setAnnualSpend(e.target.value)}
                 placeholder="e.g. 25000000"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
             </div>
             <div className="flex items-end pb-1">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={isSingleSource}
                   onChange={(e) => setIsSingleSource(e.target.checked)}
-                  className="rounded border-slate-300"
                 />
                 Single-source vendor
               </label>
@@ -203,34 +204,31 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Site scope (one per line / comma)</label>
-            <textarea
+            <Textarea
               value={siteScopeText}
               onChange={(e) => setSiteScopeText(e.target.value)}
               rows={2}
               placeholder="Site IDs or codes"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Linked risk IDs</label>
-              <textarea
+              <Textarea
                 value={linkedRisksText}
                 onChange={(e) => setLinkedRisksText(e.target.value)}
                 rows={2}
                 placeholder="One per line / comma"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Linked process IDs</label>
-              <textarea
+              <Textarea
                 value={linkedProcessesText}
                 onChange={(e) => setLinkedProcessesText(e.target.value)}
                 rows={2}
                 placeholder="One per line / comma"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               />
             </div>
           </div>
@@ -241,19 +239,12 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={submit}
-            disabled={busy || !valid}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" onClick={submit} disabled={busy || !valid}>
             {busy ? "Onboarding…" : "Onboard"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

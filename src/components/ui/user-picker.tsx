@@ -22,6 +22,14 @@ export type UserPickerFilter = {
   /** Narrow to users who hold this permission code (e.g. "INSPECTION.EXECUTE"). */
   permission?: string;
   excludeSelf?: boolean;
+  /**
+   * When a `role` filter is set but no user at the plant holds that role,
+   * fall back to returning all (otherwise-filtered) users instead of an empty
+   * list. Use for "preferred but not mandatory" pickers like the PTW Issuer,
+   * where the server doesn't actually enforce the role — so an empty picker
+   * would block the user for no reason.
+   */
+  roleFallback?: boolean;
 };
 
 type SingleProps = {
@@ -80,6 +88,7 @@ function buildQuery(filter: UserPickerFilter | undefined, q: string) {
   if (filter?.departmentId) sp.set("departmentId", filter.departmentId);
   if (filter?.permission) sp.set("permission", filter.permission);
   if (filter?.excludeSelf) sp.set("excludeSelf", "true");
+  if (filter?.roleFallback) sp.set("roleFallback", "true");
   if (filter?.role) {
     const roles = Array.isArray(filter.role) ? filter.role : [filter.role];
     roles.forEach((r) => sp.append("role", r));

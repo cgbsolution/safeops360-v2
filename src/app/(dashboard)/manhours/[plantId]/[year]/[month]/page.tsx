@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
+import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
+import { markRecordTasksRead } from "@/lib/workflow/read-state";
 import { ApprovalPanel } from "@/components/workflow/approval-panel";
 import { formatDateTime, formatNumber, humanize } from "@/lib/utils";
 import { Lock, Unlock, Pencil } from "lucide-react";
@@ -69,16 +71,23 @@ export default async function ManhoursDetailPage(
     select: { id: true, status: true }
   });
 
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksRead({ module: "MANHOURS", recordId: record.id, userId });
+
   const instance = await prisma.workflowInstance.findUnique({
     where: { module_recordId: { module: "MANHOURS", recordId: record.id } },
     include: {
       definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: true }, orderBy: { performedAt: "asc" } },
-      pendingTasks: { include: { assignedTo: true } }
+      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
+      pendingTasks: { include: { assignedTo: { include: PARTY_INCLUDE } } }
     }
   });
 
-  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && t.status === "PENDING");
+  // Include OVERDUE/ESCALATED so an assignee can still act once a task
+  // slips past its due date (mirrors the near-miss page).
+  const OPEN_TASK_STATUSES = ["PENDING", "OVERDUE", "ESCALATED"];
+  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && OPEN_TASK_STATUSES.includes(t.status));
 
   // Pull contributing incidents for the period — gives a reconciliation view
   const monthStart = new Date(year, month - 1, 1);
@@ -135,7 +144,7 @@ export default async function ManhoursDetailPage(
               action: h.action,
               performedAt: h.performedAt,
               comments: h.comments,
-              performedBy: { name: h.performedBy.name, designation: h.performedBy.designation }
+              performedBy: toParty(h.performedBy)
             }))}
             pendingTasks={instance.pendingTasks.map((t) => ({
               id: t.id,
@@ -143,7 +152,7 @@ export default async function ManhoursDetailPage(
               stepName: t.stepName,
               status: t.status,
               dueAt: t.dueAt,
-              assignedTo: { name: t.assignedTo.name, designation: t.assignedTo.designation, department: t.assignedTo.department }
+              assignedTo: toParty(t.assignedTo)
             }))}
             currentStepId={instance.currentStepId}
             status={instance.status}

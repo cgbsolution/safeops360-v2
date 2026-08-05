@@ -4,6 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 
 const OBLIGATION_TYPES = [
   "LICENSE",
@@ -27,12 +31,9 @@ export function NewObligationButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800"
-      >
+      <Button onClick={() => setOpen(true)}>
         <Plus size={16} /> New Obligation
-      </button>
+      </Button>
       {open && <NewObligationModal onClose={() => setOpen(false)} />}
     </>
   );
@@ -101,58 +102,55 @@ function NewObligationModal({ onClose }: { onClose: () => void }) {
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Obligation</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700">
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         {err && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
 
         <div className="space-y-3">
           <Field label="Title (required)">
-            <input
+            <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               placeholder="e.g. Factory Licence under Factories Act 1948"
             />
           </Field>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Obligation type">
-              <select value={obligationType} onChange={(e) => setObligationType(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
+              <Select value={obligationType} onChange={(e) => setObligationType(e.target.value)}>
                 {OBLIGATION_TYPES.map((t) => (
                   <option key={t} value={t}>
                     {label(t)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label="Frequency">
-              <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
+              <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
                 {FREQUENCIES.map((f) => (
                   <option key={f} value={f}>
                     {label(f)}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Statute reference">
-              <input
+              <Input
                 value={statuteReference}
                 onChange={(e) => setStatuteReference(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                 placeholder="e.g. Factories Act, 1948 — s.6"
               />
             </Field>
             <Field label="Regulator">
-              <input
+              <Input
                 value={regulatorName}
                 onChange={(e) => setRegulatorName(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                 placeholder="e.g. Chief Inspector of Factories"
               />
             </Field>
@@ -164,48 +162,46 @@ function NewObligationModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Site ID (optional)">
-              <input
+              <Input
                 value={siteId}
                 onChange={(e) => setSiteId(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                 placeholder="Plant / site id"
               />
             </Field>
             <Field label="Valid from">
-              <input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+              <Input type="date" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} />
             </Field>
             <Field label="Valid until">
-              <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+              <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
             </Field>
           </div>
 
           <Field label="Renewal lead days">
-            <input
+            <Input
               type="number"
               min={0}
               value={renewalLeadDays}
               onChange={(e) => setRenewalLeadDays(e.target.value)}
-              className="w-32 rounded-lg border border-slate-300 p-2 text-sm"
+              className="w-32"
             />
           </Field>
 
           <Field label="Conditions (one per line)">
-            <textarea
+            <Textarea
               value={conditionsText}
               onChange={(e) => setConditionsText(e.target.value)}
               rows={3}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               placeholder={"e.g. Maintain effluent within consent limits\nFile quarterly returns by the 30th"}
             />
           </Field>
 
-          <button
+          <Button
             disabled={busy || !title.trim() || !ownerId}
             onClick={submit}
-            className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+            className="w-full"
           >
             {busy ? "Saving…" : "Create obligation"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

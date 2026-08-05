@@ -2,7 +2,7 @@
 // Step 26 — EAI (Environmental Aspect & Impact) Study Data
 //
 // Per plant (NW + SW): 2 EAI studies with 4 entries each + sub-records:
-//   Study 1 (ACTIVE): Dye House & Chemical Dosing — 4 entries
+//   Study 1 (ACTIVE): Chlorination & Chemical Dosing — 4 entries
 //   Study 2 (APPROVED): Boiler / Utilities Operations — 4 entries
 //
 // Each EaiEntry has:
@@ -22,38 +22,47 @@ const TODAY = new Date("2026-06-07T08:00:00.000Z");
 function daysAgo(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() - n); return d; }
 function daysFromNow(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() + n); return d; }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// All ids are resolved dynamically at runtime via Prisma lookups (see main()).
-// Nothing below references a hardcoded cuid — those go stale on every re-seed.
-//
-//  • Plants    → prisma.plant.findFirstOrThrow({ where: { code } })
-//  • Users     → prisma.user.findFirstOrThrow({ where: { role, plantId } })
-//  • Areas     → prisma.area.findFirstOrThrow({ where: { plantId, name: { contains } } })
-//  • Matrix    → EnvironmentalImpactMatrix code "ENV_5X5_STD"
-//  • LH / MAG  → EnvironmentalImpactMatrix(Likelihood|Magnitude) by (matrixId, score)
-//  • Aspects   → EaiAspect by code (AIR_STACK_PM / _SOX / _NOX, AIR_FUGITIVE_DUST, AIR_GHG_CO2)
-//  • Regs      → EaiRegulation by code (EPA_1986, AIR_ACT_1981, WATER_ACT_1974)
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Plant IDs ──
+const NW = "cmq42hc7b000913589h1l7q23";
+const SW = "cmq42hch7000p1358qc91ieav";
 
-// Global EAI master ids — resolved once in main() and shared with seedPlant().
-type Masters = {
-  matrix5x5: string;
-  lhRare: string;
-  lhUnlikely: string;
-  lhPossible: string;
-  lhLikely: string;
-  magMinor: string;
-  magModerate: string;
-  magMajor: string;
-  aspAirPm: string;
-  aspAirSox: string;
-  aspAirNox: string;
-  aspAirDust: string;
-  aspGhgCo2: string;
-  regEpa: string;
-  regAir: string;
-  regWater: string;
-};
+// ── User IDs ──
+const ENV_MGR_NW  = "cmq42hiaa002y1358j8udc4ag";
+const ENV_MGR_NW_IT = "cmq42hfj1001w1358n3qna2ed";
+const HSE_MGR_NW  = "cmq42hhjw002o1358mzpjpr5i";
+const ENV_MGR_SW  = "cmq42ho13005213586wxlt78k";
+const HSE_MGR_SW  = "cmq42hn9y004s13582w1z3yaf";
+
+// ── Area IDs ──
+const AREA_NW_CHEM   = "cmq42hc7d000e1358ylu5ng26"; // Chemical Storage & Handling
+const AREA_NW_UTIL   = "cmq42hc7d000c1358u3rlzqal"; // Utilities Block
+const AREA_NW_PROCESS_A = "cmq42hc7c000a1358pnirw6es";
+const AREA_NW_ETP    = "cmq42hc7d000j1358xlcuvjrj"; // Effluent Treatment Plant
+const AREA_SW_CHEM   = "cmq42hcha000u1358p9sm6hlu";
+const AREA_SW_UTIL   = "cmq42hch9000s1358o3gy5vrk";
+const AREA_SW_PROCESS_A = "cmq42hch9000q13585brqmas1";
+
+// ── EAI Master IDs ──
+const MATRIX_5X5 = "cmpwj9qqg002rl8h30nqck0zf";
+const LH_RARE     = "cmpwj9qxs002tl8h3l1yya2fl"; // score 1
+const LH_UNLIKELY = "cmpwj9r4q002vl8h3kx0tc22w"; // score 2
+const LH_POSSIBLE = "cmpwj9rbu002xl8h3musss1ea"; // score 3
+const LH_LIKELY   = "cmpwj9ris002zl8h3itc54ijr"; // score 4
+const MAG_MINOR    = "cmpwj9s430035l8h3wt82ehzo"; // score 2
+const MAG_MODERATE = "cmpwj9saw0037l8h3qdbvi9rk"; // score 3
+const MAG_MAJOR    = "cmpwj9shw0039l8h33uzxa51k"; // score 4
+const ASP_AIR_PM   = "cmpwj9n7b000yl8h3gk9ux75z";
+const ASP_AIR_SOX  = "cmpwj9nbh0010l8h30ecapwne";
+const ASP_AIR_NOX  = "cmpwj9nf10012l8h3dqf1lxq3";
+const ASP_AIR_DUST = "cmpwj9niv0014l8h3hdha88mo";
+const ASP_GHG_CO2  = "cmpwj9nmf0016l8h3iofckl0v";
+const REC_AIR      = "cmpwj9kn50009l8h3xtnji1qn";
+const REC_WATER    = "cmpwj9kqv000al8h3lrhqlt0q";
+const REC_GW       = "cmpwj9kue000bl8h30wxpy66d";
+const REC_SOIL     = "cmpwj9kxx000cl8h3wnzs3f6j";
+const REG_EPA      = "cmpwj9ljj000il8h3tsiss344";
+const REG_AIR      = "cmpwj9ltb000kl8h3c4lc7vrd";
+const REG_WATER    = "cmpwj9lp3000jl8h3093lia6x";
 
 function impactScore(lh: number, mag: number) { return lh * mag; }
 function impactLevel(score: number): string {
@@ -71,27 +80,8 @@ async function seedPlant(
   areaChem: string,
   areaUtil: string,
   areaProcessA: string,
-  m: Masters,
 ) {
-  const {
-    matrix5x5: MATRIX_5X5,
-    lhRare: LH_RARE,
-    lhUnlikely: LH_UNLIKELY,
-    lhPossible: LH_POSSIBLE,
-    lhLikely: LH_LIKELY,
-    magMinor: MAG_MINOR,
-    magModerate: MAG_MODERATE,
-    magMajor: MAG_MAJOR,
-    aspAirPm: ASP_AIR_PM,
-    aspAirSox: ASP_AIR_SOX,
-    aspAirNox: ASP_AIR_NOX,
-    aspAirDust: ASP_AIR_DUST,
-    aspGhgCo2: ASP_GHG_CO2,
-    regEpa: REG_EPA,
-    regAir: REG_AIR,
-    regWater: REG_WATER,
-  } = m;
-  // Study 1 — Dye-House Chemical Dosing (ACTIVE)
+  // Study 1 — Chlorination & Chemical Dosing (ACTIVE)
   const study1Number = `EAI-2026-${code}-DEMO-001`;
   const study1 = await prisma.eaiStudy.create({
     data: {
@@ -99,9 +89,9 @@ async function seedPlant(
       plantId,
       areaId: areaChem,
       scopeType: "AREA",
-      title: `Dye House & Chemical Dosing — ${code} Environmental Impact Study`,
+      title: `Chlorination & Chemical Dosing — ${code} Environmental Impact Study`,
       description:
-        "Comprehensive environmental aspect and impact register for all dye-house dye/chemical dosing activities including storage, handling, dosing line operations, and emergency response.",
+        "Comprehensive environmental aspect and impact register for all chlorination and chemical dosing activities including storage, handling, dosing line operations, and emergency response.",
       impactMatrixId: MATRIX_5X5,
       teamLeaderId: envMgr,
       status: "ACTIVE",
@@ -143,31 +133,31 @@ async function seedPlant(
   const entries1 = [
     {
       seq: 1,
-      groupLabel: "Dye Store Chemical Handling",
-      activity: "Unloading and storage of dye-bath chemical drums from tanker",
+      groupLabel: "Chlorine Gas Handling",
+      activity: "Unloading and storage of chlorine gas cylinders from tanker",
       areaId: areaChem,
-      subLocation: "Chemical & dye store drum cage, unloading bay",
+      subLocation: "Cylinder cage, unloading bay",
       occurrence: "ABNORMAL",
       frequency: "WEEKLY",
       duration: 120,
-      initLhId: LH_UNLIKELY, initLhScore: 2, initLhRationale: "Drum integrity controlled by supplier; double-bund protection",
-      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Chemical vapour release could cause significant air quality impact and community risk",
+      initLhId: LH_UNLIKELY, initLhScore: 2, initLhRationale: "Cylinder integrity controlled by supplier; double-valve protection",
+      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Chlorine gas leak could cause significant air quality impact and community risk",
       initImpactScore: 8, initImpactLevel: "MODERATE",
-      resLhId: LH_RARE, resLhScore: 1, resLhRationale: "Buddy system + respirator mandatory; checklist completed at each delivery",
-      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Mitigation through vapour detection and rapid ERP activation",
+      resLhId: LH_RARE, resLhScore: 1, resLhRationale: "Buddy system + SCBA mandatory; checklist completed at each delivery",
+      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Mitigation through leak detection and rapid ERP activation",
       resImpactScore: 3, resImpactLevel: "LOW",
       resAcceptable: true,
       significant: true,
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "AIR",
-      impactDesc: "Atmospheric chemical vapour release to ambient air, potential toxicity to nearby communities and wildlife",
+      impactDesc: "Atmospheric chlorine gas release to ambient air, potential toxicity to nearby communities and wildlife",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "LOCAL",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Bunded chemical store with ventilation, fixed vapour detection with audible alarm threshold, respirator station at entry",
+      controlDesc: "Gas-tight cylinder cage with ventilation, fixed gas detection with audible alarm threshold at 0.5 ppm, SCBA station at entry",
       controlHierarchy2: "ADMINISTRATIVE",
       controlDesc2: "Mandatory pre-delivery inspection checklist, permit required, authorised personnel only, buddy system enforced",
       regId: REG_AIR,
@@ -176,64 +166,64 @@ async function seedPlant(
     },
     {
       seq: 2,
-      groupLabel: "Dye Dosing Operations",
-      activity: "Continuous dye and auxiliary chemical dosing via metering pumps into soft-flow dyeing machines",
+      groupLabel: "Chlorine Dosing Operations",
+      activity: "Continuous chlorine gas dosing via metering pumps into process water",
       areaId: areaProcessA,
-      subLocation: "Dye house dosing room, chemical dosing skid",
+      subLocation: "Dosing room, process water treatment skid",
       occurrence: "NORMAL",
       frequency: "CONTINUOUS",
       duration: 1440,
       initLhId: LH_POSSIBLE, initLhScore: 3, initLhRationale: "Pressurised dosing line; minor leaks possible at connections",
-      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Controlled indoor environment; diluted chemical concentrations",
+      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Controlled indoor environment; diluted chlorine concentrations",
       initImpactScore: 6, initImpactLevel: "MODERATE",
       resLhId: LH_UNLIKELY, resLhScore: 2, resLhRationale: "Monthly connection inspection and torque verification",
-      resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Indoor ventilation and vapour detection minimise escape",
+      resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Indoor ventilation and gas detection minimise escape",
       resImpactScore: 4, resImpactLevel: "LOW",
       resAcceptable: true,
       significant: false,
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "AIR",
-      impactDesc: "Fugitive chemical vapour emission inside dosing room affecting indoor air quality and operator health",
+      impactDesc: "Fugitive chlorine emission inside dosing room affecting indoor air quality and operator health",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "SITE",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Continuous vapour monitoring with alarm, forced ventilation at 10 ACH, eyewash station within 10 m",
+      controlDesc: "Continuous gas monitoring with 0.5 ppm alarm, forced ventilation at 10 ACH, eyewash station within 10 m",
       controlHierarchy2: "PPE",
-      controlDesc2: "Half-mask respirator with chemical cartridge mandatory during maintenance; SCBA available for emergency",
+      controlDesc2: "Half-mask respirator with chlorine cartridge mandatory during maintenance; SCBA available for emergency",
       regId: REG_AIR,
       regCode: "AIR_ACT_1981",
       status: "ACTIVE" as const,
     },
     {
       seq: 3,
-      groupLabel: "Dye House Effluent to ETP",
-      activity: "Dye-house effluent discharge to ETP after dyeing and rinsing stages",
+      groupLabel: "Effluent from Chemical Dosing",
+      activity: "Treated process water discharge to ETP after chlorination",
       areaId: areaUtil,
       subLocation: "Effluent Treatment Plant inlet channel",
       occurrence: "NORMAL",
       frequency: "CONTINUOUS",
       duration: 1440,
       initLhId: LH_LIKELY, initLhScore: 4, initLhRationale: "Process always running; discharge is continuous",
-      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Treatment step prior to ETP; colour/COD/TDS levels within consent",
+      initMagId: MAG_MINOR, initMagScore: 2, initMagRationale: "Dechlorination step prior to ETP; residual levels within consent",
       initImpactScore: 8, initImpactLevel: "MODERATE",
-      resLhId: LH_POSSIBLE, resLhScore: 3, resLhRationale: "Continuous online COD/colour monitoring at discharge point",
-      resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Tertiary + biological treatment provides adequate buffer",
+      resLhId: LH_POSSIBLE, resLhScore: 3, resLhRationale: "Continuous online TOC/Cl monitoring at discharge point",
+      resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Dechlorination + biological treatment provides adequate buffer",
       resImpactScore: 6, resImpactLevel: "MODERATE",
       resAcceptable: true,
       significant: true,
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "SURFACE_WATER",
-      impactDesc: "Dye-house effluent (colour, COD, BOD, TDS, pH, residual dye chemicals/heavy metals) causing aquatic toxicity in receiving water body if treatment failure occurs",
+      impactDesc: "Residual chlorine in effluent causing aquatic toxicity in receiving water body if dechlorination failure occurs",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "LOCAL",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Low-liquor-ratio soft-flow dyeing with dye-bath reuse, online COD/colour analyser with high-alarm shutdown interlock",
+      controlDesc: "Sodium bisulphite auto-dosing system for dechlorination, online residual chlorine analyser with high-alarm shutdown interlock",
       controlHierarchy2: "ADMINISTRATIVE",
       controlDesc2: "Daily effluent sampling and lab analysis, monthly third-party compliance test per consent conditions",
       regId: REG_WATER,
@@ -242,31 +232,31 @@ async function seedPlant(
     },
     {
       seq: 4,
-      groupLabel: "Dye House Chemical Spill / Emergency Response",
-      activity: "Dye chemical spill — emergency shutdown and ERP activation",
+      groupLabel: "Chemical Spill / Emergency Response",
+      activity: "Chlorine gas leak — emergency shutdown and ERP activation",
       areaId: areaChem,
-      subLocation: "Any point in chemical & dye store system",
+      subLocation: "Any point in chlorine system",
       occurrence: "EMERGENCY",
       frequency: "RARE",
       duration: 180,
       initLhId: LH_RARE, initLhScore: 1, initLhRationale: "Multiple barriers; formal ERP with drilled response",
-      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Full drum release to drainage — significant community impact",
+      initMagId: MAG_MAJOR, initMagScore: 4, initMagRationale: "Full cylinder release to atmosphere — significant community impact",
       initImpactScore: 4, initImpactLevel: "LOW",
       resLhId: LH_RARE, resLhScore: 1, resLhRationale: "Annual ERP drill; automatic shutdown valve tested quarterly",
-      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Rapid isolation + bunded containment limits spill extent",
+      resMagId: MAG_MODERATE, resMagScore: 3, resMagRationale: "Rapid isolation + wind dispersion modelling limits plume extent",
       resImpactScore: 3, resImpactLevel: "LOW",
       resAcceptable: true,
       significant: false,
       compliance: "COMPLIANT",
       aspectId: ASP_AIR_PM,
       receptorCode: "AIR",
-      impactDesc: "Acute chemical vapour and spill impacting on-site workers, neighbouring community, and ambient air quality",
+      impactDesc: "Acute chlorine plume impacting on-site workers, neighbouring community, and ambient air quality",
       impactType: "DIRECT",
       reversibility: "REVERSIBLE",
       geoExtent: "REGIONAL",
       temporalExtent: "SHORT_TERM",
       controlHierarchy: "ENGINEERING",
-      controlDesc: "Automatic shut-off valve (ASOv) on dosing header, pneumatically operated from control room; bunded containment at store boundary",
+      controlDesc: "Automatic shut-off valve (ASOv) on cylinder header, pneumatically operated from control room; water curtain at boundary fence",
       controlHierarchy2: "ADMINISTRATIVE",
       controlDesc2: "Documented emergency response plan, community notification protocol, annual full-scale drill with evacuation exercise",
       regId: REG_EPA,
@@ -287,8 +277,8 @@ async function seedPlant(
         occurrence: e.occurrence,
         frequency: e.frequency,
         typicalDurationMin: e.duration,
-        materialsUsed: ["Reactive / disperse dyes", "Dye-bath chemicals (NaOH, soda ash)"],
-        processInputs: ["Greige fabric & process water", "Electricity"],
+        materialsUsed: ["Chlorine gas cylinders", "Sodium bisulphite"],
+        processInputs: ["Process water", "Electricity"],
         initialLikelihoodId: e.initLhId,
         initialLikelihoodScore: e.initLhScore,
         initialLikelihoodRationale: e.initLhRationale,
@@ -426,20 +416,20 @@ async function seedPlant(
   const entries2 = [
     {
       seq: 1, groupLabel: "Combustion Emissions",
-      activity: "Coal & biomass combustion in multi-fuel boiler for steam generation",
+      activity: "Natural gas combustion in package boiler for steam generation",
       areaId: areaUtil, subLocation: "Boiler house — Boiler #1 and #2",
       occurrence: "NORMAL", frequency: "CONTINUOUS", duration: 1440,
       initLhId: LH_LIKELY, initLhScore: 4, initLhRationale: "Continuous combustion operation",
-      initMagId: MAG_MODERATE, initMagScore: 3, initMagRationale: "SPM, SO2, NOx and CO2 within typical industrial boiler limits",
+      initMagId: MAG_MODERATE, initMagScore: 3, initMagRationale: "NOx and CO2 within typical industrial boiler limits",
       initImpactScore: 12, initImpactLevel: "SIGNIFICANT",
       resLhId: LH_LIKELY, resLhScore: 4, resLhRationale: "Continuous operation — likelihood unchanged",
       resMagId: MAG_MINOR, resMagScore: 2, resMagRationale: "Excess air optimisation and stack monitoring reduce impact",
       resImpactScore: 8, resImpactLevel: "MODERATE",
       resAcceptable: true, significant: true, compliance: "COMPLIANT",
       aspectId: ASP_AIR_NOX, receptorCode: "AIR",
-      impactDesc: "Stack SPM, SO2, NOx and CO2 emissions affecting ambient air quality and contributing to GHG inventory",
+      impactDesc: "Stack NOx and CO2 emissions affecting ambient air quality and contributing to GHG inventory",
       impactType: "DIRECT", reversibility: "REVERSIBLE", geoExtent: "REGIONAL", temporalExtent: "LONG_TERM",
-      controlHierarchy: "ENGINEERING", controlDesc: "Electrostatic precipitator for SPM control, continuous stack monitoring (CEMS) with data logging to SPCB portal",
+      controlHierarchy: "ENGINEERING", controlDesc: "Low-NOx burner technology, continuous stack monitoring (CEMS) with data logging to SPCB portal",
       controlHierarchy2: "ADMINISTRATIVE", controlDesc2: "Annual stack emission test by NABL-accredited laboratory, GHG accounting in annual sustainability report",
       regId: REG_AIR, regCode: "AIR_ACT_1981", status: "ACTIVE" as const,
     },
@@ -514,7 +504,7 @@ async function seedPlant(
         occurrence: e.occurrence,
         frequency: e.frequency,
         typicalDurationMin: e.duration,
-        processInputs: ["Coal & biomass fuel", "Electricity", "Water"],
+        processInputs: ["Natural gas", "Electricity", "Water"],
         initialLikelihoodId: e.initLhId,
         initialLikelihoodScore: e.initLhScore,
         initialLikelihoodRationale: e.initLhRationale,
@@ -584,70 +574,6 @@ async function seedPlant(
   console.log(`  ✅  ${code}: 2 EAI studies, 8 entries with aspects/impacts/controls/regs`);
 }
 
-// Resolve the team-leader (ENVIRONMENT_MANAGER) and approver (HSE_MANAGER)
-// for a plant, falling back to any user in that plant if the exact role
-// is missing so the seed never dies on a missing role.
-async function resolveUser(plantId: string, role: string): Promise<string> {
-  const byRole = await prisma.user.findFirst({ where: { plantId, role } });
-  if (byRole) return byRole.id;
-  const anyUser = await prisma.user.findFirst({ where: { plantId } });
-  if (!anyUser) {
-    throw new Error(`No user found for plant ${plantId} (role ${role})`);
-  }
-  return anyUser.id;
-}
-
-// Resolve a plant area by a substring of its name.
-async function resolveArea(plantId: string, contains: string): Promise<string> {
-  const area = await prisma.area.findFirstOrThrow({
-    where: { plantId, name: { contains } },
-  });
-  return area.id;
-}
-
-// Resolve all global EAI masters once (created by prisma/seed-eai-masters.ts).
-async function resolveMasters(): Promise<Masters> {
-  const matrix = await prisma.environmentalImpactMatrix.findFirstOrThrow({
-    where: { code: "ENV_5X5_STD" },
-  });
-
-  const lh = async (score: number) =>
-    (
-      await prisma.environmentalImpactMatrixLikelihood.findFirstOrThrow({
-        where: { matrixId: matrix.id, score },
-      })
-    ).id;
-  const mag = async (score: number) =>
-    (
-      await prisma.environmentalImpactMatrixMagnitude.findFirstOrThrow({
-        where: { matrixId: matrix.id, score },
-      })
-    ).id;
-  const aspect = async (code: string) =>
-    (await prisma.eaiAspect.findFirstOrThrow({ where: { code } })).id;
-  const reg = async (code: string) =>
-    (await prisma.eaiRegulation.findFirstOrThrow({ where: { code } })).id;
-
-  return {
-    matrix5x5: matrix.id,
-    lhRare: await lh(1),
-    lhUnlikely: await lh(2),
-    lhPossible: await lh(3),
-    lhLikely: await lh(4),
-    magMinor: await mag(2),
-    magModerate: await mag(3),
-    magMajor: await mag(4),
-    aspAirPm: await aspect("AIR_STACK_PM"),
-    aspAirSox: await aspect("AIR_STACK_SOX"),
-    aspAirNox: await aspect("AIR_STACK_NOX"),
-    aspAirDust: await aspect("AIR_FUGITIVE_DUST"),
-    aspGhgCo2: await aspect("AIR_GHG_CO2"),
-    regEpa: await reg("EPA_1986"),
-    regAir: await reg("AIR_ACT_1981"),
-    regWater: await reg("WATER_ACT_1974"),
-  };
-}
-
 async function main() {
   console.log("Deleting existing EAI demo study records…");
   const existing = await prisma.eaiStudy.findMany({ where: { number: { contains: "-DEMO-" } } });
@@ -656,30 +582,8 @@ async function main() {
   }
   await prisma.eaiStudy.deleteMany({ where: { number: { contains: "-DEMO-" } } });
 
-  // ── Resolve global masters once ──
-  const masters = await resolveMasters();
-
-  // ── Resolve plant, user and area ids dynamically ──
-  const nwPlant = await prisma.plant.findFirstOrThrow({ where: { code: "NW" } });
-  const swPlant = await prisma.plant.findFirstOrThrow({ where: { code: "SW" } });
-
-  const NW = nwPlant.id;
-  const SW = swPlant.id;
-
-  const ENV_MGR_NW = await resolveUser(NW, "ENVIRONMENT_MANAGER");
-  const HSE_MGR_NW = await resolveUser(NW, "HSE_MANAGER");
-  const ENV_MGR_SW = await resolveUser(SW, "ENVIRONMENT_MANAGER");
-  const HSE_MGR_SW = await resolveUser(SW, "HSE_MANAGER");
-
-  const AREA_NW_CHEM = await resolveArea(NW, "Chemical");
-  const AREA_NW_UTIL = await resolveArea(NW, "Boiler House");
-  const AREA_NW_PROCESS_A = await resolveArea(NW, "Dye House");
-  const AREA_SW_CHEM = await resolveArea(SW, "Chemical");
-  const AREA_SW_UTIL = await resolveArea(SW, "Boiler House");
-  const AREA_SW_PROCESS_A = await resolveArea(SW, "Dye House");
-
-  await seedPlant(NW, "NW", ENV_MGR_NW, HSE_MGR_NW, AREA_NW_CHEM, AREA_NW_UTIL, AREA_NW_PROCESS_A, masters);
-  await seedPlant(SW, "SW", ENV_MGR_SW, HSE_MGR_SW, AREA_SW_CHEM, AREA_SW_UTIL, AREA_SW_PROCESS_A, masters);
+  await seedPlant(NW, "NW", ENV_MGR_NW, HSE_MGR_NW, AREA_NW_CHEM, AREA_NW_UTIL, AREA_NW_PROCESS_A);
+  await seedPlant(SW, "SW", ENV_MGR_SW, HSE_MGR_SW, AREA_SW_CHEM, AREA_SW_UTIL, AREA_SW_PROCESS_A);
 
   console.log("✅  EAI seed complete — 4 studies, 16 entries total");
 }

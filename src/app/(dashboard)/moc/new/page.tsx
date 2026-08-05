@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { resolvePlantContext } from "@/lib/plant-context";
-import { NewChangeForm } from "./new-change-form";
+import { ChangeWizard } from "./change-wizard";
 
 export const dynamic = "force-dynamic";
 
@@ -19,10 +19,10 @@ export default async function NewMocPage(props: {
       </Link>
       <PageHeader
         title="Submit New Change"
-        description="Propose a change. After submission it is classified, impact-assessed, and routed for approval."
+        description="Identify → assess risk → gauge impact → route for approval — ISO 45001 §8.1.3"
       />
       {plantId ? (
-        <NewChangeForm plantId={plantId} />
+        <ChangeWizard plantId={plantId} />
       ) : (
         <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
           No plant in context — open this from the MOC register with a plant selected.

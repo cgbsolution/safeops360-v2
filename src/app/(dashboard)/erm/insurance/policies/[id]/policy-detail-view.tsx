@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus, X, Link2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import {
   CLAIM_STATUS_CHIP,
   POLICY_STATUS_CHIP,
@@ -88,19 +94,21 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
         {TABS.map((t) => (
-          <button
+          <Button
             key={t}
+            type="button"
+            variant="ghost"
             onClick={() => setTab(t)}
-            className={
-              "-mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors " +
-              (tab === t ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700")
-            }
+            className={cn(
+              "h-auto gap-0 rounded-none -mb-px border-b-2 px-4 py-2 text-sm font-medium transition-colors",
+              tab === t ? "border-primary-700 text-primary-700" : "border-transparent text-slate-500 hover:text-slate-700"
+            )}
           >
             {TAB_LABEL[t]}
             {t === "claims" && detail.claims.length > 0 && (
               <span className="ml-1.5 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] tabular-nums text-slate-600">{detail.claims.length}</span>
             )}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -165,35 +173,37 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Claims <span className="text-slate-400">({detail.claims.length})</span></h2>
-            <button
+            <Button
+              type="button"
+              size="sm"
               onClick={() => setNewClaimOpen(true)}
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-800"
+              className="gap-1.5"
             >
               <Plus size={14} /> New claim
-            </button>
+            </Button>
           </div>
           {detail.claims.length === 0 ? (
             <p className="py-6 text-center text-sm text-slate-400">No claims logged against this policy.</p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[820px] text-sm">
-                <thead className="bg-slate-50/95">
-                  <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                    <th className="px-3 py-2">Claim</th>
-                    <th className="px-3 py-2">Loss event</th>
-                    <th className="px-3 py-2">Date</th>
-                    <th className="px-3 py-2 text-right">Claimed</th>
-                    <th className="px-3 py-2 text-right">Settled</th>
-                    <th className="px-3 py-2">Status</th>
-                    <th className="px-3 py-2 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="min-w-[820px]">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Claim</TableHead>
+                    <TableHead>Loss event</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Claimed</TableHead>
+                    <TableHead className="text-right">Settled</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {detail.claims.map((c) => (
                     <ClaimRow key={c.id} claim={c} setBanner={setBanner} onChanged={() => router.refresh()} />
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </div>
@@ -253,38 +263,38 @@ function ClaimRow({ claim, setBanner, onChanged }: { claim: Claim; setBanner: (b
 
   return (
     <>
-      <tr className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-        <td className="px-3 py-2 font-medium text-slate-800">{claim.claimCode}</td>
-        <td className="px-3 py-2 text-xs text-slate-600">{claim.lossEventCode ?? "—"}</td>
-        <td className="px-3 py-2 text-xs text-slate-500">{fmtDate(claim.claimDate)}</td>
-        <td className="px-3 py-2 text-right text-xs tabular-nums text-slate-700">{inrCompact(claim.claimedAmountInr)}</td>
-        <td className="px-3 py-2 text-right text-xs tabular-nums text-slate-700">
+      <TableRow>
+        <TableCell className="font-medium text-slate-800">{claim.claimCode}</TableCell>
+        <TableCell className="text-xs text-slate-600">{claim.lossEventCode ?? "—"}</TableCell>
+        <TableCell className="text-xs text-slate-500">{fmtDate(claim.claimDate)}</TableCell>
+        <TableCell className="text-right text-xs tabular-nums text-slate-700">{inrCompact(claim.claimedAmountInr)}</TableCell>
+        <TableCell className="text-right text-xs tabular-nums text-slate-700">
           {claim.settledAmountInr != null ? inrCompact(claim.settledAmountInr) : "—"}
-        </td>
-        <td className="px-3 py-2">
+        </TableCell>
+        <TableCell>
           <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (CLAIM_STATUS_CHIP[claim.status] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
             {claim.status.replace(/_/g, " ")}
           </span>
-        </td>
-        <td className="px-3 py-2 text-right">
+        </TableCell>
+        <TableCell className="text-right">
           <div className="flex items-center justify-end gap-2">
-            <button onClick={() => setEditOpen(true)} className="rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50">
+            <Button type="button" variant="outline" onClick={() => setEditOpen(true)} className="h-auto px-2 py-1 text-[11px]">
               Update
-            </button>
+            </Button>
             {canReconcile && (
-              <button onClick={reconcile} disabled={busy} className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
+              <Button type="button" variant="success" onClick={reconcile} disabled={busy} className="h-auto gap-1 px-2 py-1 text-[11px]">
                 <Link2 size={12} /> {busy ? "Reconciling…" : "Reconcile recovery"}
-              </button>
+              </Button>
             )}
           </div>
-        </td>
-      </tr>
+        </TableCell>
+      </TableRow>
       {editOpen && (
-        <tr>
-          <td colSpan={7} className="bg-slate-50 px-3 py-3">
+        <TableRow>
+          <TableCell colSpan={7} className="bg-slate-50 px-3 py-3">
             <ClaimStatusForm claim={claim} setBanner={setBanner} onClose={() => setEditOpen(false)} onDone={() => { setEditOpen(false); onChanged(); }} />
-          </td>
-        </tr>
+          </TableCell>
+        </TableRow>
       )}
     </>
   );
@@ -330,36 +340,38 @@ function ClaimStatusForm({ claim, setBanner, onClose, onDone }: { claim: Claim; 
     <div className="rounded-md border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-800">Update claim {claim.claimCode}</h3>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={16} /></button>
+        <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">
+          <X size={16} />
+        </Button>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Status</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500">
+          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
             {CLAIM_STATUSES.map((s) => (
               <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
             ))}
-          </select>
+          </Select>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Settled amount (₹){needsSettled && <span className="text-rose-600"> *</span>}</label>
-          <input type="number" min={0} value={settledAmountInr} onChange={(e) => setSettledAmountInr(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+          <Input type="number" min={0} value={settledAmountInr} onChange={(e) => setSettledAmountInr(e.target.value)} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Settlement date</label>
-          <input type="date" value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+          <Input type="date" value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} />
         </div>
       </div>
       <div className="mt-3">
         <label className="mb-1 block text-xs font-medium text-slate-600">Remarks</label>
-        <textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+        <Textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} />
       </div>
       {error && <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
       <div className="mt-3 flex justify-end gap-2">
-        <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-        <button onClick={submit} disabled={busy} className="rounded-md bg-primary-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+        <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+        <Button type="button" size="sm" onClick={submit} disabled={busy}>
           {busy ? "Saving…" : "Save"}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -422,40 +434,42 @@ function NewClaimModal({ policyId, onClose, onDone }: { policyId: string; onClos
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New claim</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">
+            <X size={18} />
+          </Button>
         </div>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Claim date</label>
-              <input type="date" value={claimDate} onChange={(e) => setClaimDate(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+              <Input type="date" value={claimDate} onChange={(e) => setClaimDate(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Claimed amount (₹)</label>
-              <input type="number" min={0} value={claimedAmountInr} onChange={(e) => setClaimedAmountInr(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+              <Input type="number" min={0} value={claimedAmountInr} onChange={(e) => setClaimedAmountInr(e.target.value)} />
             </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Linked loss event (optional)</label>
-            <select value={lossEventId} onChange={(e) => setLossEventId(e.target.value)} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500">
+            <Select value={lossEventId} onChange={(e) => setLossEventId(e.target.value)}>
               <option value="">None — standalone claim</option>
               {losses.map((l) => (
                 <option key={l.id} value={l.id}>{l.lossEventCode}{l.title ? ` · ${l.title}` : ""}</option>
               ))}
-            </select>
+            </Select>
             <p className="mt-1 text-[11px] text-slate-400">Linking a loss event enables reconciling the settled amount as a recovery once SETTLED.</p>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500" />
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={busy || !valid} className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" onClick={submit} disabled={busy || !valid}>
             {busy ? "Logging…" : "Log claim"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

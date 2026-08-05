@@ -8,6 +8,12 @@ import { resolvePlantContext } from "@/lib/plant-context";
 import { PlantSwitcher } from "@/components/plant-switcher";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { RiskRegisterAnalyticsStrip } from "@/components/risk-register/analytics-strip";
+import { InsightBar } from "@/components/ai/InsightBar";
+import { SignalChip } from "@/components/ai/SignalChip";
+import { InsightHero } from "@/components/observations/insight-hero";
+import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
+import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
+import { fetchInsights } from "@/lib/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +58,7 @@ export default async function CombinedRiskRegisterPage(props: {
     plantId?: string;
     type?: "all" | "hira" | "eai";
     significantOnly?: string;
+    insight?: string;
   }>;
 }) {
   const sp = await props.searchParams;
@@ -75,18 +82,74 @@ export default async function CombinedRiskRegisterPage(props: {
   const type = sp.type ?? "all";
   const significantOnly = sp.significantOnly === "1";
 
-  const data = await backendFetch<CombinedResponse>("/api/risk-register/combined", {
-    query: {
-      plantId,
-      type,
-      significantOnly: significantOnly ? "true" : "false"
+  const [data, insights] = await Promise.all([
+    backendFetch<CombinedResponse>("/api/risk-register/combined", {
+      query: {
+        plantId,
+        type,
+        significantOnly: significantOnly ? "true" : "false"
+      }
+    }).catch(() => ({
+      items: [],
+      total: 0,
+      hiraTotal: 0,
+      eaiTotal: 0
+    } as CombinedResponse)),
+    fetchInsights("combined-risk", { plant: plantId })
+  ]);
+
+  // Insight-card click-through: narrow to the active insight's register rows
+  // (identified as MODULE#SEQ, the same ref the engine grounds insights in).
+  const activeInsight = sp.insight
+    ? insights.bar.find((i) => i.id === sp.insight)
+    : undefined;
+  const visibleItems = activeInsight
+    ? data.items.filter((r) => activeInsight.recordRefs.includes(`${r.moduleNumber}#${r.sequenceNumber}`))
+    : data.items;
+
+  // "This week's focus" hero + panels — reuse the shared builder + component.
+  const rrNow = Date.now();
+  const rrHero = buildHeroFromRecords(
+    data.items.map((r) => ({
+      date: new Date(r.updatedAt),
+      open: true,
+      severity: r.residualRiskOrImpactLevel || r.initialRiskOrImpactLevel,
+      group: r.type
+    })),
+    {
+      type: "risk exposure",
+      critical: ["CRITICAL", "MAJOR"],
+      highSeverities: ["HIGH", "SIGNIFICANT"],
+      headline: (n) => `${n} unmitigated critical risks on the register`,
+      qualifier: "residual still high",
+      actionHref: `/risk-register?plantId=${plantId}&type=all&significantOnly=1`,
+      railTitle: "By domain",
+      closing: (d) => `Oldest unreviewed is ${d} days.`,
+      statLabels: { critical: "critical", high: "high" }
     }
-  }).catch(() => ({
-    items: [],
-    total: 0,
-    hiraTotal: 0,
-    eaiTotal: 0
-  } as CombinedResponse));
+  );
+  const rrLevelAgg = new Map<string, { count: number; areas: Set<string> }>();
+  data.items.forEach((r) => {
+    const lvl = r.residualRiskOrImpactLevel || "Unrated";
+    const e = rrLevelAgg.get(lvl) ?? { count: 0, areas: new Set<string>() };
+    e.count += 1;
+    if (r.areaId) e.areas.add(r.areaId);
+    rrLevelAgg.set(lvl, e);
+  });
+  const rrCategory = Array.from(rrLevelAgg.entries())
+    .map(([category, v]) => ({ category, count: v.count, areaCount: v.areas.size }))
+    .sort((a, b) => b.count - a.count);
+  const rrStatusAgg = new Map<string, { count: number; totalDays: number }>();
+  data.items.forEach((r) => {
+    const days = Math.max(0, Math.floor((rrNow - new Date(r.updatedAt).getTime()) / 86_400_000));
+    const e = rrStatusAgg.get(r.status) ?? { count: 0, totalDays: 0 };
+    e.count += 1;
+    e.totalDays += days;
+    rrStatusAgg.set(r.status, e);
+  });
+  const rrBottleneck = Array.from(rrStatusAgg.entries())
+    .map(([step, v]) => ({ step: step.replace(/_/g, " "), count: v.count, avgDays: Math.round((v.totalDays / v.count) * 10) / 10 }))
+    .sort((a, b) => b.avgDays - a.avgDays);
 
   return (
     <div>
@@ -101,6 +164,18 @@ export default async function CombinedRiskRegisterPage(props: {
           <RiskRegisterAnalyticsStrip />
         </Suspense>
       </div>
+
+      {rrHero ? <InsightHero hero={rrHero} /> : <InsightBar insights={insights.bar} />}
+
+      {(rrBottleneck.length > 0 || rrCategory.length > 0) && (
+        <ObservationAnalyticsPanels
+          bottleneck={rrBottleneck}
+          category={rrCategory}
+          activeCategory={null}
+          basePath="/risk-register"
+          concentratedTitle="By residual level"
+        />
+      )}
 
       <div className="flex items-center justify-between mb-4 gap-4">
         <FilterTabsList label="Source">
@@ -162,7 +237,7 @@ export default async function CombinedRiskRegisterPage(props: {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {data.items.map((row) => (
+              {visibleItems.map((row) => (
                 <tr key={`${row.type}-${row.id}`} className="hover:bg-slate-50">
                   <td className="px-4 py-2">
                     <span
@@ -209,7 +284,15 @@ export default async function CombinedRiskRegisterPage(props: {
                     )}
                   </td>
                   <td className="px-4 py-2 text-xs text-slate-700">
-                    {row.status.replace(/_/g, " ")}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span>{row.status.replace(/_/g, " ")}</span>
+                      {insights.signalByRecord.get(row.id) && (
+                        <SignalChip
+                          signal={insights.signalByRecord.get(row.id)!}
+                          href={row.type === "HIRA" ? `/hira/entries/${row.id}` : `/eai/entry/${row.id}`}
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-2 text-xs text-slate-700">
                     {row.lastReviewedAt

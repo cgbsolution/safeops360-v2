@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { parseApiError } from "@/lib/api-error";
 
 type Plant = {
   id: string;
@@ -157,8 +158,7 @@ export function StudyCreateForm({
         })
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? `Create failed (${res.status})`);
+        setError(await parseApiError(res, "Create failed"));
         return;
       }
       const created = await res.json();

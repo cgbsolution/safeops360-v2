@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ShieldAlert, Star, AlertTriangle } from "lucide-react";
 import { FindingActions } from "../finding-actions";
 import { FindingCapaList } from "../finding-capa-list";
+import { RegisterCapaPanel } from "../register-capa-panel";
 import { requirePermission } from "@/lib/auth/server";
 
 export const dynamic = "force-dynamic";
@@ -175,6 +176,15 @@ export default async function FindingDetailPage(props: { params: Promise<{ id: s
           </CardHeader>
           <CardContent>
             <FindingCapaList findingId={f.id} capas={f.capas as any} status={f.status} />
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Enterprise CAPA Register</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RegisterCapaPanel findingId={f.id} />
           </CardContent>
         </Card>
       </div>

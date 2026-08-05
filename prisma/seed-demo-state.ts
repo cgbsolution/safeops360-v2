@@ -1,5 +1,5 @@
 // ────────────────────────────────────────────────────────────────────────
-// Demo State Seed — Page Industries Limited (NW + SW)
+// Demo State Seed — Meridian Manufacturing Limited (NW + SW)
 //
 // Creates the transactional state that makes the demo dashboard meaningful.
 // Must run AFTER seed.ts (users + plants must exist).
@@ -18,8 +18,8 @@
 //      • Earlier incidents are CLOSED with RCA; latest is INVESTIGATION
 //
 //   4. Permits — 2 ACTIVE permits at NW plant
-//      • HOT_WORK in Boiler House — welding job on steam-line flange
-//      • CONFINED_SPACE in Confined Space Zones — dye-vessel inspection
+//      • HOT_WORK in Process Area A — welding job on heat exchanger
+//      • CONFINED_SPACE in Confined Space Zones — vessel inspection
 //
 // QA checkpoint (verify after loading):
 //   Dashboard shows: 28 days since LTI | NW LTIFR 1.70 | SW LTIFR 1.50 | 2 active permits
@@ -130,7 +130,7 @@ const INCIDENTS: IncidentSeed[] = [
     number: "INC-2025-0031",
     date: new Date("2025-07-14T08:30:00.000Z"),
     location: "Maintenance Workshop — Lathe Machine",
-    description: "Maintenance technician sustained a fracture to the left forearm when a loose roller journal ejected from the lathe chuck while machining a knitting-machine fabric take-down roller. The machine guard had been removed for a previous job and not refitted.",
+    description: "Maintenance technician sustained a fracture to the left forearm when a loose workpiece ejected from the lathe chuck during a turning operation. The machine guard had been removed for a previous job and not refitted.",
     injuredPersonName: "Maintenance Technician A",
     injuredPersonDesignation: "Maintenance Technician",
     bodyPart: "Left forearm",
@@ -143,22 +143,22 @@ const INCIDENTS: IncidentSeed[] = [
   {
     number: "INC-2025-0058",
     date: new Date("2025-10-08T14:15:00.000Z"),
-    location: "Knitting Section — Circular Knitting Machine 3",
-    description: "Knitting section operator slipped on spinning-oil-contaminated flooring while attending to a minor lubrication leak on a circular knitting machine. Sustained a sprained right ankle requiring 8 days off work.",
+    location: "Process Area A — Pump Station 3",
+    description: "Process operator slipped on oil-contaminated grating while attending to a minor pump seal leak. Sustained a sprained right ankle requiring 8 days off work.",
     injuredPersonName: "Process Operator B",
     injuredPersonDesignation: "Process Operator",
     bodyPart: "Right ankle",
     natureOfInjury: "Sprain",
     lostDays: 8,
-    immediateCause: "Spinning-oil contamination on floor not promptly cleaned; housekeeping round overdue by 2 hours.",
-    correctiveActions: "Anti-slip matting laid around all circular knitting machine bases. Housekeeping inspection frequency increased to hourly in the Knitting Section. Oil drip trays installed under machine lubrication points.",
+    immediateCause: "Oil contamination on floor grating not promptly cleaned; housekeeping round overdue by 2 hours.",
+    correctiveActions: "Anti-slip coating applied to all pump station gratings. Housekeeping inspection frequency increased to hourly in Process Area A. Spill containment trays installed under pump seals.",
     status: "CLOSED"
   },
   {
     number: "INC-2026-0008",
     date: new Date("2026-02-19T10:45:00.000Z"),
-    location: "Chemical & Dye Store — Drum Bay 2",
-    description: "Stores operator sustained a chemical burn to the right hand when a cracked IBC valve discharged concentrated caustic dye-bath alkali solution during routine inspection. PPE (chemical gloves) was not being worn at the time.",
+    location: "Chemical Storage & Handling Area — Drum Bay 2",
+    description: "Stores operator sustained a chemical burn to the right hand when a cracked IBC valve discharged concentrated alkali solution during routine inspection. PPE (chemical gloves) was not being worn at the time.",
     injuredPersonName: "Stores Operator C",
     injuredPersonDesignation: "Warehouse Operator",
     bodyPart: "Right hand (dorsal surface)",
@@ -172,8 +172,8 @@ const INCIDENTS: IncidentSeed[] = [
     // Last LTI — 28 days before demo today (2026-06-07 − 28 = 2026-05-10)
     number: "INC-2026-0022",
     date: new Date("2026-05-10T07:50:00.000Z"),
-    location: "Boiler House & Utilities — Cooling Tower Walkway",
-    description: "Boiler house operator sustained a laceration and soft-tissue injury to the left shin after tripping on a temporary hose left across the walkway during a cooling tower dosing operation. Medical treatment required; 3 days lost.",
+    location: "Utilities Block — Cooling Tower Walkway",
+    description: "Utility operator sustained a laceration and soft-tissue injury to the left shin after tripping on a temporary hose left across the walkway during a cooling tower dosing operation. Medical treatment required; 3 days lost.",
     injuredPersonName: "Utility Operator D",
     injuredPersonDesignation: "Utilities Operator",
     bodyPart: "Left shin",
@@ -201,18 +201,18 @@ const PERMITS: PermitSeed[] = [
   {
     number: "PTW-NW-2026-0841",
     type: "HOT_WORK",
-    location: "Boiler House & Utilities — Steam Header SH-104 Nozzle Flange",
-    areaCode: "BOILER-HOUSE",
-    scopeOfWork: "Welding repair to steam-header nozzle flange SH-104 in the boiler house. SMAW process. Area cleared of flammable materials (fabric/lint) within 11 m. Gas test confirmed < 5% LEL.",
+    location: "Process Area A — Heat Exchanger E-104",
+    areaCode: "PROC-A",
+    scopeOfWork: "Welding repair to shell-side nozzle flange on heat exchanger E-104. SMAW process. Area cleared of flammable materials within 11 m. Gas test confirmed < 5% LEL.",
     validFromOffset: -4,  // started 4 hours ago
     validToOffset: 8      // valid for another 8 hours
   },
   {
     number: "PTW-NW-2026-0842",
     type: "CONFINED_SPACE",
-    location: "Confined Space Zones — Dye Vessel V-203",
-    areaCode: "CONFINED-SPACE",
-    scopeOfWork: "Internal inspection of soft-flow dye vessel V-203 for corrosion mapping. Vessel isolated, purged, and ventilated. O2: 20.9%, CO: 0 ppm, H2S: 0 ppm, LEL: 0%.",
+    location: "Confined Space Zones — Process Vessel V-203",
+    areaCode: "CONFINED-ZONES",
+    scopeOfWork: "Internal inspection of process vessel V-203 for corrosion mapping. Vessel isolated, purged, and ventilated. O2: 20.9%, CO: 0 ppm, H2S: 0 ppm, LEL: 0%.",
     validFromOffset: -2,  // started 2 hours ago
     validToOffset: 6      // valid for another 6 hours
   }
@@ -221,7 +221,7 @@ const PERMITS: PermitSeed[] = [
 // ─── Main ─────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log("🎬  Demo state seed — Page Industries — North Garment Unit (Hassan)");
+  console.log("🎬  Demo state seed — Meridian North Works");
   console.log("   Target: 28 days since LTI | LTIFR 0.34 | 2 active permits");
 
   // ── Resolve plant ─────────────────────────────────────────────────────

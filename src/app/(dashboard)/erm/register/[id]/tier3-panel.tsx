@@ -15,7 +15,7 @@ import {
 } from "@/app/(dashboard)/erm/lib-t3";
 
 type Ctx = {
-  controls: { controlCode: string; name: string; mitigationStrength: string; operatingRating: string | null }[];
+  controls: { controlId?: string; controlCode: string; name: string; mitigationStrength: string; operatingRating: string | null }[];
   hasPrimaryControl: boolean;
   primaryControlDeficient: boolean;
   policies: { policyCode: string; policyName: string; status: string }[];
@@ -59,7 +59,7 @@ export function Tier3RiskPanel({ riskId }: { riskId: string }) {
             <ul className="space-y-2">
               {ctx.controls.map((c) => (
                 <li key={c.controlCode} className="flex items-center justify-between gap-2">
-                  <Link href="/erm/controls" className="truncate text-sm text-primary-700 hover:underline">{c.controlCode} · {c.name}</Link>
+                  <Link href={c.controlId ? `/erm/controls/${c.controlId}` : "/erm/controls"} className="truncate text-sm text-primary-700 hover:underline">{c.controlCode} · {c.name}</Link>
                   <span className="flex shrink-0 items-center gap-1">
                     <span className={"rounded border px-1.5 py-0.5 text-[10px] " + (STRENGTH_CHIP[c.mitigationStrength] ?? "")}>{c.mitigationStrength[0]}</span>
                     <span className={"rounded border px-1.5 py-0.5 text-[10px] " + (RATING_CHIP[c.operatingRating ?? "NOT_ASSESSED"] ?? "")}>{(c.operatingRating ?? "—").replace(/_/g, " ")}</span>

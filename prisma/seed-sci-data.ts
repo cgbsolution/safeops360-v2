@@ -155,8 +155,8 @@ async function seedKaizen(
     // APPROVED × 3
     {
       submitterUserId: worker, isAnonymous: false, category: "UNSAFE_CONDITION",
-      hazardSeveritySelf: "HIGH", locationTag: "Boiler House & Utilities — Steam Header Walkway",
-      description: "The walkway alongside Boiler #2 has a corroded grating section (approx 40 cm × 30 cm) near the steam header expansion joint. In wet conditions (steam condensate drip) the corroded section flexes visibly. I nearly slipped last Thursday during a routine round. Suggested fix: replace the grating section with chequer plate.",
+      hazardSeveritySelf: "HIGH", locationTag: "Utilities Block — Boiler Area",
+      description: "The walkway alongside Boiler #2 has a corroded grating section (approx 40 cm × 30 cm) near the expansion joint. In wet conditions the corroded section flexes visibly. I nearly slipped last Thursday during a routine round. Suggested fix: replace the grating section with chequer plate.",
       status: "APPROVED", finalCommitteeScore: 8.7, pointsAwardedSubmitter: 75,
       committeeScoresJson: [
         { reviewerId: hse, hazardSig: 9, learningVal: 8, actionQual: 9, decision: "APPROVE" },
@@ -167,8 +167,8 @@ async function seedKaizen(
     },
     {
       submitterUserId: deptHead, isAnonymous: true, category: "NEAR_MISS",
-      hazardSeveritySelf: "MEDIUM", locationTag: "Dye House — Dye-Chemical Dosing Station",
-      description: "While connecting a bulk dye-chemical (hydrogen peroxide / scouring agent) dosing line at the dye house, the connection spanner was not the correct size for the valve nut and slipped twice. No injury, but the wrong tool was available because the dedicated spanner was not returned to its marked location after the previous shift. Needs mandatory spanner tagging and check-out system.",
+      hazardSeveritySelf: "MEDIUM", locationTag: "Chemical Storage — Cylinder cage",
+      description: "While changing over a chlorine cylinder, the connection spanner was not the correct size for the valve nut and slipped twice. No injury, but the wrong tool was available because the dedicated spanner was not returned to its marked location after the previous shift. Needs mandatory spanner tagging and check-out system.",
       status: "APPROVED", finalCommitteeScore: 7.9, pointsAwardedSubmitter: 60,
       committeeScoresJson: [
         { reviewerId: hse, hazardSig: 8, learningVal: 8, actionQual: 7, decision: "APPROVE" },
@@ -179,8 +179,8 @@ async function seedKaizen(
     },
     {
       submitterUserId: hse, isAnonymous: false, category: "GOOD_PRACTICE",
-      hazardSeveritySelf: "LOW", locationTag: "Dye House — Dyeing & Fabric Testing Laboratory",
-      description: "The QC Lab team introduced a colour-coded sample rack system where all dye-liquor and chemical-bath samples requiring fume hood handling are placed in RED racks. This has eliminated the previous confusion about which samples needed ventilated handling and has improved throughput. Recommend rolling out to the SW lab.",
+      hazardSeveritySelf: "LOW", locationTag: "Quality Control Laboratory",
+      description: "The QC Lab team introduced a colour-coded sample rack system where all samples requiring fume hood handling are placed in RED racks. This has eliminated the previous confusion about which samples needed ventilated handling and has improved throughput. Recommend rolling out to the SW lab.",
       status: "APPROVED", finalCommitteeScore: 9.2, pointsAwardedSubmitter: 90,
       committeeScoresJson: [
         { reviewerId: deptHead, hazardSig: 7, learningVal: 10, actionQual: 10, decision: "APPROVE" },
@@ -192,15 +192,15 @@ async function seedKaizen(
     // PENDING_COMMITTEE × 2
     {
       submitterUserId: worker, isAnonymous: false, category: "IMPROVEMENT_SUGGESTION",
-      hazardSeveritySelf: "MEDIUM", locationTag: "Finished Goods Warehouse — Carton Dispatch",
-      description: "The reversing alarm on carton-handling Forklift FLT-003 is much quieter than the other forklifts. In the noisy dispatch area, pedestrians moving between stacked carton pallets and fabric rolls cannot hear it until the vehicle is very close. The alarm should be replaced or the sensitivity increased. Multiple colleagues have mentioned this to me.",
+      hazardSeveritySelf: "MEDIUM", locationTag: "Loading / Dispatch Area",
+      description: "The reversing alarm on Forklift FLT-003 is much quieter than the other forklifts. In the noisy dispatch area, pedestrians cannot hear it until the vehicle is very close. The alarm should be replaced or the sensitivity increased. Multiple colleagues have mentioned this to me.",
       status: "PENDING_COMMITTEE",
       createdAt: daysAgo(3),
     },
     {
       submitterUserId: envMgr, isAnonymous: true, category: "UNSAFE_ACT",
-      hazardSeveritySelf: "HIGH", locationTag: "Sewing / Stitching Lines — Hot work bay",
-      description: "On two separate occasions this month I observed arc welding being carried out near the stitching line without a fire watch person being present, as required by the hot work permit. The welder was working alone. When I asked, he said the fire watch had 'stepped out for a minute.' This is a permit violation and a significant fire risk given the fabric trim and lint/cotton dust accumulation nearby.",
+      hazardSeveritySelf: "HIGH", locationTag: "Maintenance Workshop — Hot work bay",
+      description: "On two separate occasions this month I observed arc welding being carried out without a fire watch person being present, as required by the hot work permit. The welder was working alone. When I asked, he said the fire watch had 'stepped out for a minute.' This is a permit violation and a significant fire risk given the combustible storage nearby.",
       status: "PENDING_COMMITTEE",
       createdAt: daysAgo(1),
     },
@@ -208,7 +208,7 @@ async function seedKaizen(
     {
       submitterUserId: deptHead, isAnonymous: false, category: "IMPROVEMENT_SUGGESTION",
       hazardSeveritySelf: "LOW", locationTag: "Site Office",
-      description: "Suggest that the HSE department switch from manual PPE sign-out logbooks to a digital QR code system. Each PPE item would have a QR code and workers scan in/out on their phones.",
+      description: "Suggest that the HSE department switch from paper-based PPE sign-out logs to a digital QR code system. Each PPE item would have a QR code and workers scan in/out on their phones.",
       status: "DECLINED",
       finalCommitteeScore: 4.1,
       declineFeedback: "Thank you for the suggestion. A digital PPE management system is already part of the PPE module roadmap and is expected to be available in Q3 FY27. Your suggestion is recorded as supporting evidence for the business case.",

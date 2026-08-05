@@ -5,10 +5,30 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// The site's wall-clock timezone. Every timestamp is STORED in UTC and must be
+// DISPLAYED here.
+//
+// This has to be pinned. Without it, `toLocaleString` uses whatever timezone the
+// JavaScript runtime happens to be in — which is the browser for a client
+// component but the *server* for a server component. Vercel's Node runtime is
+// UTC, so a server-rendered timestamp read 5h30m earlier than the identical
+// value rendered on the client: an action taken at 07:46 IST displayed as
+// "02:16 am" in the Corrective Action panel while the resubmit panel next to it
+// said "07:46 am".
+//
+// Override per deployment (e.g. a non-India instance) with
+// NEXT_PUBLIC_APP_TIMEZONE. It must be a valid IANA zone name.
+export const APP_TIME_ZONE = process.env.NEXT_PUBLIC_APP_TIMEZONE || "Asia/Kolkata";
+
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "—";
   const d = typeof date === "string" ? new Date(date) : date;
-  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: APP_TIME_ZONE
+  });
 }
 
 export function formatDateTime(date: Date | string | null | undefined): string {
@@ -19,7 +39,8 @@ export function formatDateTime(date: Date | string | null | undefined): string {
     month: "short",
     year: "numeric",
     hour: "2-digit",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone: APP_TIME_ZONE
   });
 }
 

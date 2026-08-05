@@ -22,6 +22,43 @@ const TODAY = new Date("2026-06-08T08:00:00.000Z");
 function daysAgo(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() - n); return d; }
 function daysFromNow(n: number) { const d = new Date(TODAY); d.setDate(d.getDate() + n); return d; }
 
+// Map this seed's legacy short-form statuses onto the canonical 18-state
+// lifecycle the backend + UI use, so status chips + detail actions work.
+const STATUS_MAP: Record<string, string> = {
+  draft: "draft",
+  submitted: "submitted",
+  impact_assessment_complete: "under_impact_assessment",
+  approved: "approved_pending_implementation",
+  executing: "implementation_in_progress",
+  verifying: "implementation_complete_pending_verification",
+  closed: "closed_successful",
+};
+const canon = (s: string | null | undefined): string => (s ? STATUS_MAP[s] ?? s : s ?? "draft");
+
+// Derive a Likelihood×Severity risk matrix from the change classification so
+// the Gensuite-parity risk step + risk column render on seeded rows.
+function matrix(l: number, s: number) {
+  const score = l * s;
+  const band = score <= 4 ? "low" : score <= 9 ? "moderate" : score <= 15 ? "high" : "critical";
+  return { likelihood: l, severity: s, score, band };
+}
+const CLASS_PRE: Record<string, { l: number; s: number }> = {
+  minor: { l: 2, s: 2 }, moderate: { l: 3, s: 3 }, major: { l: 3, s: 4 }, critical: { l: 4, s: 5 },
+};
+const HAZ: Record<string, string[]> = {
+  equipment: ["mechanical"], process: ["chemical_exposure", "fire_explosion"], material: ["chemical_exposure"],
+  procedural: ["electrical"], temporary: ["mechanical"], organizational: [], software_control: ["electrical"],
+};
+function deptImpact(category: string) {
+  const on = new Set<string>(["safety"]);
+  if (category === "equipment") { on.add("engineering"); on.add("maintenance"); }
+  if (category === "process") { on.add("operations"); on.add("quality"); }
+  if (category === "procedural" || category === "organizational") on.add("operations");
+  const departments: Record<string, { affected: boolean }> = {};
+  for (const d of ["safety", "engineering", "operations", "quality", "environmental", "maintenance"]) departments[d] = { affected: on.has(d) };
+  return { departments, communicationPlan: "Affected teams briefed at shift handover; toolbox talk before go-live." };
+}
+
 // ── Workflow helper ───────────────────────────────────────────────────────────
 
 async function createMocWorkflow(opts: {
@@ -125,6 +162,25 @@ async function seedPlant(pl: "NW" | "SW") {
   const safetyOfficer = await getUser(`safety-officer.it.${slug}@safeops360.in`);
   const maintHead = await getUser(`maintenance-head.it.${slug}@safeops360.in`);
 
+  // Give a few users the DEPARTMENT_HEAD role (idempotent) so the MOC wizard's
+  // reviewer auto-suggest resolves department heads at this plant.
+  const deptHeadRole = await prisma.role.findFirst({ where: { code: "DEPARTMENT_HEAD" } });
+  if (deptHeadRole) {
+    const grants: [string, string][] = [
+      [maintHead.id, "maintenance"], [safetyOfficer.id, "safety"], [supervisor.id, "operations"],
+    ];
+    for (const [uid, dept] of grants) {
+      const exists = await prisma.userRole.findFirst({
+        where: { userId: uid, roleId: deptHeadRole.id, scopeType: "DEPARTMENT", scopeValue: dept },
+      });
+      if (!exists) {
+        await prisma.userRole.create({
+          data: { userId: uid, roleId: deptHeadRole.id, scopeType: "DEPARTMENT", scopeValue: dept },
+        });
+      }
+    }
+  }
+
   // ── Cleanup ─────────────────────────────────────────────────────────────
 
   const existing = await prisma.changeRequest.findMany({
@@ -149,25 +205,25 @@ async function seedPlant(pl: "NW" | "SW") {
   const MOCS = [
     {
       num: "0001", status: "closed", classification: "moderate", category: "equipment",
-      title: "Replacement of Dye-House Bleaching-Chemical Dosing Valves — Corrosion-Resistant Upgrade",
-      description: "Replace 6 cast-iron isolation valves in the dye-house bleaching-chemical (hydrogen peroxide / scouring) dosing system with titanium-lined valves to eliminate recurrence of the corrosion-related vapour leak (ref: CAPA-NW-DEMO-001 corrective action).",
+      title: "Replacement of Chlorine Dosing Valves — Corrosion-Resistant Upgrade",
+      description: "Replace 6 cast-iron isolation valves in the chlorine dosing system with duplex stainless steel valves to eliminate recurrence of the corrosion-related gas leak (ref: CAPA-NW-DEMO-001 corrective action).",
       origin: "incident_corrective_action",
       stepsCompleted: 6,
       initiatedAt: daysAgo(80),
       actualCompletionDate: daysAgo(55),
       classification_risk: { safety: "moderate", environmental: "low", quality: "low", operational: "moderate" },
-      affectedProcesses: ["Chemical Dosing", "Bleaching & Scouring"],
+      affectedProcesses: ["Chlorine Dosing", "Water Treatment"],
       affectedEquipment: [`EQ-${P}-DEMO-01`],
-      businessJustification: "Existing CI valves have shown corrosion failures in bleaching-chemical service. Two vapour exposure incidents in 18 months. Upgrading to titanium-lined valves eliminates root cause and meets PESO statutory requirements.",
-      expectedBenefits: "Zero recurrence of bleaching-chemical vapour leaks from valve corrosion. PESO compliance. Maintenance interval extended from 6 months to 24 months.",
+      businessJustification: "Existing CI valves have shown corrosion failures in chlorine service. Two gas exposure incidents in 18 months. Upgrading to duplex SS eliminates root cause and meets PESO statutory requirements.",
+      expectedBenefits: "Zero recurrence of chlorine gas leaks from valve corrosion. PESO compliance. Maintenance interval extended from 6 months to 24 months.",
       costEstimate: 285000,
       pssrRequired: true,
       pssrOutcome: "go",
       actors: { initiator: hse.id, assessor: safetyOfficer.id, approver: plantHead.id, executor: maintHead.id, verifier: hse.id, closer: plantHead.id },
       dependentRecords: [
         { recordType: "hira_entry", recordReference: "HIRA-2026-NW-DEMO-001 Entry 2", impactType: "must_update", impactDescription: "HIRA control measure updated to reflect SS valves. Risk score reduced.", updateStatus: "completed" },
-        { recordType: "inspection_schedule", recordReference: "Dye-House Chemical Dosing Monthly Inspection", impactType: "must_update", impactDescription: "Inspection frequency changed from monthly to quarterly for corrosion checks.", updateStatus: "completed" },
-        { recordType: "sop", recordReference: "SOP-CHEM-002 Dye-House Chemical Dosing Operations", impactType: "must_update", impactDescription: "SOP updated for new valve type — operating torque and LOTO points changed.", updateStatus: "completed" },
+        { recordType: "inspection_schedule", recordReference: "Chlorine Dosing Monthly Inspection", impactType: "must_update", impactDescription: "Inspection frequency changed from monthly to quarterly for corrosion checks.", updateStatus: "completed" },
+        { recordType: "sop", recordReference: "SOP-CHEM-002 Chlorine Dosing Operations", impactType: "must_update", impactDescription: "SOP updated for new valve type — operating torque and LOTO points changed.", updateStatus: "completed" },
       ],
       stateTransitions: [
         { from: null, to: "draft", at: daysAgo(80) },
@@ -181,8 +237,8 @@ async function seedPlant(pl: "NW" | "SW") {
     },
     {
       num: "0002", status: "executing", classification: "major", category: "process",
-      title: "Power Boiler Feed Water Treatment Process Change — Chemical Substitution",
-      description: "Replace sodium sulphite oxygen scavenger with DEHA (diethylhydroxylamine) in the boiler house & steam utilities boiler feed water treatment to improve corrosion protection and reduce chemical inventory risk.",
+      title: "Boiler Feed Water Treatment Process Change — Chemical Substitution",
+      description: "Replace sodium sulphite oxygen scavenger with DEHA (diethylhydroxylamine) in boiler feed water treatment to improve corrosion protection and reduce chemical inventory risk.",
       origin: "maintenance_initiative",
       stepsCompleted: 4,
       initiatedAt: daysAgo(45),
@@ -213,14 +269,14 @@ async function seedPlant(pl: "NW" | "SW") {
     {
       num: "0003", status: "approved", classification: "minor", category: "organizational",
       title: "Shift Structure Change — 4-Shift Rotation to 3-Shift Fixed Roster",
-      description: "Change sewing / stitching line operations from a rotating 4-shift pattern (Day/Eve/Night/Off) to a fixed 3-shift schedule to reduce fatigue incidents and improve handover consistency.",
+      description: "Change utility operations from a rotating 4-shift pattern (Day/Eve/Night/Off) to a fixed 3-shift schedule to reduce fatigue incidents and improve handover consistency.",
       origin: "operational_request",
       stepsCompleted: 3,
       initiatedAt: daysAgo(25),
       proposedImplementationDate: daysFromNow(30),
       targetCompletionDate: daysFromNow(60),
       classification_risk: { safety: "low", environmental: "low", quality: "low", operational: "low" },
-      affectedProcesses: ["Sewing Line Operations", "Shift Management"],
+      affectedProcesses: ["Utility Operations", "Shift Management"],
       affectedEquipment: [],
       businessJustification: "Rotating 4-shift pattern results in operators working 3 night shifts in a row fortnightly. Fatigue incidents increased 40% in Q4 2025 vs Q4 2024. Fixed roster reduces circadian disruption.",
       expectedBenefits: "Reduced fatigue-related incidents. Better handover quality. Improved worker satisfaction.",
@@ -230,7 +286,7 @@ async function seedPlant(pl: "NW" | "SW") {
       actors: { initiator: hse.id, assessor: hse.id, approver: plantHead.id, executor: supervisor.id, verifier: hse.id, closer: plantHead.id },
       dependentRecords: [
         { recordType: "competency_requirement", recordReference: "Shift Supervisor — Competency Matrix", impactType: "must_review", impactDescription: "Competency matrix to be reviewed for additional handover skills training.", updateStatus: "not_started" },
-        { recordType: "role_definition", recordReference: "Sewing Machine Operator Role Profile", impactType: "must_update", impactDescription: "Role profile updated to reflect fixed shift hours and responsibilities.", updateStatus: "in_progress" },
+        { recordType: "role_definition", recordReference: "Utility Operator Role Profile", impactType: "must_update", impactDescription: "Role profile updated to reflect fixed shift hours and responsibilities.", updateStatus: "in_progress" },
       ],
       stateTransitions: [
         { from: null, to: "draft", at: daysAgo(25) },
@@ -300,7 +356,7 @@ async function seedPlant(pl: "NW" | "SW") {
     {
       num: "0006", status: "draft", classification: "major", category: "equipment",
       title: "Forklift Fleet Electrification — Diesel to Lithium-Ion Battery Forklifts",
-      description: "Replace 4 diesel-powered fabric-roll handling forklifts with lithium-ion battery electric models. Includes installation of charging infrastructure, ventilation review, and fire protection assessment.",
+      description: "Replace 4 diesel-powered forklifts with lithium-ion battery electric models. Includes installation of charging infrastructure, ventilation review, and fire protection assessment.",
       origin: "operational_request",
       stepsCompleted: 0,
       initiatedAt: daysAgo(2),
@@ -309,7 +365,7 @@ async function seedPlant(pl: "NW" | "SW") {
       classification_risk: { safety: null, environmental: null, quality: null, operational: null },
       affectedProcesses: ["Warehouse & Logistics", "Material Handling"],
       affectedEquipment: [`EQ-${P}-DEMO-07`],
-      businessJustification: "Diesel forklifts contribute to indoor air quality issues in the enclosed finished-goods warehouse. Electrification aligns with company sustainability targets and eliminates diesel emission risk in classified hazardous area.",
+      businessJustification: "Diesel forklifts contribute to indoor air quality issues in enclosed warehouse. Electrification aligns with company sustainability targets and eliminates diesel emission risk in classified hazardous area.",
       expectedBenefits: "Elimination of diesel emissions. Lower operating cost (electricity vs diesel). Extended forklift duty cycle. ESG carbon footprint reduction.",
       costEstimate: 2800000,
       pssrRequired: false,
@@ -327,6 +383,10 @@ async function seedPlant(pl: "NW" | "SW") {
 
   for (const m of MOCS) {
     const mocNumber = `MOC-2026-${P}-DEMO-${m.num}`;
+    const preClass = CLASS_PRE[m.classification] ?? { l: 2, s: 2 };
+    const pre = matrix(preClass.l, preClass.s);
+    const residual = matrix(Math.max(1, pre.likelihood - 1), Math.max(1, pre.severity - 1));
+    const trainingRequired = m.dependentRecords.some((d) => d.recordType === "training_program");
 
     const moc = await prisma.changeRequest.create({
       data: {
@@ -353,16 +413,43 @@ async function seedPlant(pl: "NW" | "SW") {
         targetCompletionDate: (m as any).targetCompletionDate ?? null,
         actualImplementationDate: m.status === "closed" ? daysAgo(60) : null,
         actualCompletionDate: m.status === "closed" ? daysAgo(55) : null,
-        status: m.status,
+        status: canon(m.status),
         safetyRiskLevel: (m.classification_risk.safety as string) ?? null,
         environmentalRiskLevel: (m.classification_risk.environmental as string) ?? null,
         qualityRiskLevel: (m.classification_risk.quality as string) ?? null,
         operationalRiskLevel: (m.classification_risk.operational as string) ?? null,
-        overallResidualRisk: m.status === "closed" || m.status === "executing" ? "low" : null,
+        overallResidualRisk: m.status === "draft" ? null : residual.band,
         pssrRequired: m.pssrRequired,
         pssrOutcome: m.pssrOutcome ?? null,
         pssrConductedAt: m.pssrRequired && m.status === "closed" ? daysAgo(58) : null,
         returnToNormalCompletedAt: null,
+        // ── Gensuite-parity 5-step wizard fields ──
+        urgency: "standard",
+        riskMatrixPre: m.status === "draft" ? undefined : pre,
+        riskMatrixResidual: m.status === "draft" ? undefined : residual,
+        hazardCategories: HAZ[m.category] ?? [],
+        mitigations: "Updated HIRA, revised SOPs, and competency refresh completed before go-live.",
+        departmentImpact: deptImpact(m.category),
+        trainingRequired,
+        psmApplicable: m.num === "0001",
+        psmDetails:
+          m.num === "0001"
+            ? { coveredProcess: "Chlorine dosing / gas handling", affectedSafeguards: "Gas-detection interlock, PRV setpoints, emergency isolation" }
+            : undefined,
+        pssrChecklist:
+          m.pssrRequired && m.status === "closed"
+            ? {
+                items: [
+                  { label: "Equipment installed per approved design", verdict: "pass" },
+                  { label: "Safety & protective systems functional", verdict: "pass" },
+                  { label: "Operating procedures updated", verdict: "pass" },
+                  { label: "Affected personnel trained", verdict: "pass" },
+                ],
+                outcome: "go",
+                completedAt: daysAgo(58).toISOString(),
+                completedBy: m.actors.verifier,
+              }
+            : undefined,
         versionNumber: 1,
       },
     });
@@ -413,8 +500,8 @@ async function seedPlant(pl: "NW" | "SW") {
       await prisma.mocStateHistory.create({
         data: {
           changeRequestId: moc.id,
-          fromState: t.from ?? null,
-          toState: t.to,
+          fromState: t.from ? canon(t.from) : null,
+          toState: canon(t.to),
           transitionedAt: t.at,
           transitionedByUserId: t.to === "draft" ? m.actors.initiator
             : t.to === "submitted" ? m.actors.initiator

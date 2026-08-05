@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RotateCcw, AlertTriangle } from "lucide-react";
+import { formatDateTime } from "@/lib/utils";
 
 // Shown on a rejected record's detail page to the original initiator.
 // Submitting routes the workflow back to the first review step (CHECKER).
@@ -62,7 +63,7 @@ export function ResubmitPanel({
               <div className="mt-2 text-[11px] text-slate-500">
                 {rejectedBy && <>By <strong>{rejectedBy}</strong></>}
                 {rejectedBy && rejectedAt && " · "}
-                {rejectedAt && <>On {new Date(rejectedAt).toLocaleString("en-IN", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}</>}
+                {rejectedAt && <>On {formatDateTime(rejectedAt)}</>}
               </div>
             )}
           </div>

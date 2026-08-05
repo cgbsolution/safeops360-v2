@@ -3,6 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   ASSESS_METHODS,
   RISK_BAND_CHIP,
@@ -146,24 +151,26 @@ export function AssessmentModal({
       <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Vendor Assessment</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="h-8 w-8 text-slate-400 hover:text-slate-700">
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         {/* Lens selector */}
         <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
           {(["RISK", "ESG"] as const).map((l) => (
-            <button
+            <Button
               key={l}
+              type="button"
+              variant="ghost"
               onClick={() => setLens(l)}
-              className={
-                "rounded-md px-4 py-1.5 transition-all " +
-                (lens === l ? "bg-white text-primary-700 shadow-sm" : "text-slate-500 hover:text-slate-700")
-              }
+              className={cn(
+                "h-auto rounded-md px-4 py-1.5 text-xs font-medium transition-all",
+                lens === l ? "bg-white text-primary-700 shadow-sm" : "text-slate-500 hover:text-slate-700"
+              )}
             >
               {l === "RISK" ? "Third-Party Risk" : "ESG Posture"}
-            </button>
+            </Button>
           ))}
         </div>
 
@@ -190,10 +197,10 @@ export function AssessmentModal({
                         {d.guidance && <div className="truncate text-[11px] text-slate-400">{d.guidance}</div>}
                       </div>
                       <span className="w-12 flex-shrink-0 text-right text-[11px] tabular-nums text-slate-500">{d.weightPct}%</span>
-                      <select
+                      <Select
                         value={scores[d.domainKey] ?? ""}
                         onChange={(e) => setScore(d.domainKey, Number(e.target.value))}
-                        className="w-20 flex-shrink-0 rounded-md border border-slate-300 px-2 py-1.5 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                        className="w-20 flex-shrink-0"
                       >
                         <option value="" disabled>
                           1–5
@@ -203,13 +210,13 @@ export function AssessmentModal({
                             {n}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                     </div>
-                    <input
+                    <Input
                       value={evidence[d.domainKey] ?? ""}
                       onChange={(e) => setEvidence((prev) => ({ ...prev, [d.domainKey]: e.target.value }))}
                       placeholder="Evidence notes (optional)"
-                      className="mt-1.5 w-full rounded-md border border-slate-200 px-2 py-1 text-xs outline-none focus:border-primary-500"
+                      className="mt-1.5 text-xs"
                     />
                   </div>
                 ))}
@@ -242,59 +249,41 @@ export function AssessmentModal({
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Assessment date</label>
-                <input
-                  type="date"
-                  value={assessmentDate}
-                  onChange={(e) => setAssessmentDate(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                />
+                <Input type="date" value={assessmentDate} onChange={(e) => setAssessmentDate(e.target.value)} />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
-                <select
-                  value={method}
-                  onChange={(e) => setMethod(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                >
+                <Select value={method} onChange={(e) => setMethod(e.target.value)}>
                   {ASSESS_METHODS.map((m) => (
                     <option key={m} value={m}>
                       {METHOD_LABEL[m] ?? m.replace(/_/g, " ")}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-600">Valid until</label>
-                <input
-                  type="date"
-                  value={validUntil}
-                  onChange={(e) => setValidUntil(e.target.value)}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                />
+                <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
               </div>
             </div>
 
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Summary notes</label>
-              <textarea
-                value={summaryNotes}
-                onChange={(e) => setSummaryNotes(e.target.value)}
-                rows={2}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-              />
+              <Textarea value={summaryNotes} onChange={(e) => setSummaryNotes(e.target.value)} rows={2} />
             </div>
 
             {/* Findings capture */}
             <div>
               <div className="mb-1 flex items-center justify-between">
                 <label className="text-xs font-medium text-slate-600">Findings</label>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
                   onClick={addFinding}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-primary-700 hover:underline"
+                  className="h-auto gap-1 px-0 py-0 text-xs font-semibold text-primary-700 hover:bg-transparent hover:underline"
                 >
                   <Plus size={13} /> Add finding
-                </button>
+                </Button>
               </div>
               {findings.length === 0 ? (
                 <p className="text-[11px] text-slate-400">No findings captured.</p>
@@ -303,42 +292,44 @@ export function AssessmentModal({
                   {findings.map((f, i) => (
                     <div key={i} className="rounded-md border border-slate-200 p-2">
                       <div className="flex items-center gap-2">
-                        <select
+                        <Select
                           value={f.severity}
                           onChange={(e) => updateFinding(i, { severity: e.target.value })}
-                          className={
-                            "rounded border px-2 py-1 text-[11px] font-semibold outline-none " +
-                            (VENDOR_FINDING_CHIP[f.severity] ?? "border-slate-200 bg-slate-100 text-slate-600")
-                          }
+                          className={cn(
+                            "h-auto w-auto rounded border px-2 py-1 text-[11px] font-semibold outline-none",
+                            VENDOR_FINDING_CHIP[f.severity] ?? "border-slate-200 bg-slate-100 text-slate-600"
+                          )}
                         >
                           {SEVERITIES.map((s) => (
                             <option key={s} value={s}>
                               {s.replace(/_/g, " ")}
                             </option>
                           ))}
-                        </select>
-                        <input
+                        </Select>
+                        <Input
                           type="date"
                           value={f.targetCloseDate}
                           onChange={(e) => updateFinding(i, { targetCloseDate: e.target.value })}
-                          className="rounded-md border border-slate-300 px-2 py-1 text-xs outline-none focus:border-primary-500"
+                          className="w-auto text-xs"
                           title="Target close date"
                         />
-                        <button
+                        <Button
                           type="button"
+                          variant="ghost"
+                          size="icon"
                           onClick={() => removeFinding(i)}
-                          className="ml-auto text-slate-400 hover:text-rose-600"
+                          className="ml-auto h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-rose-600"
                           aria-label="Remove finding"
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </Button>
                       </div>
-                      <textarea
+                      <Textarea
                         value={f.description}
                         onChange={(e) => updateFinding(i, { description: e.target.value })}
                         rows={2}
                         placeholder="Describe the finding…"
-                        className="mt-1.5 w-full rounded-md border border-slate-200 px-2 py-1 text-xs outline-none focus:border-primary-500"
+                        className="mt-1.5 text-xs"
                       />
                     </div>
                   ))}
@@ -353,19 +344,12 @@ export function AssessmentModal({
         )}
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={submit}
-            disabled={busy || !valid}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" onClick={submit} disabled={busy || !valid}>
             {busy ? "Saving…" : "Create assessment"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

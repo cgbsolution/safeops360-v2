@@ -59,7 +59,7 @@ const REGULATIONS = [
   { code: "PLASTIC_WASTE_RULES_2016", name: "Plastic Waste Management Rules, 2016", jurisdiction: "INDIA", authority: "MoEFCC/CPCB", description: "Plastic waste segregation, collection, processing, and disposal", sortOrder: 60 },
   { code: "BIOMEDICAL_WASTE_RULES_2016", name: "Bio-medical Waste Management Rules, 2016", jurisdiction: "INDIA", authority: "MoEFCC/CPCB", description: "Segregation, collection, treatment, and disposal of biomedical waste", sortOrder: 70 },
   { code: "BATTERY_WASTE_RULES_2022", name: "Battery Waste Management Rules, 2022", jurisdiction: "INDIA", authority: "MoEFCC/CPCB", description: "EPR for battery producers and importers", sortOrder: 80 },
-  { code: "CPCB_INDUSTRY_STANDARDS", name: "CPCB Industry-Specific Emission and Effluent Standards", jurisdiction: "INDIA", authority: "CPCB", description: "Textile dyeing & bleaching, garment processing, and large apparel manufacturing industry-specific limits", sortOrder: 90 },
+  { code: "CPCB_INDUSTRY_STANDARDS", name: "CPCB Industry-Specific Emission and Effluent Standards", jurisdiction: "INDIA", authority: "CPCB", description: "Cement, steel, chemical, refinery industry-specific limits", sortOrder: 90 },
   { code: "NOISE_RULES_2000", name: "Noise Pollution (Regulation and Control) Rules, 2000", jurisdiction: "INDIA", authority: "MoEFCC/CPCB", description: "Ambient noise standards for industrial, commercial, residential, silence zones", sortOrder: 100 },
   { code: "EIA_NOTIFICATION_2006", name: "Environmental Impact Assessment Notification, 2006", jurisdiction: "INDIA", authority: "MoEFCC", description: "EIA requirements for new projects and modernization", sortOrder: 110 },
   { code: "FOREST_CONSERVATION_1980", name: "Forest (Conservation) Act, 1980", jurisdiction: "INDIA", authority: "MoEFCC", description: "Restriction on de-reservation of forests and non-forest use of forest land", sortOrder: 120 },
@@ -144,7 +144,7 @@ function computeCells(likelihoodScores: number[], magnitudeScores: number[]) {
 
 const ASPECTS = [
   // AIR
-  { code: "AIR_STACK_PM",          categoryCode: "AIR_EMISSIONS", name: "Stack particulate matter emissions", description: "Solid particles (SPM) emitted from process stacks (steam boiler, thermic-fluid heater, etc.)", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS","EPA_1986"], typicallySignificant: true },
+  { code: "AIR_STACK_PM",          categoryCode: "AIR_EMISSIONS", name: "Stack particulate matter emissions", description: "Solid particles emitted from process stacks (kiln, raw mill, cement mill, etc.)", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS","EPA_1986"], typicallySignificant: true },
   { code: "AIR_STACK_SOX",         categoryCode: "AIR_EMISSIONS", name: "Stack SOx emissions",             description: "Sulphur oxide emissions from combustion processes", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
   { code: "AIR_STACK_NOX",         categoryCode: "AIR_EMISSIONS", name: "Stack NOx emissions",             description: "Nitrogen oxide emissions from high-temperature combustion", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
   { code: "AIR_FUGITIVE_DUST",     categoryCode: "AIR_EMISSIONS", name: "Fugitive dust emissions",         description: "Dust emissions from material handling, storage, transport", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
@@ -174,13 +174,13 @@ const ASPECTS = [
   { code: "RES_WATER_CONSUMPTION", categoryCode: "RESOURCE_CONSUMPTION", name: "Fresh water consumption",  description: "Withdrawal of fresh water for process, cooling, sanitary use", typicalReceptors: ["SURFACE_WATER","GROUND_WATER","COMMUNITY"], typicalRegulations: ["WATER_ACT_1974","EPA_1986"], typicallySignificant: true },
   { code: "RES_ENERGY_THERMAL",    categoryCode: "RESOURCE_CONSUMPTION", name: "Thermal energy consumption", description: "Consumption of coal, fuel oil, gas for combustion processes", typicalReceptors: ["CLIMATE","AIR"], typicalRegulations: ["EPA_1986","ISO_14001_2015"], typicallySignificant: true },
   { code: "RES_ENERGY_ELECTRICAL", categoryCode: "RESOURCE_CONSUMPTION", name: "Electrical energy consumption", description: "Grid electricity consumption", typicalReceptors: ["CLIMATE"], typicalRegulations: ["ISO_14001_2015"], typicallySignificant: false },
-  { code: "RES_RAW_MATERIAL",      categoryCode: "RESOURCE_CONSUMPTION", name: "Raw material consumption", description: "Consumption of cotton yarn, greige fabric, dyes and dye-bath chemicals", typicalReceptors: ["BIODIVERSITY","SOIL"], typicalRegulations: ["EPA_1986","ISO_14001_2015"], typicallySignificant: false },
+  { code: "RES_RAW_MATERIAL",      categoryCode: "RESOURCE_CONSUMPTION", name: "Raw material consumption", description: "Consumption of natural mineral resources", typicalReceptors: ["BIODIVERSITY","SOIL"], typicalRegulations: ["EPA_1986","ISO_14001_2015"], typicallySignificant: false },
 
   // NOISE
-  { code: "NOISE_CONTINUOUS",      categoryCode: "NOISE_VIBRATION", name: "Continuous industrial noise",   description: "Steady-state noise from knitting machines, sewing lines, fans, compressors, blowers", typicalReceptors: ["COMMUNITY","EMPLOYEES"], typicalRegulations: ["NOISE_RULES_2000"], typicallySignificant: false },
-  { code: "NOISE_BLAST",           categoryCode: "NOISE_VIBRATION", name: "Impulse / pressure-release noise", description: "Steam venting, safety-valve lift, compressor blowdown, pressure release", typicalReceptors: ["COMMUNITY","EMPLOYEES","BIODIVERSITY"], typicalRegulations: ["NOISE_RULES_2000"], typicallySignificant: true },
+  { code: "NOISE_CONTINUOUS",      categoryCode: "NOISE_VIBRATION", name: "Continuous industrial noise",   description: "Steady-state noise from mills, fans, compressors, blowers", typicalReceptors: ["COMMUNITY","EMPLOYEES"], typicalRegulations: ["NOISE_RULES_2000"], typicallySignificant: false },
+  { code: "NOISE_BLAST",           categoryCode: "NOISE_VIBRATION", name: "Blast / impulse noise",         description: "Quarry blasting, impact piling, pressure release", typicalReceptors: ["COMMUNITY","EMPLOYEES","BIODIVERSITY"], typicalRegulations: ["NOISE_RULES_2000"], typicallySignificant: true },
   { code: "NOISE_TRANSPORT",       categoryCode: "NOISE_VIBRATION", name: "Vehicular / transport noise",   description: "Noise from material movement vehicles", typicalReceptors: ["COMMUNITY"], typicalRegulations: ["NOISE_RULES_2000"], typicallySignificant: false },
-  { code: "VIBRATION_BLAST",       categoryCode: "NOISE_VIBRATION", name: "Equipment ground vibration",     description: "Vibration from large rotating machines and pumps affecting structures", typicalReceptors: ["COMMUNITY"], typicalRegulations: ["EPA_1986","NOISE_RULES_2000"], typicallySignificant: false },
+  { code: "VIBRATION_BLAST",       categoryCode: "NOISE_VIBRATION", name: "Blast ground vibration",        description: "Quarry blast peak particle velocity affecting structures", typicalReceptors: ["COMMUNITY"], typicalRegulations: ["EPA_1986","NOISE_RULES_2000"], typicallySignificant: false },
 
   // BIODIVERSITY
   { code: "BIO_HABITAT_DISTURBANCE", categoryCode: "BIODIVERSITY", name: "Habitat disturbance",            description: "Construction or operation disturbing natural habitat", typicalReceptors: ["BIODIVERSITY","ECOSYSTEM"], typicalRegulations: ["WILDLIFE_PROTECTION_1972","FOREST_CONSERVATION_1980"], typicallySignificant: true },
@@ -194,39 +194,39 @@ const ASPECTS = [
   { code: "COM_TRAFFIC",           categoryCode: "COMMUNITY_IMPACT", name: "Heavy traffic on community roads", description: "Plant material movement increasing community road traffic", typicalReceptors: ["COMMUNITY"], typicalRegulations: ["EPA_1986"], typicallySignificant: false },
   { code: "COM_ODOR",              categoryCode: "COMMUNITY_IMPACT", name: "Odor to surroundings",          description: "Process or waste odors reaching neighbouring residences", typicalReceptors: ["COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","EPA_1986"], typicallySignificant: false },
 
-  // ── Page Industries cross-industry set (File 3) — EA-prefixed codes, sector-neutral ──
+  // ── Meridian cross-industry set (File 3) — EA-prefixed codes, sector-neutral ──
 
   // AIR — EA codes
-  { code: "EA-AIR-001", categoryCode: "AIR_EMISSIONS", name: "Particulate matter (SPM/PM10/PM2.5) from boiler & thermic-fluid heater stacks",
-    description: "Solid particulate emissions from steam boiler and thermic-fluid heater stacks serving the dye house entering ambient air.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS","EPA_1986"], typicallySignificant: true },
-  { code: "EA-AIR-002", categoryCode: "AIR_EMISSIONS", name: "SO2 emissions from boiler combustion",
-    description: "Sulphur dioxide from combustion of sulphur-containing fuels in the steam boiler serving dyeing and finishing.", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
-  { code: "EA-AIR-003", categoryCode: "AIR_EMISSIONS", name: "NOx emissions from boiler & thermic-fluid heater combustion",
-    description: "Nitrogen oxides from high-temperature combustion in boilers and the thermic-fluid heater.", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
+  { code: "EA-AIR-001", categoryCode: "AIR_EMISSIONS", name: "Particulate matter (PM10/PM2.5) from process operations",
+    description: "Solid particulate emissions from process operations entering ambient air.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS","EPA_1986"], typicallySignificant: true },
+  { code: "EA-AIR-002", categoryCode: "AIR_EMISSIONS", name: "SOx emissions from fuel combustion",
+    description: "Sulphur dioxide and trioxide from combustion of sulphur-containing fuels.", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
+  { code: "EA-AIR-003", categoryCode: "AIR_EMISSIONS", name: "NOx emissions from high-temperature combustion",
+    description: "Nitrogen oxides from high-temperature combustion processes.", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
   { code: "EA-AIR-004", categoryCode: "AIR_EMISSIONS", name: "CO emissions — incomplete combustion",
-    description: "Carbon monoxide from incomplete combustion in boilers, heaters, engines.", typicalReceptors: ["AIR","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
-  { code: "EA-AIR-005", categoryCode: "AIR_EMISSIONS", name: "VOC emissions from printing & finishing chemicals",
-    description: "Volatile organic compound vent emissions from screen-printing, sublimation, fixing and finishing-chemical operations.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
-  { code: "EA-AIR-006", categoryCode: "AIR_EMISSIONS", name: "Acid / chemical gas emissions from dye house",
-    description: "Acid and chemical vapours emitted from dye-bath preparation, pH correction, and chemical handling in the dye house.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
-  { code: "EA-AIR-007", categoryCode: "AIR_EMISSIONS", name: "Fugitive dust / lint from fabric, fly-ash handling, storage, transfer",
-    description: "Uncontrolled cotton dust and lint from knitting and cutting areas, plus fly-ash transfer points at the boiler house.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
-  { code: "EA-AIR-008", categoryCode: "AIR_EMISSIONS", name: "Odour from dye house, ETP, or waste storage",
-    description: "Odorous compounds from dye-bath chemicals, ETP, or solid-waste storage reaching community.", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","EPA_1986"], typicallySignificant: false },
+    description: "Carbon monoxide from incomplete combustion in furnaces, boilers, engines.", typicalReceptors: ["AIR","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
+  { code: "EA-AIR-005", categoryCode: "AIR_EMISSIONS", name: "VOC emissions from process solvents or raw materials",
+    description: "Volatile organic compound emissions from process solvents, coating operations, or raw materials.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
+  { code: "EA-AIR-006", categoryCode: "AIR_EMISSIONS", name: "HCl / HF / acid gas emissions from process",
+    description: "Acid gases emitted from chemical processes, incineration, or combustion.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: false },
+  { code: "EA-AIR-007", categoryCode: "AIR_EMISSIONS", name: "Fugitive dust from material storage, handling, transfer",
+    description: "Uncontrolled dust from open stockpiles, conveyors, and material transfer points.", typicalReceptors: ["AIR","COMMUNITY","EMPLOYEES"], typicalRegulations: ["AIR_ACT_1981","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
+  { code: "EA-AIR-008", categoryCode: "AIR_EMISSIONS", name: "Odour from process, ETP, or waste storage",
+    description: "Odorous compounds from process vents, ETP, or waste storage areas reaching community.", typicalReceptors: ["AIR","COMMUNITY"], typicalRegulations: ["AIR_ACT_1981","EPA_1986"], typicallySignificant: false },
   { code: "EA-AIR-009", categoryCode: "AIR_EMISSIONS", name: "GHG (CO2, CH4, N2O) from combustion and process",
     description: "Greenhouse gas emissions from fuel combustion and industrial processes.", typicalReceptors: ["CLIMATE","AIR"], typicalRegulations: ["EPA_1986","ISO_14001_2015"], typicallySignificant: true },
 
   // WATER — EA codes
-  { code: "EA-WATER-001", categoryCode: "WATER_DISCHARGE", name: "Dye-house & process effluent discharge to ETP (colour, COD, BOD, TDS, pH)",
-    description: "Dye-house and wet-processing effluent (colour, COD, BOD, TDS, pH, residual dye chemicals/heavy metals) discharged to effluent treatment plant.", typicalReceptors: ["SURFACE_WATER","ECOSYSTEM"], typicalRegulations: ["WATER_ACT_1974","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
+  { code: "EA-WATER-001", categoryCode: "WATER_DISCHARGE", name: "Process wastewater discharge to ETP",
+    description: "Industrial process water discharged to effluent treatment plant.", typicalReceptors: ["SURFACE_WATER","ECOSYSTEM"], typicalRegulations: ["WATER_ACT_1974","CPCB_INDUSTRY_STANDARDS"], typicallySignificant: true },
   { code: "EA-WATER-002", categoryCode: "WATER_DISCHARGE", name: "Cooling water blowdown discharge",
     description: "Cooling tower blowdown with dissolved solids and biocide residuals.", typicalReceptors: ["SURFACE_WATER"], typicalRegulations: ["WATER_ACT_1974"], typicallySignificant: false },
   { code: "EA-WATER-003", categoryCode: "WATER_DISCHARGE", name: "Boiler blowdown discharge",
     description: "High-temperature blowdown from boilers containing dissolved solids and treatment chemicals.", typicalReceptors: ["SURFACE_WATER"], typicalRegulations: ["WATER_ACT_1974"], typicallySignificant: false },
   { code: "EA-WATER-004", categoryCode: "WATER_DISCHARGE", name: "Stormwater runoff from plant area — potential contamination",
     description: "Rainwater runoff over plant areas potentially picking up contaminants.", typicalReceptors: ["SURFACE_WATER","SOIL"], typicalRegulations: ["WATER_ACT_1974","EPA_1986"], typicallySignificant: true },
-  { code: "EA-WATER-005", categoryCode: "WATER_DISCHARGE", name: "Dye / chemical / oil spill to drainage and water body",
-    description: "Accidental dye-bath, chemical or oil release entering plant drainage and reaching water body.", typicalReceptors: ["SURFACE_WATER","GROUND_WATER","ECOSYSTEM"], typicalRegulations: ["WATER_ACT_1974","EPA_1986"], typicallySignificant: true },
+  { code: "EA-WATER-005", categoryCode: "WATER_DISCHARGE", name: "Chemical / oil spill to drainage and water body",
+    description: "Accidental chemical or oil release entering plant drainage and reaching water body.", typicalReceptors: ["SURFACE_WATER","GROUND_WATER","ECOSYSTEM"], typicalRegulations: ["WATER_ACT_1974","EPA_1986"], typicallySignificant: true },
   { code: "EA-WATER-006", categoryCode: "WATER_DISCHARGE", name: "Domestic wastewater from plant facilities",
     description: "Sanitary effluent from canteen, toilets, and welfare facilities.", typicalReceptors: ["SURFACE_WATER","ECOSYSTEM"], typicalRegulations: ["WATER_ACT_1974"], typicallySignificant: false },
   { code: "EA-WATER-007", categoryCode: "RESOURCE_CONSUMPTION", name: "Groundwater extraction — drawdown impact",
@@ -234,7 +234,7 @@ const ASPECTS = [
 
   // WASTE — EA codes
   { code: "EA-WASTE-001", categoryCode: "WASTE_GENERATION", name: "Hazardous waste generation — process byproducts",
-    description: "Hazardous waste generated as byproducts of dyeing, bleaching/scouring and chemical-handling processes.", typicalReceptors: ["SOIL","COMMUNITY","ECOSYSTEM"], typicalRegulations: ["HAZARDOUS_WASTE_RULES_2016","EPA_1986"], typicallySignificant: true },
+    description: "Hazardous waste generated as byproducts of manufacturing processes.", typicalReceptors: ["SOIL","COMMUNITY","ECOSYSTEM"], typicalRegulations: ["HAZARDOUS_WASTE_RULES_2016","EPA_1986"], typicallySignificant: true },
   { code: "EA-WASTE-002", categoryCode: "WASTE_GENERATION", name: "Used oil and lubricant waste",
     description: "Spent lubricating oil and hydraulic fluid from equipment maintenance.", typicalReceptors: ["SOIL","GROUND_WATER"], typicalRegulations: ["HAZARDOUS_WASTE_RULES_2016","EPA_1986"], typicallySignificant: false },
   { code: "EA-WASTE-003", categoryCode: "WASTE_GENERATION", name: "Chemical packaging waste — drums, IBCs, bags",
@@ -245,20 +245,20 @@ const ASPECTS = [
     description: "Medical waste from first aid and occupational health centre.", typicalReceptors: ["COMMUNITY","SOIL"], typicalRegulations: ["BIOMEDICAL_WASTE_RULES_2016"], typicallySignificant: false },
   { code: "EA-WASTE-006", categoryCode: "WASTE_GENERATION", name: "Construction and demolition waste from projects",
     description: "Inert and mixed waste from capital projects and maintenance shutdowns.", typicalReceptors: ["SOIL","COMMUNITY"], typicalRegulations: ["EPA_1986"], typicallySignificant: false },
-  { code: "EA-WASTE-007", categoryCode: "WASTE_GENERATION", name: "Solid waste — ETP sludge, fabric/lint, cut-waste, fly-ash and general waste",
-    description: "ETP primary/biological sludge, fabric/lint and cutting-room cut-waste, boiler fly-ash and non-hazardous general waste from process and welfare areas.", typicalReceptors: ["SOIL","COMMUNITY"], typicalRegulations: ["EPA_1986"], typicallySignificant: false },
+  { code: "EA-WASTE-007", categoryCode: "WASTE_GENERATION", name: "General solid waste — non-hazardous process and domestic",
+    description: "Non-hazardous general waste from process and welfare areas.", typicalReceptors: ["SOIL","COMMUNITY"], typicalRegulations: ["EPA_1986"], typicallySignificant: false },
 
   // RESOURCE — EA codes
   { code: "EA-RESRC-001", categoryCode: "RESOURCE_CONSUMPTION", name: "Electricity consumption — grid power",
     description: "Grid electricity consumed for process, utilities, lighting, and HVAC.", typicalReceptors: ["CLIMATE"], typicalRegulations: ["ISO_14001_2015"], typicallySignificant: true },
   { code: "EA-RESRC-002", categoryCode: "RESOURCE_CONSUMPTION", name: "Fuel consumption — coal, furnace oil, diesel, LPG, PNG",
     description: "Thermal fuel consumed in furnaces, boilers, vehicles, and gensets.", typicalReceptors: ["CLIMATE","AIR"], typicalRegulations: ["EPA_1986","ISO_14001_2015"], typicallySignificant: true },
-  { code: "EA-RESRC-003", categoryCode: "RESOURCE_CONSUMPTION", name: "High fresh water consumption — dyeing, washing, cooling, domestic",
-    description: "Total fresh water withdrawn for dyeing, fabric washing/rinsing, cooling and domestic uses.", typicalReceptors: ["SURFACE_WATER","GROUND_WATER","COMMUNITY"], typicalRegulations: ["WATER_ACT_1974","EPA_1986"], typicallySignificant: true },
-  { code: "EA-RESRC-004", categoryCode: "RESOURCE_CONSUMPTION", name: "Raw material consumption — cotton yarn, fabric, recycled fibre",
-    description: "Consumption of combed cotton yarn, greige fabric, recycled cotton fibre and dye-bath chemicals for garment manufacturing.", typicalReceptors: ["BIODIVERSITY","SOIL"], typicalRegulations: ["EPA_1986","ISO_14001_2015"], typicallySignificant: false },
+  { code: "EA-RESRC-003", categoryCode: "RESOURCE_CONSUMPTION", name: "Water consumption — process, cooling, domestic",
+    description: "Total fresh water withdrawn for all plant uses.", typicalReceptors: ["SURFACE_WATER","GROUND_WATER","COMMUNITY"], typicalRegulations: ["WATER_ACT_1974","EPA_1986"], typicallySignificant: true },
+  { code: "EA-RESRC-004", categoryCode: "RESOURCE_CONSUMPTION", name: "Raw material consumption",
+    description: "Consumption of natural or processed raw materials for manufacturing.", typicalReceptors: ["BIODIVERSITY","SOIL"], typicalRegulations: ["EPA_1986","ISO_14001_2015"], typicallySignificant: false },
   { code: "EA-RESRC-005", categoryCode: "RESOURCE_CONSUMPTION", name: "Packaging material consumption",
-    description: "Consumption of packaging materials including poly bags, cartons and trims.", typicalReceptors: ["SOIL","COMMUNITY"], typicalRegulations: ["PLASTIC_WASTE_RULES_2016"], typicallySignificant: false },
+    description: "Consumption of packaging materials including plastics and paper.", typicalReceptors: ["SOIL","COMMUNITY"], typicalRegulations: ["PLASTIC_WASTE_RULES_2016"], typicallySignificant: false },
 
   // LAND — EA codes
   { code: "EA-LAND-001", categoryCode: "LAND_CONTAMINATION", name: "Land use — plant footprint and associated impact",

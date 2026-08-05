@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
-import { Shield } from "lucide-react";
+import { Search, Shield, X } from "lucide-react";
 import {
   DEMO_PLANTS,
   DEMO_DEPARTMENTS,
@@ -42,6 +42,32 @@ const KEY_PERSONAS: { email: string; name: string; designation: string; group: (
   { email: "priya.nair@safeops360.in", name: "Priya Nair", designation: "HSE Manager (primary demo)", group: "Risk Owners & Operations", covers: "Shop-floor EHS modules" },
 ];
 
+// One row of the "search any user" picker — mirrors the payload returned by
+// /api/login/demo-search (backend `/api/auth/demo-search`, Prisma fallback).
+type DirectoryHit = {
+  email: string;
+  name: string;
+  role: string | null;
+  designation: string | null;
+  department: string | null;
+  plantCode: string | null;
+  plantName: string | null;
+};
+
+// Role codes are stored as WORKER / HSE_MANAGER / … — render the human label
+// from the demo taxonomy when it's known, otherwise title-case the code so a
+// role added outside DEMO_ROLES still reads as words, never as a raw enum.
+function roleLabel(code: string | null): string {
+  if (!code) return "—";
+  const known = DEMO_ROLES.find((r) => r.roleCode === code || r.legacyRole === code);
+  if (known) return known.label;
+  return code
+    .toLowerCase()
+    .split("_")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
@@ -58,6 +84,14 @@ export default function LoginPage() {
   const [plantSlug, setPlantSlug] = useState(DEMO_PLANTS[0].slug);
   const [deptSlug, setDeptSlug] = useState(DEMO_DEPARTMENTS[0].slug);
   const [roleSlug, setRoleSlug] = useState(DEMO_ROLES[0].emailSlug);
+
+  // Free-text search over every seeded demo account (name or email), so a
+  // demo can be driven from a person's name instead of the role×dept×plant
+  // email pattern. Sits above the two pickers below.
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchHits, setSearchHits] = useState<DirectoryHit[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchActive = searchQuery.trim().length >= 2;
 
   function fillPersona(personaEmail: string) {
     setEmail(personaEmail);
@@ -95,6 +129,31 @@ export default function LoginPage() {
     })();
     return () => { cancelled = true; };
   }, [composedEmail]);
+
+  // Debounced directory search (250ms) — cancellation flag so a slow response
+  // for an earlier keystroke can't overwrite the results of a later one.
+  useEffect(() => {
+    const term = searchQuery.trim();
+    if (term.length < 2) {
+      setSearchHits([]);
+      setSearchLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSearchLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/login/demo-search?q=${encodeURIComponent(term)}`);
+        const j = await r.json().catch(() => ({}));
+        if (!cancelled) setSearchHits(r.ok && Array.isArray(j.results) ? j.results : []);
+      } catch {
+        if (!cancelled) setSearchHits([]);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    }, 250);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [searchQuery]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -214,8 +273,68 @@ export default function LoginPage() {
             </form>
 
             <div className="mt-6 pt-6 border-t space-y-3">
-              {/* Mode toggle */}
-              <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-0.5">
+              {/* ── Search any user — name or email, across every demo tenant ── */}
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  {/* type="text", not "search" — a search input adds a second,
+                      browser-native clear affordance next to our own X. */}
+                  <Input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Search any user by name or email — e.g. deepak"
+                    aria-label="Search demo users by name or email"
+                    className="h-9 pl-9 pr-8 text-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      aria-label="Clear search"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
+
+                {searchActive && (
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] text-slate-500">
+                      {searchLoading
+                        ? "Searching…"
+                        : searchHits.length
+                          ? `${searchHits.length} user${searchHits.length === 1 ? "" : "s"} matched "${searchQuery.trim()}"`
+                          : `No user matched "${searchQuery.trim()}"`}
+                    </div>
+                    {searchHits.length > 0 && (
+                      <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+                        {searchHits.map((u) => (
+                          <div key={u.email} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-[11px] font-semibold text-slate-900">{u.name}</div>
+                              <div className="truncate text-[10px] text-slate-500">
+                                {[u.plantCode ?? "Cross-plant", u.department, u.designation ?? roleLabel(u.role)]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </div>
+                              <div className="truncate font-mono text-[10px] text-slate-400">{u.email}</div>
+                            </div>
+                            <Button type="button" size="sm" onClick={() => fillPersona(u.email)} className="shrink-0">Use this</Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div className="text-[10px] text-slate-500">
+                      Password: <code className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{DEMO_PASSWORD}</code> · clear the search to go back to the pickers.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Mode toggle — hidden while a search is running so the card stays compact */}
+              <div className={`flex items-center gap-1 bg-slate-100 rounded-lg p-0.5 ${searchActive ? "hidden" : ""}`}>
                 <button
                   type="button"
                   onClick={() => setPickerMode("persona")}
@@ -233,7 +352,7 @@ export default function LoginPage() {
               </div>
 
               {/* ── Key Accounts mode — single plant-wide base accounts ── */}
-              {pickerMode === "persona" && (
+              {!searchActive && pickerMode === "persona" && (
                 <div className="space-y-2">
                   <div className="text-[10px] text-slate-500">Meridian Manufacturing — one named account per role, plant-wide (not the dept×plant matrix).</div>
                   <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
@@ -262,7 +381,7 @@ export default function LoginPage() {
               )}
 
               {/* ── Meridian Full Matrix mode ── */}
-              {pickerMode === "matrix" && (
+              {!searchActive && pickerMode === "matrix" && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <div className="text-[10px] text-slate-500">Meridian Manufacturing — {DEMO_PLANTS.length}P × {DEMO_DEPARTMENTS.length}D × {DEMO_ROLES.length}R = {DEMO_PLANTS.length * DEMO_DEPARTMENTS.length * DEMO_ROLES.length} users</div>

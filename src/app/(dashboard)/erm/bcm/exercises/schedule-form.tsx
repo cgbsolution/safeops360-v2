@@ -4,6 +4,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { EXERCISE_TYPES } from "@/app/(dashboard)/erm/lib-p3";
 
 type PlanOption = { id: string; planCode: string; title: string };
@@ -22,12 +27,9 @@ export function ScheduleExerciseButton() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800"
-      >
+      <Button onClick={() => setOpen(true)}>
         <Plus size={16} /> Schedule Exercise
-      </button>
+      </Button>
       {open && <ScheduleModal onClose={() => setOpen(false)} onDone={() => { setOpen(false); router.refresh(); }} />}
     </>
   );
@@ -112,45 +114,42 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
       <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Schedule Exercise</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Title</label>
-            <input
+            <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Q3 IT DR failover tabletop"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Exercise type</label>
-              <select
-                value={exerciseType}
-                onChange={(e) => setExerciseType(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-              >
+              <Select value={exerciseType} onChange={(e) => setExerciseType(e.target.value)}>
                 {EXERCISE_TYPES.map((t) => (
                   <option key={t} value={t}>
                     {TYPE_LABEL[t] ?? t.replace(/_/g, " ")}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</label>
-              <input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-              />
+              <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
             </div>
           </div>
 
@@ -183,12 +182,7 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
               <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
                 {plans.map((p) => (
                   <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
-                    <input
-                      type="checkbox"
-                      checked={testedPlanIds.includes(p.id)}
-                      onChange={() => togglePlan(p.id)}
-                      className="rounded border-slate-300"
-                    />
+                    <Checkbox checked={testedPlanIds.includes(p.id)} onChange={() => togglePlan(p.id)} />
                     <span className="font-medium text-primary-700">{p.planCode}</span>
                     <span className="truncate text-slate-600">{p.title}</span>
                   </label>
@@ -202,12 +196,11 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Objectives (one per line)</label>
-            <textarea
+            <Textarea
               value={objectivesText}
               onChange={(e) => setObjectivesText(e.target.value)}
               rows={3}
               placeholder={"Validate RTO for order-to-cash\nConfirm call-tree reachability"}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
@@ -217,19 +210,12 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            onClick={submit}
-            disabled={busy || !valid}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" onClick={submit} disabled={busy || !valid}>
             {busy ? "Scheduling…" : "Schedule"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

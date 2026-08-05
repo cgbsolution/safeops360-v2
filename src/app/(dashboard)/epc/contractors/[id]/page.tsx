@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   HardHat,
   Users,
@@ -258,31 +259,31 @@ export default async function ContractorDetailPage({ params }: { params: Promise
               <FileText size={15} /> Compliance Documents
             </h2>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                <th className="px-4 py-2.5">Document Type</th>
-                <th className="px-4 py-2.5">Document No.</th>
-                <th className="px-4 py-2.5">Valid Upto</th>
-                <th className="px-4 py-2.5">Status</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Document Type</TableHead>
+                <TableHead>Document No.</TableHead>
+                <TableHead>Valid Upto</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {docs.map((doc, i) => (
-                <tr key={i} className="border-b last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-medium text-slate-900">{humanizeStatus(doc.documentType)}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-600">{doc.documentNumber ?? "—"}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(doc.validUpto)}</td>
-                  <td className="px-4 py-2.5">
+                <TableRow key={i}>
+                  <TableCell className="font-medium text-slate-900">{humanizeStatus(doc.documentType)}</TableCell>
+                  <TableCell className="font-mono text-xs text-slate-600">{doc.documentNumber ?? "—"}</TableCell>
+                  <TableCell className="text-slate-600">{fmtDate(doc.validUpto)}</TableCell>
+                  <TableCell>
                     <span className="inline-flex items-center gap-1 text-xs font-medium">
                       {docStatusIcon(doc.status)}
                       {humanizeStatus(doc.status)}
                     </span>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 
@@ -300,36 +301,36 @@ export default async function ContractorDetailPage({ params }: { params: Promise
             No workers registered under this company.
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-slate-50 border-b text-xs font-semibold text-slate-600 uppercase tracking-wide text-left">
-                <th className="px-4 py-2.5">Worker Code</th>
-                <th className="px-4 py-2.5">Name</th>
-                <th className="px-4 py-2.5">Trade</th>
-                <th className="px-4 py-2.5">Status</th>
-                <th className="px-4 py-2.5 text-right">Mobilizations</th>
-                <th className="px-4 py-2.5"></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Worker Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Trade</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Mobilizations</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {workers.map((w) => (
-                <tr key={w.id} className="border-b last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-mono text-xs text-slate-500">{w.workerCode}</td>
-                  <td className="px-4 py-2.5 font-medium text-slate-900">{w.fullName}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{w.primaryTrade}</td>
-                  <td className="px-4 py-2.5">
+                <TableRow key={w.id}>
+                  <TableCell className="font-mono text-xs text-slate-500">{w.workerCode}</TableCell>
+                  <TableCell className="font-medium text-slate-900">{w.fullName}</TableCell>
+                  <TableCell className="text-slate-600">{w.primaryTrade}</TableCell>
+                  <TableCell>
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${workerStatusClass(w.status)}`}>
                       {humanizeStatus(w.status)}
                     </span>
-                  </td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">{w.activeMobilizations}</td>
-                  <td className="px-4 py-2.5">
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-slate-700">{w.activeMobilizations}</TableCell>
+                  <TableCell>
                     <Link href={`/epc/workers/${w.id}`} className="text-xs text-cyan-700 hover:underline">View</Link>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </div>
     </div>

@@ -7,6 +7,12 @@ import { Can } from "@/components/auth/can";
 import { FilterTab, FilterTabsList } from "@/components/ui/filter-tabs";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { CapaAnalyticsStrip } from "@/components/capa/analytics-strip";
+import { InsightBar } from "@/components/ai/InsightBar";
+import { SignalChip } from "@/components/ai/SignalChip";
+import { InsightHero } from "@/components/observations/insight-hero";
+import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
+import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
+import { fetchInsights } from "@/lib/insights";
 import { Plus, FileDown } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -83,19 +89,73 @@ const SEVERITY_CHIP: Record<string, string> = {
 };
 
 export default async function CapaListPage(
-  props: { searchParams: Promise<{ state?: string; source?: string; severity?: string }> }
+  props: { searchParams: Promise<{ state?: string; source?: string; severity?: string; insight?: string }> }
 ) {
   const sp = await props.searchParams;
 
-  const data = await backendFetch<ListResp>("/api/capa", {
-    query: {
-      state: sp.state ?? null,
-      sourceCategory: sp.source ?? null,
-      severity: sp.severity ?? null
-    }
-  });
+  const [data, insights] = await Promise.all([
+    backendFetch<ListResp>("/api/capa", {
+      query: {
+        state: sp.state ?? null,
+        sourceCategory: sp.source ?? null,
+        severity: sp.severity ?? null
+      }
+    }),
+    fetchInsights("capa")
+  ]);
 
   const all = Object.values(data.stateCounts).reduce((a, b) => a + b, 0);
+
+  // Insight-card click-through: narrow the list to the active insight's CAPAs.
+  const activeInsight = sp.insight
+    ? insights.bar.find((i) => i.id === sp.insight)
+    : undefined;
+  const visibleItems = activeInsight
+    ? data.items.filter((c) => activeInsight.recordRefs.includes(c.capaNumber))
+    : data.items;
+
+  // "This week's focus" hero + panels — reuse the shared builder + component.
+  const CAPA_OPEN = new Set(["DRAFT", "SUBMITTED", "UNDER_RCA", "ACTIONS_PLANNED", "ACTIONS_IN_PROGRESS", "PENDING_VERIFICATION"]);
+  const capaOpen = data.items.filter((c) => CAPA_OPEN.has(c.state));
+  const capaHero = buildHeroFromRecords(
+    data.items.map((c) => ({
+      date: new Date(c.createdAt),
+      open: CAPA_OPEN.has(c.state),
+      severity: c.severity,
+      group: (c.sourceCategoryCode ?? "OTHER").replace(/_/g, " ")
+    })),
+    {
+      type: "capa risk",
+      critical: ["CRITICAL", "HIGH"],
+      headline: (n, g) => `${n} serious CAPAs open — mostly ${g}`,
+      qualifier: "audit exposure",
+      actionHref: "/capa?severity=CRITICAL",
+      railTitle: "By source",
+      closing: (d) => `Oldest open CAPA is ${d} days.`,
+      statLabels: { critical: "critical", high: "high" }
+    }
+  );
+  const capaStateAgg = new Map<string, { count: number; totalDays: number }>();
+  capaOpen.forEach((c) => {
+    const e = capaStateAgg.get(c.state) ?? { count: 0, totalDays: 0 };
+    e.count += 1;
+    e.totalDays += c.daysOpen;
+    capaStateAgg.set(c.state, e);
+  });
+  const capaBottleneck = Array.from(capaStateAgg.entries())
+    .map(([step, v]) => ({ step: step.replace(/_/g, " "), count: v.count, avgDays: Math.round((v.totalDays / v.count) * 10) / 10 }))
+    .sort((a, b) => b.avgDays - a.avgDays);
+  const capaCatAgg = new Map<string, { count: number; areas: Set<string> }>();
+  capaOpen.forEach((c) => {
+    const cat = c.sourceCategoryCode ?? "OTHER";
+    const e = capaCatAgg.get(cat) ?? { count: 0, areas: new Set<string>() };
+    e.count += 1;
+    e.areas.add(c.plantId);
+    capaCatAgg.set(cat, e);
+  });
+  const capaCategory = Array.from(capaCatAgg.entries())
+    .map(([category, v]) => ({ category, count: v.count, areaCount: v.areas.size }))
+    .sort((a, b) => b.count - a.count);
 
   return (
     <div>
@@ -158,6 +218,18 @@ export default async function CapaListPage(
         </Suspense>
       </div>
 
+      {capaHero ? <InsightHero hero={capaHero} /> : <InsightBar insights={insights.bar} />}
+
+      {(capaBottleneck.length > 0 || capaCategory.length > 0) && (
+        <ObservationAnalyticsPanels
+          bottleneck={capaBottleneck}
+          category={capaCategory}
+          activeCategory={null}
+          basePath="/capa"
+          concentratedTitle="By source"
+        />
+      )}
+
       <FilterTabsList label="Source" className="mb-3">
         <FilterTab href="/capa" label="All" count={all} active={!sp.source} />
         {Object.entries(data.sourceCategoryCounts).map(([code, count]) => (
@@ -208,7 +280,7 @@ export default async function CapaListPage(
               </tr>
             </thead>
             <tbody className="divide-y">
-              {data.items.map((c) => (
+              {visibleItems.map((c) => (
                 <tr
                   key={c.id}
                   className={c.daysOverdue > 0 ? "bg-rose-50/40 hover:bg-rose-50/60" : "hover:bg-slate-50"}
@@ -247,13 +319,18 @@ export default async function CapaListPage(
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span
-                      className={`inline-block px-2 py-0.5 text-xs rounded border ${
-                        STATE_CHIP[c.state] ?? "bg-slate-100 text-slate-800 border-slate-200"
-                      }`}
-                    >
-                      {c.state.replace(/_/g, " ")}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span
+                        className={`inline-block px-2 py-0.5 text-xs rounded border ${
+                          STATE_CHIP[c.state] ?? "bg-slate-100 text-slate-800 border-slate-200"
+                        }`}
+                      >
+                        {c.state.replace(/_/g, " ")}
+                      </span>
+                      {insights.signalByRecord.get(c.id) && (
+                        <SignalChip signal={insights.signalByRecord.get(c.id)!} href={`/capa/${c.id}`} />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-slate-700">{c.primaryOwnerName ?? "—"}</td>
                   <td className="px-4 py-3 text-xs">

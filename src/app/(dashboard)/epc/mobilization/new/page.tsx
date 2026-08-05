@@ -7,6 +7,7 @@ import { ArrowLeft, Loader2, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 
 type Site = { id: string; siteName: string; siteCode: string };
 type Worker = { id: string; fullName: string; workerCode: string; primaryTrade: string; contractorCompanyName?: string };
@@ -89,49 +90,49 @@ export default function NewMobilizationPage() {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="siteId">Construction Site *</Label>
-            <select
+            <Select
               id="siteId"
               required
               value={form.siteId}
               onChange={e => setForm(f => ({ ...f, siteId: e.target.value }))}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="mt-1"
             >
               <option value="">Select a site...</option>
               {sites.map(s => (
                 <option key={s.id} value={s.id}>{s.siteName} ({s.siteCode})</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="sm:col-span-2">
             <Label htmlFor="contractorWorkerId">Contractor Worker *</Label>
-            <select
+            <Select
               id="contractorWorkerId"
               required
               value={form.contractorWorkerId}
               onChange={e => setForm(f => ({ ...f, contractorWorkerId: e.target.value }))}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="mt-1"
             >
               <option value="">Select a worker...</option>
               {workers.map(w => (
                 <option key={w.id} value={w.id}>{w.fullName} — {w.primaryTrade} ({w.workerCode})</option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <Label htmlFor="mobilizationType">Mobilization Type</Label>
-            <select
+            <Select
               id="mobilizationType"
               value={form.mobilizationType}
               onChange={e => setForm(f => ({ ...f, mobilizationType: e.target.value }))}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="mt-1"
             >
               <option value="new_deployment">New Deployment</option>
               <option value="re_deployment">Re-deployment</option>
               <option value="trade_change">Trade Change</option>
               <option value="replacement">Replacement</option>
-            </select>
+            </Select>
           </div>
 
           <div>

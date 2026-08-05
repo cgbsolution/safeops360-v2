@@ -151,16 +151,16 @@ async function ensureGlobalMasters() {
 // ── Equipment definitions ─────────────────────────────────────────────────────
 
 const EQUIPMENT_DEFS = [
-  { idx: "01", name: "Reactive Dye Dosing System — Dye House", category: "PROCESS_EQUIPMENT", sub: "Chemical Dosing", criticality: "A", freq: "MONTHLY", make: "Grundfos", model: "DME 60-10", serial: "GFD-2021-4421", mfr: "Grundfos A/S" },
-  { idx: "02", name: "EOT Crane 5T — Dye House Bay", category: "CRANE", sub: "Overhead EOT Crane", criticality: "A", freq: "WEEKLY", make: "Electromech", model: "EOT-5T-20M", serial: "EM-OHC-2019-1143", mfr: "Electromech Industries" },
+  { idx: "01", name: "Chlorine Dosing System", category: "PROCESS_EQUIPMENT", sub: "Chemical Dosing", criticality: "A", freq: "MONTHLY", make: "Grundfos", model: "DME 60-10", serial: "GFD-2021-4421", mfr: "Grundfos A/S" },
+  { idx: "02", name: "Overhead Crane 5T — Bay A", category: "CRANE", sub: "Overhead EOT Crane", criticality: "A", freq: "WEEKLY", make: "Electromech", model: "EOT-5T-20M", serial: "EM-OHC-2019-1143", mfr: "Electromech Industries" },
   { idx: "03", name: "Fire Water Pump FW-01 (Main)", category: "FIRE_SYSTEM", sub: "Fire Pump", criticality: "A", freq: "WEEKLY", make: "Kirloskar", model: "KDS-2200-1450", serial: "KIR-FWP-2018-2267", mfr: "Kirloskar Brothers Ltd" },
-  { idx: "04", name: "Multi-fuel Boiler BLR-01 (15 Bar)", category: "PRESSURE_VESSEL", sub: "Boiler", criticality: "A", freq: "MONTHLY", make: "Thermax", model: "TDBX-3000", serial: "THX-BLR-2017-0891", mfr: "Thermax Ltd" },
+  { idx: "04", name: "Process Boiler BLR-01 (15 Bar)", category: "PRESSURE_VESSEL", sub: "Boiler", criticality: "A", freq: "MONTHLY", make: "Thermax", model: "TDBX-3000", serial: "THX-BLR-2017-0891", mfr: "Thermax Ltd" },
   { idx: "05", name: "Compressed Air Receiver AR-101 (10 Bar)", category: "PRESSURE_VESSEL", sub: "Air Receiver", criticality: "B", freq: "MONTHLY", make: "Atlas Copco", model: "GAe-11-10", serial: "ACO-RCV-2020-3312", mfr: "Atlas Copco India" },
   { idx: "06", name: "DG Set 500kVA — Emergency Power", category: "ELECTRICAL", sub: "Diesel Generator", criticality: "A", freq: "WEEKLY", make: "Cummins", model: "C500D5", serial: "CUM-DG-2020-7743", mfr: "Cummins India" },
-  { idx: "07", name: "Fork Lift Truck 3T — FLT-01 (Fabric Roll Handling)", category: "MOBILE_EQUIPMENT", sub: "Forklift", criticality: "B", freq: "DAILY", make: "Godrej", model: "EFG-3T", serial: "GDJ-FLT-2022-0441", mfr: "Godrej Material Handling" },
+  { idx: "07", name: "Fork Lift Truck 3T — FLT-01", category: "MOBILE_EQUIPMENT", sub: "Forklift", criticality: "B", freq: "DAILY", make: "Godrej", model: "EFG-3T", serial: "GDJ-FLT-2022-0441", mfr: "Godrej Material Handling" },
   { idx: "08", name: "Cooling Tower CT-01 (Evaporative)", category: "UTILITIES", sub: "Cooling Tower", criticality: "B", freq: "MONTHLY", make: "Paharpur", model: "Crossflow-2500", serial: "PPR-CT-2018-1891", mfr: "Paharpur Cooling Towers" },
-  { idx: "09", name: "Soft-flow Dyeing Machine SFD-201 (Dye House)", category: "PRESSURE_VESSEL", sub: "Process Vessel", criticality: "A", freq: "MONTHLY", make: "Bharat Heavy Electricals", model: "BHE-PV-2000-14B", serial: "BHEL-PV-2016-0077", mfr: "BHEL" },
-  { idx: "10", name: "Electrical MCC Panel — Knitting Hall Drive", category: "ELECTRICAL", sub: "Motor Control Centre", criticality: "A", freq: "MONTHLY", make: "L&T", model: "3W3-MCC-400A", serial: "LT-MCC-2021-5512", mfr: "Larsen & Toubro" },
+  { idx: "09", name: "Pressure Vessel PV-201 (Process Tank)", category: "PRESSURE_VESSEL", sub: "Process Vessel", criticality: "A", freq: "MONTHLY", make: "Bharat Heavy Electricals", model: "BHE-PV-2000-14B", serial: "BHEL-PV-2016-0077", mfr: "BHEL" },
+  { idx: "10", name: "Electrical MCC Panel — Block A", category: "ELECTRICAL", sub: "Motor Control Centre", criticality: "A", freq: "MONTHLY", make: "L&T", model: "3W3-MCC-400A", serial: "LT-MCC-2021-5512", mfr: "Larsen & Toubro" },
 ];
 
 // ── Inspection scenarios ──────────────────────────────────────────────────────
@@ -218,7 +218,7 @@ async function seedPlant(
       data: {
         code, name: eq.name, category: eq.category,
         subCategory: eq.sub, plantId: plant.id,
-        location: `Knitting Section — ${P === "NW" ? "North Garment Unit" : "South Garment Unit"}`,
+        location: `Process Area A — ${P === "NW" ? "North Works" : "South Works"}`,
         make: eq.make, modelNumber: eq.model, serialNumber: eq.serial,
         manufacturer: eq.mfr,
         commissioningDate: daysAgo(1800 + parseInt(eq.idx) * 30),

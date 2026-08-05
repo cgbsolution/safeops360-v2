@@ -2,7 +2,8 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { BandBadge, KpiTile } from "@/components/erm/shared";
-import { STATE_CHIP, fmtDate, type TreatmentTrackerRow } from "../lib";
+import { TreatmentProgressCell } from "@/components/erm/treatment-progress-cell";
+import { STATE_CHIP, fmtDate, fmtInr, type TreatmentTrackerRow } from "../lib";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,9 @@ type TreatmentTrackerResponse = {
   overdueCount: number;
   closedThisQuarter: number;
   avgClosureDays: number | null;
+  totalExpectedLossReductionInr?: number;
+  totalTreatmentCostInr?: number;
+  portfolioRiskReductionPerRupee?: number | null;
 };
 
 const STRATEGIES = ["TREAT", "TOLERATE", "TRANSFER", "TERMINATE"] as const;
@@ -84,11 +88,12 @@ export default async function TreatmentTrackerPage(props: {
       ) : (
         <>
           {/* KPI strip */}
-          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-5">
             <KpiTile label="Open Treatments" value={data.openCount} />
             <KpiTile label="Overdue" value={data.overdueCount} tone="critical" />
             <KpiTile label="Closed This Quarter" value={data.closedThisQuarter} tone="good" />
-            <KpiTile label="Avg Closure Days" value={data.avgClosureDays ?? "—"} />
+            <KpiTile label="₹ Exposure Removed" value={fmtInr(data.totalExpectedLossReductionInr ?? 0)} tone="good" sub={`spend ${fmtInr(data.totalTreatmentCostInr ?? 0)}`} />
+            <KpiTile label="Risk-Reduction / ₹" value={data.portfolioRiskReductionPerRupee != null ? `${data.portfolioRiskReductionPerRupee}×` : "—"} tone="neutral" sub="₹ exposure cut per ₹ spent" />
           </div>
 
           {/* Filters */}
@@ -111,14 +116,16 @@ export default async function TreatmentTrackerPage(props: {
                   <th className="px-3 py-2.5">Parent Residual</th>
                   <th className="px-3 py-2.5">State</th>
                   <th className="px-3 py-2.5">Owner</th>
+                  <th className="px-3 py-2.5">Progress</th>
                   <th className="px-3 py-2.5">Due</th>
                   <th className="px-3 py-2.5">Residual Reduction</th>
+                  <th className="px-3 py-2.5">Cost-Benefit</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="px-3 py-10 text-center text-sm text-slate-400">
+                    <td colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
                       No treatments match the current filter.
                     </td>
                   </tr>
@@ -154,6 +161,9 @@ export default async function TreatmentTrackerPage(props: {
                         </span>
                       </td>
                       <td className="px-3 py-2.5 text-xs text-slate-600">{t.primaryOwnerName ?? "—"}</td>
+                      <td className="px-3 py-2.5">
+                        <TreatmentProgressCell id={t.id} completionPercent={t.completionPercent} />
+                      </td>
                       <td className="px-3 py-2.5 text-xs">
                         <span className="text-slate-500">{fmtDate(t.closureTargetDate)}</span>
                         {t.overdue && (
@@ -175,6 +185,21 @@ export default async function TreatmentTrackerPage(props: {
                         >
                           {t.achievedResidualReduction ?? "pending"}
                         </span>
+                        {t.reductionShortfall && (
+                          <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">SHORT</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5 text-xs tabular-nums">
+                        {t.costInr != null ? (
+                          <>
+                            <span className="text-slate-700">{fmtInr(t.costInr)}</span>
+                            {t.riskReductionPerRupee != null && (
+                              <span className="block text-[10px] text-emerald-600">{t.riskReductionPerRupee}× / ₹</span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-slate-300">—</span>
+                        )}
                       </td>
                     </tr>
                   ))

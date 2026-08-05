@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { DataTable } from "@/components/ui/data-table";
 import { DataTableColumnHeader } from "@/components/ui/data-table-column-header";
 import { DeleteNearMissIconButton } from "@/components/near-miss/delete-icon-button";
+import { SignalChip } from "@/components/ai/SignalChip";
+import type { Signal } from "@/lib/insights";
 import { formatDate, severityColor } from "@/lib/utils";
 
 export interface NearMissRow {
@@ -20,6 +22,7 @@ export interface NearMissRow {
   promotedToIncident: boolean;
   workflowStep: string;
   workflowColor: string;
+  signal?: Signal | null;
 }
 
 const columns: ColumnDef<NearMissRow>[] = [
@@ -80,8 +83,15 @@ const columns: ColumnDef<NearMissRow>[] = [
   {
     accessorKey: "workflowStep",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Workflow Step" />,
-    cell: ({ row }) => <Badge className={row.original.workflowColor}>{row.original.workflowStep}</Badge>,
-    size: 170
+    cell: ({ row }) => (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge className={row.original.workflowColor}>{row.original.workflowStep}</Badge>
+        {row.original.signal && (
+          <SignalChip signal={row.original.signal} href={`/near-miss/${row.original.id}`} />
+        )}
+      </div>
+    ),
+    size: 190
   },
   {
     id: "actions",

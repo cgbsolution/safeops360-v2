@@ -24,7 +24,12 @@ type HiraEntrySuggestion = {
   residualRiskLevel: string | null;
   residualRiskScore: number | null;
   residualAcceptable?: boolean | null;
-  study: { id: string; number: string; title: string };
+  // Backend (GET /api/hira/integrations/for-{ptw,flra}) serialises these as
+  // FLAT fields — not a nested `study` object. Reading `e.study.id` here was
+  // the crash that took down the whole Permit / FLRA detail page.
+  studyId: string;
+  studyNumber: string;
+  studyTitle?: string;
   hazards: { id: string; hazard: { id: string; name: string; category: string } }[] |
            { id: string; contextualDescription: string | null; hazard: { id: string; name: string; category: string; code: string } }[];
   existingControls?: {
@@ -147,14 +152,20 @@ export function HiraSuggestionsPanel({
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <Link
-                      href={`/hira/${e.study.id}/entries/${e.id}`}
-                      target="_blank"
-                      className="text-xs font-mono text-primary-700 hover:underline inline-flex items-center gap-1"
-                    >
-                      {e.study.number} · #{e.sequenceNumber}
-                      <ExternalLink size={10} />
-                    </Link>
+                    {e.studyId ? (
+                      <Link
+                        href={`/hira/${e.studyId}/entries/${e.id}`}
+                        target="_blank"
+                        className="text-xs font-mono text-primary-700 hover:underline inline-flex items-center gap-1"
+                      >
+                        {e.studyNumber} · #{e.sequenceNumber}
+                        <ExternalLink size={10} />
+                      </Link>
+                    ) : (
+                      <span className="text-xs font-mono text-slate-500">
+                        {e.studyNumber ?? "HIRA"} · #{e.sequenceNumber}
+                      </span>
+                    )}
                     <span className={`text-[10px] px-1.5 py-0.5 rounded border ${RISK_COLOR[e.initialRiskLevel] ?? ""}`}>
                       Init {e.initialRiskLevel}
                     </span>

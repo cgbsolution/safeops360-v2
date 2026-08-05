@@ -3,20 +3,27 @@ import { notFound } from "next/navigation";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
-import { ArrowLeft, CheckCircle2, Circle, Clock, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, Clock, XCircle, AlertTriangle, Paperclip } from "lucide-react";
 import {
   CLASSIFICATION_CHIP,
   STATUS_CHIP,
   STATUS_LABEL,
   CATEGORY_LABEL,
   ORIGIN_LABEL,
-  RISK_CHIP
+  RISK_CHIP,
+  HAZARD_LABEL,
+  IMPACT_DEPT_LABEL,
+  URGENCY_LABEL
 } from "../_meta";
+import { markRecordTasksReadForViewer } from "@/lib/workflow/read-state";
 import { MocActions } from "./moc-actions";
 import { DependentRecords } from "./dependent-records";
+import { MocAttachments } from "./moc-attachments";
+import { PssrPanel, EffectivenessPanel } from "./moc-lifecycle";
 
 export const dynamic = "force-dynamic";
 
+type RiskMatrix = { likelihood: number; severity: number; score: number; band: string };
 type ApprovalStep = {
   id: string;
   sequence: number;
@@ -74,6 +81,25 @@ type CRDetail = {
   pssrRequired: boolean;
   pssrOutcome: string | null;
   spawnedFromCapaId: string | null;
+  urgency: string;
+  emergencyRetroApprovalDueAt: string | null;
+  emergencyPendingRetro: boolean;
+  linkedMocIds: string[];
+  psmApplicable: boolean;
+  psmDetails: { coveredProcess?: string; affectedSafeguards?: string } | null;
+  riskMatrixPre: RiskMatrix | null;
+  riskMatrixResidual: RiskMatrix | null;
+  hazardCategories: string[];
+  mitigations: string | null;
+  departmentImpact: {
+    departments?: Record<string, { affected: boolean; reviewerUserId?: string }>;
+    communicationPlan?: string;
+  } | null;
+  trainingRequired: boolean;
+  trainingCertificateId: string | null;
+  pssrChecklist: { items: { label: string; verdict: string; note?: string }[]; outcome: string; completedAt: string | null; completedBy?: string | null } | null;
+  effectivenessReview: { effective: boolean; newRisks: boolean; notes: string | null; cadenceDays: number | null; reviewedAt: string | null } | null;
+  attachments: { id: string; category: string; fileName: string; fileSize: number; mimeType: string; caption: string | null; uploadedAt: string | null; uploadedById: string }[];
   approvalSteps: ApprovalStep[];
   dependentRecords: DependentRecord[];
   stateHistory: StateHistory[];
@@ -121,7 +147,20 @@ export default async function MocDetailPage(props: { params: Promise<{ id: strin
   const cr = await backendFetch<CRDetail>(`/api/moc/change-requests/${id}`).catch(() => null);
   if (!cr) notFound();
 
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksReadForViewer({ module: "MOC", recordId: id });
+
   const deps = cr.dependentRecords;
+  const CLOSED = ["closed_successful", "closed_aborted", "closed_rejected", "withdrawn", "expired", "rolled_back"];
+  const closed = CLOSED.includes(cr.status);
+  const deptImpactRows = Object.entries(cr.departmentImpact?.departments ?? {})
+    .filter(([, v]) => v?.affected)
+    .map(([k]) => k);
+  const showEffectiveness =
+    ["implementation_complete_pending_verification", "under_post_implementation_review", "closed_successful"].includes(
+      cr.status
+    ) || !!cr.effectivenessReview;
 
   return (
     <div>
@@ -134,6 +173,16 @@ export default async function MocDetailPage(props: { params: Promise<{ id: strin
         description={cr.number}
         action={
           <div className="flex items-center gap-2">
+            {cr.emergencyPendingRetro && (
+              <span className="inline-flex items-center gap-1 rounded border border-amber-300 bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
+                <AlertTriangle size={12} /> Emergency — pending retroactive approval
+              </span>
+            )}
+            {cr.urgency === "emergency" && !cr.emergencyPendingRetro && (
+              <span className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs font-medium text-amber-700">
+                {URGENCY_LABEL.emergency}
+              </span>
+            )}
             <span className={cn("rounded border px-2 py-1 text-xs font-medium capitalize", CLASSIFICATION_CHIP[cr.classification])}>
               {cr.classification}
             </span>
@@ -145,7 +194,7 @@ export default async function MocDetailPage(props: { params: Promise<{ id: strin
       />
 
       <div className="mb-4">
-        <MocActions crId={cr.id} status={cr.status} />
+        <MocActions crId={cr.id} status={cr.status} urgency={cr.urgency} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-4">
@@ -189,6 +238,100 @@ export default async function MocDetailPage(props: { params: Promise<{ id: strin
               <Field label="Roles">{cr.affectedRoles.length || "—"}</Field>
             </div>
           </Section>
+
+          <Section title="Risk & hazard assessment">
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Pre-change risk</div>
+                {cr.riskMatrixPre ? (
+                  <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium capitalize", RISK_CHIP[cr.riskMatrixPre.band] ?? "")}>
+                    {cr.riskMatrixPre.band} · L{cr.riskMatrixPre.likelihood}×S{cr.riskMatrixPre.severity} = {cr.riskMatrixPre.score}
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400">—</span>
+                )}
+              </div>
+              <div>
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Residual risk</div>
+                {cr.riskMatrixResidual ? (
+                  <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium capitalize", RISK_CHIP[cr.riskMatrixResidual.band] ?? "")}>
+                    {cr.riskMatrixResidual.band} · L{cr.riskMatrixResidual.likelihood}×S{cr.riskMatrixResidual.severity} = {cr.riskMatrixResidual.score}
+                  </span>
+                ) : (
+                  <span className="text-xs text-slate-400">—</span>
+                )}
+              </div>
+            </div>
+            {cr.hazardCategories.length > 0 && (
+              <div className="mb-3">
+                <div className="text-[11px] uppercase tracking-wider text-slate-500 mb-1">Hazard categories</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {cr.hazardCategories.map((h) => (
+                    <span key={h} className="rounded border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs text-rose-800">
+                      {HAZARD_LABEL[h] ?? h}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {cr.psmApplicable && (
+              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                <div className="font-semibold">Process Safety Management applies</div>
+                {cr.psmDetails?.coveredProcess && <div>Covered process: {cr.psmDetails.coveredProcess}</div>}
+                {cr.psmDetails?.affectedSafeguards && <div>Affected safeguards: {cr.psmDetails.affectedSafeguards}</div>}
+              </div>
+            )}
+            {cr.mitigations && <Field label="Mitigations / controls">{cr.mitigations}</Field>}
+          </Section>
+
+          <Section title="Impact & stakeholders">
+            {deptImpactRows.length > 0 ? (
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {deptImpactRows.map((d) => (
+                  <span key={d} className="rounded border border-sky-200 bg-sky-50 px-2 py-0.5 text-xs text-sky-800">
+                    {IMPACT_DEPT_LABEL[d] ?? d}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-500 mb-3">No departments flagged as affected.</p>
+            )}
+            {cr.departmentImpact?.communicationPlan && (
+              <Field label="Communication / training plan">{cr.departmentImpact.communicationPlan}</Field>
+            )}
+            <div className="mt-3 grid grid-cols-2 gap-4">
+              <Field label="Training required">
+                {cr.trainingRequired
+                  ? cr.trainingCertificateId
+                    ? `Yes — certificate linked`
+                    : "Yes — not yet linked"
+                  : "No"}
+              </Field>
+              <Field label="Linked MOCs">{cr.linkedMocIds.length ? cr.linkedMocIds.join(", ") : "—"}</Field>
+            </div>
+          </Section>
+
+          <Section title="Supporting documents">
+            <MocAttachments crId={cr.id} canEdit={!closed} />
+          </Section>
+
+          {(cr.pssrRequired || cr.pssrChecklist) && (
+            <Section title="Pre-startup safety review (PSSR)">
+              <PssrPanel
+                crId={cr.id}
+                pssrRequired={cr.pssrRequired}
+                pssrChecklist={cr.pssrChecklist}
+                hazardCategories={cr.hazardCategories}
+                readOnly={closed}
+              />
+            </Section>
+          )}
+
+          {showEffectiveness && (
+            <Section title="Post-implementation effectiveness review">
+              <EffectivenessPanel crId={cr.id} effectivenessReview={cr.effectivenessReview} readOnly={false} />
+            </Section>
+          )}
 
           <Section title={`Approval chain (${cr.approvalSteps.length})`}>
             {cr.approvalSteps.length === 0 ? (

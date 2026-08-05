@@ -8,6 +8,12 @@ import { Can } from "@/components/auth/can";
 import { FilterTab, FilterTabsList } from "@/components/ui/filter-tabs";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { HiraAnalyticsStrip } from "@/components/hira/analytics-strip";
+import { InsightBar } from "@/components/ai/InsightBar";
+import { SignalChip } from "@/components/ai/SignalChip";
+import { InsightHero } from "@/components/observations/insight-hero";
+import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
+import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
+import { fetchInsights } from "@/lib/insights";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +38,7 @@ const STATUS_CHIP: Record<string, string> = {
 };
 
 export default async function HiraStudiesPage(
-  props: { searchParams: Promise<{ status?: string; plantId?: string }> }
+  props: { searchParams: Promise<{ status?: string; plantId?: string; insight?: string }> }
 ) {
   const searchParams = await props.searchParams;
   // Pure 3-tier: all reads go through the FastAPI backend; no Prisma here.
@@ -61,12 +67,17 @@ export default async function HiraStudiesPage(
     statusCounts: Record<string, number>;
   };
 
-  const data = await backendFetch<StudyListResponse>("/api/hira/studies", {
-    query: {
-      status: searchParams.status ?? null,
-      plant_id: searchParams.plantId ?? null
-    }
-  });
+  // Insights are plant-scoped when a plant is selected; without one the engine
+  // computes the cross-plant view (e.g. the same hazard live across plants).
+  const [data, insights] = await Promise.all([
+    backendFetch<StudyListResponse>("/api/hira/studies", {
+      query: {
+        status: searchParams.status ?? null,
+        plant_id: searchParams.plantId ?? null
+      }
+    }),
+    fetchInsights("hira", { plant: searchParams.plantId })
+  ]);
 
   const studies = data.items.map((s) => ({
     ...s,
@@ -81,6 +92,60 @@ export default async function HiraStudiesPage(
 
   const statusCountMap = data.statusCounts;
   const all = Object.values(statusCountMap).reduce((a, b) => a + b, 0);
+
+  // Insight-card click-through: narrow the list to the active insight's studies.
+  const activeInsight = searchParams.insight
+    ? insights.bar.find((i) => i.id === searchParams.insight)
+    : undefined;
+  const visibleStudies = activeInsight
+    ? studies.filter((s) => activeInsight.recordRefs.includes(s.number))
+    : studies;
+
+  // "This week's focus" hero + panels — reuse the shared builder + component.
+  const HIRA_DONE = ["ACTIVE", "ARCHIVED", "SUPERSEDED"];
+  const hiraOpen = studies.filter((s) => !HIRA_DONE.includes(s.status));
+  const hiraHero = buildHeroFromRecords(
+    studies.map((s) => ({
+      date: s.initiatedAt,
+      open: !HIRA_DONE.includes(s.status),
+      severity: s.status,
+      group: s.scopeType || s.plant.name
+    })),
+    {
+      type: "hira progress",
+      critical: ["DRAFT", "IN_PROGRESS"],
+      highSeverities: ["TEAM_REVIEW", "APPROVAL_PENDING"],
+      headline: (n) => `${n} HIRA studies still in progress`,
+      qualifier: "not yet active",
+      actionHref: "/hira?status=IN_PROGRESS",
+      railTitle: "By scope",
+      closing: (d) => `Oldest opened ${d} days ago.`,
+      statLabels: { critical: "drafting", high: "in review" }
+    }
+  );
+  const hNow = Date.now();
+  const hiraScopeAgg = new Map<string, { count: number; areas: Set<string> }>();
+  hiraOpen.forEach((s) => {
+    const g = s.scopeType || "OTHER";
+    const e = hiraScopeAgg.get(g) ?? { count: 0, areas: new Set<string>() };
+    e.count += 1;
+    if (s.area?.name) e.areas.add(s.area.name);
+    hiraScopeAgg.set(g, e);
+  });
+  const hiraCategory = Array.from(hiraScopeAgg.entries())
+    .map(([category, v]) => ({ category, count: v.count, areaCount: v.areas.size }))
+    .sort((a, b) => b.count - a.count);
+  const hiraStatusAgg = new Map<string, { count: number; totalDays: number }>();
+  hiraOpen.forEach((s) => {
+    const days = Math.max(0, Math.floor((hNow - s.initiatedAt.getTime()) / 86_400_000));
+    const e = hiraStatusAgg.get(s.status) ?? { count: 0, totalDays: 0 };
+    e.count += 1;
+    e.totalDays += days;
+    hiraStatusAgg.set(s.status, e);
+  });
+  const hiraBottleneck = Array.from(hiraStatusAgg.entries())
+    .map(([step, v]) => ({ step: step.replace(/_/g, " "), count: v.count, avgDays: Math.round((v.totalDays / v.count) * 10) / 10 }))
+    .sort((a, b) => b.avgDays - a.avgDays);
 
   return (
     <div>
@@ -103,6 +168,18 @@ export default async function HiraStudiesPage(
           <HiraAnalyticsStrip />
         </Suspense>
       </div>
+
+      {hiraHero ? <InsightHero hero={hiraHero} /> : <InsightBar insights={insights.bar} />}
+
+      {(hiraBottleneck.length > 0 || hiraCategory.length > 0) && (
+        <ObservationAnalyticsPanels
+          bottleneck={hiraBottleneck}
+          category={hiraCategory}
+          activeCategory={null}
+          basePath="/hira"
+          concentratedTitle="By scope"
+        />
+      )}
 
       <FilterTabsList label="Status" className="mb-4">
         <FilterTab href="/hira" label="All" count={all} active={!searchParams.status} />
@@ -133,7 +210,7 @@ export default async function HiraStudiesPage(
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {studies.map((s) => {
+              {visibleStudies.map((s) => {
                 const scopeBits = [
                   s.plant?.name,
                   s.department?.name,
@@ -165,13 +242,18 @@ export default async function HiraStudiesPage(
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`inline-block px-2 py-0.5 text-xs rounded border ${
-                          STATUS_CHIP[s.status] ?? "bg-slate-100 text-slate-800 border-slate-200"
-                        }`}
-                      >
-                        {s.status.replace(/_/g, " ")}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={`inline-block px-2 py-0.5 text-xs rounded border ${
+                            STATUS_CHIP[s.status] ?? "bg-slate-100 text-slate-800 border-slate-200"
+                          }`}
+                        >
+                          {s.status.replace(/_/g, " ")}
+                        </span>
+                        {insights.signalByRecord.get(s.id) && (
+                          <SignalChip signal={insights.signalByRecord.get(s.id)!} href={`/hira/${s.id}`} />
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-slate-700">{s._count.entries}</td>
                     <td className="px-4 py-3 text-slate-700">{s.teamLeader?.name ?? "—"}</td>

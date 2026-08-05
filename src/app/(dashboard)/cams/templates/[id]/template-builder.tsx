@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, GripVertical, Save, Send, CheckCircle2, Copy, Archive } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { QUESTION_TYPES, TEMPLATE_STATUS_CHIP, labelize, type TemplateDetail, type ClauseRef } from "../../lib-cams";
 
 type Qn = {
@@ -86,18 +88,18 @@ export function TemplateBuilder({ template, clauses, perms }: { template: Templa
         <div className="ml-auto flex flex-wrap gap-2">
           {editable && (
             <>
-              <button disabled={!!busy} onClick={save} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"><Save size={14} /> Save</button>
-              {template.status === "DRAFT" && <button disabled={!!busy} onClick={() => action("submit", "submit")} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-sm text-amber-800 hover:bg-amber-100 disabled:opacity-50"><Send size={14} /> Submit for review</button>}
+              <Button disabled={!!busy} onClick={save} variant="outline" className="inline-flex items-center gap-1.5"><Save size={14} /> Save</Button>
+              {template.status === "DRAFT" && <Button disabled={!!busy} onClick={() => action("submit", "submit")} variant="outline" className="inline-flex items-center gap-1.5 border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"><Send size={14} /> Submit for review</Button>}
             </>
           )}
           {perms.approve && (template.status === "DRAFT" || template.status === "IN_REVIEW") && (
-            <button disabled={!!busy} onClick={() => action("approve", "approve")} className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"><CheckCircle2 size={14} /> Approve</button>
+            <Button disabled={!!busy} onClick={() => action("approve", "approve")} variant="success" className="inline-flex items-center gap-1.5"><CheckCircle2 size={14} /> Approve</Button>
           )}
           {perms.author && template.status === "APPROVED" && (
-            <button disabled={!!busy} onClick={() => action("clone", "clone")} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-50 disabled:opacity-50"><Copy size={14} /> Clone to new version</button>
+            <Button disabled={!!busy} onClick={() => action("clone", "clone")} variant="outline" className="inline-flex items-center gap-1.5"><Copy size={14} /> Clone to new version</Button>
           )}
           {perms.approve && template.status === "APPROVED" && (
-            <button disabled={!!busy} onClick={() => action("retire", "retire")} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50 disabled:opacity-50"><Archive size={14} /> Retire</button>
+            <Button disabled={!!busy} onClick={() => action("retire", "retire")} variant="outline" className="inline-flex items-center gap-1.5 text-slate-600"><Archive size={14} /> Retire</Button>
           )}
         </div>
       </div>
@@ -114,7 +116,7 @@ export function TemplateBuilder({ template, clauses, perms }: { template: Templa
             <label className="flex items-center gap-1 text-[11px] text-slate-400">weight%
               <input disabled={!editable} type="number" value={s.weightPct ?? ""} onChange={(e) => patchSection(si, { weightPct: e.target.value === "" ? null : Number(e.target.value) })} className="w-16 rounded border border-slate-200 px-1 py-0.5 text-xs" />
             </label>
-            {editable && <button onClick={() => removeSection(si)} className="text-slate-300 hover:text-rose-600"><Trash2 size={15} /></button>}
+            {editable && <Button type="button" variant="ghost" size="icon" onClick={() => removeSection(si)} className="h-auto w-auto text-slate-300 hover:text-rose-600"><Trash2 size={15} /></Button>}
           </div>
           <div className="divide-y divide-slate-100">
             {s.questions.map((q, qi) => (
@@ -131,27 +133,27 @@ export function TemplateBuilder({ template, clauses, perms }: { template: Templa
                         <option value="">— clause —</option>
                         {clauses.map((c) => <option key={c.clause} value={c.clause}>{c.clause} · {c.title}</option>)}
                       </select>
-                      <label className="flex items-center gap-1 text-[11px] text-slate-500"><input disabled={!editable} type="checkbox" checked={q.isMandatory} onChange={(e) => patchQuestion(si, qi, { isMandatory: e.target.checked })} /> Mandatory</label>
-                      <label className="flex items-center gap-1 text-[11px] text-slate-500"><input disabled={!editable} type="checkbox" checked={q.ncTriggersFinding} onChange={(e) => patchQuestion(si, qi, { ncTriggersFinding: e.target.checked })} /> NC → finding</label>
-                      <label className="flex items-center gap-1 text-[11px] text-slate-500"><input disabled={!editable} type="checkbox" checked={q.evidenceRequiredOnNc} onChange={(e) => patchQuestion(si, qi, { evidenceRequiredOnNc: e.target.checked })} /> Evidence on NC</label>
+                      <label className="flex items-center gap-1 text-[11px] text-slate-500"><Checkbox disabled={!editable} checked={q.isMandatory} onChange={(e) => patchQuestion(si, qi, { isMandatory: e.target.checked })} /> Mandatory</label>
+                      <label className="flex items-center gap-1 text-[11px] text-slate-500"><Checkbox disabled={!editable} checked={q.ncTriggersFinding} onChange={(e) => patchQuestion(si, qi, { ncTriggersFinding: e.target.checked })} /> NC → finding</label>
+                      <label className="flex items-center gap-1 text-[11px] text-slate-500"><Checkbox disabled={!editable} checked={q.evidenceRequiredOnNc} onChange={(e) => patchQuestion(si, qi, { evidenceRequiredOnNc: e.target.checked })} /> Evidence on NC</label>
                     </div>
                     {q.guidance != null && (
                       <input disabled={!editable} value={q.guidance ?? ""} onChange={(e) => patchQuestion(si, qi, { guidance: e.target.value })} className="w-full rounded border border-slate-200 px-2 py-1 text-xs text-slate-500" placeholder="Guidance — what good looks like" />
                     )}
                   </div>
-                  {editable && <button onClick={() => removeQuestion(si, qi)} className="mt-1 text-slate-300 hover:text-rose-600"><Trash2 size={14} /></button>}
+                  {editable && <Button type="button" variant="ghost" size="icon" onClick={() => removeQuestion(si, qi)} className="mt-1 h-auto w-auto text-slate-300 hover:text-rose-600"><Trash2 size={14} /></Button>}
                 </div>
               </div>
             ))}
           </div>
           {editable && (
-            <button onClick={() => addQuestion(si)} className="flex w-full items-center justify-center gap-1.5 border-t border-slate-100 py-2 text-xs font-medium text-primary-700 hover:bg-primary-50/40"><Plus size={14} /> Add question</button>
+            <Button type="button" variant="ghost" onClick={() => addQuestion(si)} className="flex w-full items-center justify-center gap-1.5 border-t border-slate-100 py-2 text-xs font-medium text-primary-700 hover:bg-primary-50/40"><Plus size={14} /> Add question</Button>
           )}
         </div>
       ))}
 
       {editable && (
-        <button onClick={addSection} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500 hover:border-primary-300 hover:text-primary-700"><Plus size={16} /> Add section</button>
+        <Button type="button" variant="ghost" onClick={addSection} className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-300 py-3 text-sm font-medium text-slate-500 hover:border-primary-300 hover:text-primary-700"><Plus size={16} /> Add section</Button>
       )}
     </div>
   );

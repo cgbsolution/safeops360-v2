@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, CheckCircle2, Plus, Trash2, Zap, X, Pencil } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
 import { BandBadge } from "@/components/erm/shared";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
   CRITICALITY_CHIP,
   DEP_TYPES,
@@ -95,15 +101,13 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
             <span className="text-xs text-slate-500">{detail.siteName ?? "Corporate"} · {detail.departmentName} · Owner {detail.ownerName ?? "—"}</span>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setEditOpen(true)} disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(true)} disabled={busy}>
               <Pencil size={13} /> Edit
-            </button>
+            </Button>
             {detail.biaStatus !== "APPROVED" && (
-              <button onClick={approveBia} disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700 disabled:opacity-50">
+              <Button type="button" variant="success" size="sm" onClick={approveBia} disabled={busy}>
                 <CheckCircle2 size={13} /> Approve BIA
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -132,32 +136,32 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Impact over time</h2>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2">Dimension</th>
-                  <th className="px-3 py-2 text-center">4h</th>
-                  <th className="px-3 py-2 text-center">24h</th>
-                  <th className="px-3 py-2 text-center">7d</th>
-                  <th className="px-3 py-2 text-center">30d</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[480px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2">Dimension</TableHead>
+                  <TableHead className="px-3 py-2 text-center">4h</TableHead>
+                  <TableHead className="px-3 py-2 text-center">24h</TableHead>
+                  <TableHead className="px-3 py-2 text-center">7d</TableHead>
+                  <TableHead className="px-3 py-2 text-center">30d</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {detail.impactProfile.map((row: any, i: number) => (
-                  <tr key={i} className="border-t border-slate-100">
-                    <td className="px-3 py-2 text-slate-700">{DIM_LABEL[row.dimension] ?? row.dimension}</td>
+                  <TableRow key={i} className="border-t border-slate-100">
+                    <TableCell className="px-3 py-2 text-slate-700">{DIM_LABEL[row.dimension] ?? row.dimension}</TableCell>
                     {(["at4h", "at24h", "at7d", "at30d"] as const).map((k) => (
-                      <td key={k} className="px-3 py-2 text-center">
+                      <TableCell key={k} className="px-3 py-2 text-center">
                         <span className="inline-flex h-6 w-6 items-center justify-center rounded text-[11px] font-bold text-white"
                           style={{ backgroundColor: ["#94a3b8", "#2E8B57", "#E6A817", "#E67E22", "#C0392B"][Math.max(0, Math.min(4, (row[k] ?? 1) - 1))] }}>
                           {row[k] ?? "—"}
                         </span>
-                      </td>
+                      </TableCell>
                     ))}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </div>
       )}
@@ -175,15 +179,14 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
           </h2>
           <div className="flex items-center gap-2">
             {unmitigatedSpofs.length > 0 && (
-              <button onClick={raiseRisk} disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-md border border-rose-300 bg-white px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-50">
+              <Button type="button" variant="outline" size="sm" onClick={raiseRisk} disabled={busy}
+                className="border-rose-300 text-rose-700 hover:bg-rose-50">
                 <Zap size={13} /> Raise SPOF as risk
-              </button>
+              </Button>
             )}
-            <button onClick={() => setAddDepOpen(true)} disabled={busy}
-              className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            <Button type="button" variant="outline" size="sm" onClick={() => setAddDepOpen(true)} disabled={busy}>
               <Plus size={13} /> Add dependency
-            </button>
+            </Button>
           </div>
         </div>
         {detail.dependencies.length === 0 ? (
@@ -210,9 +213,9 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
                     </p>
                   )}
                 </div>
-                <button onClick={() => deleteDep(d.id)} disabled={busy} className="shrink-0 text-slate-300 hover:text-rose-600" aria-label="Delete dependency">
+                <Button type="button" variant="ghost" size="icon" onClick={() => deleteDep(d.id)} disabled={busy} className="shrink-0 text-slate-300 hover:text-rose-600" aria-label="Delete dependency">
                   <Trash2 size={15} />
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
@@ -300,54 +303,48 @@ function AddDependencyModal({ processId, onClose, onSaved }: { processId: string
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Add dependency</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-              <select value={dependencyType} onChange={(e) => setDependencyType(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={dependencyType} onChange={(e) => setDependencyType(e.target.value)}>
                 {DEP_TYPES.map((t) => <option key={t} value={t}>{DEP_LABEL[t] ?? t}</option>)}
-              </select>
+              </Select>
             </div>
             <div className="flex items-end">
               <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" checked={isSpof} onChange={(e) => setIsSpof(e.target.checked)} className="rounded border-slate-300" />
+                <Checkbox checked={isSpof} onChange={(e) => setIsSpof(e.target.checked)} />
                 Single point of failure
               </label>
             </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 33 kV HT incomer"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 33 kV HT incomer" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Description (optional)</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
           <div className="grid grid-cols-[1fr_120px] gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Workaround (leave blank = unmitigated)</label>
-              <input value={workaround} onChange={(e) => setWorkaround(e.target.value)} placeholder="e.g. Standby unit, 12h swap"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input value={workaround} onChange={(e) => setWorkaround(e.target.value)} placeholder="e.g. Standby unit, 12h swap" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Duration (h)</label>
-              <input type="number" min={0} value={workaroundHrs} onChange={(e) => setWorkaroundHrs(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={0} value={workaroundHrs} onChange={(e) => setWorkaroundHrs(e.target.value)} />
             </div>
           </div>
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={busy || name.trim().length < 1}
-            className="rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" onClick={submit} disabled={busy || name.trim().length < 1}>
             {busy ? "Adding…" : "Add dependency"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -400,13 +397,12 @@ function EditProcessModal({ detail, onClose, onSaved }: { detail: ProcessDetail;
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Edit process</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></button>
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Process name</label>
-            <input value={name} onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -415,42 +411,36 @@ function EditProcessModal({ detail, onClose, onSaved }: { detail: ProcessDetail;
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Department</label>
-              <input value={departmentName} onChange={(e) => setDepartmentName(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input value={departmentName} onChange={(e) => setDepartmentName(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">RTO (h)</label>
-              <input type="number" min={0} value={rtoHours} onChange={(e) => setRtoHours(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={0} value={rtoHours} onChange={(e) => setRtoHours(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">RPO (h)</label>
-              <input type="number" min={0} value={rpoHours} onChange={(e) => setRpoHours(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={0} value={rpoHours} onChange={(e) => setRpoHours(e.target.value)} />
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">MTPD (h)</label>
-              <input type="number" min={0} value={mtpdHours} onChange={(e) => setMtpdHours(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input type="number" min={0} value={mtpdHours} onChange={(e) => setMtpdHours(e.target.value)} />
             </div>
           </div>
           {mtpdTooLow && <p className="text-xs font-medium text-rose-600">MTPD must be ≥ RTO.</p>}
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Peak periods</label>
-            <input value={peakPeriods} onChange={(e) => setPeakPeriods(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+            <Input value={peakPeriods} onChange={(e) => setPeakPeriods(e.target.value)} />
           </div>
           <p className="text-[11px] text-slate-400">Criticality is recomputed from RTO on save. Editing an approved BIA keeps its status.</p>
           {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-          <button onClick={submit} disabled={busy || name.trim().length < 3 || mtpdTooLow}
-            className="rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50">
+          <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+          <Button type="button" onClick={submit} disabled={busy || name.trim().length < 3 || mtpdTooLow}>
             {busy ? "Saving…" : "Save changes"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

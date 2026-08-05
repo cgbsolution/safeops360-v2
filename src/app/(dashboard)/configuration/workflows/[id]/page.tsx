@@ -47,7 +47,11 @@ export default async function WorkflowEditorPage(props: { params: Promise<{ id: 
       escalationRole: s.escalationRole,
       isOptional: s.isOptional,
       conditionExpr: s.conditionExpr,
-      notes: s.notes
+      notes: s.notes,
+      // Not editable in the builder, but the editor must send them back on
+      // save or the API's step-replace wipes them. See EditorStep in types.ts.
+      parallelStrategy: s.parallelStrategy,
+      slaBySeverity: s.slaBySeverity as Record<string, number> | null
     }))
   };
 

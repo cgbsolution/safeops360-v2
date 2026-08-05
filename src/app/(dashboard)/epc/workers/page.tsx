@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Users, Plus, HardHat, Upload } from "lucide-react";
+import { RosterStatusBadge } from "@/components/workforce/roster-status-badge";
 
 export const dynamic = "force-dynamic";
 
@@ -13,6 +14,8 @@ type Worker = {
   primaryTrade: string;
   contractorCompanyName: string;
   status: string;
+  // HSE safety hold — separate axis from the EPC employment status above.
+  rosterStatus?: string;
   activeMobilizations: number;
 };
 
@@ -109,9 +112,12 @@ export default async function WorkersPage(
                   <td className="px-4 py-3 text-slate-600">{w.primaryTrade}</td>
                   <td className="px-4 py-3 text-slate-600">{w.contractorCompanyName}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(w.status)}`}>
-                      {humanizeStatus(w.status)}
-                    </span>
+                    <div className="flex flex-wrap items-center gap-1">
+                      <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(w.status ?? "")}`}>
+                        {humanizeStatus(w.status ?? "unknown")}
+                      </span>
+                      <RosterStatusBadge status={w.rosterStatus} />
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-slate-700">
                     {w.activeMobilizations}

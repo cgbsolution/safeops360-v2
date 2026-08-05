@@ -11,20 +11,19 @@
 // row, so a session can mix methods (e.g. signature for those present,
 // manual for known absentees). Rows are upserted by (sessionId, regId).
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  CheckCircle2,
   Loader2,
   PenTool,
   Save,
   X,
-  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { readApiError } from "@/lib/client-errors";
+import { SignatureModal } from "@/components/ui/signature-pad";
 
 type Roster = {
   registrationId: string;
@@ -223,121 +222,5 @@ export function AttendanceCapture({
   );
 }
 
-// ─── Signature pad (HTML5 canvas) ────────────────────────────────────
-
-function SignatureModal({
-  onSave,
-  onClose,
-}: {
-  onSave: (dataUrl: string) => void;
-  onClose: () => void;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [drawing, setDrawing] = useState(false);
-  const [hasInk, setHasInk] = useState(false);
-
-  useEffect(() => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, c.width, c.height);
-    ctx.strokeStyle = "#0f172a";
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-  }, []);
-
-  function pointer(e: React.PointerEvent<HTMLCanvasElement>) {
-    const c = canvasRef.current;
-    if (!c) return { x: 0, y: 0 };
-    const rect = c.getBoundingClientRect();
-    return {
-      x: ((e.clientX - rect.left) / rect.width) * c.width,
-      y: ((e.clientY - rect.top) / rect.height) * c.height,
-    };
-  }
-
-  function startDraw(e: React.PointerEvent<HTMLCanvasElement>) {
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    const p = pointer(e);
-    ctx.beginPath();
-    ctx.moveTo(p.x, p.y);
-    setDrawing(true);
-    c.setPointerCapture(e.pointerId);
-  }
-  function moveDraw(e: React.PointerEvent<HTMLCanvasElement>) {
-    if (!drawing) return;
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    const p = pointer(e);
-    ctx.lineTo(p.x, p.y);
-    ctx.stroke();
-    setHasInk(true);
-  }
-  function endDraw(e: React.PointerEvent<HTMLCanvasElement>) {
-    setDrawing(false);
-    const c = canvasRef.current;
-    if (c) c.releasePointerCapture(e.pointerId);
-  }
-
-  function clear() {
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    ctx.fillStyle = "#fff";
-    ctx.fillRect(0, 0, c.width, c.height);
-    setHasInk(false);
-  }
-
-  function save() {
-    const c = canvasRef.current;
-    if (!c) return;
-    const url = c.toDataURL("image/png");
-    onSave(url);
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3">
-      <Card className="w-full max-w-md">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-1.5">
-            <PenTool size={14} /> Sign here
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <canvas
-            ref={canvasRef}
-            width={500}
-            height={250}
-            onPointerDown={startDraw}
-            onPointerMove={moveDraw}
-            onPointerUp={endDraw}
-            onPointerCancel={endDraw}
-            className="w-full h-auto rounded-md border-2 border-dashed border-slate-300 bg-white touch-none"
-          />
-          <div className="flex items-center justify-between gap-2">
-            <Button size="sm" variant="outline" onClick={clear}>
-              <XCircle size={14} /> Clear
-            </Button>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button size="sm" onClick={save} disabled={!hasInk}>
-                <CheckCircle2 size={14} /> Save signature
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+// Signature pad lifted to the shared component @/components/ui/signature-pad
+// (PTW closed-loop panels reuse the same drawing surface).

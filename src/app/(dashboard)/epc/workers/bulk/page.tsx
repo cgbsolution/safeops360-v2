@@ -13,6 +13,16 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
 
 type ParsedRow = {
   fullName: string;
@@ -218,12 +228,13 @@ export default function BulkImportPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>CSV Template</Label>
-              <button
+              <Button
+                variant="ghost"
                 onClick={downloadTemplate}
                 className="inline-flex items-center gap-1.5 text-xs text-cyan-700 hover:underline"
               >
                 <Download size={13} /> Download Template
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-slate-500">
               Fill in the template with worker details, then upload below. Required columns:{" "}
@@ -235,11 +246,11 @@ export default function BulkImportPage() {
 
           <div>
             <Label htmlFor="company">Contractor Company *</Label>
-            <select
+            <Select
               id="company"
               value={contractorCompanyId}
               onChange={(e) => setContractorCompanyId(e.target.value)}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="mt-1"
             >
               <option value="">Select company...</option>
               {companies.map((c) => (
@@ -248,7 +259,7 @@ export default function BulkImportPage() {
                   {c.companyCode ? ` (${c.companyCode})` : ""}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
@@ -281,13 +292,13 @@ export default function BulkImportPage() {
 
           <div>
             <Label htmlFor="csv-paste">Or paste CSV data</Label>
-            <textarea
+            <Textarea
               id="csv-paste"
               rows={6}
               value={csvText}
               onChange={(e) => setCsvText(e.target.value)}
               placeholder={"fullName,primaryTrade,mobileNumber,...\nRajesh Sharma,Welder,9876543210,..."}
-              className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              className="mt-1 text-xs font-mono"
             />
           </div>
 
@@ -311,56 +322,52 @@ export default function BulkImportPage() {
                   updated.
                 </p>
               </div>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setStage("upload")}
                 className="text-xs text-slate-500 hover:text-slate-700"
               >
                 Edit CSV
-              </button>
+              </Button>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b">
-                    {["#", "Name", "Trade", "Mobile", "Aadhaar", "Experience", "State"].map(
-                      (h) => (
-                        <th
-                          key={h}
-                          className="px-3 py-2 text-left font-semibold text-slate-600"
-                        >
-                          {h}
-                        </th>
-                      )
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.slice(0, 10).map((r, i) => (
-                    <tr key={i} className="border-b last:border-0">
-                      <td className="px-3 py-2 text-slate-400">{i + 1}</td>
-                      <td className="px-3 py-2 font-medium text-slate-900">{r.fullName}</td>
-                      <td className="px-3 py-2 text-slate-600">{r.primaryTrade}</td>
-                      <td className="px-3 py-2 text-slate-600">{r.mobileNumber}</td>
-                      <td className="px-3 py-2 text-slate-500">
-                        ****{r.aadhaarLast4 ?? "—"}
-                      </td>
-                      <td className="px-3 py-2 text-slate-600">{r.yearsExperience}y</td>
-                      <td className="px-3 py-2 text-slate-600">{r.homeState ?? "—"}</td>
-                    </tr>
-                  ))}
-                  {rows.length > 10 && (
-                    <tr>
-                      <td
-                        colSpan={7}
-                        className="px-3 py-2 text-slate-400 text-center"
-                      >
-                        ... and {rows.length - 10} more rows
-                      </td>
-                    </tr>
+            <Table className="text-xs">
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  {["#", "Name", "Trade", "Mobile", "Aadhaar", "Experience", "State"].map(
+                    (h) => (
+                      <TableHead key={h}>
+                        {h}
+                      </TableHead>
+                    )
                   )}
-                </tbody>
-              </table>
-            </div>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.slice(0, 10).map((r, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-slate-400">{i + 1}</TableCell>
+                    <TableCell className="font-medium text-slate-900">{r.fullName}</TableCell>
+                    <TableCell className="text-slate-600">{r.primaryTrade}</TableCell>
+                    <TableCell className="text-slate-600">{r.mobileNumber}</TableCell>
+                    <TableCell className="text-slate-500">
+                      ****{r.aadhaarLast4 ?? "—"}
+                    </TableCell>
+                    <TableCell className="text-slate-600">{r.yearsExperience}y</TableCell>
+                    <TableCell className="text-slate-600">{r.homeState ?? "—"}</TableCell>
+                  </TableRow>
+                ))}
+                {rows.length > 10 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={7}
+                      className="text-slate-400 text-center"
+                    >
+                      ... and {rows.length - 10} more rows
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
           <Button onClick={handleImport} disabled={submitting} className="w-full">
             {submitting ? (
@@ -428,24 +435,24 @@ export default function BulkImportPage() {
                   Import Errors — Fix and Re-upload
                 </h3>
               </div>
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b">
-                    <th className="px-3 py-2 text-left font-semibold text-slate-600">Row</th>
-                    <th className="px-3 py-2 text-left font-semibold text-slate-600">Name</th>
-                    <th className="px-3 py-2 text-left font-semibold text-slate-600">Error</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="text-xs">
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead>Row</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Error</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {result.errors.map((err, i) => (
-                    <tr key={i} className="border-b last:border-0">
-                      <td className="px-3 py-2 tabular-nums text-slate-500">{err.row}</td>
-                      <td className="px-3 py-2 text-slate-700">{err.name}</td>
-                      <td className="px-3 py-2 text-rose-600">{err.error}</td>
-                    </tr>
+                    <TableRow key={i}>
+                      <TableCell className="tabular-nums text-slate-500">{err.row}</TableCell>
+                      <TableCell className="text-slate-700">{err.name}</TableCell>
+                      <TableCell className="text-rose-600">{err.error}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
 

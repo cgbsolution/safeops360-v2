@@ -5,6 +5,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { KRI_STATUS_CHIP, type KriOut, type MetricCatalogEntry } from "@/app/(dashboard)/erm/lib-p2";
 
 type CategoryLite = { id: string; code: string; name: string };
@@ -92,52 +98,49 @@ export function KriAdminView({
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <button
-          onClick={() => setEditing({ mode: "new" })}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800"
-        >
+        <Button onClick={() => setEditing({ mode: "new" })}>
           <Plus size={14} /> New KRI
-        </button>
+        </Button>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-5">
         {kris.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-400">No KRIs defined yet.</p>
         ) : (
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-2 py-2">Code</th>
-                <th className="px-2 py-2">Name</th>
-                <th className="px-2 py-2">Category</th>
-                <th className="px-2 py-2">Direction</th>
-                <th className="px-2 py-2">Feed</th>
-                <th className="px-2 py-2">Thresholds</th>
-                <th className="px-2 py-2">Owner</th>
-                <th className="px-2 py-2">Status</th>
-                <th className="px-2 py-2">Active</th>
-                <th className="px-2 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Code</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Direction</TableHead>
+                <TableHead>Feed</TableHead>
+                <TableHead>Thresholds</TableHead>
+                <TableHead>Owner</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Active</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {kris.map((k) => (
-                <tr key={k.id} className="border-b border-slate-100">
-                  <td className="px-2 py-2">
+                <TableRow key={k.id}>
+                  <TableCell>
                     <Link href={`/erm/kris/${k.id}`} className="font-medium text-primary-700 hover:underline">
                       {k.kriCode}
                     </Link>
-                  </td>
-                  <td className="max-w-[220px] truncate px-2 py-2 text-slate-700">{k.name}</td>
-                  <td className="px-2 py-2 text-xs text-slate-600">{k.categoryName ?? "—"}</td>
-                  <td className="px-2 py-2 text-xs text-slate-600">
+                  </TableCell>
+                  <TableCell className="max-w-[220px] truncate">{k.name}</TableCell>
+                  <TableCell className="text-xs text-slate-600">{k.categoryName ?? "—"}</TableCell>
+                  <TableCell className="text-xs text-slate-600">
                     {k.direction === "HIGHER_IS_WORSE" ? "↑ worse" : "↓ worse"}
-                  </td>
-                  <td className="px-2 py-2 text-xs text-slate-600">{FEED_LABEL[k.feedType] ?? k.feedType}</td>
-                  <td className="px-2 py-2 text-xs tabular-nums text-slate-600">
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-600">{FEED_LABEL[k.feedType] ?? k.feedType}</TableCell>
+                  <TableCell className="text-xs tabular-nums text-slate-600">
                     G {k.thresholdGreen} / A {k.thresholdAmber}
-                  </td>
-                  <td className="px-2 py-2 text-xs text-slate-600">{k.ownerName ?? "—"}</td>
-                  <td className="px-2 py-2">
+                  </TableCell>
+                  <TableCell className="text-xs text-slate-600">{k.ownerName ?? "—"}</TableCell>
+                  <TableCell>
                     <span
                       className={
                         "rounded border px-2 py-0.5 text-[11px] font-semibold " +
@@ -146,26 +149,29 @@ export function KriAdminView({
                     >
                       {k.currentStatus === "NO_DATA" ? "NO DATA" : k.currentStatus}
                     </span>
-                  </td>
-                  <td className="px-2 py-2 text-xs">
+                  </TableCell>
+                  <TableCell className="text-xs">
                     {k.isActive ? (
                       <span className="text-emerald-600">Active</span>
                     ) : (
                       <span className="text-slate-400">Inactive</span>
                     )}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    <button
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={() => setEditing({ mode: "edit", kri: k })}
-                      className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-primary-500"
+                      className="text-slate-700 hover:border-primary-500"
                     >
                       <Pencil size={11} /> Edit
-                    </button>
-                  </td>
-                </tr>
+                    </Button>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </div>
 
@@ -274,49 +280,51 @@ function KriFormModal({
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{mode === "edit" ? "Edit KRI" : "New KRI"}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4">
           <Field label="Name (required)">
-            <input
+            <Input
               value={f.name}
               onChange={(e) => set("name", e.target.value)}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               placeholder="e.g. Overdue safety actions"
             />
           </Field>
 
           <Field label="Description">
-            <textarea
+            <Textarea
               value={f.description}
               onChange={(e) => set("description", e.target.value)}
               rows={2}
-              className="w-full rounded-lg border border-slate-300 p-2 text-sm"
             />
           </Field>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Category">
-              <select
+              <Select
                 value={f.categoryId}
                 onChange={(e) => set("categoryId", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               >
                 {categories.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label="Unit">
-              <input
+              <Input
                 value={f.unit}
                 onChange={(e) => set("unit", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
                 placeholder="e.g. count, %, days"
               />
             </Field>
@@ -324,52 +332,48 @@ function KriFormModal({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Direction">
-              <select
+              <Select
                 value={f.direction}
                 onChange={(e) => set("direction", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               >
                 {DIRECTIONS.map((d) => (
                   <option key={d} value={d}>
                     {d === "HIGHER_IS_WORSE" ? "Higher is worse" : "Lower is worse"}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label="Frequency">
-              <select
+              <Select
                 value={f.frequency}
                 onChange={(e) => set("frequency", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               >
                 {FREQUENCIES.map((fr) => (
                   <option key={fr} value={fr}>
                     {fr.charAt(0) + fr.slice(1).toLowerCase()}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
             <Field label="Feed type">
-              <select
+              <Select
                 value={f.feedType}
                 onChange={(e) => set("feedType", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               >
                 {FEED_TYPES.map((ft) => (
                   <option key={ft} value={ft}>
                     {FEED_LABEL[ft]}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
           </div>
 
           {f.feedType === "MODULE_FED" && (
             <Field label="Metric provider (module-fed source)">
-              <select
+              <Select
                 value={f.metricProviderKey ?? ""}
                 onChange={(e) => set("metricProviderKey", e.target.value || null)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               >
                 <option value="">— select a metric —</option>
                 {catalogue.map((c) => (
@@ -377,7 +381,7 @@ function KriFormModal({
                     {c.label} ({c.sourceModule})
                   </option>
                 ))}
-              </select>
+              </Select>
               {selectedMetric && (
                 <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
                   <div className="font-medium text-slate-700">{selectedMetric.label}</div>
@@ -396,27 +400,24 @@ function KriFormModal({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Green threshold">
-              <input
+              <Input
                 type="number"
                 value={f.thresholdGreen}
                 onChange={(e) => set("thresholdGreen", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               />
             </Field>
             <Field label="Amber threshold">
-              <input
+              <Input
                 type="number"
                 value={f.thresholdAmber}
                 onChange={(e) => set("thresholdAmber", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               />
             </Field>
             <Field label="Grace days">
-              <input
+              <Input
                 type="number"
                 value={f.graceDays}
                 onChange={(e) => set("graceDays", e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm"
               />
             </Field>
           </div>
@@ -427,11 +428,11 @@ function KriFormModal({
           </Field>
 
           <Field label={`Linked risks (${f.linkedRiskIds.length} selected)`}>
-            <input
+            <Input
               value={riskQuery}
               onChange={(e) => setRiskQuery(e.target.value)}
               placeholder="Filter risks by code or title…"
-              className="mb-2 w-full rounded-lg border border-slate-300 p-2 text-sm"
+              className="mb-2"
             />
             <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200">
               {filteredRisks.length === 0 ? (
@@ -442,8 +443,7 @@ function KriFormModal({
                     key={r.id}
                     className="flex cursor-pointer items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-sm last:border-b-0 hover:bg-slate-50"
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={f.linkedRiskIds.includes(r.id)}
                       onChange={() => toggleRisk(r.id)}
                     />
@@ -456,17 +456,18 @@ function KriFormModal({
           </Field>
 
           <label className="flex items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={f.isActive} onChange={(e) => set("isActive", e.target.checked)} />
+            <Checkbox checked={f.isActive} onChange={(e) => set("isActive", e.target.checked)} />
             Active
           </label>
 
-          <button
+          <Button
+            type="button"
             disabled={busy || !valid}
             onClick={submit}
-            className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
+            className="w-full"
           >
             {busy ? "Saving…" : mode === "edit" ? "Save changes" : "Create KRI"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

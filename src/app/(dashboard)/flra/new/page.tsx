@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { FLRAForm } from "../flra-form";
 import { HiraSuggestionsPanel } from "@/components/hira/hira-suggestions-panel";
+import { PanelBoundary } from "@/components/ui/panel-boundary";
 import { requirePermission } from "@/lib/auth/server";
 
 export const dynamic = "force-dynamic";
@@ -39,12 +40,14 @@ export default async function NewFLRAPage(props: { searchParams: Promise<{ permi
             (deferred — the standalone path doesn't yet stream form state up). */}
         {permit ? (
           <aside className="xl:sticky xl:top-4 xl:self-start">
-            <HiraSuggestionsPanel
-              mode="flra"
-              plantId={permit.plantId}
-              areaId={permit.areaId}
-              activityKeyword={permit.scopeOfWork?.slice(0, 50) ?? null}
-            />
+            <PanelBoundary label="HIRA suggestions">
+              <HiraSuggestionsPanel
+                mode="flra"
+                plantId={permit.plantId}
+                areaId={permit.areaId}
+                activityKeyword={permit.scopeOfWork?.slice(0, 50) ?? null}
+              />
+            </PanelBoundary>
           </aside>
         ) : null}
       </div>

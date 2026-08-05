@@ -3,6 +3,10 @@
 import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -359,44 +363,53 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
         {categories.map((c) => {
           const active = activeCategories.has(c.code);
           return (
-            <button
+            <Button
               key={c.code}
               type="button"
+              variant="ghost"
               onClick={() => toggleCategory(c.code)}
-              className={
-                "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors " +
-                (active ? "border-slate-900 bg-slate-900 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400")
-              }
+              className={cn(
+                "h-auto inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+                active
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+              )}
             >
               <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: c.color }} />
               {c.code}
-            </button>
+            </Button>
           );
         })}
 
         <div className="ml-auto flex items-center gap-2">
-          <button
+          <Button
             type="button"
+            variant="ghost"
             onClick={() => setIsolate((v) => !v)}
             disabled={!selectedNodeId}
             title="Show only the selected risk and its direct neighbours"
-            className={
-              "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 " +
-              (isolate ? "border-primary-700 bg-primary-700 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400")
-            }
+            className={cn(
+              "h-auto inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+              isolate
+                ? "border-primary-700 bg-primary-700 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+            )}
           >
             <Crosshair size={14} /> Isolate
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="ghost"
             onClick={toggleAddMode}
-            className={
-              "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors " +
-              (addMode ? "border-emerald-600 bg-emerald-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400")
-            }
+            className={cn(
+              "h-auto inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors",
+              addMode
+                ? "border-emerald-600 bg-emerald-600 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+            )}
           >
             <Plus size={14} /> {addMode ? "Adding linkage…" : "Add linkage"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -432,9 +445,9 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-900">Add linkage</h3>
-                <button onClick={toggleAddMode} className="text-slate-400 hover:text-slate-600">
+                <Button variant="ghost" size="icon" onClick={toggleAddMode} className="text-slate-400 hover:text-slate-600">
                   <X size={16} />
-                </button>
+                </Button>
               </div>
               <ol className="space-y-1.5 text-xs text-slate-600">
                 <li className="flex items-center gap-2">
@@ -448,41 +461,39 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
               </ol>
               <div>
                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Linkage type</label>
-                <select
+                <Select
                   value={linkType}
                   onChange={(e) => setLinkType(e.target.value as LinkageType)}
-                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
                 >
                   {LINKAGE_TYPES.map((t) => (
                     <option key={t} value={t}>
                       {LINKAGE_LABEL[t] ?? t}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
                 <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Notes</label>
-                <textarea
+                <Textarea
                   value={linkNotes}
                   onChange={(e) => setLinkNotes(e.target.value)}
                   rows={3}
                   placeholder="Why are these connected?"
-                  className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
                 />
               </div>
               <div className="flex gap-2">
-                <button
+                <Button
                   type="button"
                   onClick={saveLinkage}
                   disabled={!sourcePick || !targetPick || saving}
-                  className="flex-1 rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-40"
+                  className="flex-1 disabled:opacity-40"
                 >
                   {saving ? "Saving…" : "Create linkage"}
-                </button>
+                </Button>
                 {(sourcePick || targetPick) && (
-                  <button type="button" onClick={resetAddMode} className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:border-slate-400">
+                  <Button type="button" variant="outline" onClick={resetAddMode} className="text-slate-600">
                     Reset
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -517,13 +528,14 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
               >
                 <ExternalLink size={14} /> Open Risk
               </Link>
-              <button
+              <Button
                 type="button"
+                variant="outline"
                 onClick={() => setIsolate((v) => !v)}
-                className="block w-full rounded-lg border border-slate-200 px-3 py-1.5 text-center text-xs font-medium text-slate-600 hover:border-slate-400"
+                className="block w-full text-center text-xs text-slate-600"
               >
                 {isolate ? "Show full network" : "Isolate neighbours"}
-              </button>
+              </Button>
             </div>
           ) : selectedEdge ? (
             <div className="space-y-3">
@@ -545,14 +557,15 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Notes</span>
                 <p className="mt-1 text-xs text-slate-600">{selectedEdge.notes || "—"}</p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="destructive"
                 onClick={() => deleteLinkage(selectedEdge.id)}
                 disabled={saving}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 px-3 py-1.5 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 text-xs disabled:opacity-40"
               >
                 <Trash2 size={14} /> Delete linkage
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="space-y-3 text-xs text-slate-500">

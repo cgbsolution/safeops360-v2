@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import type { Item } from "../../page";
 
 export const dynamic = "force-dynamic";
@@ -91,45 +92,45 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
         <div className="space-y-5 lg:col-span-2">
           <Card title="Inspection history">
             {detail.inspections.length === 0 ? <Muted>No inspections recorded.</Muted> : (
-              <table className="w-full text-sm">
-                <thead className="text-[10px] uppercase tracking-wider text-slate-400">
-                  <tr><th className="py-1 text-left">Date</th><th className="py-1 text-left">Type</th><th className="py-1 text-left">Inspector</th><th className="py-1 text-left">Result</th><th className="py-1 text-left">Outcome</th></tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+              <Table className="w-full text-sm">
+                <TableHeader className="text-[10px] uppercase tracking-wider text-slate-400">
+                  <TableRow><TableHead className="py-1 text-left">Date</TableHead><TableHead className="py-1 text-left">Type</TableHead><TableHead className="py-1 text-left">Inspector</TableHead><TableHead className="py-1 text-left">Result</TableHead><TableHead className="py-1 text-left">Outcome</TableHead></TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {detail.inspections.map((ins) => (
-                    <tr key={ins.id}>
-                      <td className="py-1.5 text-slate-600">{fmt(ins.conductedAt)}</td>
-                      <td className="py-1.5 text-slate-600 capitalize">{ins.inspectionType.replace(/_/g, " ")}</td>
-                      <td className="py-1.5 text-slate-600">{ins.inspectorName}</td>
-                      <td className="py-1.5">
+                    <TableRow key={ins.id}>
+                      <TableCell className="py-1.5 text-slate-600">{fmt(ins.conductedAt)}</TableCell>
+                      <TableCell className="py-1.5 text-slate-600 capitalize">{ins.inspectionType.replace(/_/g, " ")}</TableCell>
+                      <TableCell className="py-1.5 text-slate-600">{ins.inspectorName}</TableCell>
+                      <TableCell className="py-1.5">
                         <span className={ins.overallResult === "pass" ? "text-emerald-700" : ins.overallResult === "fail" ? "text-rose-700" : "text-amber-700"}>{ins.overallResult.replace(/_/g, " ")}</span>
-                      </td>
-                      <td className="py-1.5 text-xs text-slate-500 capitalize">{ins.itemStatusAfterInspection.replace(/_/g, " ")}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="py-1.5 text-xs text-slate-500 capitalize">{ins.itemStatusAfterInspection.replace(/_/g, " ")}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </Card>
 
           <Card title="Issuance history">
             {detail.issuances.length === 0 ? <Muted>Never issued.</Muted> : (
-              <table className="w-full text-sm">
-                <thead className="text-[10px] uppercase tracking-wider text-slate-400">
-                  <tr><th className="py-1 text-left">Issuance</th><th className="py-1 text-left">Holder</th><th className="py-1 text-left">Issued</th><th className="py-1 text-left">Returned</th><th className="py-1 text-left">Status</th></tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+              <Table className="w-full text-sm">
+                <TableHeader className="text-[10px] uppercase tracking-wider text-slate-400">
+                  <TableRow><TableHead className="py-1 text-left">Issuance</TableHead><TableHead className="py-1 text-left">Holder</TableHead><TableHead className="py-1 text-left">Issued</TableHead><TableHead className="py-1 text-left">Returned</TableHead><TableHead className="py-1 text-left">Status</TableHead></TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {detail.issuances.map((i) => (
-                    <tr key={i.id}>
-                      <td className="py-1.5 font-medium text-slate-700">{i.issuanceNumber}</td>
-                      <td className="py-1.5 text-slate-600">{i.issuedToName}</td>
-                      <td className="py-1.5 text-slate-600">{fmt(i.issuedAt)}</td>
-                      <td className="py-1.5 text-slate-600">{fmt(i.returnedAt)}</td>
-                      <td className="py-1.5 text-xs capitalize text-slate-500">{i.status.replace(/_/g, " ")}</td>
-                    </tr>
+                    <TableRow key={i.id}>
+                      <TableCell className="py-1.5 font-medium text-slate-700">{i.issuanceNumber}</TableCell>
+                      <TableCell className="py-1.5 text-slate-600">{i.issuedToName}</TableCell>
+                      <TableCell className="py-1.5 text-slate-600">{fmt(i.issuedAt)}</TableCell>
+                      <TableCell className="py-1.5 text-slate-600">{fmt(i.returnedAt)}</TableCell>
+                      <TableCell className="py-1.5 text-xs capitalize text-slate-500">{i.status.replace(/_/g, " ")}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             )}
           </Card>
 

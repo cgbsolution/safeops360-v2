@@ -8,12 +8,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
+import { ActionRecordPanel } from "@/components/workflow/action-record";
+import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
+import { markRecordTasksRead } from "@/lib/workflow/read-state";
 import { ApprovalPanel } from "@/components/workflow/approval-panel";
 import { ExecutionPanel, VerificationPanel } from "@/components/workflow/execution-panel";
 import { ResubmitPanel } from "@/components/workflow/resubmit-panel";
 import { SuspendResumePanel } from "@/components/ptw/suspend-resume-panel";
 import { ActiveOperationsPanel } from "@/components/ptw/active-operations-panel";
 import { ClosurePanel } from "@/components/ptw/closure-panel";
+import { AcceptPanel } from "@/components/ptw/accept-panel";
+import { PtwLifecycleActions } from "@/components/ptw/lifecycle-actions";
+import {
+  IsolationVerifyPanel,
+  EvidenceTimelineCard
+} from "@/components/ptw/isolation-verify-panel";
 import {
   AuditTrailPanel,
   ApprovalsCard,
@@ -21,6 +30,7 @@ import {
 } from "@/components/ptw/audit-trail-panel";
 import { PrintButton } from "@/components/ui/print-button";
 import { HiraSuggestionsPanel } from "@/components/hira/hira-suggestions-panel";
+import { PanelBoundary } from "@/components/ui/panel-boundary";
 import { getPtwActivationGate } from "@/lib/ptw/activation-gate";
 import { formatDateTime, statusColor, humanize } from "@/lib/utils";
 import { CheckCircle2, XCircle, Clock, FileText, Hammer, AlertTriangle, PlayCircle, RefreshCcw } from "lucide-react";
@@ -75,10 +85,24 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
         orderBy: { recordedAt: "asc" },
         take: 50,
         include: { recordedBy: { select: { name: true } } }
+      },
+      // Closed-loop field evidence (GPS + photo + signature per action)
+      actionEvidence: {
+        orderBy: { capturedAt: "asc" },
+        include: {
+          actor: { select: { name: true } },
+          photos: { select: { id: true } }
+        }
       }
     }
   });
-  if (!p) return notFound();
+  // Soft-deleted permits (governed-entity delete) are treated as gone — a
+  // deep-link/bookmark to one 404s rather than rendering a removed record.
+  if (!p || p.isDeleted) return notFound();
+
+  // Opening the record clears its Inbox unread state, however the viewer got
+  // here. No-op unless they're the action owner.
+  await markRecordTasksRead({ module: "PTW", recordId: p.id, userId });
 
   const activationGate = await getPtwActivationGate(p.id);
   const liveFlra = p.flras.find((f) => f.status === "IN_PROGRESS" || f.status === "COMPLETED") ?? null;
@@ -92,12 +116,15 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
     where: { module_recordId: { module: "PTW", recordId: p.id } },
     include: {
       definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: true }, orderBy: { performedAt: "asc" } },
-      pendingTasks: { include: { assignedTo: true } }
+      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
+      pendingTasks: { include: { assignedTo: { include: PARTY_INCLUDE } } }
     }
   });
 
-  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && t.status === "PENDING");
+  // Include OVERDUE/ESCALATED so an assignee can still act once a task
+  // slips past its due date (mirrors the near-miss page).
+  const OPEN_TASK_STATUSES = ["PENDING", "OVERDUE", "ESCALATED"];
+  const myTask = instance?.pendingTasks.find((t) => t.assignedToId === userId && OPEN_TASK_STATUSES.includes(t.status));
   const isInitiator = !!instance && instance.initiatedById === userId;
   const showResubmit = !!instance && instance.status === "REJECTED" && isInitiator;
   const lastRejection = instance?.history
@@ -111,7 +138,20 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
     myTask.assignedToId === p.receiverId;
   const activationBlocked = isReceiverStep && !activationGate.ok;
 
+  // Closed-loop rebuild: the acceptance step is a dedicated signed act
+  // (POST /api/ptw/{id}/accept); FLRA / legacy combined steps keep the
+  // generic execution panel.
+  const isAcceptStep =
+    isReceiverStep && myTask!.stepName === "Receiver Accepts Permit";
+  const isClosureApproval =
+    !!myTask && myTask.taskType === "APPROVAL" && myTask.stepName === "Closure";
+
   const canSuspendResume = role === "HSE_MANAGER" || role === "ADMIN";
+  const canVerifyRoles =
+    role === "PERMIT_ISSUER" || role === "SAFETY_OFFICER" || role === "PLANT_HEAD" ||
+    role === "HSE_MANAGER" || role === "ADMIN" || role === "SYSTEM_ADMIN";
+  const canCancel =
+    canVerifyRoles || userId === p.originatorId || userId === p.issuerId;
 
   return (
     <div>
@@ -126,16 +166,21 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                 className={
                   instance.status === "COMPLETED"
                     ? "bg-emerald-100 text-emerald-800 border-emerald-200"
-                    : instance.status === "REJECTED"
+                    : instance.status === "REJECTED" || p.status === "CANCELLED"
                       ? "bg-rose-100 text-rose-800 border-rose-200"
                       : p.status === "SUSPENDED"
                         ? "bg-amber-100 text-amber-800 border-amber-200"
                         : p.status === "EXPIRED"
                           ? "bg-rose-100 text-rose-800 border-rose-200"
-                          : "bg-blue-100 text-blue-800 border-blue-200"
+                          : ["WORK_COMPLETED", "HANDBACK_INSPECTION"].includes(p.status)
+                            ? "bg-teal-100 text-teal-800 border-teal-200"
+                            : "bg-blue-100 text-blue-800 border-blue-200"
                 }
               >
-                {p.status === "SUSPENDED" || p.status === "EXPIRED" ? humanize(p.status) : humanize(instance.status)}
+                {/* Closed-loop states live on the permit, not the workflow instance */}
+                {["SUSPENDED", "EXPIRED", "ISSUED", "APPROVED", "WORK_COMPLETED", "HANDBACK_INSPECTION", "CANCELLED"].includes(p.status)
+                  ? humanize(p.status)
+                  : humanize(instance.status)}
               </Badge>
             ) : (
               <Badge className={statusColor(p.status)}>{humanize(p.status)}</Badge>
@@ -148,12 +193,14 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
           entries in the permit's area and any explicit influences-PTW flags.
           Sits above the workflow tracker so it's seen before approval action. */}
       <div className="mb-4">
-        <HiraSuggestionsPanel
-          mode="ptw"
-          plantId={p.plantId}
-          areaId={p.areaId}
-          permitType={p.type}
-        />
+        <PanelBoundary label="HIRA suggestions">
+          <HiraSuggestionsPanel
+            mode="ptw"
+            plantId={p.plantId}
+            areaId={p.areaId}
+            permitType={p.type}
+          />
+        </PanelBoundary>
       </div>
 
       {/* Workflow tracker */}
@@ -176,12 +223,10 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
               action: h.action,
               performedAt: h.performedAt,
               comments: h.comments,
-              // performedBy may be null if the actor was deleted; preserve
-              // the audit trail by falling back to "(unknown user)" rather
-              // than crashing the page render.
-              performedBy: h.performedBy
-                ? { name: h.performedBy.name, designation: h.performedBy.designation }
-                : { name: "(unknown user)", designation: null }
+              // performedBy may be null if the actor was deleted; toParty
+              // tolerates that (renders "Unassigned") so a missing actor never
+              // crashes the audit-trail render.
+              performedBy: toParty(h.performedBy)
             }))}
             pendingTasks={instance.pendingTasks.map((t) => ({
               id: t.id,
@@ -189,9 +234,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
               stepName: t.stepName,
               status: t.status,
               dueAt: t.dueAt,
-              assignedTo: t.assignedTo
-                ? { name: t.assignedTo.name, designation: t.assignedTo.designation, department: t.assignedTo.department }
-                : { name: "(unassigned)", designation: null, department: null }
+              assignedTo: toParty(t.assignedTo)
             }))}
             currentStepId={instance.currentStepId}
             status={instance.status}
@@ -200,6 +243,34 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
       )}
       <div className="grid lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
+          {/* The narrative each actor wrote when completing their step —
+              acceptance, hand-back, verification, rework reasons. Was only
+              reachable by expanding the Audit Trail. */}
+          {instance && (
+            <ActionRecordPanel
+              history={instance.history.map((h) => ({
+                id: h.id,
+                stepId: h.stepId,
+                stepName: h.stepName,
+                action: h.action,
+                performedAt: h.performedAt,
+                comments: h.comments,
+                attachments: h.attachments,
+                performedBy: toParty(h.performedBy)
+              }))}
+              steps={instance.definition.steps.map((s) => ({ id: s.id, stepType: s.stepType }))}
+            />
+          )}
+
+          {/* Closed-loop lifecycle actions: cancel / archive / report */}
+          <PtwLifecycleActions
+            permitId={p.id}
+            status={p.status}
+            isArchived={Boolean((p as any).isArchived)}
+            canCancel={canCancel}
+            canArchive={canVerifyRoles}
+          />
+
           {/* Suspend / Resume banner — appears on ACTIVE or SUSPENDED permits */}
           <SuspendResumePanel
             permitId={p.id}
@@ -263,6 +334,25 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
             }))}
           />
 
+          {/* Closed-loop: lock-out verification with field evidence — the
+              activation gate blocks until every isolation is verified.
+              (Previously nothing could set isolationVerifiedAt at all.) */}
+          {["APPROVED", "ISSUED", "SUBMITTED", "ACTIVE", "SUSPENDED"].includes(p.status) && (
+            <IsolationVerifyPanel
+              permitId={p.id}
+              isolations={p.isolations.map((i) => ({
+                id: i.id,
+                isolationType: i.isolationType,
+                description: i.description,
+                isolationPointTag: i.isolationPointTag,
+                lotoTagNumber: i.lotoTagNumber,
+                isolationVerifiedAt: i.isolationVerifiedAt,
+                restoredAt: i.restoredAt
+              }))}
+              canVerify={canVerifyRoles || userId === p.receiverId}
+            />
+          )}
+
           {/* Audit trail — unified timeline of approvals/suspensions/extensions/gas readings */}
           <AuditTrailPanel
             approvals={p.approvalsLog.map((a) => ({
@@ -317,21 +407,36 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
             }))}
           />
 
-          {/* Return → Site Verification → Closure */}
+          {/* Field evidence timeline — GPS + photo + signature per action */}
+          <EvidenceTimelineCard
+            items={((p as any).actionEvidence ?? []).map((ev: any) => ({
+              id: ev.id,
+              action: ev.action,
+              actorName: ev.actor?.name ?? null,
+              capturedAt: ev.capturedAt,
+              gpsLatitude: ev.gpsLatitude,
+              gpsLongitude: ev.gpsLongitude,
+              gpsAccuracyMeters: ev.gpsAccuracyMeters,
+              declarationText: ev.declarationText,
+              hasSignature: Boolean(ev.signatureImageBase64),
+              photoCount: (ev.photos ?? []).length
+            }))}
+          />
+
+          {/* Work Completed → Handback Inspection → Closure */}
           <ClosurePanel
             permitId={p.id}
             status={p.status}
             receiverId={p.receiverId}
             currentUserId={userId}
-            canVerify={role === "PERMIT_ISSUER" || role === "SAFETY_OFFICER" || role === "PLANT_HEAD" || role === "HSE_MANAGER" || role === "ADMIN" || role === "SYSTEM_ADMIN"}
+            canVerify={canVerifyRoles}
+            workCompletedAt={(p as any).workCompletedAt ?? null}
+            outcome={(p as any).outcome ?? null}
             returnedAt={p.returnedAt}
-            returnedById={p.returnedById}
             returnNotes={p.returnNotes}
             siteVerifiedAt={p.siteVerifiedAt}
-            siteVerifiedById={p.siteVerifiedById}
             siteVerificationChecklist={p.siteVerificationChecklist}
             closingRemark={p.closingRemark}
-            closedById={p.closedById}
             closedAt={p.closedAt}
           />
 
@@ -398,7 +503,9 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
             </Card>
           )}
 
-          {/* Action panels — same pattern as Observations / Near Miss */}
+          {/* Action panels — closed-loop rebuild: every approval carries
+              field evidence (GPS + photo + signature); the closure approval
+              needs GPS + signature (photo optional per policy). */}
           {myTask && myTask.taskType === "APPROVAL" && (
             <ApprovalPanel
               task={{ id: myTask.id, stepName: myTask.stepName, taskType: myTask.taskType, dueAt: myTask.dueAt, assignedAt: myTask.assignedAt }}
@@ -407,18 +514,25 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                 plantId: p.plantId,
                 originatorId: p.originatorId,
                 issuerId: p.issuerId,
-                receiverId: p.receiverId
+                receiverId: p.receiverId,
+                flraRequired: Boolean((p as any).flraRequired)
               }}
+              ptwEvidence={{ permitId: p.id, requirePhoto: !isClosureApproval }}
             />
           )}
-          {myTask && myTask.taskType === "EXECUTION" && (
+          {myTask && myTask.taskType === "EXECUTION" && isAcceptStep && (
+            <AcceptPanel permitId={p.id} permitNumber={p.number} gateOk={activationGate.ok} />
+          )}
+          {myTask && myTask.taskType === "EXECUTION" && !isAcceptStep && (
             <ExecutionPanel
               task={{ id: myTask.id, stepName: myTask.stepName, taskType: myTask.taskType, dueAt: myTask.dueAt }}
               module="PTW"
               instruction={
-                isReceiverStep
-                  ? "Acknowledge the permit on site. Confirm FLRA is complete and PPE is in place. Submitting activates the permit."
-                  : "Execute and acknowledge this step. Attach evidence."
+                myTask.stepName === "FLRA & Crew Sign-off"
+                  ? "Complete the FLRA at the worksite and collect every crew signature, then close this step."
+                  : isReceiverStep
+                    ? "Acknowledge the permit on site. Confirm FLRA is complete and PPE is in place. Submitting activates the permit."
+                    : "Execute and acknowledge this step. Attach evidence."
               }
             />
           )}
@@ -493,11 +607,19 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
             </Card>
           )}
 
-          {/* FLRA & Activation — status-aware panel */}
+          {/* FLRA & Activation — status-aware panel. Closed-loop rebuild:
+              FLRA is a conditional sub-flow; the card is hidden entirely
+              when this permit doesn't require one (and none exists). */}
+          {(activationGate.flraRequired || liveFlra || supersededFlras.length > 0) && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <PlayCircle size={18} className="text-primary-700" /> FLRA & Activation
+                {!activationGate.flraRequired && (
+                  <Badge className="bg-slate-100 text-slate-600 border-slate-200 text-[10px]">
+                    Optional for this permit
+                  </Badge>
+                )}
               </CardTitle>
               <CardDescription>
                 {p.status === "ACTIVE"
@@ -506,7 +628,9 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                     ? "Permit is paused. New FLRA must be signed before resuming."
                     : p.status === "CLOSED"
                       ? "Permit closed. FLRA history archived for audit."
-                      : "FLRA must be completed and signed by every crew member before this permit can become ACTIVE."}
+                      : activationGate.flraRequired
+                        ? "FLRA must be completed and signed by every crew member before this permit can become ACTIVE."
+                        : "An FLRA is not required for this permit under the site policy; any FLRA raised is shown for reference."}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -542,7 +666,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
               )}
 
               <div className="flex flex-wrap gap-2">
-                {!liveFlra && (p.status === "ISSUER_APPROVED" || p.status === "SAFETY_APPROVED" || p.status === "PLANT_HEAD_APPROVED" || p.status === "SUBMITTED") && (
+                {!liveFlra && ["SUBMITTED", "APPROVED", "ISSUED", "ISSUER_APPROVED", "SAFETY_APPROVED", "PLANT_HEAD_APPROVED"].includes(p.status) && (
                   <Button asChild size="sm">
                     <Link href={`/flra/new?permitId=${p.id}`}><Hammer size={14} /> Start FLRA</Link>
                   </Button>
@@ -585,6 +709,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
               )}
             </CardContent>
           </Card>
+          )}
         </div>
 
         <div className="space-y-4">

@@ -11,7 +11,7 @@ export default async function UnifiedCalendarPage() {
   let data: EngagementListResponse = { items: [], total: 0, statusCounts: {}, typeCounts: {} };
   let error: string | null = null;
   try {
-    data = await backendFetch<EngagementListResponse>("/api/cams/engagements");
+    data = await backendFetch<EngagementListResponse>("/api/cams/unified-engagements");
   } catch (e: any) {
     error = e?.message ?? "Failed to load the audit calendar";
   }

@@ -3,7 +3,7 @@
 //
 // Business Continuity Management (ISO 22301) + Scenario / Horizon scanning,
 // layered on top of the Phase 1 register and Phase 2 monitoring data for the
-// Page Industries demo tenant (plants NW / SW).
+// Meridian Manufacturing demo tenant (plants NW / SW).
 //
 // Depends on (must already be seeded):
 //   • Phase 1 — the 24 enterprise risks ERM-2026-0001 .. 0024 + RiskCategory
@@ -186,20 +186,20 @@ async function main() {
   ];
 
   const PROCS: ProcSpec[] = [
-    // ── North Garment Unit ──
-    { code: "BP-0001", name: "Sewing / Stitching Line SL-1 — Production", site: "NW", ownerId: devendraId, dept: "Production", rto: 4, rpo: 2, mtpd: 24, crit: "VITAL", reviewDays: 200, links: ["0011"],
-      desc: "Continuous garment production on the critical North Garment Unit SL-1 sewing line — the single largest revenue line, feeding key retail and e-commerce contracts.",
-      peak: "Q3 (festive-season build) and month-end dispatch peaks.",
+    // ── North Works ──
+    { code: "BP-0001", name: "Extrusion Line 3 — Production", site: "NW", ownerId: devendraId, dept: "Production", rto: 4, rpo: 2, mtpd: 24, crit: "VITAL", reviewDays: 200, links: ["0011"],
+      desc: "Continuous extrusion production on the critical North Works Line 3 — the single largest revenue line, feeding key OEM contracts.",
+      peak: "Q3 (festive build) and month-end dispatch peaks.",
       deps: [
-        { type: "EQUIPMENT", name: "Sewing-line conveyor & overlock bank", spof: true, workaround: "Cold spare machine set on site; OEM feeder swap ~48h.", workaroundHrs: 48 },
-        { type: "PEOPLE_SKILL", name: "Certified sewing-machine operators (Grade-A)", workaround: "Cross-trained relief crew from SL-2/knitting section." },
-        { type: "UTILITY", name: "Process steam & chilled water", workaround: "Standby chiller (auto-changeover)." },
+        { type: "EQUIPMENT", name: "Extruder screw & barrel drive", spof: true, workaround: "Cold spare screw set on site; OEM barrel swap ~48h.", workaroundHrs: 48 },
+        { type: "PEOPLE_SKILL", name: "Certified extrusion line operators (Grade-A)", workaround: "Cross-trained relief crew from Line 1/2." },
+        { type: "UTILITY", name: "Process chilled water", workaround: "Standby chiller (auto-changeover)." },
       ] },
-    { code: "BP-0002", name: "Knitting Section — Circular Knitting & Greige", site: "NW", ownerId: devendraId, dept: "Production", rto: 12, rpo: 4, mtpd: 72, crit: "ESSENTIAL", reviewDays: 220, links: ["0011"],
-      desc: "Yarn knitting, inspection and greige-fabric batching across the circular-knitting and fabric lines supplying greige fabric to the dye house and to fabric dispatch.",
+    { code: "BP-0002", name: "Injection Moulding — Lines 1 & 2", site: "NW", ownerId: devendraId, dept: "Production", rto: 12, rpo: 4, mtpd: 72, crit: "ESSENTIAL", reviewDays: 220, links: ["0011"],
+      desc: "Injection-moulded component production across Lines 1 & 2 supplying sub-assemblies to extrusion and to direct dispatch.",
       deps: [
-        { type: "EQUIPMENT", name: "Circular knitting machines & fabric inspection", workaround: "Buffer greige-fabric store for top grades." },
-        { type: "UPSTREAM_PROCESS", name: "Machine & needle maintenance", ref: "BP-0006" },
+        { type: "EQUIPMENT", name: "Moulding tools / dies", workaround: "Duplicate tools for top-5 SKUs." },
+        { type: "UPSTREAM_PROCESS", name: "Tool Room mould maintenance", ref: "BP-0006" },
       ] },
     { code: "BP-0003", name: "Finished Goods Dispatch & Logistics", site: "NW", ownerId: devendraId, dept: "Logistics", rto: 24, rpo: 8, mtpd: 96, crit: "ESSENTIAL", reviewDays: 180, links: ["0012"],
       desc: "Picking, packing, statutory documentation and outbound transport of finished goods to customers and warehouses.",
@@ -214,22 +214,22 @@ async function main() {
         { type: "PEOPLE_SKILL", name: "Approved chemist (release authority)", workaround: "SW chemist deputation." },
       ] },
     { code: "BP-0005", name: "Utilities & Power Distribution (NW)", site: "NW", ownerId: devendraId, dept: "Engineering", rto: 4, rpo: null, mtpd: 24, crit: "VITAL", reviewDays: 160,
-      desc: "HT power intake, transformers, compressed air and chilled-water utilities feeding all North Garment Unit production.",
+      desc: "HT power intake, transformers, compressed air and chilled-water utilities feeding all North Works production.",
       deps: [
         { type: "UTILITY", name: "33 kV HT incomer (single feeder)", spof: true, workaround: null },  // ← unmitigated SPOF #1
         { type: "EQUIPMENT", name: "DG backup set", workaround: "1.5 MW DG covers essential loads." },
       ] },
-    { code: "BP-0006", name: "Machine & Needle Maintenance Workshop", site: "NW", ownerId: devendraId, dept: "Maintenance", rto: 24, rpo: null, mtpd: 120, crit: "ESSENTIAL", reviewDays: 240,
-      desc: "Preventive and breakdown maintenance of sewing heads, knitting needles, cutters and machine spares that keep the knitting and sewing lines running.",
+    { code: "BP-0006", name: "Tool Room & Mould Maintenance", site: "NW", ownerId: devendraId, dept: "Maintenance", rto: 24, rpo: null, mtpd: 120, crit: "ESSENTIAL", reviewDays: 240,
+      desc: "Preventive and breakdown maintenance of moulds, dies and tooling that keep moulding and extrusion lines running.",
       deps: [
-        { type: "PEOPLE_SKILL", name: "Senior sewing-machine technician", workaround: "Retainer with external machine-service shop." },
+        { type: "PEOPLE_SKILL", name: "Senior tool-maker", workaround: "Retainer with external tool shop." },
       ] },
-    // ── South Garment Unit ──
-    { code: "BP-0007", name: "Specialty Dye House Line", site: "SW", ownerId: lakshmiId, dept: "Production", rto: 24, rpo: 8, mtpd: 96, crit: "ESSENTIAL", reviewDays: 30, links: ["0012"],
-      desc: "Specialty dyeing & processing line for high-margin export dyed-knit SKUs. (Recovery strategy still in draft — coverage gap.)",
+    // ── South Works ──
+    { code: "BP-0007", name: "Specialty Coating Line", site: "SW", ownerId: lakshmiId, dept: "Production", rto: 24, rpo: 8, mtpd: 96, crit: "ESSENTIAL", reviewDays: 30, links: ["0012"],
+      desc: "Specialty surface-coating line for high-margin export SKUs. (Recovery strategy still in draft — coverage gap.)",
       deps: [
-        { type: "EQUIPMENT", name: "Soft-flow dyeing machine & drying section", workaround: "No equivalent line; external toll-dyer under evaluation." },
-        { type: "VENDOR", name: "Specialty dye-chemical supplier (single-source)", spof: true, workaround: "60-day strategic buffer stock.", workaroundHrs: 1440 },
+        { type: "EQUIPMENT", name: "Coating reactor & curing oven", workaround: "No equivalent line; external toll-coater under evaluation." },
+        { type: "VENDOR", name: "Specialty resin supplier (single-source)", spof: true, workaround: "60-day strategic buffer stock.", workaroundHrs: 1440 },
       ] },
     { code: "BP-0008", name: "Effluent Treatment Plant (ETP)", site: "SW", ownerId: lakshmiId, dept: "EHS", rto: 4, rpo: null, mtpd: 24, crit: "VITAL", reviewDays: 150, links: ["0015"],
       desc: "Effluent treatment to consented discharge norms. ETP downtime forces a production stop to avoid a statutory breach.",
@@ -238,13 +238,13 @@ async function main() {
         { type: "PEOPLE_SKILL", name: "Certified ETP operator", workaround: "Contracted O&M operator on call." },
       ] },
     { code: "BP-0009", name: "Warehouse & Raw Material Store (SW)", site: "SW", ownerId: lakshmiId, dept: "Logistics", rto: 24, rpo: 8, mtpd: 96, crit: "ESSENTIAL", reviewDays: 230,
-      desc: "Receipt, storage and issue of raw materials and finished goods at South Garment Unit, including hazardous-material storage.",
+      desc: "Receipt, storage and issue of raw materials and finished goods at South Works, including hazardous-material storage.",
       deps: [
         { type: "FACILITY", name: "Bonded / hazmat storage area", workaround: "Temporary licensed 3PL warehouse." },
         { type: "IT_SYSTEM", name: "WMS inventory module", ref: "BP-0011", workaround: "Manual bin-card fallback." },
       ] },
     { code: "BP-0010", name: "Boiler & Steam Generation (SW)", site: "SW", ownerId: lakshmiId, dept: "Engineering", rto: 4, rpo: null, mtpd: 24, crit: "VITAL", reviewDays: 170,
-      desc: "IBR steam generation feeding the dyeing and drying processes at South Garment Unit.",
+      desc: "IBR steam generation feeding the coating and curing processes at South Works.",
       deps: [
         { type: "EQUIPMENT", name: "IBR boiler", spof: true, workaround: "12h steam draw from NW interconnect; spare burner on site.", workaroundHrs: 12 },
         { type: "UTILITY", name: "Furnace oil / gas supply", workaround: "7-day on-site fuel buffer." },
@@ -261,7 +261,7 @@ async function main() {
       desc: "Sourcing, purchase-order management and inbound supply assurance for critical raw materials.",
       deps: [
         { type: "IT_SYSTEM", name: "ERP procurement module", ref: "BP-0011" },
-        { type: "PEOPLE_SKILL", name: "Category buyers (cotton yarn / fabric / dye chemicals)", workaround: "Documented vendor matrix + manager backup." },
+        { type: "PEOPLE_SKILL", name: "Category buyers (polymer / steel)", workaround: "Documented vendor matrix + manager backup." },
       ] },
     { code: "BP-0013", name: "Payroll & Treasury", site: null, ownerId: rajeshId, dept: "Finance", rto: 24, rpo: 8, mtpd: 72, crit: "ESSENTIAL", reviewDays: 260, links: ["0004"],
       desc: "Payroll processing, banking, forex settlement and statutory remittances.",
@@ -270,7 +270,7 @@ async function main() {
         { type: "VENDOR", name: "Payroll bureau", workaround: "In-house manual run for one cycle." },
       ] },
     { code: "BP-0014", name: "Customer Order Management", site: null, ownerId: farhanId, dept: "Commercial", rto: 24, rpo: 8, mtpd: 96, crit: "ESSENTIAL", reviewDays: 25, links: ["0012"],
-      desc: "Order capture, scheduling and customer commitments for EBO, distributor and e-commerce channels. (No recovery plan yet — coverage gap.)",
+      desc: "Order capture, scheduling and customer commitments for OEM and distributor channels. (No recovery plan yet — coverage gap.)",
       deps: [
         { type: "IT_SYSTEM", name: "CRM / order-entry portal", ref: "BP-0011", workaround: "Email-order fallback (degraded)." },
         { type: "PEOPLE_SKILL", name: "Key-account managers", workaround: "Documented account handover pack." },
@@ -323,25 +323,25 @@ async function main() {
   };
 
   const PLANS: PlanSpec[] = [
-    { code: "BCP-0001", title: "North Garment Unit Production Continuity Plan", type: "BUSINESS_CONTINUITY", site: "NW", ownerId: devendraId,
+    { code: "BCP-0001", title: "North Works Production Continuity Plan", type: "BUSINESS_CONTINUITY", site: "NW", ownerId: devendraId,
       covers: ["BP-0001", "BP-0002", "BP-0006"], status: "APPROVED", version: 3, nextReviewDays: 120, lastExercisedDays: 90,
-      scope: "Recovery of North Garment Unit sewing and knitting production, including machine-maintenance support, following equipment, utility or facility disruption.",
+      scope: "Recovery of North Works extrusion and moulding production, including tool-room support, following equipment, utility or facility disruption.",
       criteria: ["Loss of a critical production line for > 8 hours", "Loss of utilities affecting > 50% of production", "Site evacuation order"],
-      strategy: "Prioritise SL-1 (VITAL) recovery within 4h using cold spares and cross-trained crews; shift load between SL-2 and the knitting section; escalate machine servicing to external shop if the Maintenance Workshop is down > 24h.",
+      strategy: "Prioritise Line 3 (VITAL) recovery within 4h using cold spares and cross-trained crews; shift moulding load between Lines 1 & 2; escalate tooling to external shop if Tool Room is down > 24h.",
       sections: [
         { heading: "Activation & Roles", body: "NW Site Incident Commander activates on the criteria above and convenes the recovery team within 30 minutes." },
-        { heading: "SL-1 Recovery", body: "Swap to cold spare machine set; engage OEM for feeder swap (SLA 48h); maintain chilled-water on standby chiller." },
-        { heading: "Workaround Production", body: "Re-balance priority SKUs across SL-2 and the knitting section; communicate revised commitments to Customer Order Management." },
+        { heading: "Line 3 Recovery", body: "Swap to cold spare screw set; engage OEM for barrel swap (SLA 48h); maintain chilled-water on standby chiller." },
+        { heading: "Workaround Production", body: "Re-balance priority SKUs across Lines 1 & 2; communicate revised commitments to Customer Order Management." },
       ],
       tasks: [
         { title: "Convene NW recovery team & confirm scope", role: "NW Site Incident Commander", targetHrs: 1 },
         { title: "Isolate failed line & deploy cold spares", role: "Maintenance Lead", targetHrs: 4 },
-        { title: "Re-balance priority SKUs across SL-2 and knitting section", role: "Production Planner", targetHrs: 8 },
+        { title: "Re-balance priority SKUs across Lines 1 & 2", role: "Production Planner", targetHrs: 8 },
         { title: "Notify affected customers of revised ETAs", role: "Customer Order Management", targetHrs: 12 },
       ] },
-    { code: "BCP-0002", title: "North Garment Unit Utilities & Power Recovery", type: "BUSINESS_CONTINUITY", site: "NW", ownerId: devendraId,
+    { code: "BCP-0002", title: "North Works Utilities & Power Recovery", type: "BUSINESS_CONTINUITY", site: "NW", ownerId: devendraId,
       covers: ["BP-0005"], status: "APPROVED", version: 2, nextReviewDays: 95, lastExercisedDays: 400,  // → STALE
-      scope: "Restoration of HT power, compressed air and chilled water at North Garment Unit.",
+      scope: "Restoration of HT power, compressed air and chilled water at North Works.",
       criteria: ["Loss of HT incomer", "DG backup failure", "Chiller / compressor trip affecting production"],
       strategy: "Shed non-essential load, run essential production on the 1.5 MW DG, coordinate with the discom for HT restoration; treat the single HT feeder as the priority resilience gap.",
       sections: [
@@ -370,9 +370,9 @@ async function main() {
         { title: "Restore identity & critical integrations", role: "Systems Engineer", targetHrs: 8 },
         { title: "Integrity-check & reconnect OT networks", role: "OT Security Engineer", targetHrs: 18 },
       ] },
-    { code: "BCP-0004", title: "South Garment Unit Utilities (ETP & Boiler) Plan", type: "BUSINESS_CONTINUITY", site: "SW", ownerId: lakshmiId,
+    { code: "BCP-0004", title: "South Works Utilities (ETP & Boiler) Plan", type: "BUSINESS_CONTINUITY", site: "SW", ownerId: lakshmiId,
       covers: ["BP-0008", "BP-0010"], status: "APPROVED", version: 2, nextReviewDays: 100, lastExercisedDays: 60,  // → AT_RISK via open exercise CAPA
-      scope: "Continuity of effluent treatment and steam generation at South Garment Unit to avoid statutory breach and production stop.",
+      scope: "Continuity of effluent treatment and steam generation at South Works to avoid statutory breach and production stop.",
       criteria: ["ETP blower / aeration failure", "Boiler trip or IBR shutdown", "Consented-norm exceedance risk"],
       strategy: "On ETP failure, throttle production to within hydraulic capacity and engage contracted O&M; on boiler failure, draw steam from the NW interconnect for up to 12h while the spare burner is fitted.",
       sections: [
@@ -426,16 +426,16 @@ async function main() {
         { title: "Initiate bank offline-batch payroll", role: "Treasury Manager", targetHrs: 12 },
       ] },
     // BP-0007 covered only by a NON-approved (IN_REVIEW) plan → still a coverage gap.
-    { code: "BCP-0008", title: "Specialty Dye House Recovery Plan", type: "BUSINESS_CONTINUITY", site: "SW", ownerId: lakshmiId,
+    { code: "BCP-0008", title: "Specialty Coating Recovery Plan", type: "BUSINESS_CONTINUITY", site: "SW", ownerId: lakshmiId,
       covers: ["BP-0007"], status: "IN_REVIEW", version: 1, nextReviewDays: 365, lastExercisedDays: null,
-      scope: "Recovery strategy for the specialty dye house line. Draft strategy pending evaluation of external toll-dyeing capacity.",
-      criteria: ["Soft-flow dyeing machine or drying-section failure", "Specialty dye-chemical supply interruption"],
-      strategy: "DRAFT — evaluating an external toll-dyer and a larger dye-chemical buffer; not yet approved.",
+      scope: "Recovery strategy for the specialty coating line. Draft strategy pending evaluation of external toll-coating capacity.",
+      criteria: ["Coating reactor or curing-oven failure", "Specialty resin supply interruption"],
+      strategy: "DRAFT — evaluating an external toll-coater and a larger resin buffer; not yet approved.",
       sections: [
-        { heading: "Toll-Dyeing Option", body: "Evaluate qualifying an external toll-dyer for high-margin export SKUs." },
+        { heading: "Toll-Coating Option", body: "Evaluate qualifying an external toll-coater for high-margin export SKUs." },
       ],
       tasks: [
-        { title: "Qualify external toll-dyer", role: "SW Production Manager", targetHrs: 720 },
+        { title: "Qualify external toll-coater", role: "SW Production Manager", targetHrs: 720 },
       ] },
   ];
 
@@ -483,8 +483,8 @@ async function main() {
     { roleName: "BCM Coordinator", site: null, primary: farhanId, alternate: sureshId, order: 2, resp: "Coordinates plan activation, the crisis log, recovery-task tracking and stand-down/post-crisis review." },
     { roleName: "IT Recovery Lead", site: null, primary: kavitaId, alternate: rajeshId, order: 2, resp: "Leads IT/OT containment and ERP/identity recovery; declares technical all-clear before reconnection." },
     { roleName: "Communications Lead", site: null, primary: meeraId, alternate: nandiniId, order: 3, resp: "Internal and external/stakeholder communications, regulator notification and media holding statements." },
-    { roleName: "NW Site Incident Commander", site: "NW", primary: devendraId, alternate: sureshId, order: 1, resp: "On-site command at North Garment Unit: life-safety, evacuation, production isolation and local recovery." },
-    { roleName: "SW Site Incident Commander", site: "SW", primary: lakshmiId, alternate: devendraId, order: 1, resp: "On-site command at South Garment Unit: life-safety, ETP/boiler safety and local recovery." },
+    { roleName: "NW Site Incident Commander", site: "NW", primary: devendraId, alternate: sureshId, order: 1, resp: "On-site command at North Works: life-safety, evacuation, production isolation and local recovery." },
+    { roleName: "SW Site Incident Commander", site: "SW", primary: lakshmiId, alternate: devendraId, order: 1, resp: "On-site command at South Works: life-safety, ETP/boiler safety and local recovery." },
   ];
   let teamCount = 0;
   for (const t of TEAM) {
@@ -505,7 +505,7 @@ async function main() {
     { id: "s2", parentNodeId: "s1", groupName: "SW Shift Engineers", contactPhone: "+91-90000-00011", contactEmail: "lakshmi.venkatesh@safeops360.in" },
   ];
   await prisma.callTree.create({ data: { name: "Corporate Crisis Call Tree", siteId: null, nodes: corpCallNodes as any, publishedAt: daysAgo(40), createdBy: farhanId } });
-  await prisma.callTree.create({ data: { name: "South Garment Unit Call Tree", siteId: sw.id, nodes: swCallNodes as any, publishedAt: daysAgo(35), createdBy: farhanId } });
+  await prisma.callTree.create({ data: { name: "South Works Call Tree", siteId: sw.id, nodes: swCallNodes as any, publishedAt: daysAgo(35), createdBy: farhanId } });
   console.log(`  crisis-team roles: ${teamCount} | call trees: 2`);
 
   // ════════════════════════════════════════════════════════════════════════
@@ -554,8 +554,8 @@ async function main() {
     { mins: 600, type: "COMMUNICATION", by: meeraId, content: "Day-2 internal update circulated: systems being restored progressively; no customer-data impact identified." },
     { mins: 720, type: "ACTION", by: kavitaId, content: "Full malware scan of OT hosts completed — clean. Integrity sign-off obtained from the IT Recovery Lead." },
     { mins: 780, type: "ACTION", by: kavitaId, content: "Began phased reconnection of OT networks per the plan, monitoring traffic at each step.", task: "Integrity-check & reconnect OT networks" },
-    { mins: 900, type: "STATUS_UPDATE", by: devendraId, content: "North Garment Unit MES reconnected; SL-1 and knitting-section lines back on ERP scheduling. No production loss beyond the planned isolation window." },
-    { mins: 960, type: "STATUS_UPDATE", by: lakshmiId, content: "South Garment Unit WMS and dispatch reconnected; manual bin-card entries reconciled to ERP." },
+    { mins: 900, type: "STATUS_UPDATE", by: devendraId, content: "North Works MES reconnected; Line 3 and moulding lines back on ERP scheduling. No production loss beyond the planned isolation window." },
+    { mins: 960, type: "STATUS_UPDATE", by: lakshmiId, content: "South Works WMS and dispatch reconnected; manual bin-card entries reconciled to ERP." },
     { mins: 1080, type: "DECISION", by: kavitaId, content: "All systems confirmed restored and clean. Recommending fail-back from DR to primary during the next maintenance window (non-urgent)." },
     { mins: 1200, type: "COMMUNICATION", by: meeraId, content: "Customer-facing all-clear: order processing and dispatch fully normal. No external statement required." },
     { mins: 1500, type: "ACTION", by: farhanId, content: "All BCP-0003 recovery tasks marked complete; recovery-task checklist closed." },
@@ -586,11 +586,11 @@ async function main() {
     callTreeStats?: { notified: number; acknowledged: number; medianAckMinutes: number } | null; findings: Find[];
   };
   const EXS: ExSpec[] = [
-    { code: "BCX-2026-0001", title: "NW Production SL-1 — Tabletop", type: "TABLETOP", site: "NW", plans: ["BCP-0001"], facilitator: farhanId,
-      participants: [devendraId, sureshId], objectives: ["Validate SL-1 recovery sequence", "Confirm cold-spare logistics", "Test customer-comms trigger"],
+    { code: "BCX-2026-0001", title: "NW Production Line 3 — Tabletop", type: "TABLETOP", site: "NW", plans: ["BCP-0001"], facilitator: farhanId,
+      participants: [devendraId, sureshId], objectives: ["Validate Line 3 recovery sequence", "Confirm cold-spare logistics", "Test customer-comms trigger"],
       status: "COMPLETED", schedDays: 95, conductedDays: 90, outcome: "MET_OBJECTIVES", rtoAchieved: 6,
       findings: [
-        { desc: "Cold-spare roll set location was not in the recovery pack; team located it from tribal knowledge.", sev: "MINOR_GAP" },
+        { desc: "Cold-spare screw set location was not in the recovery pack; team located it from tribal knowledge.", sev: "MINOR_GAP" },
         { desc: "Customer-comms template lacked a revised-ETA field.", sev: "OBSERVATION" },
       ] },
     { code: "BCX-2026-0002", title: "IT DR Failover — Simulation", type: "SIMULATION", site: null, plans: ["BCP-0003"], facilitator: kavitaId,
@@ -688,15 +688,15 @@ async function main() {
         { dimension: "REPUTATIONAL", estimatedLevel: 4, estimateBasisNotes: "Customer delivery failures + possible disclosure obligations." },
         { dimension: "REGULATORY", estimatedLevel: 3, estimateBasisNotes: "Potential data-protection notification depending on exfiltration." },
       ] },
-    { code: "SCN-0002", title: "Single-source dye-chemical disruption", category: "SUPPLY_DISRUPTION", prob: "LIKELY", horizon: "0_12_MONTHS", status: "ACTIVE",
-      narrative: "The sole qualified reactive-dye / dye-house-chemical supplier suffers a force-majeure outage, draining buffer stock and stopping the high-margin dye house line and dependent exports.",
+    { code: "SCN-0002", title: "Single-source specialty resin disruption", category: "SUPPLY_DISRUPTION", prob: "LIKELY", horizon: "0_12_MONTHS", status: "ACTIVE",
+      narrative: "The sole qualified specialty-resin supplier suffers a force-majeure outage, draining buffer stock and stopping the high-margin coating line and dependent exports.",
       risks: ["0022"], procs: ["BP-0012", "BP-0007"], readiness: "PLAN_EXISTS", reviewedDays: 50,
       impacts: [
         { dimension: "FINANCIAL", estimatedLevel: 4, estimateBasisNotes: "Lost export margin + air-freight premiums for alternates.", estimatedGrossInr: 32000000 },
         { dimension: "REPUTATIONAL", estimatedLevel: 3, estimateBasisNotes: "Export-customer commitments at risk." },
       ] },
-    { code: "SCN-0003", title: "Regional flooding — South Garment Unit inundation", category: "NATURAL_DISASTER", prob: "POSSIBLE", horizon: "1_3_YEARS", status: "ACTIVE",
-      narrative: "Extreme monsoon flooding inundates South Garment Unit, taking down the dye house line, ETP and warehouse, with extended access loss.",
+    { code: "SCN-0003", title: "Regional flooding — South Works inundation", category: "NATURAL_DISASTER", prob: "POSSIBLE", horizon: "1_3_YEARS", status: "ACTIVE",
+      narrative: "Extreme monsoon flooding inundates South Works, taking down the coating line, ETP and warehouse, with extended access loss.",
       risks: ["0015"], procs: ["BP-0007", "BP-0008", "BP-0009"], readiness: "NO_PLAN", reviewedDays: 70,
       impacts: [
         { dimension: "FINANCIAL", estimatedLevel: 4, estimateBasisNotes: "Asset damage + extended SW outage." },
@@ -714,11 +714,11 @@ async function main() {
       narrative: "A pandemic wave drives 30–40% absenteeism among skilled operators, throttling production and stressing critical-skill coverage.",
       risks: ["0011"], procs: ["BP-0001", "BP-0002"], readiness: "PLAN_EXISTS", reviewedDays: 80,
       impacts: [
-        { dimension: "FINANCIAL", estimatedLevel: 3, estimateBasisNotes: "Reduced throughput across the knitting section & sewing lines." },
+        { dimension: "FINANCIAL", estimatedLevel: 3, estimateBasisNotes: "Reduced throughput across moulding & extrusion." },
         { dimension: "SAFETY", estimatedLevel: 3, estimateBasisNotes: "Fatigue / reduced supervision with thin crews." },
       ] },
     { code: "SCN-0006", title: "Raw-material price shock", category: "MARKET_SHOCK", prob: "LIKELY", horizon: "0_12_MONTHS", status: "DRAFT",
-      narrative: "A sharp cotton/imported-yarn price spike compresses margins beyond hedged limits, pressuring profitability and pricing commitments.",
+      narrative: "A sharp steel/polymer price spike compresses margins beyond hedged limits, pressuring profitability and pricing commitments.",
       risks: ["0006", "0024"], procs: [], readiness: "NO_PLAN",
       impacts: [
         { dimension: "FINANCIAL", estimatedLevel: 4, estimateBasisNotes: "Margin compression on un-hedged basket; see KRI-0012." },
@@ -756,8 +756,8 @@ async function main() {
   const HZS: HzSpec[] = [
     { title: "EU CBAM carbon border tariff", description: "The EU Carbon Border Adjustment Mechanism enters its definitive phase, adding cost and reporting burden on exported goods with embedded carbon.", category: "REGULATORY_SHOCK", signal: "EMERGING", watchedBy: nandiniId, reviewDays: 40, potential: ["0020", "0024"] },
     { title: "Quantum threat to current PKI", description: "Advances in quantum computing threaten today's public-key cryptography on a multi-year horizon, with implications for OT/IT trust infrastructure.", category: "CYBER_ATTACK", signal: "WEAK", watchedBy: kavitaId, reviewDays: 120, potential: ["0018"] },
-    { title: "Regional water-stress & abstraction caps", description: "Worsening regional water stress points to tighter groundwater-abstraction caps that could constrain South Garment Unit operations.", category: "REGULATORY_SHOCK", signal: "STRONG", watchedBy: lakshmiId, reviewDays: -10, potential: ["0015", "0021"], disposition: "PROMOTED_TO_SCENARIO", promotedTo: { kind: "scenario", code: "SCN-0003" }, note: "Promoted into the South Garment Unit flooding/water-stress scenario for structured analysis." },
-    { title: "Key chemical supplier M&A consolidation", description: "Consolidation among dye and dye-house-chemical suppliers could reduce the qualified-vendor pool and increase single-source exposure on critical inputs.", category: "SUPPLY_DISRUPTION", signal: "EMERGING", watchedBy: meeraId, reviewDays: 30, potential: ["0022"], disposition: "PROMOTED_TO_RISK", promotedTo: { kind: "risk", code: "0022" }, note: "Folded into the existing supply-concentration risk ERM-2026-0022; appetite already breached (KRI-0015)." },
+    { title: "Regional water-stress & abstraction caps", description: "Worsening regional water stress points to tighter groundwater-abstraction caps that could constrain South Works operations.", category: "REGULATORY_SHOCK", signal: "STRONG", watchedBy: lakshmiId, reviewDays: -10, potential: ["0015", "0021"], disposition: "PROMOTED_TO_SCENARIO", promotedTo: { kind: "scenario", code: "SCN-0003" }, note: "Promoted into the South Works flooding/water-stress scenario for structured analysis." },
+    { title: "Key polymer supplier M&A consolidation", description: "Consolidation among polymer suppliers could reduce the qualified-vendor pool and increase single-source exposure on critical inputs.", category: "SUPPLY_DISRUPTION", signal: "EMERGING", watchedBy: meeraId, reviewDays: 30, potential: ["0022"], disposition: "PROMOTED_TO_RISK", promotedTo: { kind: "risk", code: "0022" }, note: "Folded into the existing supply-concentration risk ERM-2026-0022; appetite already breached (KRI-0015)." },
     { title: "AI-driven phishing sophistication", description: "Generative-AI phishing markedly raises the believability of social-engineering attacks, increasing intrusion likelihood.", category: "CYBER_ATTACK", signal: "STRONG", watchedBy: kavitaId, reviewDays: 25, potential: ["0018"], disposition: "DISMISSED", note: "Already captured within cyber risk ERM-2026-0018 and the phishing-simulation KRI-0013; no separate item needed." },
   ];
   let hzCount = 0;

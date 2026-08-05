@@ -42,8 +42,8 @@ const SOURCE_TYPES = [
 
   // Quality
   { code: "AUDIT_INTERNAL",     name: "Internal Audit Finding",     category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 10, description: "Finding from an internal quality / process audit." },
-  { code: "AUDIT_EXTERNAL",     name: "External Audit Finding",     category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 11, description: "Finding from a customer / certification-body / brand-buyer audit (ISO 9001, ISO 14001, SA8000, WRAP, SMETA / Sedex, amfori-BSCI, OEKO-TEX, Jockey / Speedo buyer audit)." },
-  { code: "AUDIT_REGULATORY",   name: "Regulatory Audit Finding",   category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 12, description: "Finding from a regulator (CPCB, state pollution control board, PESO)." },
+  { code: "AUDIT_EXTERNAL",     name: "External Audit Finding",     category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 11, description: "Finding from a customer / certification-body audit (ISO 9001, IATF 16949, GFSI)." },
+  { code: "AUDIT_REGULATORY",   name: "Regulatory Audit Finding",   category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 12, description: "Finding from a regulator (FDA, CPCB, state pollution control board)." },
   { code: "CUSTOMER_COMPLAINT", name: "Customer Complaint",         category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 13, description: "Complaint received from a customer about product / service / experience." },
   { code: "QUALITY_NCR",        name: "Quality NCR (Non-Conformance Report)", category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 14, description: "Non-conformance identified by quality inspection." },
   { code: "SUPPLIER_ISSUE",     name: "Supplier Issue",             category: "QUALITY", parentModuleLive: false, parentModuleName: null, sortOrder: 15, description: "Quality / delivery issue with an inbound supplier." },
@@ -58,6 +58,7 @@ const SOURCE_TYPES = [
   { code: "TRAINING_GAP",             name: "Training Gap",            category: "ORGANIZATIONAL", parentModuleLive: true,  parentModuleName: "TRAINING", sortOrder: 31, description: "Competency gap identified during training assessment, audit, or performance review." },
   { code: "MOC_ACTION",               name: "MOC Action",              category: "ORGANIZATIONAL", parentModuleLive: false, parentModuleName: null, sortOrder: 32, description: "Action arising from Management of Change implementation." },
   { code: "KAIZEN_INITIATIVE",        name: "Kaizen Initiative",       category: "ORGANIZATIONAL", parentModuleLive: false, parentModuleName: null, sortOrder: 33, description: "Continuous improvement initiative tracked as a CAPA." },
+  { code: "ENTERPRISE_RCA",           name: "Enterprise RCA",          category: "ORGANIZATIONAL", parentModuleLive: true,  parentModuleName: "ERM",     sortOrder: 34, description: "Corrective action raised from an ERM Cross-Domain Root Cause Analysis (event/risk/loss-originated)." },
 
   // Regulatory
   { code: "REGULATORY_INSPECTION_FINDING", name: "Regulatory Inspection Finding", category: "REGULATORY", parentModuleLive: false, parentModuleName: null, sortOrder: 40, description: "Finding from a regulatory inspection (Factories Inspector, DGFASLI, etc.)." },

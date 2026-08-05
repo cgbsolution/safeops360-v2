@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { SIGNAL_CHIP, SCENARIO_CATEGORIES, type HorizonItem } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
@@ -51,12 +55,9 @@ export function HorizonBoard({ items }: { items: HorizonItem[] }) {
   return (
     <div>
       <div className="mb-4 flex justify-end">
-        <button
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800"
-        >
+        <Button onClick={() => setOpen(true)}>
           <Plus size={16} /> Watch item
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -143,9 +144,16 @@ function ModalShell({
       <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
         {children}
       </div>
@@ -196,72 +204,53 @@ function WatchItemModal({ onClose, onDone }: { onClose: () => void; onDone: () =
       <div className="space-y-4">
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Title</label>
-          <input
+          <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g. New chemical import tariff under consultation"
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            >
+            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
               {SCENARIO_CATEGORIES.map((c) => (
                 <option key={c} value={c}>
                   {CATEGORY_LABEL[c] ?? c.replace(/_/g, " ")}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Signal strength</label>
-            <select
-              value={signalStrength}
-              onChange={(e) => setSignalStrength(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            >
+            <Select value={signalStrength} onChange={(e) => setSignalStrength(e.target.value)}>
               {SIGNALS.map((s) => (
                 <option key={s} value={s}>
                   {SIGNAL_LABEL[s]}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Review date</label>
-          <input
-            type="date"
-            value={reviewDate}
-            onChange={(e) => setReviewDate(e.target.value)}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-          />
+          <Input type="date" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} />
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
-          <textarea
+          <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             placeholder="What is the signal and why is it worth watching…"
           />
         </div>
         {error && (
           <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>
         )}
-        <button
-          onClick={submit}
-          disabled={busy || !title.trim()}
-          className="w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-        >
+        <Button type="button" onClick={submit} disabled={busy || !title.trim()} className="w-full">
           {busy ? "Saving…" : "Add to watchlist"}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );
@@ -358,24 +347,25 @@ function ItemDrawer({
             <label className="mb-1.5 block text-xs font-medium text-slate-600">Disposition</label>
             <div className="grid grid-cols-1 gap-1.5">
               {DISPOSITIONS.map((d) => (
-                <button
+                <Button
                   key={d}
+                  type="button"
+                  variant="ghost"
                   onClick={() => setDisposition(d)}
                   className={cn(
-                    "rounded-lg border px-2 py-2 text-xs font-medium",
+                    "h-auto rounded-lg border px-2 py-2 text-xs font-medium",
                     disposition === d ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200",
                   )}
                 >
                   {DISPOSITION_LABEL[d]}
-                </button>
+                </Button>
               ))}
             </div>
             <label className="mb-1 mt-3 block text-xs font-medium text-slate-600">Note</label>
-            <textarea
+            <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               rows={2}
-              className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               placeholder="Rationale for the disposition…"
             />
             {error && (
@@ -383,13 +373,9 @@ function ItemDrawer({
                 {error}
               </div>
             )}
-            <button
-              onClick={submit}
-              disabled={busy}
-              className="mt-3 w-full rounded-lg bg-primary-700 py-2 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-            >
+            <Button type="button" onClick={submit} disabled={busy} className="mt-3 w-full">
               {busy ? "Saving…" : "Apply disposition"}
-            </button>
+            </Button>
           </div>
         )}
       </div>

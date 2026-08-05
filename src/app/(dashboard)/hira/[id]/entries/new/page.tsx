@@ -38,6 +38,9 @@ type EntryWizardOptions = {
     typicalHarmPotential: string[];
     typicalAffectedPersons: string[];
     energyForm: string | null;
+    // Surfaced so the picker can tell the user which citation the entry will
+    // inherit from the library.
+    factoriesActSection: string | null;
   }[];
   areas: { id: string; name: string }[];
 };

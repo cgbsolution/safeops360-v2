@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
+import { AccessRestricted } from "@/components/access-restricted";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { PrintButton } from "@/components/ui/print-button";
 import { ChevronLeft, FileDown, History } from "lucide-react";
@@ -129,6 +130,8 @@ export default async function RegisterViewPage(props: {
     data = await backendFetch<RegisterDetail>(`/api/scr/registers/${code}`, { query: { plantId } });
   } catch (e) {
     if (e instanceof BackendError && e.status === 404) notFound();
+    if (e instanceof BackendError && e.status === 403)
+      return <AccessRestricted backHref="/compliance" backLabel="← Back to statutory registers" />;
     throw e;
   }
 

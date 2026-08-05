@@ -4,6 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import {
   CONTROL_TYPES,
   CONTROL_NATURES,
@@ -33,12 +39,9 @@ export function NewControlButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800"
-      >
+      <Button onClick={() => setOpen(true)}>
         <Plus size={16} /> New Control
-      </button>
+      </Button>
       {open && <NewControlModal onClose={() => setOpen(false)} />}
     </>
   );
@@ -111,61 +114,62 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Control</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Control name</label>
-            <input
+            <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Monthly bank reconciliation review"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
-            <textarea
+            <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="What the control does and how it operates."
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-              <select value={controlType} onChange={(e) => setControlType(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={controlType} onChange={(e) => setControlType(e.target.value)}>
                 {CONTROL_TYPES.map((t) => <option key={t} value={t}>{CONTROL_TYPE_LABEL[t] ?? t}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Nature</label>
-              <select value={nature} onChange={(e) => setNature(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={nature} onChange={(e) => setNature(e.target.value)}>
                 {CONTROL_NATURES.map((t) => <option key={t} value={t}>{NATURE_LABEL[t] ?? t}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Frequency</label>
-              <select value={frequency} onChange={(e) => setFrequency(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
                 {CONTROL_FREQUENCIES.map((t) => <option key={t} value={t}>{freqLabel(t)}</option>)}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+              <Select value={category} onChange={(e) => setCategory(e.target.value)}>
                 {CONTROL_CATEGORIES.map((t) => <option key={t} value={t}>{CONTROL_CATEGORY_LABEL[t] ?? t}</option>)}
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -176,13 +180,12 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Process (optional)</label>
-              <input value={processName} onChange={(e) => setProcessName(e.target.value)} placeholder="e.g. Order-to-Cash"
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
+              <Input value={processName} onChange={(e) => setProcessName(e.target.value)} placeholder="e.g. Order-to-Cash" />
             </div>
           </div>
 
           <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
-            <input type="checkbox" checked={isKeyControl} onChange={(e) => setIsKeyControl(e.target.checked)} className="rounded border-slate-300" />
+            <Checkbox checked={isKeyControl} onChange={(e) => setIsKeyControl(e.target.checked)} />
             Key control (in scope for assurance / SOX)
           </label>
 
@@ -192,17 +195,20 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
               {ASSERTION_OPTIONS.map((a) => {
                 const on = assertions.includes(a);
                 return (
-                  <button
+                  <Button
                     key={a}
                     type="button"
+                    variant="ghost"
                     onClick={() => toggleAssertion(a)}
-                    className={
-                      "rounded border px-2 py-0.5 text-[11px] transition-colors " +
-                      (on ? "border-primary-300 bg-primary-100 text-primary-800 font-semibold" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400")
-                    }
+                    className={cn(
+                      "h-auto rounded border px-2 py-0.5 text-[11px] font-normal transition-colors",
+                      on
+                        ? "border-primary-300 bg-primary-100 text-primary-800 font-semibold"
+                        : "border-slate-200 bg-white text-slate-600 hover:border-slate-400"
+                    )}
                   >
                     {a.replace(/_/g, " ")}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -210,12 +216,11 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Control design notes</label>
-            <textarea
+            <Textarea
               value={controlDesignNotes}
               onChange={(e) => setControlDesignNotes(e.target.value)}
               rows={2}
               placeholder="Design rationale, evidence retained, who performs the control."
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
@@ -223,13 +228,12 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
-          </button>
-          <button onClick={submit} disabled={busy || !valid}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800 disabled:opacity-50">
+          </Button>
+          <Button type="button" onClick={submit} disabled={busy || !valid}>
             {busy ? "Creating…" : "Create control"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

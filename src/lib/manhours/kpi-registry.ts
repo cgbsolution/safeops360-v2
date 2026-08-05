@@ -25,6 +25,7 @@ export const KPI_CODES = [
   "LTIFR",
   "TRIFR",
   "TRIR",
+  "IFR",
   "DART_RATE",
   "SEVERITY_RATE",
   "FSI",
@@ -195,6 +196,26 @@ export const KPI_REGISTRY: Record<KpiCode, KpiDefinition> = {
     denominator: { kind: "EXPOSURE_HOURS" },
     multiplier: 200_000,
     benchmarks: { worldClass: 0.5, excellent: 1.0, average: 3.0, poor: 5.0 },
+    higherIsBetter: false,
+    displayFormat: "decimal_2_places"
+  },
+
+  IFR: {
+    code: "IFR",
+    name: "Injury Frequency Rate",
+    // All personal-injury incidents (first-aid inclusive) per million hours —
+    // the broad injury-frequency measure Indian industry reports as "IFR",
+    // distinct from TRIFR (which excludes first-aid) and TRIR (×200k base).
+    formula: "(All Injuries × 1,000,000) ÷ Net Exposure Hours",
+    statutoryReference: "IS 3786:1983 (injury frequency)",
+    numerator: {
+      kind: "MODULE_COUNT",
+      source: "incident",
+      where: { type: { in: ["FIRST_AID", "MTC", "RWC", "LTI", "FATALITY"] } }
+    },
+    denominator: { kind: "EXPOSURE_HOURS" },
+    multiplier: 1_000_000,
+    benchmarks: { worldClass: 3.0, excellent: 6.0, average: 12.0, poor: 20.0 },
     higherIsBetter: false,
     displayFormat: "decimal_2_places"
   },

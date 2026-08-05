@@ -1,5 +1,5 @@
 // ────────────────────────────────────────────────────────────────────────
-// FILE 20 — Master Loading Sequence  (Page Industries demo tenant)
+// FILE 20 — Master Loading Sequence  (Meridian Manufacturing demo tenant)
 //
 // This is the CANONICAL loading order. Follow it exactly.
 // Master data must load before transactional data.
@@ -76,10 +76,10 @@ function run(script: string, label: string) {
 
 async function main() {
   console.log("╔═══════════════════════════════════════════════════════╗");
-  console.log("║  FILE 20 — Page Industries Demo Loading Sequence  ║");
+  console.log("║  FILE 20 — Meridian Manufacturing Demo Loading Sequence  ║");
   console.log("╚═══════════════════════════════════════════════════════╝");
-  console.log("  Demo tenant   : Page Industries Limited");
-  console.log("  Plants        : NW (North Garment Unit) + SW (South Garment Unit)");
+  console.log("  Demo tenant   : Meridian Manufacturing Limited");
+  console.log("  Plants        : NW (North Works) + SW (South Works)");
   console.log("  Primary login : priya.nair@safeops360.in / demo123");
   console.log("  QA target     : 28 days since LTI | LTIFR 0.34 | 2 active permits");
   console.log();
@@ -121,6 +121,8 @@ async function main() {
     ["seed-erm-p3.ts",               "Step 36 — ERM Phase 3: BCM (14 processes / 8 plans / crisis / 6 exercises) + scenarios + horizon"],
     ["seed-erm-t3.ts",               "Step 37 — ERM Tier 3: Internal Controls (22) + Vendor/ESG (16) + Insurance (11 policies/claims/gap)"],
     ["seed-cams.ts",                 "Step 38 — CAMS: 8 audit types + 4 clause-mapped templates + 3 recurrence rules + 14 engagements + ~16 findings (AUDIT-source CAPAs)"],
+    ["seed-factory.ts",              "Step 39 — Facilities: 3 garment factory profiles (Tirupur 1 / Ludhiana / Surat) + buildings + workforce + processes + certs + contacts + personas"],
+    ["seed-factory-ops.ts",          "Step 40 — Facilities Phase D: light operational data (CAMS audits/findings, CAPA, obligations, incidents) for the 3 sites → live dashboard roll-ups"],
   ];
 
   const start = Date.now();

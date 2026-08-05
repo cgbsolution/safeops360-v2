@@ -10,13 +10,18 @@ import { cn } from "@/lib/utils";
 import { Plus, GitBranch, Download } from "lucide-react";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { MocAnalyticsStrip } from "@/components/moc/analytics-strip";
+import { InsightBar } from "@/components/ai/InsightBar";
+import { SignalChip } from "@/components/ai/SignalChip";
+import { fetchInsights } from "@/lib/insights";
 import {
   CLASSIFICATION_CHIP,
   CLASSIFICATIONS,
   STATUS_CHIP,
   STATUS_LABEL,
-  CATEGORY_LABEL
+  CATEGORY_LABEL,
+  RISK_CHIP
 } from "./_meta";
+import { AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +30,13 @@ type Metrics = {
   active: number;
   overdue: number;
   temporaryExpiringSoon: number;
+  temporaryExpiring7d: number;
+  emergencyPendingRetro: number;
+  overdueApprovals: number;
   closedSuccessful: number;
   byStatus: Record<string, number>;
   byClassification: Record<string, number>;
+  byRisk: Record<string, number>;
 };
 
 type CRListItem = {
@@ -38,10 +47,14 @@ type CRListItem = {
   classification: string;
   status: string;
   isTemporary: boolean;
+  temporaryExpiryDate: string | null;
   origin: string;
   initiatedByUserId: string;
   initiatedAt: string | null;
   targetCompletionDate: string | null;
+  overallResidualRisk: string | null;
+  urgency: string;
+  emergencyPendingRetro: boolean;
 };
 
 function fmtDate(iso: string | null) {
@@ -50,7 +63,7 @@ function fmtDate(iso: string | null) {
 }
 
 export default async function MocLandingPage(props: {
-  searchParams: Promise<{ plantId?: string; classification?: string }>;
+  searchParams: Promise<{ plantId?: string; classification?: string; view?: string; insight?: string }>;
 }) {
   const searchParams = await props.searchParams;
   const { plantId, plants } = await resolvePlantContext(searchParams.plantId);
@@ -66,7 +79,7 @@ export default async function MocLandingPage(props: {
     );
   }
 
-  const [metrics, data] = await Promise.all([
+  const [metrics, data, insights] = await Promise.all([
     backendFetch<Metrics>("/api/moc/metrics", { query: { plantId } }).catch(
       () =>
         ({
@@ -74,17 +87,51 @@ export default async function MocLandingPage(props: {
           active: 0,
           overdue: 0,
           temporaryExpiringSoon: 0,
+          temporaryExpiring7d: 0,
+          emergencyPendingRetro: 0,
+          overdueApprovals: 0,
           closedSuccessful: 0,
           byStatus: {},
-          byClassification: {}
+          byClassification: {},
+          byRisk: {}
         }) as Metrics
     ),
     backendFetch<{ items: CRListItem[]; total: number }>("/api/moc/change-requests", {
       query: { plantId, classification: searchParams.classification ?? null }
-    }).catch(() => ({ items: [], total: 0 }))
+    }).catch(() => ({ items: [], total: 0 })),
+    fetchInsights("moc", { plant: plantId })
   ]);
 
-  const items = data.items;
+  // Attention filters run over the loaded set (the register is un-paginated).
+  const view = searchParams.view;
+  const now = Date.now();
+  const items = data.items.filter((cr) => {
+    if (view === "emergency") return cr.emergencyPendingRetro;
+    if (view === "overdue_approvals") return cr.status === "under_approval";
+    if (view === "temp_expiring")
+      return (
+        cr.isTemporary &&
+        cr.temporaryExpiryDate != null &&
+        new Date(cr.temporaryExpiryDate).getTime() - now <= 7 * 86400_000 &&
+        new Date(cr.temporaryExpiryDate).getTime() - now >= 0
+      );
+    return true;
+  });
+
+  const attentionTabs: { key: string; label: string; count: number }[] = [
+    { key: "overdue_approvals", label: "Overdue approvals", count: metrics.overdueApprovals },
+    { key: "temp_expiring", label: "Temp expiring ≤7d", count: metrics.temporaryExpiring7d },
+    { key: "emergency", label: "Emergency — pending retro", count: metrics.emergencyPendingRetro }
+  ].filter((t) => t.count > 0);
+
+  // Insight-card click-through: narrow the (already view-filtered) list to the
+  // active insight's change requests.
+  const activeInsight = searchParams.insight
+    ? insights.bar.find((i) => i.id === searchParams.insight)
+    : undefined;
+  const visibleItems = activeInsight
+    ? items.filter((cr) => activeInsight.recordRefs.includes(cr.number))
+    : items;
 
   return (
     <div>
@@ -114,6 +161,8 @@ export default async function MocLandingPage(props: {
         </Suspense>
       </div>
 
+      <InsightBar insights={insights.bar} />
+
       <FilterTabsList label="Classification" className="mb-4">
         <FilterTab
           href={`/moc?plantId=${plantId}`}
@@ -132,6 +181,31 @@ export default async function MocLandingPage(props: {
         ))}
       </FilterTabsList>
 
+      {attentionTabs.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <span className="text-xs uppercase tracking-wider text-slate-500">Needs attention</span>
+          {view && (
+            <Link href={`/moc?plantId=${plantId}`} className="rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-600 hover:border-slate-400">
+              Clear filter
+            </Link>
+          )}
+          {attentionTabs.map((t) => (
+            <Link
+              key={t.key}
+              href={`/moc?plantId=${plantId}&view=${t.key}`}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium",
+                view === t.key
+                  ? "border-amber-400 bg-amber-100 text-amber-900"
+                  : "border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-300"
+              )}
+            >
+              <AlertTriangle size={12} /> {t.label} · {t.count}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {items.length === 0 ? (
         <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
           <GitBranch className="mx-auto mb-2 text-slate-300" size={32} />
@@ -145,12 +219,13 @@ export default async function MocLandingPage(props: {
                 <th className="text-left px-4 py-3">MOC</th>
                 <th className="text-left px-4 py-3">Category</th>
                 <th className="text-left px-4 py-3">Class</th>
+                <th className="text-left px-4 py-3">Risk</th>
                 <th className="text-left px-4 py-3">Status</th>
                 <th className="text-left px-4 py-3">Target</th>
               </tr>
             </thead>
             <tbody className="divide-y">
-              {items.map((cr) => (
+              {visibleItems.map((cr) => (
                 <tr key={cr.id} className="hover:bg-slate-50/60">
                   <td className="px-4 py-3">
                     <Link href={`/moc/${cr.id}`} className="block">
@@ -160,6 +235,11 @@ export default async function MocLandingPage(props: {
                         {cr.isTemporary && (
                           <span className="ml-2 text-[10px] uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5">
                             temp
+                          </span>
+                        )}
+                        {cr.emergencyPendingRetro && (
+                          <span className="ml-2 inline-flex items-center gap-0.5 text-[10px] uppercase tracking-wider text-amber-900 bg-amber-100 border border-amber-300 rounded px-1 py-0.5">
+                            <AlertTriangle size={10} /> emergency
                           </span>
                         )}
                       </div>
@@ -172,9 +252,23 @@ export default async function MocLandingPage(props: {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium", STATUS_CHIP[cr.status] ?? "bg-slate-100 text-slate-700 border-slate-200")}>
-                      {STATUS_LABEL[cr.status] ?? cr.status}
-                    </span>
+                    {cr.overallResidualRisk ? (
+                      <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium capitalize", RISK_CHIP[cr.overallResidualRisk] ?? "bg-slate-100 text-slate-700 border-slate-200")}>
+                        {cr.overallResidualRisk}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-slate-400">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium", STATUS_CHIP[cr.status] ?? "bg-slate-100 text-slate-700 border-slate-200")}>
+                        {STATUS_LABEL[cr.status] ?? cr.status}
+                      </span>
+                      {insights.signalByRecord.get(cr.id) && (
+                        <SignalChip signal={insights.signalByRecord.get(cr.id)!} href={`/moc/${cr.id}`} />
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDate(cr.targetCompletionDate)}</td>
                 </tr>

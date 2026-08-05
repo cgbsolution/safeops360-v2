@@ -1,6 +1,6 @@
 // ──────────────────────────────────────────────────────────────────────────
 // Demo Activity Data — Safety Observations, Near Misses, Permits to Work,
-// FLRAs, and Incident Investigations for Page Industries NW + SW plants.
+// FLRAs, and Incident Investigations for Meridian NW + SW plants.
 //
 //  10 records × 5 modules × 2 plants = 100 records total.
 //  All optional fields populated — no blank columns.
@@ -77,7 +77,7 @@ async function seedPlant(
       number: `OBS-${P}-DEMO-001`, daysAgo_: 3,
       type: "UNSAFE_ACT" as const, category: "PPE" as const, severity: "HIGH" as const, status: "IN_PROGRESS" as const,
       areaKey: "Maintenance Workshop",
-      description: "Maintenance technician operating angle grinder on a worn band-knife blade guide without face shield or grinding visor. Sparks were flying directly towards the face. Incorrect PPE selection — safety glasses alone insufficient for this task.",
+      description: "Maintenance technician operating angle grinder without face shield or grinding visor. Sparks were flying directly towards the face. Incorrect PPE selection — safety glasses alone insufficient for this task.",
       immediateAction: "Work stopped immediately. Technician issued face shield and briefed on grinding PPE requirements before resuming.",
       responsiblePersonId: u.maintenanceHead.id, targetDaysFromNow: 3,
       riskLikelihood: 4, riskConsequence: 4, riskScore: 16, riskLevel: "HIGH", isRepeat: true,
@@ -85,17 +85,17 @@ async function seedPlant(
     {
       number: `OBS-${P}-DEMO-002`, daysAgo_: 6,
       type: "UNSAFE_CONDITION" as const, category: "HOUSEKEEPING" as const, severity: "MEDIUM" as const, status: "ASSIGNED" as const,
-      areaKey: "Knitting",
-      description: "Spinning oil spill approximately 2 m² on anti-fatigue mat near circular knitting machine CKM-2 lubrication unit. Containment tray overflowing. Drip pan not emptied during last maintenance round. Slip hazard for operators on shift.",
-      immediateAction: "Spill barricaded with cones. Absorbent granules applied. Lubrication unit seal checked and tightened.",
+      areaKey: "Process Area A",
+      description: "Oil spill approximately 2 m² on anti-fatigue mat near Pump Station 2. Containment tray overflowing. Drip pan not emptied during last maintenance round. Slip hazard for operators on shift.",
+      immediateAction: "Spill barricaded with cones. Absorbent granules applied. Pump seal checked and tightened.",
       responsiblePersonId: u.supervisor.id, targetDaysFromNow: 1,
       riskLikelihood: 3, riskConsequence: 3, riskScore: 9, riskLevel: "MEDIUM", isRepeat: false,
     },
     {
       number: `OBS-${P}-DEMO-003`, daysAgo_: 1,
       type: "UNSAFE_ACT" as const, category: "WORK_AT_HEIGHT" as const, severity: "CRITICAL" as const, status: "OPEN" as const,
-      areaKey: "Warehouse",
-      description: "Two workers on the finished-goods warehouse mezzanine loft edge at approximately 6.5 m height. Neither worker wearing a fall arrest harness or using a lanyard. No edge protection on the south side. No third party rescue plan posted.",
+      areaKey: "Roof / Elevated Structures",
+      description: "Two workers on roof of Process Area B cooling duct at approximately 6.5 m height. Neither worker wearing a fall arrest harness or using a lanyard. No edge protection on the south side. No third party rescue plan posted.",
       immediateAction: "Workers ordered down immediately. Work halted pending formal PTW and FLRA with height controls.",
       responsiblePersonId: u.hse.id, targetDaysFromNow: 0,
       riskLikelihood: 4, riskConsequence: 5, riskScore: 20, riskLevel: "CRITICAL", isRepeat: false,
@@ -113,8 +113,8 @@ async function seedPlant(
     {
       number: `OBS-${P}-DEMO-005`, daysAgo_: 5,
       type: "SAFE_ACT" as const, category: "CONFINED_SPACE" as const, severity: "LOW" as const, status: "CLOSED" as const,
-      areaKey: "Confined Space",
-      description: "Excellent practice observed during dye-vessel entry at soft-flow dyeing machine SF-107. Full gas test conducted and recorded, attendant stationed at entry, emergency rescue kit present and inspected. Crew demonstrated all pre-entry checklist steps correctly.",
+      areaKey: "Confined Space Zones",
+      description: "Excellent practice observed during vessel entry at V-107. Full gas test conducted and recorded, attendant stationed at entry, emergency rescue kit present and inspected. Crew demonstrated all pre-entry checklist steps correctly.",
       immediateAction: "Positive observation communicated to crew leader on site. Shared with shift briefing as example of best practice.",
       responsiblePersonId: u.supervisor.id, targetDaysFromNow: -2,
       closedAt: daysAgo(2), closingRemark: "Good practice recognised. Added to monthly HSE bulletin.",
@@ -123,8 +123,8 @@ async function seedPlant(
     {
       number: `OBS-${P}-DEMO-006`, daysAgo_: 8,
       type: "UNSAFE_ACT" as const, category: "CHEMICAL_HANDLING" as const, severity: "HIGH" as const, status: "IN_PROGRESS" as const,
-      areaKey: "Chemical",
-      description: "Operator rolling a 210-litre drum of 30% caustic soda dye-bath alkali without secondary containment bund. Drum cap loosened from rolling. Chemical drip trail of approximately 1.5 m observed on floor. No chemical-resistant gloves being worn.",
+      areaKey: "Chemical Storage & Handling Area",
+      description: "Operator rolling a 210-litre drum of 30% caustic soda without secondary containment bund. Drum cap loosened from rolling. Chemical drip trail of approximately 1.5 m observed on floor. No chemical-resistant gloves being worn.",
       immediateAction: "Drum secured upright. Cap re-tightened. Chemical-resistant gloves issued. Spill cleaned and pH-neutralised.",
       responsiblePersonId: u.supervisor.id, targetDaysFromNow: 2,
       riskLikelihood: 4, riskConsequence: 4, riskScore: 16, riskLevel: "HIGH", isRepeat: true,
@@ -132,8 +132,8 @@ async function seedPlant(
     {
       number: `OBS-${P}-DEMO-007`, daysAgo_: 12,
       type: "UNSAFE_CONDITION" as const, category: "MATERIAL_HANDLING" as const, severity: "MEDIUM" as const, status: "IN_PROGRESS" as const,
-      areaKey: "Warehouse",
-      description: "Emergency exit E-3 in the Finished Goods Warehouse partially blocked by two pallets of incoming greige fabric rolls. Pallet tags indicate goods received 3 days ago and not yet put away. Exit corridor width reduced to less than 50 cm.",
+      areaKey: "Main Warehouse",
+      description: "Emergency exit E-3 in Main Warehouse partially blocked by two pallets of incoming raw material. Pallet tags indicate goods received 3 days ago and not yet put away. Exit corridor width reduced to less than 50 cm.",
       immediateAction: "Pallets moved to holding bay. Exit clearance confirmed. Goods-in supervisor notified.",
       responsiblePersonId: u.supervisor.id, targetDaysFromNow: 1,
       riskLikelihood: 2, riskConsequence: 4, riskScore: 8, riskLevel: "MEDIUM", isRepeat: false,
@@ -141,8 +141,8 @@ async function seedPlant(
     {
       number: `OBS-${P}-DEMO-008`, daysAgo_: 4,
       type: "UNSAFE_CONDITION" as const, category: "HOT_WORK" as const, severity: "HIGH" as const, status: "ASSIGNED" as const,
-      areaKey: "Sewing",
-      description: "Spark protection curtain not installed on north side of hot work zone during structural welding job at the Sewing / Stitching Lines hall. Adjacent equipment includes a fabric-trim and lint accumulation bin at 3 m distance — high fire load. Gas test not re-conducted after 2-hour interval.",
+      areaKey: "Process Area B",
+      description: "Spark protection curtain not installed on north side of hot work zone during flange welding job at Process Area B. Adjacent equipment includes lube oil reservoir at 3 m distance. Gas test not re-conducted after 2-hour interval.",
       immediateAction: "Welding paused. Curtain erected. Gas test repeated — 0% LEL confirmed. Work resumed under revised PTW conditions.",
       responsiblePersonId: u.issuer.id, targetDaysFromNow: 2,
       riskLikelihood: 3, riskConsequence: 5, riskScore: 15, riskLevel: "HIGH", isRepeat: false,
@@ -150,7 +150,7 @@ async function seedPlant(
     {
       number: `OBS-${P}-DEMO-009`, daysAgo_: 7,
       type: "SAFE_CONDITION" as const, category: "EMERGENCY_PREP" as const, severity: "LOW" as const, status: "CLOSED" as const,
-      areaKey: "Canteen / Welfare",
+      areaKey: "Canteen / Welfare Building",
       description: "All fire extinguishers in canteen block checked — inspection tags current, pressure gauges in green, pin seals intact. First-aid box stocked per checklist. Emergency contact board updated with current shift leader details.",
       immediateAction: "No action required. Positive observation shared with facility management for recognition.",
       responsiblePersonId: u.safetyOfficer.id, targetDaysFromNow: -3,
@@ -215,7 +215,7 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-001`, daysAgo_: 5,
       status: "ACTION_ASSIGNED" as const, potentialSeverity: "HIGH" as const,
-      areaKey: "Chemical",
+      areaKey: "Chemical Storage & Handling Area",
       description: "During routine inspection, operator noticed a cracked inlet valve on an IBC containing 30% sulphuric acid. Valve had begun weeping. Had the valve failed fully, approximately 1,000 litres of acid could have discharged into the bunded area with potential for splash injury to personnel.",
       location: "Drum Bay 4 — IBC rack, bay C-3",
       specificLocation: "IBC rack C-3, south end near drain channel",
@@ -237,9 +237,9 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-002`, daysAgo_: 9,
       status: "CLOSED" as const, potentialSeverity: "CRITICAL" as const,
-      areaKey: "Warehouse",
-      description: "Scaffolding plank (3 m × 225 mm × 38 mm timber) fell from an elevated scaffold bay on the warehouse mezzanine racking structure at approximately 8 m height. Plank landed 2 m from a maintenance technician who was working below and narrowly avoided being struck. Plank had not been toe-boarded.",
-      location: "Finished Goods Warehouse mezzanine — north elevation scaffold bay 3",
+      areaKey: "Roof / Elevated Structures",
+      description: "Scaffolding plank (3 m × 225 mm × 38 mm timber) fell from roof-level scaffold bay at approximately 8 m height. Plank landed 2 m from a maintenance technician who was working below and narrowly avoided being struck. Plank had not been toe-boarded.",
+      location: "Roof Level — Process Area B north elevation scaffold bay 3",
       specificLocation: "Bay 3, elevation +8 m, north face",
       activity: "Scaffold dismantling",
       activityIsRoutine: false,
@@ -259,11 +259,11 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-003`, daysAgo_: 14,
       status: "UNDER_REVIEW" as const, potentialSeverity: "HIGH" as const,
-      areaKey: "Warehouse",
-      description: "Forklift FLT-04 reversed into the pedestrian crossing corridor in dispatch bay 2 of the Finished Goods Warehouse. A warehouse operator was 1.5 m away and had to step back sharply to avoid being struck. The forklift's reverse alarm was sounding but was not audible over background noise from the adjacent carton strapping machine.",
-      location: "Dispatch Bay 2 — pedestrian crossing zone, east end",
+      areaKey: "Loading / Dispatch Area",
+      description: "Forklift FLT-04 reversed into the pedestrian crossing corridor in loading bay 2. A warehouse operator was 1.5 m away and had to step back sharply to avoid being struck. The forklift's reverse alarm was sounding but was not audible over background noise from adjacent conveyor.",
+      location: "Loading Bay 2 — pedestrian crossing zone, east end",
       specificLocation: "Pedestrian crossing TC-02, 5 m from dock door",
-      activity: "Finished goods dispatch — pallet movement",
+      activity: "Raw material loading — pallet movement",
       activityIsRoutine: true,
       immediateAction: "Forklift operations halted. Pedestrian routing reviewed. Temporary barriers placed to separate pedestrian and forklift zones.",
       initialRootCauseCategory: "ENVIRONMENT",
@@ -281,9 +281,9 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-004`, daysAgo_: 18,
       status: "CLOSED" as const, potentialSeverity: "CRITICAL" as const,
-      areaKey: "Boiler House",
+      areaKey: "Utilities Block",
       description: "Steam line drain valve (DN50, 7 bar steam) opened by contractor without pressure isolation. Isolation blind not fitted at upstream isolator. A burst of high-pressure steam discharged for approximately 3 seconds before the valve was forced closed. Contractor was unaware that the adjacent isolation valve was passing.",
-      location: "Boiler House & Utilities — steam header drain manifold, grid reference UB-12",
+      location: "Utilities Block — steam header drain manifold, grid reference UB-12",
       specificLocation: "Steam header drain manifold, column UB-12, 1.8 m above floor",
       activity: "Steam trap replacement — contractor maintenance",
       activityIsRoutine: false,
@@ -325,11 +325,11 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-006`, daysAgo_: 20,
       status: "CLOSED" as const, potentialSeverity: "MEDIUM" as const,
-      areaKey: "Chemical",
-      description: "Small fire started in the fabric & dye testing lab fume cupboard when ethanol vapour ignited from an overheated hot plate left unattended. Fire was extinguished by lab technician using CO2 extinguisher within 30 seconds. Sprinkler did not activate (fire below activation threshold). No injuries.",
-      location: "Fabric & Dye Testing Lab — fume cupboard FC-2, south wall",
-      specificLocation: "Fume cupboard FC-2, testing lab south bay",
-      activity: "Solvent extraction analysis (colour-fastness test)",
+      areaKey: "Quality Control Laboratory",
+      description: "Small fire started in QC lab fume cupboard when ethanol vapour ignited from an overheated hot plate left unattended. Fire was extinguished by lab technician using CO2 extinguisher within 30 seconds. Sprinkler did not activate (fire below activation threshold). No injuries.",
+      location: "QC Laboratory — fume cupboard FC-2, south wall",
+      specificLocation: "Fume cupboard FC-2, QC lab south bay",
+      activity: "Solvent extraction analysis",
       activityIsRoutine: true,
       immediateAction: "Fire extinguished. Lab evacuated. Hot plate taken out of service. Ventilation system checked and running.",
       initialRootCauseCategory: "HUMAN_FACTOR",
@@ -347,20 +347,20 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-007`, daysAgo_: 7,
       status: "ACTION_ASSIGNED" as const, potentialSeverity: "CRITICAL" as const,
-      areaKey: "Dye",
-      description: "Chlorine gas detector in the Dye House alarmed at 1.0 ppm (action level) near the bleaching-agent dosing skid. All workers evacuated per ERP. Investigation identified a gland leak on a sodium-hypochlorite dosing pump seal. Seal had been replaced 3 weeks prior but the wrong grade of PTFE gland was specified in the maintenance job card.",
-      location: "Dye House — hypochlorite dosing skid, pump P-204B",
-      specificLocation: "Bleach dosing skid CP-04, pump P-204B gland",
-      activity: "Hypochlorite bleaching-agent dosing — process operation",
+      areaKey: "Process Area A",
+      description: "Chlorine gas detector in Process Area A alarmed at 1.0 ppm (action level). All workers evacuated per ERP. Investigation identified a gland leak on a chlorine dosing pump seal. Seal had been replaced 3 weeks prior but the wrong grade of PTFE gland was specified in the maintenance job card.",
+      location: "Process Area A — chlorine dosing skid, pump P-204B",
+      specificLocation: "Chlorine dosing skid CP-04, pump P-204B gland",
+      activity: "Chlorine dosing — process operation",
       activityIsRoutine: true,
-      immediateAction: "Dye House evacuated to muster point 2. SCBA-equipped team identified and contained leak. Dosing pump P-204B isolated and blanked.",
+      immediateAction: "Plant evacuated to muster point 2. SCBA-equipped team identified and contained leak. Dosing pump P-204B isolated and blanked.",
       initialRootCauseCategory: "PROCESS",
-      controlsThatFailed: "Gland material specification in maintenance management system incorrectly updated — PTFE-40 used instead of PTFE-75 chemical grade.",
+      controlsThatFailed: "Gland material specification in maintenance management system incorrectly updated — PTFE-40 used instead of PTFE-75 chlorine grade.",
       controlsThatWorked: "Fixed gas detector performed as designed. ERP executed without injury. SCBA response team available on shift.",
-      recommendedActions: "Implement critical service gland material register with CMMS approval controls. Re-audit all hypochlorite dosing system gland types in service.",
+      recommendedActions: "Implement critical service gland material register with CMMS approval controls. Re-audit all chlorine system gland types in service.",
       rootCauseCategory: "PROCESS",
-      rootCauseDetail: "CMMS BOM for pump P-204B had a legacy entry with non-chemical-grade PTFE. Maintenance planner did not cross-reference critical service register.",
-      correctiveActions: "1. CMMS BOM corrected for all hypochlorite dosing pumps. 2. Critical service register created and locked to maintenance supervisor approval. 3. Gas detector calibration checked and confirmed.",
+      rootCauseDetail: "CMMS BOM for pump P-204B had a legacy entry with non-chlorine-grade PTFE. Maintenance planner did not cross-reference critical service register.",
+      correctiveActions: "1. CMMS BOM corrected for all chlorine dosing pumps. 2. Critical service register created and locked to maintenance supervisor approval. 3. Gas detector calibration checked and confirmed.",
       riskLikelihood: 3, riskConsequence: 5, riskScore: 15, riskLevel: "CRITICAL",
       potentialConsequences: [{ type: "TOXIC_RELEASE", subRating: "MULTI_PERSON_INJURY_POTENTIAL" }, { type: "ENVIRONMENTAL" }],
       targetDaysFromNow: 5,
@@ -369,9 +369,9 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-008`, daysAgo_: 11,
       status: "UNDER_REVIEW" as const, potentialSeverity: "HIGH" as const,
-      areaKey: "Sewing",
-      description: "Operator's left hand momentarily trapped in a nip point at the belt-to-roller interface on fabric feed conveyor CV-08 in the Sewing / Stitching Lines hall during a clearing jam procedure. Hand was withdrawn before injury beyond superficial abrasion. Operator had reached around the guarding panel to access the jam rather than using the designated access hatch.",
-      location: "Sewing / Stitching Lines — fabric feed conveyor CV-08, nip point at head end roller",
+      areaKey: "Process Area B",
+      description: "Operator's left hand momentarily trapped in a conveyor nip point at belt-to-roller interface on conveyor CV-08 during a clearing jam procedure. Hand was withdrawn before injury beyond superficial abrasion. Operator had reached around the guarding panel to access the jam rather than using the designated access hatch.",
+      location: "Process Area B — conveyor CV-08, nip point at head end roller",
       specificLocation: "CV-08 head end, east side, nip guard zone",
       activity: "Conveyor jam clearing",
       activityIsRoutine: false,
@@ -391,9 +391,9 @@ async function seedPlant(
     {
       number: `NM-${P}-DEMO-009`, daysAgo_: 16,
       status: "ACTION_ASSIGNED" as const, potentialSeverity: "HIGH" as const,
-      areaKey: "Warehouse",
+      areaKey: "Main Warehouse",
       description: "Overhead crane hook swung and narrowly missed a maintenance technician who was working on a nearby motor at 2.5 m height. The crane operator had not visually verified the under-hook area before traversing. Technician was not in the banksman's field of view.",
-      location: "Finished Goods Warehouse — overhead crane OHC-1, bay 5–7",
+      location: "Main Warehouse — overhead crane OHC-1, bay 5–7",
       specificLocation: "Bay 6, 2.5 m elevated access platform near motor MCC-06",
       activity: "Crane load movement and platform maintenance (simultaneous)",
       activityIsRoutine: true,
@@ -505,8 +505,8 @@ async function seedPlant(
     },
     {
       number: `PTW-${P}-DEMO-003`, type: "WORK_AT_HEIGHT" as const, status: "CLOSED" as const, daysAgo_: 15,
-      areaKey: "Boiler House",
-      location: "Boiler House & Utilities — Cooling Tower Fan Stack CT-3 servicing",
+      areaKey: "Roof / Elevated Structures",
+      location: "Roof Level — Cooling Tower Fan Stack CT-3 servicing",
       scopeOfWork: "Cooling tower fan stack bearing replacement at 9.5 m height. Mobile elevated work platform used. Full-body harness and lanyard required for all personnel.",
       contractorName: "CoolTech Mechanical Services",
       isolationsRequired: "CT-3 fan motor LOTO. Cooling water recirculation pump isolated.",
@@ -527,8 +527,8 @@ async function seedPlant(
     },
     {
       number: `PTW-${P}-DEMO-005`, type: "HOT_WORK" as const, status: "SAFETY_APPROVED" as const, daysAgo_: 2,
-      areaKey: "Sewing",
-      location: "Sewing / Stitching Lines — Pipeline P-112 flange weld repair at column B-07",
+      areaKey: "Process Area B",
+      location: "Process Area B — Pipeline P-112 flange weld repair at column B-07",
       scopeOfWork: "GTAW root pass + SMAW fill and cap on DN100 sch-40 carbon steel flange to pipe weld. Line flushed, nitrogen-purged, and depressurised. Weld to be NDT tested post-completion.",
       contractorName: "PipeFab Welding Services",
       isolationsRequired: "P-112 double-block-and-bleed isolation. Nitrogen purge certificate attached. Weld area gas-tested — 0% LEL.",
@@ -538,8 +538,8 @@ async function seedPlant(
     },
     {
       number: `PTW-${P}-DEMO-006`, type: "EXCAVATION" as const, status: "CLOSED" as const, daysAgo_: 30,
-      areaKey: "Warehouse",
-      location: "Finished Goods Warehouse yard — storm drain expansion trench, east boundary",
+      areaKey: "Loading / Dispatch Area",
+      location: "Loading Area — storm drain expansion trench, east boundary",
       scopeOfWork: "Excavation of 45 m trench 1.2 m deep × 0.6 m wide for storm drain expansion. Mechanical excavation followed by hand dig for last 0.3 m near utilities. CAT scan and utility drawings on site.",
       contractorName: "Civil Solutions India Pvt Ltd",
       isolationsRequired: "All underground utilities positively located using CAT/Genny scan. Drawing cross-check with plant utilities engineer completed.",
@@ -549,8 +549,8 @@ async function seedPlant(
     },
     {
       number: `PTW-${P}-DEMO-007`, type: "HOT_WORK" as const, status: "CLOSED" as const, daysAgo_: 12,
-      areaKey: "Boiler House",
-      location: "Boiler House & Utilities — compressed air receiver AR-02 nozzle repair",
+      areaKey: "Utilities Block",
+      location: "Utilities Block — compressed air receiver AR-02 nozzle repair",
       scopeOfWork: "SMAW weld build-up on corroded nozzle flange on compressed air receiver AR-02. Receiver fully depressurised and vented. National certification inspection required post-weld.",
       contractorName: "PressureVessel Tech India",
       isolationsRequired: "AR-02 depressurised to atmospheric pressure. Inlet and outlet valves LOTO. Vent valve locked open during work.",
@@ -560,8 +560,8 @@ async function seedPlant(
     },
     {
       number: `PTW-${P}-DEMO-008`, type: "CONFINED_SPACE" as const, status: "CLOSED" as const, daysAgo_: 8,
-      areaKey: "Boiler House",
-      location: "Boiler House & Utilities — boiler steam drum internal inspection",
+      areaKey: "Utilities Block",
+      location: "Utilities Block — boiler steam drum internal inspection",
       scopeOfWork: "Annual internal inspection of steam drum SD-1 for corrosion, deposit mapping, and safety valve seat inspection. Drum cooled, drained, and ventilated for 24 hours.",
       contractorName: "Thermex Inspection Services",
       isolationsRequired: "All steam drum connections blind-flanged. Feed water pump LOTO. Safety valves removed for bench testing.",
@@ -571,7 +571,7 @@ async function seedPlant(
     },
     {
       number: `PTW-${P}-DEMO-009`, type: "GENERAL_COLD" as const, status: "SAFETY_APPROVED" as const, daysAgo_: 1,
-      areaKey: "Chemical",
+      areaKey: "Chemical Storage & Handling Area",
       location: "Chemical Storage — bulk sulphuric acid unloading bay",
       scopeOfWork: "Offloading of 25,000 litres 98% sulphuric acid from road tanker to storage tank T-07. Grounding cable connected. Level gauge verified operational. Bund drain valve closed and locked.",
       contractorName: "ChemTrans Logistics Pvt Ltd",
@@ -582,8 +582,8 @@ async function seedPlant(
     },
     {
       number: `PTW-${P}-DEMO-010`, type: "WORK_AT_HEIGHT" as const, status: "CLOSED" as const, daysAgo_: 22,
-      areaKey: "Boiler House",
-      location: "Boiler House & Utilities — cooling tower fill pack replacement CT-1",
+      areaKey: "Utilities Block",
+      location: "Utilities Block — cooling tower fill pack replacement CT-1",
       scopeOfWork: "Replacement of deteriorated PVC fill pack in cooling tower CT-1. Work at 7 m height inside cooling tower shell. Lockout of fans before entry. Lifeline rigging from top beam.",
       contractorName: "CoolTech Mechanical Services",
       isolationsRequired: "CT-1 fans LOTO. Distribution header drain valve open and locked. Makeup water pump isolated.",
@@ -681,7 +681,7 @@ async function seedPlant(
     },
     {
       number: `FLRA-${P}-DEMO-003`, daysAgo_: 15, status: "COMPLETED" as const,
-      location: "Boiler House & Utilities — Cooling Tower Fan Stack CT-3",
+      location: "Roof Level — Cooling Tower Fan Stack CT-3",
       jobDescription: "Cooling tower fan bearing replacement using MEWP at 9.5 m.",
       isStandalone: false,
       hazards: JSON.stringify([
@@ -707,7 +707,7 @@ async function seedPlant(
     },
     {
       number: `FLRA-${P}-DEMO-005`, daysAgo_: 2, status: "IN_PROGRESS" as const,
-      location: "Sewing / Stitching Lines — Pipeline P-112 flange",
+      location: "Process Area B — Pipeline P-112 flange",
       jobDescription: "Pipeline flange weld repair under hot work permit. GTAW root, SMAW fill/cap on DN100 carbon steel.",
       isStandalone: false,
       hazards: JSON.stringify([
@@ -720,7 +720,7 @@ async function seedPlant(
     },
     {
       number: `FLRA-${P}-DEMO-006`, daysAgo_: 30, status: "COMPLETED" as const,
-      location: "Finished Goods Warehouse yard — east boundary trench",
+      location: "Loading Area — east boundary trench",
       jobDescription: "Excavation of 45 m trench for storm drain expansion. Mechanical and hand dig.",
       isStandalone: true,
       hazards: JSON.stringify([
@@ -733,7 +733,7 @@ async function seedPlant(
     },
     {
       number: `FLRA-${P}-DEMO-007`, daysAgo_: 12, status: "COMPLETED" as const,
-      location: "Boiler House & Utilities — Compressed Air Receiver AR-02",
+      location: "Utilities Block — Compressed Air Receiver AR-02",
       jobDescription: "Pressure vessel nozzle weld build-up — hot work on depressurised vessel.",
       isStandalone: false,
       hazards: JSON.stringify([
@@ -746,7 +746,7 @@ async function seedPlant(
     },
     {
       number: `FLRA-${P}-DEMO-008`, daysAgo_: 8, status: "COMPLETED" as const,
-      location: "Boiler House & Utilities — Steam Drum SD-1",
+      location: "Utilities Block — Steam Drum SD-1",
       jobDescription: "Annual internal inspection of steam drum — corrosion mapping and safety valve removal.",
       isStandalone: false,
       hazards: JSON.stringify([
@@ -772,7 +772,7 @@ async function seedPlant(
     },
     {
       number: `FLRA-${P}-DEMO-010`, daysAgo_: 22, status: "COMPLETED" as const,
-      location: "Boiler House & Utilities — Cooling Tower CT-1 interior",
+      location: "Utilities Block — Cooling Tower CT-1 interior",
       jobDescription: "PVC fill pack replacement inside cooling tower shell at 7 m height.",
       isStandalone: false,
       hazards: JSON.stringify([
@@ -846,19 +846,19 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-002`, daysAgo_: 38, type: "MTC" as const, status: "CAPA_ASSIGNED" as const,
-      areaKey: "Knitting",
-      location: "Knitting Section — circular knitting machine bank, floor grating",
-      description: "Knitting operator slipped on a wet grating adjacent to circular knitting machine CKM-101 lubrication unit, sustaining a sprained left wrist. Had gripped the handrail but wrist was twisted in the fall. Medical treatment given at site first-aid room; restricted duty for 4 days.",
+      areaKey: "Process Area A",
+      location: "Process Area A — Pump Station 1 grating",
+      description: "Process operator slipped on a wet grating adjacent to pump P-101 seal, sustaining a sprained left wrist. Had gripped the handrail but wrist was twisted in the fall. Medical treatment given at site first-aid room; restricted duty for 4 days.",
       injuredPersonName: "Process Operator E", injuredPersonAge: 27, injuredPersonDesignation: "Process Operator",
       bodyPart: "Left wrist", natureOfInjury: "Sprain — Grade 2 ligament stretch", lostDays: 0,
-      immediateCause: "Wet grating — knitting machine CKM-101 lubrication unit had been weeping spinning oil for 2 days prior. Housekeeping inspection missed the wet spot.",
+      immediateCause: "Wet grating — pump P-101 mechanical seal had been weeping for 2 days prior. Housekeeping inspection missed the wet spot.",
       rootCauseMethod: "Fishbone",
-      rootCauseDetail: "CAUSE: Slippery grating | Equipment: Lubrication unit leak undetected | Man: Housekeeping interval too long | Method: No sensor for oil leakage | Measurement: No formal slip-risk assessment for grating areas",
-      correctiveActions: "1. CKM-101 lubrication seal replaced immediately. 2. Anti-slip coating applied to all knitting machine bank gratings. 3. Housekeeping interval in knitting areas reduced to 2 hourly.",
-      preventiveActions: "Install vibration/temperature sensors on all critical machine lubrication units. Add floor slip-risk assessment to annual HSE audit.",
-      immediateCauses: ["Wet grating from lubrication unit leak"],
-      underlyingCauses: ["Lubrication unit condition monitoring not in PM schedule", "Housekeeping inspection frequency insufficient"],
-      rootCauses: ["No mechanism to detect lubrication unit leak between scheduled PM rounds"],
+      rootCauseDetail: "CAUSE: Slippery grating | Equipment: Pump seal leak undetected | Man: Housekeeping interval too long | Method: No sensor for pump gland leakage | Measurement: No formal slip-risk assessment for grating areas",
+      correctiveActions: "1. P-101 seal replaced immediately. 2. Anti-slip coating applied to all pump station gratings. 3. Housekeeping interval in wet process areas reduced to 2 hourly.",
+      preventiveActions: "Install vibration/temperature sensors on all critical pump seals. Add floor slip-risk assessment to annual HSE audit.",
+      immediateCauses: ["Wet grating from pump seal leak"],
+      underlyingCauses: ["Pump seal condition monitoring not in PM schedule", "Housekeeping inspection frequency insufficient"],
+      rootCauses: ["No mechanism to detect pump seal leak between scheduled PM rounds"],
       contributingFactors: ["High-frequency shift changes — condition not communicated between shifts"],
       severity: "MEDIUM", isReportable: false,
       internalNotificationsSent: [
@@ -869,7 +869,7 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-003`, daysAgo_: 30, type: "FIRST_AID" as const, status: "CLOSED" as const,
-      areaKey: "Chemical",
+      areaKey: "Chemical Storage & Handling Area",
       location: "Chemical Storage — reagent preparation area, bay B",
       description: "Lab technician received a chemical splash to the right eye when a glass stirring rod broke during reagent preparation. Goggles not being worn at time. Eye irrigated at emergency eyewash for 15 minutes. Ophthalmology review confirmed no lasting injury.",
       injuredPersonName: "Lab Technician F", injuredPersonAge: 25, injuredPersonDesignation: "QC Analyst",
@@ -889,9 +889,9 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-004`, daysAgo_: 22, type: "RWC" as const, status: "CAPA_ASSIGNED" as const,
-      areaKey: "Warehouse",
-      location: "Finished Goods Warehouse — racking bay 7",
-      description: "Warehouse operator sustained a lower back strain (lumbar muscle pull) while manually lifting a 28 kg bag of fabric softener compound from a floor pallet. The bag was at the bottom of a 6-tier stack, requiring a bent and twisted lift posture.",
+      areaKey: "Main Warehouse",
+      location: "Main Warehouse — racking bay 7",
+      description: "Warehouse operator sustained a lower back strain (lumbar muscle pull) while manually lifting a 28 kg bag of raw material from a floor pallet. The bag was at the bottom of a 6-tier stack, requiring a bent and twisted lift posture.",
       injuredPersonName: "Warehouse Operator G", injuredPersonAge: 40, injuredPersonDesignation: "Warehouse Operator",
       bodyPart: "Lower back — L3/L4 lumbar area", natureOfInjury: "Muscular strain — restricted duty 8 days", lostDays: 0,
       immediateCause: "Heavy bag lifted from below knee height in awkward twisted posture. No mechanical aid used.",
@@ -912,9 +912,9 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-005`, daysAgo_: 17, type: "PROPERTY_DAMAGE" as const, status: "CLOSED" as const,
-      areaKey: "Sewing",
-      location: "Sewing / Stitching Lines — conveyor CV-12 structural support",
-      description: "Counterbalance forklift FLT-02 struck the structural support column of fabric feed conveyor CV-12 while reversing in the Sewing / Stitching Lines hall. Column deformed (15 cm buckle). Conveyor remained operational but structural integrity requires inspection. No personnel injury. Estimated repair cost ₹1.8 lakh.",
+      areaKey: "Process Area B",
+      location: "Process Area B — conveyor CV-12 structural support",
+      description: "Counterbalance forklift FLT-02 struck the structural support column of conveyor CV-12 while reversing in Process Area B. Column deformed (15 cm buckle). Conveyor remained operational but structural integrity requires inspection. No personnel injury. Estimated repair cost ₹1.8 lakh.",
       injuredPersonName: null, injuredPersonAge: null, injuredPersonDesignation: null,
       bodyPart: null, natureOfInjury: null, lostDays: 0,
       immediateCause: "Forklift reversed at excessive speed in confined aisle. Operator did not check path before reversing.",
@@ -936,8 +936,8 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-006`, daysAgo_: 12, type: "MTC" as const, status: "INVESTIGATION" as const,
-      areaKey: "Boiler House",
-      location: "Boiler House & Utilities — boiler feed pump room",
+      areaKey: "Utilities Block",
+      location: "Utilities Block — boiler feed pump room",
       description: "Maintenance engineer sustained a crush injury to the right index finger (tip fracture) when a pipe flange bolt slipped during tightening. Engineer was using an incorrectly sized spanner (non-ring type) which rotated off the hex and the hand struck the flange face.",
       injuredPersonName: "Maintenance Engineer H", injuredPersonAge: 35, injuredPersonDesignation: "Maintenance Engineer",
       bodyPart: "Right index finger (tip)", natureOfInjury: "Distal phalanx fracture — 10 days restricted duty", lostDays: 0,
@@ -959,8 +959,8 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-007`, daysAgo_: 8, type: "FIRST_AID" as const, status: "CLOSED" as const,
-      areaKey: "Warehouse",
-      location: "Finished Goods Warehouse — dock door 3 platform edge",
+      areaKey: "Loading / Dispatch Area",
+      location: "Loading Area — dock door 3 platform edge",
       description: "Loading assistant stepped off the dock door platform edge (0.6 m drop) while guiding a trailer reversing. Twisted right ankle on landing. First aid applied — no fracture on assessment. Returned to modified duty same day.",
       injuredPersonName: "Loading Assistant J", injuredPersonAge: 22, injuredPersonDesignation: "Loading Assistant",
       bodyPart: "Right ankle", natureOfInjury: "Ankle twist — mild ligament strain", lostDays: 0,
@@ -979,19 +979,19 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-008`, daysAgo_: 5, type: "RWC" as const, status: "INVESTIGATION" as const,
-      areaKey: "Knitting",
-      location: "Knitting Section — yarn creel platform V-05 access stairs",
-      description: "Knitting technician sustained a knee contusion (bruising, no fracture) after catching a boot toe on a protruding grating bolt head on the access staircase. Fell forward onto the stair tread. Medically assessed as restricted duty for 6 days.",
+      areaKey: "Process Area A",
+      location: "Process Area A — reaction vessel V-05 access stairs",
+      description: "Process technician sustained a knee contusion (bruising, no fracture) after catching a boot toe on a protruding grating bolt head on the access staircase. Fell forward onto the stair tread. Medically assessed as restricted duty for 6 days.",
       injuredPersonName: "Process Technician K", injuredPersonAge: 29, injuredPersonDesignation: "Process Technician",
       bodyPart: "Right knee (patella area)", natureOfInjury: "Contusion / bruising — no fracture on X-ray", lostDays: 0,
       immediateCause: "Grating bolt head protruding 12 mm above grating surface on 4th tread of V-05 access staircase. Bolt was loose — captive nut had corroded out.",
       rootCauseMethod: "Fishbone",
-      rootCauseDetail: "CAUSE: Trip on protruding bolt | Man: Hurrying on stairs | Machine: Corroded captive nut allowed bolt to rise | Method: Grating inspection interval too long (annual only) | Environment: Humid, lint-laden atmosphere accelerated nut corrosion",
+      rootCauseDetail: "CAUSE: Trip on protruding bolt | Man: Hurrying on stairs | Machine: Corroded captive nut allowed bolt to rise | Method: Grating inspection interval too long (annual only) | Environment: Corrosive process atmosphere accelerated nut corrosion",
       correctiveActions: "1. All access grating bolts inspected and tightened/replaced. 2. Protruding bolt heads on all gratings corrected within 48 hours. 3. Grating bolt inspection added to monthly maintenance checklist.",
       preventiveActions: "Switch to spring-lock grating fastener on corrosion-risk stairs. Include grating walk-over in weekly HSE patrol.",
       immediateCauses: ["Trip on protruding grating bolt head"],
       underlyingCauses: ["Grating bolt captive nut corroded out allowing bolt to rise", "Annual grating inspection did not catch deterioration"],
-      rootCauses: ["Grating fastener specification not appropriate for humid, lint-laden environment adjacent to knitting machines"],
+      rootCauses: ["Grating fastener specification not appropriate for corrosive environment adjacent to process vessel"],
       contributingFactors: ["Worker hurrying between activities"],
       severity: "LOW", isReportable: false,
       internalNotificationsSent: [
@@ -1002,8 +1002,8 @@ async function seedPlant(
     },
     {
       number: `INC-${P}-DEMO-009`, daysAgo_: 42, type: "FIRE" as const, status: "CLOSED" as const,
-      areaKey: "Boiler House",
-      location: "Boiler House & Utilities — DG-02 fuel day-tank area",
+      areaKey: "DG / Power House",
+      location: "DG / Power House — DG-02 fuel day-tank area",
       description: "Small fire in insulation lagging on the DG-02 exhaust manifold. Lagging was soaked in diesel from a fuel connection drip that had been accumulating for approximately 2 weeks. Fire detected by operator during routine round — extinguished with foam extinguisher before fire brigade response. No injuries. DG-02 out of service for 5 days.",
       injuredPersonName: null, injuredPersonAge: null, injuredPersonDesignation: null,
       bodyPart: null, natureOfInjury: null, lostDays: 0,
@@ -1109,7 +1109,7 @@ async function seedPlant(
 
 async function main() {
   console.log("\n╔══════════════════════════════════════════════════════╗");
-  console.log("║  SafeOps360 — Page Industries Activity Data Seed            ║");
+  console.log("║  SafeOps360 — Meridian Activity Data Seed            ║");
   console.log("║  10 × 5 modules × 2 plants = 100 records            ║");
   console.log("╚══════════════════════════════════════════════════════╝\n");
 

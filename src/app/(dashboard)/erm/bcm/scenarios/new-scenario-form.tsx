@@ -3,6 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { SCENARIO_CATEGORIES } from "@/app/(dashboard)/erm/lib-p3";
 import { IMPACT_DIMENSIONS, DIMENSION_LABEL } from "@/app/(dashboard)/erm/lib";
 
@@ -33,12 +37,9 @@ export function NewScenarioButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800"
-      >
+      <Button onClick={() => setOpen(true)}>
         <Plus size={16} /> New Scenario
-      </button>
+      </Button>
       {open && <NewScenarioModal onClose={() => setOpen(false)} router={router} />}
     </>
   );
@@ -117,75 +118,82 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Scenario</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700" aria-label="Close">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={onClose}
+            aria-label="Close"
+            className="h-8 w-8 text-slate-400 hover:text-slate-700"
+          >
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="space-y-4">
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Title</label>
-            <input
+            <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g. Ransomware encrypts ERP for 72h"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              className="outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
-              <select
+              <Select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                className="outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               >
                 {SCENARIO_CATEGORIES.map((c) => (
                   <option key={c} value={c}>
                     {CATEGORY_LABEL[c] ?? c.replace(/_/g, " ")}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-slate-600">Probability</label>
-              <select
+              <Select
                 value={probabilityQualitative}
                 onChange={(e) => setProbabilityQualitative(e.target.value)}
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                className="outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               >
                 {PROBABILITIES.map((p) => (
                   <option key={p} value={p}>
                     {p.charAt(0) + p.slice(1).toLowerCase()}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Time horizon</label>
-            <select
+            <Select
               value={timeHorizon}
               onChange={(e) => setTimeHorizon(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              className="outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
             >
               {TIME_HORIZONS.map((t) => (
                 <option key={t.value} value={t.value}>
                   {t.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div>
             <label className="mb-1 block text-xs font-medium text-slate-600">Narrative</label>
-            <textarea
+            <Textarea
               value={narrative}
               onChange={(e) => setNarrative(e.target.value)}
               rows={3}
-              className="w-full rounded-md border border-slate-300 p-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+              className="p-2 outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
               placeholder="Describe how the disruption unfolds and what it affects…"
             />
           </div>
@@ -193,51 +201,54 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
           <div>
             <div className="mb-1 flex items-center justify-between">
               <label className="text-xs font-medium text-slate-600">Impact estimates</label>
-              <button
+              <Button
+                variant="outline"
                 onClick={addImpact}
-                className="inline-flex items-center gap-1 rounded border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-600 hover:border-primary-500"
+                className="gap-1 rounded px-2 py-1 text-[11px] text-slate-600 hover:border-primary-500"
               >
                 <Plus size={12} /> Add dimension
-              </button>
+              </Button>
             </div>
             <div className="space-y-2">
               {impacts.map((row, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <select
+                  <Select
                     value={row.dimension}
                     onChange={(e) => updateImpact(idx, { dimension: e.target.value })}
-                    className="w-40 shrink-0 rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
+                    className="w-40 shrink-0 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
                   >
                     {IMPACT_DIMENSIONS.map((d) => (
                       <option key={d} value={d}>
                         {DIMENSION_LABEL[d]}
                       </option>
                     ))}
-                  </select>
-                  <select
+                  </Select>
+                  <Select
                     value={row.estimatedLevel}
                     onChange={(e) => updateImpact(idx, { estimatedLevel: Number(e.target.value) })}
-                    className="w-16 shrink-0 rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
+                    className="w-16 shrink-0 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
                   >
                     {[1, 2, 3, 4, 5].map((l) => (
                       <option key={l} value={l}>
                         L{l}
                       </option>
                     ))}
-                  </select>
-                  <input
+                  </Select>
+                  <Input
                     value={row.estimateBasisNotes}
                     onChange={(e) => updateImpact(idx, { estimateBasisNotes: e.target.value })}
                     placeholder="Basis / notes"
-                    className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
+                    className="flex-1 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
                   />
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => removeImpact(idx)}
-                    className="shrink-0 rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                     aria-label="Remove"
+                    className="h-auto w-auto shrink-0 rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
                   >
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -249,19 +260,12 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button
-            onClick={onClose}
-            className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Button variant="outline" onClick={onClose} className="text-slate-700">
             Cancel
-          </button>
-          <button
-            onClick={submit}
-            disabled={busy || !valid}
-            className="inline-flex items-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800 disabled:opacity-50"
-          >
+          </Button>
+          <Button onClick={submit} disabled={busy || !valid}>
             {busy ? "Creating…" : "Create Scenario"}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

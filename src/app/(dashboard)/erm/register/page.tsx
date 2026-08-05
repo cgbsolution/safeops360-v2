@@ -3,7 +3,8 @@ import { Plus } from "lucide-react";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { BandBadge } from "@/components/erm/shared";
-import { STATE_CHIP, VELOCITY_LABEL, fmtDate, type RiskListResponse } from "../lib";
+import { STATE_CHIP, VELOCITY_LABEL, fmtDate, fmtInr, type RiskListResponse } from "../lib";
+import { RegisterFilters } from "./register-filters";
 
 export const dynamic = "force-dynamic";
 
@@ -14,15 +15,31 @@ export default async function RegisterPage(props: {
 }) {
   const sp = await props.searchParams;
   const query: Record<string, string> = {};
-  for (const k of ["category", "band", "state", "orgLevel", "siteId", "owner", "source", "likelihood", "impact"]) {
+  for (const k of [
+    "category",
+    "band",
+    "state",
+    "orgLevel",
+    "siteId",
+    "owner",
+    "source",
+    "likelihood",
+    "impact",
+    "businessUnit",
+    "search",
+  ]) {
     if (sp[k]) query[k] = sp[k]!;
   }
   if (sp.overdueOnly === "1") query.overdueOnly = "true";
 
   let data: RiskListResponse = { items: [], total: 0, categoryCounts: {}, bandCounts: {}, stateCounts: {} };
+  let businessUnits: string[] = [];
   let error: string | null = null;
   try {
-    data = await backendFetch<RiskListResponse>("/api/erm/risks", { query });
+    [data, businessUnits] = await Promise.all([
+      backendFetch<RiskListResponse>("/api/erm/risks", { query }),
+      backendFetch<string[]>("/api/erm/business-units").catch(() => [] as string[]),
+    ]);
   } catch (e: any) {
     error = e?.message ?? "Failed to load register";
   }
@@ -66,6 +83,9 @@ export default async function RegisterPage(props: {
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
       ) : (
         <>
+          <div className="mb-3">
+            <RegisterFilters businessUnits={businessUnits} />
+          </div>
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Band</span>
             {bandFilter("CRITICAL", "Critical")}
@@ -86,6 +106,7 @@ export default async function RegisterPage(props: {
                   <th className="px-3 py-2.5">Owner</th>
                   <th className="px-3 py-2.5">Inherent</th>
                   <th className="px-3 py-2.5">Residual</th>
+                  <th className="px-3 py-2.5">₹ Exposure</th>
                   <th className="px-3 py-2.5">State</th>
                   <th className="px-3 py-2.5">Next Review</th>
                   <th className="px-3 py-2.5">Src</th>
@@ -94,7 +115,7 @@ export default async function RegisterPage(props: {
               <tbody>
                 {data.items.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
+                    <td colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
                       No risks match the current filter.
                     </td>
                   </tr>
@@ -125,7 +146,27 @@ export default async function RegisterPage(props: {
                         <BandBadge band={r.inherentBand} score={r.inherentScore} />
                       </td>
                       <td className="px-3 py-2.5">
-                        <BandBadge band={r.residualBand} score={r.residualScore} />
+                        <div className="flex items-center gap-1">
+                          <BandBadge band={r.residualBand} score={r.residualScore} />
+                          {r.residualIsOverride && (
+                            <span title={`Asserted residual overrides control-derived by ${r.residualOverrideVariance}`} className="rounded bg-amber-100 px-1 text-[9px] font-bold text-amber-700">⚑</span>
+                          )}
+                          {r.controlAlert && (
+                            <span title="Deficient mapped control — reassess" className="rounded bg-rose-100 px-1 text-[9px] font-bold text-rose-700">C</span>
+                          )}
+                          {r.kriAlert && (
+                            <span title="RED linked KRI — reassess" className="rounded bg-rose-100 px-1 text-[9px] font-bold text-rose-700">K</span>
+                          )}
+                          {r.incidentAlert && (
+                            <span title="LTI/Critical incident at this site — review recommended" className="rounded bg-orange-100 px-1 text-[9px] font-bold text-orange-700">I</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-600">
+                        {fmtInr(r.residualExpectedLossInr)}
+                        {r.targetExpectedLossInr != null && (
+                          <span className="block text-[10px] text-emerald-600">→ {fmtInr(r.targetExpectedLossInr)}</span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5">
                         <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (STATE_CHIP[r.lifecycleState] ?? "")}>

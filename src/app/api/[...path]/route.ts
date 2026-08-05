@@ -83,6 +83,11 @@ async function forward(req: NextRequest, params: { path: string[] }): Promise<Ne
   // Forward client IP for audit logging on the Python side
   const xff = req.headers.get("x-forwarded-for");
   if (xff) headers["x-forwarded-for"] = xff;
+  // Forward the active factory/plant so per-factory module entitlement is
+  // enforced server-side (cookie set by the licence provider — see
+  // licence-provider.tsx). Absent → ceiling-only enforcement.
+  const activePlant = req.cookies.get("safeops_active_plant")?.value;
+  if (activePlant) headers["x-active-plant"] = activePlant;
 
   let body: BodyInit | undefined;
   if (req.method !== "GET" && req.method !== "HEAD") {
@@ -160,18 +165,34 @@ async function forward(req: NextRequest, params: { path: string[] }): Promise<Ne
   // turn every successful DELETE (Python returns 204) into a 500 here,
   // so the browser saw "Delete failed" even though the row was gone.
   const isNullBody = res.status === 204 || res.status === 205 || res.status === 304;
-  const responseText = isNullBody ? "" : await res.text();
   const totalMs = Date.now() - t0;
   const responseHeaders: Record<string, string> = {
     "Server-Timing": `python;dur=${upstreamMs};desc="upstream", proxy;dur=${totalMs - upstreamMs};desc="proxy"`
   };
-  if (!isNullBody) {
-    responseHeaders["content-type"] = res.headers.get("content-type") ?? "application/json";
+
+  if (isNullBody) {
+    return new NextResponse(null, { status: res.status, headers: responseHeaders });
   }
-  return new NextResponse(isNullBody ? null : responseText, {
-    status: res.status,
-    headers: responseHeaders
-  });
+
+  const upstreamCt = res.headers.get("content-type") ?? "application/json";
+  responseHeaders["content-type"] = upstreamCt;
+  // Forward the download filename so file exports keep their name.
+  const cd = res.headers.get("content-disposition");
+  if (cd) responseHeaders["content-disposition"] = cd;
+
+  // Text-like responses (JSON / CSV / HTML / XML) are safe to round-trip as a
+  // string. BINARY responses (xlsx, pdf, images, zip, octet-stream) MUST be
+  // passed through as raw bytes — `res.text()` decodes them as UTF-8 and
+  // corrupts the file (e.g. an .xlsx zip's central directory), so Excel and
+  // other readers reject the download. This is why report Excel exports were
+  // "not working" in production while CSV worked.
+  const isText = /^(?:text\/|application\/(?:json|csv|xml|javascript|xhtml\+xml|x-www-form-urlencoded)\b)/i.test(upstreamCt);
+  if (isText) {
+    const responseText = await res.text();
+    return new NextResponse(responseText, { status: res.status, headers: responseHeaders });
+  }
+  const buf = await res.arrayBuffer();
+  return new NextResponse(buf, { status: res.status, headers: responseHeaders });
 }
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {

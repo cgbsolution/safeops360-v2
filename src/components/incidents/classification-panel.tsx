@@ -108,6 +108,19 @@ export function ClassificationPanel({
   const [teamMemberIds, setTeamMemberIds] = useState<string[]>([]);
   const [costPropertyDamage, setCostPropertyDamage] = useState(initial.costPropertyDamage?.toString() ?? "");
   const [costLostProduction, setCostLostProduction] = useState(initial.costLostProduction?.toString() ?? "");
+  // Feature 5 — numeric 5×5 scoring. Consequence 1-5 set here; likelihood
+  // defaults to "auto" (derived from the trend matcher's recurrence count) but
+  // can be overridden. The final severity band is derived from L×C.
+  const [consequenceScore, setConsequenceScore] = useState<string>("3");
+  const [likelihood, setLikelihood] = useState<string>(""); // "" = auto from recurrence
+
+  const scorePreview = useMemo(() => {
+    const c = Number(consequenceScore) || 0;
+    const l = likelihood ? Number(likelihood) : null;
+    if (!c || l == null) return null;
+    const score = l * c;
+    return { score, band: bandOf(score) };
+  }, [consequenceScore, likelihood]);
 
   // When the user changes type, default-suggest severity, reportability,
   // and the regulations list. They can override before submit.
@@ -165,6 +178,8 @@ export function ClassificationPanel({
           investigationCharterDate: new Date().toISOString(),
           costPropertyDamage: costPropertyDamage ? Number(costPropertyDamage) : null,
           costLostProduction: costLostProduction ? Number(costLostProduction) : null,
+          consequenceScore: consequenceScore ? Number(consequenceScore) : null,
+          likelihoodOfRecurrence: likelihood ? Number(likelihood) : null,
           classificationTaskId: taskId,
           comments: rationale
         })
@@ -222,6 +237,51 @@ export function ClassificationPanel({
               <Label>Classification Rationale <span className="text-rose-600">*</span></Label>
               <Textarea rows={3} value={rationale} onChange={(e) => setRationale(e.target.value)}
                 placeholder="Why this type and severity? Cite injury detail, property damage extent, etc." />
+            </div>
+          </section>
+
+          {/* Section 1b — Risk Scoring (Feature 5) */}
+          <section className="space-y-3 pt-3 border-t border-slate-200">
+            <div className="text-xs uppercase tracking-wider font-semibold text-slate-500">1b. Risk Scoring (5×5)</div>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <Label>Consequence (1–5) <span className="text-rose-600">*</span></Label>
+                <Select value={consequenceScore} onChange={(e) => setConsequenceScore(e.target.value)}>
+                  <option value="1">1 — Insignificant</option>
+                  <option value="2">2 — Minor</option>
+                  <option value="3">3 — Moderate</option>
+                  <option value="4">4 — Major</option>
+                  <option value="5">5 — Severe</option>
+                </Select>
+              </div>
+              <div>
+                <Label>Likelihood of Recurrence</Label>
+                <Select value={likelihood} onChange={(e) => setLikelihood(e.target.value)}>
+                  <option value="">Auto (from recurrence trend)</option>
+                  <option value="1">1 — Rare</option>
+                  <option value="2">2 — Unlikely</option>
+                  <option value="3">3 — Possible</option>
+                  <option value="4">4 — Likely</option>
+                  <option value="5">5 — Almost certain</option>
+                </Select>
+              </div>
+            </div>
+            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm flex items-center gap-2">
+              <ShieldAlert size={14} className="text-slate-500" />
+              {scorePreview ? (
+                <span>
+                  Risk score <span className="font-mono font-semibold">{scorePreview.score}</span>/25 →{" "}
+                  <span className={cn(
+                    "font-semibold",
+                    scorePreview.band === "CRITICAL" ? "text-rose-700" :
+                    scorePreview.band === "HIGH" ? "text-orange-700" :
+                    scorePreview.band === "MEDIUM" ? "text-amber-700" : "text-emerald-700"
+                  )}>{scorePreview.band}</span>
+                  {scorePreview.score >= 15 && <span className="text-rose-700 text-xs ml-1">· auto-escalates to Corporate HSE</span>}
+                </span>
+              ) : (
+                <span className="text-slate-500 text-xs">Likelihood is auto-derived from the recurrence trend; the severity band is set to Likelihood × Consequence on submit.</span>
+              )}
             </div>
           </section>
 
@@ -344,6 +404,15 @@ export function ClassificationPanel({
       </Card>
     </form>
   );
+}
+
+// Mirrors the ERM 5×5 bands reused by the backend (erm.band_for_score:
+// LOW 1-4, MEDIUM 5-9, HIGH 10-15, CRITICAL 16-25).
+function bandOf(score: number): string {
+  if (score >= 16) return "CRITICAL";
+  if (score >= 10) return "HIGH";
+  if (score >= 5) return "MEDIUM";
+  return "LOW";
 }
 
 // Mirrors backend _INITIAL_SEVERITY for type-driven default

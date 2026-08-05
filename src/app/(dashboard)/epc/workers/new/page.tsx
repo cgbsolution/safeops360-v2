@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { ArrowLeft, Loader2, Users } from "lucide-react";
 
 const TRADES = [
@@ -146,18 +147,18 @@ export default function NewWorkerPage() {
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Contractor Company</h2>
           <div>
             <Label htmlFor="contractorCompanyId">Contractor Company *</Label>
-            <select
+            <Select
               id="contractorCompanyId"
               value={form.contractorCompanyId}
               onChange={(e) => set("contractorCompanyId", e.target.value)}
               required
-              className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+              className="mt-1"
             >
               <option value="">Select contractor company...</option>
               {contractors.map((c) => (
                 <option key={c.id} value={c.id}>{c.companyName}</option>
               ))}
-            </select>
+            </Select>
             {contractors.length === 0 && (
               <p className="mt-1 text-xs text-amber-600">
                 Loading companies...{" "}
@@ -194,45 +195,45 @@ export default function NewWorkerPage() {
             </div>
             <div>
               <Label htmlFor="gender">Gender</Label>
-              <select
+              <Select
                 id="gender"
                 value={form.gender}
                 onChange={(e) => set("gender", e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select...</option>
                 <option value="male">Male</option>
                 <option value="female">Female</option>
                 <option value="other">Other</option>
-              </select>
+              </Select>
             </div>
             <div>
               <Label htmlFor="bloodGroup">Blood Group</Label>
-              <select
+              <Select
                 id="bloodGroup"
                 value={form.bloodGroup}
                 onChange={(e) => set("bloodGroup", e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select...</option>
                 {BLOOD_GROUPS.map((bg) => (
                   <option key={bg} value={bg}>{bg}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <Label htmlFor="homeState">Home State</Label>
-              <select
+              <Select
                 id="homeState"
                 value={form.homeState}
                 onChange={(e) => set("homeState", e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select state...</option>
                 {INDIAN_STATES.map((s) => (
                   <option key={s} value={s}>{s}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <Label htmlFor="aadhaarLast4">Aadhaar Last 4 Digits</Label>
@@ -255,18 +256,18 @@ export default function NewWorkerPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="primaryTrade">Primary Trade *</Label>
-              <select
+              <Select
                 id="primaryTrade"
                 value={form.primaryTrade}
                 onChange={(e) => set("primaryTrade", e.target.value)}
                 required
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select trade...</option>
                 {TRADES.map((t) => (
                   <option key={t} value={t}>{t}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <Label htmlFor="yearsExperience">Years of Experience</Label>
@@ -283,17 +284,17 @@ export default function NewWorkerPage() {
             </div>
             <div>
               <Label htmlFor="educationLevel">Education Level</Label>
-              <select
+              <Select
                 id="educationLevel"
                 value={form.educationLevel}
                 onChange={(e) => set("educationLevel", e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-600"
+                className="mt-1"
               >
                 <option value="">Select...</option>
                 {EDUCATION_LEVELS.map((el) => (
                   <option key={el.value} value={el.value}>{el.label}</option>
                 ))}
-              </select>
+              </Select>
             </div>
             <div>
               <Label htmlFor="mobileNumber">Mobile Number *</Label>

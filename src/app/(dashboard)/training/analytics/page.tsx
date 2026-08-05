@@ -131,6 +131,46 @@ export default async function TrainingAnalyticsPage() {
     if (c.status === "ACTIVE") s.active++;
   }
 
+  // ─── Contractor training coverage ───────────────────────────────────
+  // Contractors are NOT modelled as Users, so their training lives in the
+  // EPC ContractorWorker.trainingCertificates JSON (not TrainingCertificate).
+  // Read it and roll up coverage per contractor company so the analytics span
+  // employees AND contractors (Raychem TRS §2.3.h coverage requirement).
+  const contractorWorkers = await prisma.contractorWorker.findMany({
+    select: {
+      overallStatus: true,
+      trainingCertificates: true,
+      contractorCompany: { select: { name: true } },
+    },
+  });
+  type CertJson = { validUntil?: string | null; status?: string };
+  const contractorHorizon30 = new Date(now.getTime() + 30 * 86_400_000);
+  const contractorCov = new Map<string, { company: string; total: number; covered: number; expiring: number }>();
+  for (const w of contractorWorkers) {
+    const company = w.contractorCompany?.name ?? "Unknown";
+    const slot = contractorCov.get(company) ?? { company, total: 0, covered: 0, expiring: 0 };
+    slot.total++;
+    const certs = (Array.isArray(w.trainingCertificates) ? w.trainingCertificates : []) as CertJson[];
+    const valid = certs.filter((c) => {
+      if (!c) return false;
+      const st = (c.status ?? "").toUpperCase();
+      if (st === "EXPIRED" || st === "REVOKED" || st === "LAPSED") return false;
+      if (!c.validUntil) return true;
+      return new Date(c.validUntil) >= now;
+    });
+    if (valid.length > 0) slot.covered++;
+    if (valid.some((c) => c.validUntil && new Date(c.validUntil) <= contractorHorizon30)) slot.expiring++;
+    contractorCov.set(company, slot);
+  }
+  const contractorCoverage = Array.from(contractorCov.values()).sort((a, b) => b.total - a.total);
+  const contractorTotals = contractorCoverage.reduce(
+    (acc, c) => ({ total: acc.total + c.total, covered: acc.covered + c.covered }),
+    { total: 0, covered: 0 },
+  );
+  const contractorPct = contractorTotals.total > 0
+    ? Math.round((contractorTotals.covered / contractorTotals.total) * 100)
+    : 0;
+
   // Top programs by issuance
   const programLookup = new Map(programs.map((p) => [p.id, p]));
   const topPrograms = topProgramsRaw.map((tp) => ({
@@ -185,6 +225,44 @@ export default async function TrainingAnalyticsPage() {
         <StatCard label="Expired / Lapsed" value={cnt("EXPIRED") + cnt("LAPSED")} icon={Sparkles} tone="slate" />
         <StatCard label="Revoked" value={cnt("REVOKED")} icon={XCircle} tone="rose" />
       </div>
+
+      {/* ─── Contractor training coverage ─── */}
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Contractor Training Coverage</CardTitle>
+          <CardDescription>
+            {contractorTotals.total > 0
+              ? `${contractorTotals.covered}/${contractorTotals.total} contractor workers hold valid training (${contractorPct}% coverage).`
+              : "Training coverage for contract workforce (from contractor worker records)."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {contractorCoverage.length === 0 ? (
+            <p className="text-sm text-slate-500">No contractor workers on record yet.</p>
+          ) : (
+            <div className="space-y-2">
+              {contractorCoverage.map((c) => {
+                const pct = c.total > 0 ? Math.round((c.covered / c.total) * 100) : 0;
+                return (
+                  <div key={c.company} className="flex items-center gap-3">
+                    <div className="w-44 truncate text-sm" title={c.company}>{c.company}</div>
+                    <div className="flex-1 h-2 rounded bg-slate-100 overflow-hidden">
+                      <div
+                        className={pct >= 80 ? "h-full bg-emerald-500" : pct >= 50 ? "h-full bg-amber-500" : "h-full bg-rose-500"}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <div className="w-32 text-right text-xs text-slate-500 tabular-nums">
+                      {c.covered}/{c.total}
+                      {c.expiring > 0 && <span className="text-amber-600"> · {c.expiring} expiring</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid lg:grid-cols-2 gap-4 mb-4">
         {/* Expiry pipeline */}

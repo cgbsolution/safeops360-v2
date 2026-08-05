@@ -14,6 +14,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Search } from "lucide-react";
 import { RiskMatrixGrid } from "@/components/hira/risk-matrix-grid";
+import { parseApiError } from "@/lib/api-error";
 
 type Likelihood = { id: string; score: number; label: string; description: string; frequencyGuidance?: string | null };
 type Severity = { id: string; score: number; label: string; description: string };
@@ -37,6 +38,7 @@ type Hazard = {
   typicalHarmPotential: string[];
   typicalAffectedPersons: string[];
   energyForm: string | null;
+  factoriesActSection?: string | null;
 };
 
 type EntryHazardInput = {
@@ -154,6 +156,16 @@ export function EntryCreateForm({
     setError(null);
     if (!activityDescription.trim()) return setError("Activity description is required");
     if (pickedHazards.length === 0) return setError("Pick at least one hazard");
+    // ISO 45001 cl.6.1.2.1 wants the consequence as a distinct element, not
+    // folded into the description. Required on every new hazard row; the
+    // backend rejects a blank one too.
+    const withoutConsequence = pickedHazards.filter((p) => !p.consequence.trim());
+    if (withoutConsequence.length > 0) {
+      const names = withoutConsequence
+        .map((p) => hazards.find((x) => x.id === p.hazardId)?.name ?? p.hazardId)
+        .join(", ");
+      return setError(`Consequence is required for every hazard. Missing for: ${names}`);
+    }
     if (!selectedLikelihood || !selectedSeverity) return setError("Assess the initial risk by clicking a matrix cell");
     const totalPersons = (personsEmployees || 0) + (personsContractors || 0) + (personsVisitors || 0) + (personsPublic || 0);
     if (totalPersons === 0) {
@@ -192,8 +204,7 @@ export function EntryCreateForm({
         })
       });
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? `Create failed (${res.status})`);
+        setError(await parseApiError(res, "Create failed"));
         return;
       }
       router.push(`/hira/${studyId}`);
@@ -314,13 +325,28 @@ export function EntryCreateForm({
                     value={p.contextualDescription}
                     onChange={(e) => updateContext(p.hazardId, e.target.value)}
                   />
+                  <label className="block text-[10px] uppercase text-slate-500 mt-2 mb-0.5">
+                    Consequence <span className="text-rose-600">*</span>
+                  </label>
                   <textarea
-                    className={`${TEXTAREA_CLASS} mt-1`}
+                    className={`${TEXTAREA_CLASS} ${
+                      !p.consequence.trim() ? "border-amber-400 bg-amber-50/40" : ""
+                    }`}
                     rows={2}
-                    placeholder="Consequence if hazard is realised — worst credible outcome (optional)"
+                    required
+                    placeholder="Consequence if hazard is realised — worst credible outcome"
                     value={p.consequence}
                     onChange={(e) => updateConsequence(p.hazardId, e.target.value)}
                   />
+                  {h.factoriesActSection && (
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      Regulatory citation will be pre-filled from the library as{" "}
+                      <span className="font-medium text-slate-600">
+                        Factories Act 1948 · {h.factoriesActSection}
+                      </span>{" "}
+                      — editable on the entry once created.
+                    </p>
+                  )}
                 </div>
               );
             })}

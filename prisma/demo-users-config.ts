@@ -5,16 +5,16 @@
 //   - prisma/seed-industry-tenants.ts   (creates 10 industry vertical tenants)
 //   - src/app/login/page.tsx            (filter UI + industry picker)
 //
-// Page Industries pattern:  {role-slug}.{dept-slug}.{plant-slug}@safeops360.in   /   demo123
-// Industry pattern:         {firstname}.{lastname}@safeops360.in                 /   demo123
+// Meridian pattern:  {role-slug}.{dept-slug}.{plant-slug}@safeops360.in   /   demo123
+// Industry pattern:  {firstname}.{lastname}@safeops360.in                 /   demo123
 
 export const DEMO_PASSWORD = "demo123";
 
-// ─── Plants — Page Industries Limited (apparel — Jockey & Speedo) ──────────
+// ─── Plants — Meridian Manufacturing Limited ──────────────────────────────
 export type DemoPlant = { code: string; slug: string };
 export const DEMO_PLANTS: DemoPlant[] = [
-  { code: "NW", slug: "nw" },   // North Garment Unit, Hassan, Karnataka — primary demo plant
-  { code: "SW", slug: "sw" }    // South Garment Unit, Tiptur, Karnataka — secondary / comparison plant
+  { code: "NW", slug: "nw" },   // North Works, Bharatpur, Rajasthan — primary demo plant
+  { code: "SW", slug: "sw" }    // South Works, Nellore, Andhra Pradesh — secondary / comparison plant
 ];
 
 // ─── Departments ─────────────────────────────────────────────────────────
@@ -133,53 +133,93 @@ export type DemoIndustry = {
   activePermits: number;
 };
 
+/** The five supporting accounts provisioned per industry plant. */
+export const SUPPORT_ROLES = [
+  { emailKey: "plant-head",     role: "PLANT_HEAD",  designation: "Plant Head",       dept: "Management" },
+  { emailKey: "safety-officer", role: "HSE_MANAGER", designation: "Safety Officer",   dept: "HSE" },
+  { emailKey: "supervisor",     role: "WORKER",      designation: "Shift Supervisor", dept: "Operations" },
+  { emailKey: "permit-issuer",  role: "WORKER",      designation: "Permit Issuer",    dept: "HSE" },
+  { emailKey: "worker",         role: "WORKER",      designation: "Process Operator", dept: "Operations" },
+];
+
+/**
+ * Real person names for the supporting users — one per SUPPORT_ROLES slot per
+ * plant, in the same order.
+ *
+ * These accounts used to be named after their own designation ("Process
+ * Operator (AGB)"), which made every workflow screen read as though a role
+ * rather than a person owed the action: "Awaiting Action — Process Operator
+ * (AGB) (Process Operator · Operations)" tells a reader nothing they can act
+ * on. The UI now always renders name + designation + role + department + plant,
+ * so the name slot has to actually carry a name.
+ */
+export const SUPPORT_NAMES: Record<string, string[]> = {
+  AXM: ["Vikram Deshpande", "Anjali Iyer",     "Ramesh Pawar",     "Suresh Kulkarni",  "Mahesh Jadhav"],
+  MCP: ["Arvind Nair",      "Deepa Menon",     "Prakash Shetty",   "Girish Bhat",      "Sunil Pillai"],
+  APX: ["Harish Reddy",     "Kavya Rao",       "Naresh Gowda",     "Basavaraj Patil",  "Manjunath Hegde"],
+  CCS: ["Devendra Chauhan", "Ritu Solanki",    "Bhanu Prakash",    "Jagdish Rathore",  "Kailash Meena"],
+  ISL: ["Subrata Ghosh",    "Paromita Sen",    "Ranjan Mahato",    "Debashis Roy",     "Ashok Bhuyan"],
+  PFI: ["Nitin Wagh",       "Shalini Joshi",   "Yogesh Sawant",    "Pravin Bhosale",   "Dattatray More"],
+  PMB: ["Kamal Chatterjee", "Moushumi Das",    "Bikash Nandi",     "Tapan Bose",       "Sanjib Dutta"],
+  VGP: ["Rajendra Prasad",  "Lakshmi Narayan", "Venkat Subbaiah",  "Srinivas Achari",  "Murali Krishnan"],
+  AGB: ["Balram Yadav",     "Sneha Tiwari",    "Om Prakash Singh", "Dinesh Chaudhary", "Rakesh Verma"],
+  ACS: ["Amit Khandelwal",  "Pooja Bansal",    "Sandeep Ahuja",    "Vinod Malhotra",   "Gaurav Saxena"],
+};
+
+/** Person name for a support slot. Falls back to the old designation-as-name
+ *  label if a plant is added to DEMO_INDUSTRIES without a SUPPORT_NAMES entry,
+ *  so a new vertical never lands with a blank name. */
+export function supportName(plantCode: string, index: number, designation: string): string {
+  return SUPPORT_NAMES[plantCode]?.[index] ?? `${designation} (${plantCode})`;
+}
+
 export const DEMO_INDUSTRIES: DemoIndustry[] = [
   {
-    vertical: "Men's Innerwear",
+    vertical: "Chemical",
     slug: "chemical",
-    company: "Page Industries Limited",
+    company: "Axiom Chemicals Ltd",
     plantCode: "AXM",
-    plantName: "Page Industries — Bengaluru Innerwear Unit (Jockey Men)",
-    location: "Peenya Industrial Area, Bengaluru",
-    state: "Karnataka",
+    plantName: "Axiom Chemicals — Integrated Production Complex",
+    location: "Special Economic Zone, Dahej, Bharuch",
+    state: "Gujarat",
     persona: { name: "Rahul Sharma", email: "rahul.sharma@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.29",
     daysLastLTI: 21,
     activePermits: 2
   },
   {
-    vertical: "Athleisure",
+    vertical: "Pharmaceutical",
     slug: "pharma",
-    company: "Page Industries Limited",
+    company: "MedCore Pharma Ltd",
     plantCode: "MCP",
-    plantName: "Page Industries — Mysuru Athleisure Unit",
-    location: "Hebbal Industrial Area, Mysuru",
-    state: "Karnataka",
+    plantName: "MedCore Pharma — Formulations & API Manufacturing Unit",
+    location: "Pharma City, Genome Valley, Hyderabad",
+    state: "Telangana",
     persona: { name: "Preethi Menon", email: "preethi.menon@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.22",
     daysLastLTI: 45,
     activePermits: 2
   },
   {
-    vertical: "Knitting & Dyeing",
+    vertical: "Tyre",
     slug: "tyre",
-    company: "Page Industries Limited",
+    company: "Apex Tyres Ltd",
     plantCode: "APX",
-    plantName: "Page Industries — Gowribidanur Knitting & Dyeing Unit",
-    location: "KIADB Industrial Area, Gowribidanur",
-    state: "Karnataka",
+    plantName: "Apex Tyres — Integrated Tyre Manufacturing Plant",
+    location: "MIDC Industrial Area, Pune",
+    state: "Maharashtra",
     persona: { name: "Suresh Patil", email: "suresh.patil@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.33",
     daysLastLTI: 18,
     activePermits: 2
   },
   {
-    vertical: "Garmenting",
+    vertical: "Cement",
     slug: "cement",
-    company: "Page Industries Limited",
+    company: "Cornerstone Cement Ltd",
     plantCode: "CCS",
-    plantName: "Page Industries — Dobaspet Garment Unit",
-    location: "Dobaspet Industrial Area, Bengaluru Rural",
+    plantName: "Cornerstone Cement — Integrated Cement Works",
+    location: "NH-44 Industrial Corridor, Gulbarga",
     state: "Karnataka",
     persona: { name: "Vikram Singh", email: "vikram.singh@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.38",
@@ -187,78 +227,78 @@ export const DEMO_INDUSTRIES: DemoIndustry[] = [
     activePermits: 2
   },
   {
-    vertical: "Socks",
+    vertical: "Steel",
     slug: "steel",
-    company: "Page Industries Limited",
+    company: "IndoSteel Manufacturing Ltd",
     plantCode: "ISL",
-    plantName: "Page Industries — Mandya Socks Unit",
-    location: "Mandya Industrial Area",
-    state: "Karnataka",
+    plantName: "IndoSteel — Integrated Steel Plant",
+    location: "Kalinganagar Industrial Complex, Jajpur",
+    state: "Odisha",
     persona: { name: "Amit Verma", email: "amit.verma@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.41",
     daysLastLTI: 9,
     activePermits: 2
   },
   {
-    vertical: "Apparel",
+    vertical: "Food Processing",
     slug: "food",
-    company: "Page Industries Limited",
+    company: "PureFoods Industries Ltd",
     plantCode: "PFI",
-    plantName: "Page Industries — Hindupur Apparel Unit",
-    location: "APIIC Industrial Park, Hindupur",
-    state: "Andhra Pradesh",
+    plantName: "PureFoods Industries — Food Processing & Packaging Plant",
+    location: "Food Park, Tumkur Industrial Area",
+    state: "Karnataka",
     persona: { name: "Kavitha Nair", email: "kavitha.nair@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.25",
     daysLastLTI: 33,
     activePermits: 2
   },
   {
-    vertical: "Knits",
+    vertical: "Paper",
     slug: "paper",
-    company: "Page Industries Limited",
+    company: "PaperMill Bharat Ltd",
     plantCode: "PMB",
-    plantName: "Page Industries — Tirupur Knits Unit",
-    location: "SIPCOT Industrial Area, Tirupur",
-    state: "Tamil Nadu",
+    plantName: "PaperMill Bharat — Integrated Pulp & Paper Mill",
+    location: "River Bank Industrial Estate, Bhadrachalam",
+    state: "Telangana",
     persona: { name: "Rajan Pillai", email: "rajan.pillai@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.30",
     daysLastLTI: 27,
     activePermits: 2
   },
   {
-    vertical: "Swimwear",
+    vertical: "Power",
     slug: "power",
-    company: "Page Industries Limited",
+    company: "VoltGen Power Ltd",
     plantCode: "VGP",
-    plantName: "Page Industries — Speedo Swimwear Unit",
-    location: "Bommasandra Industrial Area, Bengaluru",
-    state: "Karnataka",
+    plantName: "VoltGen Power — Thermal Power Station",
+    location: "Power Grid Industrial Zone, Korba",
+    state: "Chhattisgarh",
     persona: { name: "Deepa Krishnan", email: "deepa.krishnan@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.31",
     daysLastLTI: 16,
     activePermits: 2
   },
   {
-    vertical: "Women's Innerwear",
+    vertical: "Fertiliser",
     slug: "fertiliser",
-    company: "Page Industries Limited",
+    company: "AgroBase Fertilisers Ltd",
     plantCode: "AGB",
-    plantName: "Page Industries — Women's Innerwear Unit (Jockey Woman)",
-    location: "Whitefield Industrial Area, Bengaluru",
-    state: "Karnataka",
+    plantName: "AgroBase Fertilisers — Urea & Complex Fertiliser Plant",
+    location: "GIDC Industrial Estate, Hazira",
+    state: "Gujarat",
     persona: { name: "Mohan Reddy", email: "mohan.reddy@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.35",
     daysLastLTI: 22,
     activePermits: 2
   },
   {
-    vertical: "Loungewear & Distribution",
+    vertical: "Automotive",
     slug: "auto",
-    company: "Page Industries Limited",
+    company: "AutoComp Systems Ltd",
     plantCode: "ACS",
-    plantName: "Page Industries — Hosur Loungewear & Distribution Unit",
-    location: "SIPCOT Industrial Complex, Hosur",
-    state: "Tamil Nadu",
+    plantName: "AutoComp Systems — Component Manufacturing Complex",
+    location: "Chakan Automotive Hub, Pune",
+    state: "Maharashtra",
     persona: { name: "Rajesh Gupta", email: "rajesh.gupta@safeops360.in", designation: "HSE Manager" },
     ltifr: "0.36",
     daysLastLTI: 19,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
+import { versioningQuery } from "../../versioning-query";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +13,7 @@ export async function PUT(
     const body = await req.json();
     const result = await backendFetch(`/api/hira/entries/${id}/existing-controls`, {
       method: "PUT",
+      query: versioningQuery(req),
       body
     });
     return NextResponse.json(result);
