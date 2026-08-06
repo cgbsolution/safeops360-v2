@@ -33,11 +33,13 @@ import { MeetingRecords } from "@/components/assurance/meeting-record";
 import { CompetenceSnapshotPanel } from "@/components/assurance/competence-panel";
 import { SignOffPanel, type SignOffStatus } from "@/components/assurance/signoff-panel";
 import { SupplierPanel, type PortalSubmission } from "@/components/assurance/supplier-panel";
+import { CalendarBookingsPanel } from "@/components/calendar/calendar-bookings-panel";
 import type { CompetenceSnapshotRow, MeetingsResponse } from "../../lib-assurance";
+import type { BookingsResponse } from "../../lib-calendar";
 
 export function AuditDetailView({
   audit, dashboard, userMap, users = [], reports = [], meetings = null, competence = [],
-  signoff = null, submissions = [],
+  signoff = null, submissions = [], bookings = null,
 }: {
   audit: AuditDetail;
   dashboard: AuditDashboard | null;
@@ -49,6 +51,8 @@ export function AuditDetailView({
   signoff?: SignOffStatus | null;
   /** WP-45 — external submissions, empty for an own-facility audit. */
   submissions?: PortalSubmission[];
+  /** Null when the calendar-booking table has not been applied on this deployment. */
+  bookings?: BookingsResponse | null;
 }) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -203,6 +207,17 @@ export function AuditDetailView({
           onEdit={canAllocate ? () => setShowTeam(true) : undefined}
         />
       )}
+
+      {/* Whose calendars this audit is holding. Directly under the team panel
+          because the invited cast IS the team — naming an auditee above books
+          them here, and seeing the two apart would hide that connection. */}
+      <CalendarBookingsPanel
+        engagementKind="AUDIT"
+        engagementId={audit.id}
+        data={bookings}
+        canManage={canUpdate}
+        locked={["closed", "cancelled"].includes(audit.status)}
+      />
 
       {/* Finalize gate banner */}
       {isReviewable && canClose && audit.finalizability && (

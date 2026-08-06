@@ -9,11 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { CalendarBookingsPanel } from "@/components/calendar/calendar-bookings-panel";
 import {
   ENGAGEMENT_STATUS_CHIP, RESULT_CHIP, SEVERITY_CHIP, FINDING_STATUS_CHIP,
   fmtDate, labelize, engagementTypeLabel,
   type Engagement, type ChecklistRunner, type Finding, type Template, type RunnerQuestion,
 } from "../../lib-cams";
+import type { BookingsResponse } from "../../lib-calendar";
 
 type Perms = { schedule: boolean; execute: boolean; close: boolean; findingManage: boolean };
 type Answer = { value?: unknown; conformance?: string | null; note?: string; ncSeverity?: string | null; evidenceAttachmentIds?: string[] };
@@ -21,13 +23,15 @@ type Answer = { value?: unknown; conformance?: string | null; note?: string; ncS
 const NC_SEVERITIES = ["OBSERVATION", "MINOR_NC", "MAJOR_NC", "CRITICAL_NC"];
 
 export function EngagementWorkspace({
-  engagement, runner, findings, approvedTemplates, perms,
+  engagement, runner, findings, approvedTemplates, perms, bookings = null,
 }: {
   engagement: Engagement;
   runner: ChecklistRunner | null;
   findings: Finding[];
   approvedTemplates: Template[];
   perms: Perms;
+  /** Null when the calendar-booking table has not been applied on this deployment. */
+  bookings?: BookingsResponse | null;
 }) {
   const [tab, setTab] = useState<"plan" | "execute" | "findings" | "capa">(
     engagement.status === "IN_PROGRESS" ? "execute" : findings.length ? "findings" : "plan"
@@ -56,7 +60,7 @@ export function EngagementWorkspace({
       </div>
 
       <div className="py-5">
-        {tab === "plan" && <PlanTab engagement={engagement} approvedTemplates={approvedTemplates} perms={perms} />}
+        {tab === "plan" && <PlanTab engagement={engagement} approvedTemplates={approvedTemplates} perms={perms} bookings={bookings} />}
         {tab === "execute" && <ExecuteTab engagement={engagement} runner={runner} perms={perms} />}
         {tab === "findings" && <FindingsTab engagement={engagement} findings={findings} perms={perms} />}
         {tab === "capa" && <CapaTab engagement={engagement} findings={findings} />}
@@ -136,7 +140,7 @@ function Meta({ label, value }: { label: string; value?: string | null }) {
 }
 
 // ── Plan tab ────────────────────────────────────────────────────────────────
-function PlanTab({ engagement, approvedTemplates, perms }: { engagement: Engagement; approvedTemplates: Template[]; perms: Perms }) {
+function PlanTab({ engagement, approvedTemplates, perms, bookings }: { engagement: Engagement; approvedTemplates: Template[]; perms: Perms; bookings: BookingsResponse | null }) {
   const router = useRouter();
   const [templateId, setTemplateId] = useState(engagement.templateId ?? "");
   const [busy, setBusy] = useState(false);
@@ -153,6 +157,17 @@ function PlanTab({ engagement, approvedTemplates, perms }: { engagement: Engagem
 
   return (
     <div className="max-w-2xl space-y-4">
+      {/* Whose calendars this engagement is holding. In the Plan tab because
+          that is where the schedule is decided — a booking is a consequence of
+          the plan, not a separate activity. */}
+      <CalendarBookingsPanel
+        engagementKind="INSPECTION"
+        engagementId={engagement.id}
+        data={bookings}
+        canManage={perms.schedule}
+        locked={["CLOSED", "CANCELLED"].includes(engagement.status)}
+      />
+
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <h3 className="mb-1 text-sm font-semibold text-slate-800">Checklist template</h3>
         <p className="mb-3 text-xs text-slate-500">The approved template snapshots onto the engagement when fieldwork starts; later template edits never alter a conducted audit.</p>
