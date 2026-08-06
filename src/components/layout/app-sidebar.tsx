@@ -28,6 +28,7 @@ import {
   FileBarChart,
   FileCheck,
   FileText,
+  Flame,
   FlaskConical,
   Gauge,
   GitBranch,
@@ -133,6 +134,14 @@ const SECTIONS: NavSection[] = [
       { href: "/ptw", label: "Permit to Work", icon: FileCheck, permission: "PTW.READ" },
       { href: "/flra", label: "FLRA", icon: Hammer, permission: "FLRA.READ" },
       { href: "/incidents", label: "Incident Investigation", icon: ShieldAlert, permission: "INCIDENT.READ" },
+      // Fire Safety & Emergency Response. Gated on INCIDENT.READ because the FIRE
+      // module borrows the HSE permission codes until dedicated FIRE.* grants are
+      // seeded — the same bootstrap the router documents. Two consequences worth
+      // knowing before this is treated as final: AUDITOR holds no INCIDENT grant
+      // and so cannot see the register it is meant to inspect, and WORKER holds
+      // INCIDENT.READ at OWN_RECORDS, which get_accessible_plants_for widens to
+      // the whole plant. Seeding FIRE.READ/FIRE.EXECUTE fixes both.
+      { href: "/fire-safety", label: "Fire Safety & ER", icon: Flame, permission: "INCIDENT.READ" },
       // Guided Field Capture — the technician wizard is a full-screen, offline,
       // no-chrome PWA (route group (field)); technicians also land there via
       // Role.defaultLanding. This link opens it from the desk for access/testing.
