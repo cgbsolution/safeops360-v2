@@ -6,6 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/auth/permissions";
 import type { Engagement, ChecklistRunner, FindingListResponse, Template } from "../../lib-cams";
+import type { BookingsResponse } from "../../lib-calendar";
 import { EngagementWorkspace } from "./engagement-workspace";
 
 export const dynamic = "force-dynamic";
@@ -21,12 +22,17 @@ export default async function EngagementWorkspacePage(props: { params: Promise<{
     notFound();
   }
 
-  const [runner, findings, templates] = await Promise.all([
+  const [runner, findings, templates, bookings] = await Promise.all([
     backendFetch<ChecklistRunner>(`/api/cams/engagements/${id}/checklist`).catch(() => null),
     backendFetch<FindingListResponse>("/api/cams/findings", { query: { engagementId: id } }).catch(
       () => ({ items: [], total: 0, severityCounts: {}, statusCounts: {}, repeatCount: 0 }) as FindingListResponse
     ),
     backendFetch<{ items: Template[] }>("/api/cams/templates", { query: { status: "APPROVED" } }).then((r) => r.items).catch(() => [] as Template[]),
+    // Degrades to null rather than failing the page: the CalendarBooking table
+    // may not be applied yet on this deployment.
+    backendFetch<BookingsResponse>("/api/calendar/bookings", {
+      query: { engagementKind: "INSPECTION", engagementId: id },
+    }).catch(() => null),
   ]);
 
   // Capability flags for client gating (server-evaluated, authoritative).
@@ -53,6 +59,7 @@ export default async function EngagementWorkspacePage(props: { params: Promise<{
         findings={findings.items}
         approvedTemplates={templates}
         perms={perms}
+        bookings={bookings}
       />
     </div>
   );
