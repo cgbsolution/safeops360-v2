@@ -142,6 +142,14 @@ const SECTIONS: NavSection[] = [
       // INCIDENT.READ at OWN_RECORDS, which get_accessible_plants_for widens to
       // the whole plant. Seeding FIRE.READ/FIRE.EXECUTE fixes both.
       { href: "/fire-safety", label: "Fire Safety & ER", icon: Flame, permission: "INCIDENT.READ" },
+      // Chemical / Hazmat Management. Same bootstrap as Fire Safety above, and
+      // the same two consequences apply: AUDITOR holds no INCIDENT grant so
+      // cannot see the register it is meant to stock-verify, and WORKER /
+      // CONTRACTOR_WORKMAN hold INCIDENT.READ at OWN_RECORDS, which puts a
+      // hazmat inventory link in front of people the spec's role table does not
+      // include. Seeding CHEMICAL.READ / CHEMICAL.UPDATE and swapping the two
+      // constants here and in app/routers/chemical.py fixes both.
+      { href: "/chemicals", label: "Chemical & Hazmat", icon: FlaskConical, permission: "INCIDENT.READ" },
       // Guided Field Capture — the technician wizard is a full-screen, offline,
       // no-chrome PWA (route group (field)); technicians also land there via
       // Role.defaultLanding. This link opens it from the desk for access/testing.

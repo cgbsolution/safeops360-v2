@@ -159,9 +159,6 @@ const SECTIONS: NavSection[] = [
       { href: "/flra", label: "FLRA", icon: Hammer, permission: "FLRA.READ" },
       { href: "/incidents", label: "Incident Investigation", icon: ShieldAlert, permission: "INCIDENT.READ" },
       { href: "/fire-safety", label: "Fire Safety & ER", icon: Flame, permission: "INCIDENT.READ" },
-      // Chemical/Hazmat uses the HSE permission codes until dedicated CHEMICAL.*
-      // grants are seeded — same bootstrap as Fire Safety above.
-      { href: "/chemicals", label: "Chemical & Hazmat", icon: FlaskConical, permission: "INCIDENT.READ" },
     ],
   },
   {
