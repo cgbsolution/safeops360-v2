@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 import { Paperclip } from "lucide-react";
 import { StoredPhoto } from "./lib";
-import { viewAuditPhotoUrl } from "./upload-photo";
+import { AttachmentTile } from "./attachment-tile";
+import { viewAuditAttachmentUrl } from "./upload-attachment";
 
 /**
- * Evidence photographs attached to an iteration, rendered as thumbnails.
+ * Evidence attached to an iteration — photographs as thumbnails, documents as
+ * named chips (see `AttachmentTile`).
  *
  * The thread used to print the words "1 evidence file(s)" — a count of
  * photographs nobody could look at. The auditor's own finding rendered
@@ -47,7 +49,7 @@ export function EvidenceStrip({
     const missing = seeded.map((u, i) => (u ? -1 : i)).filter((i) => i >= 0);
     if (missing.length === 0) return;
     (async () => {
-      const signed = await Promise.all(missing.map((i) => viewAuditPhotoUrl(evidenceIds[i])));
+      const signed = await Promise.all(missing.map((i) => viewAuditAttachmentUrl(evidenceIds[i])));
       if (!alive) return;
       setUrls((prev) => {
         const next = [...prev];
@@ -67,33 +69,41 @@ export function EvidenceStrip({
   const box = size === 12 ? "size-12" : size === 16 ? "size-16" : "size-14";
 
   return (
-    <div className="mt-1.5 flex flex-wrap items-center gap-2">
-      {urls.map((u, i) =>
-        u ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <a
+    <div className="mt-1.5 flex flex-wrap items-start gap-2">
+      {urls.map((u, i) => {
+        // Named, not silent. "This file exists but could not be loaded" is a
+        // different fact from "there is no evidence", and only one of them is
+        // the reviewer's problem to chase.
+        if (!u) {
+          return (
+            <span
+              key={i}
+              className={`flex ${box} items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-slate-400`}
+              title={`${label} — could not load ${evidenceIds[i]}`}
+            >
+              <Paperclip size={12} />
+            </span>
+          );
+        }
+        // A thread records evidence as a bare storage path, so whether an entry
+        // is a photograph or a document has to be read off the path — which is
+        // what `AttachmentTile` infers. `storagePath` must therefore be passed
+        // through: given only the signed URL, a PDF would render as a broken
+        // image. Any metadata on the checkpoint's current response (mimeType,
+        // fileName) is merged in when present, but the freshly signed URL always
+        // wins — a stale one on the known record is the dead link this component
+        // exists to avoid.
+        const meta = known.find((p) => p.storagePath === evidenceIds[i]);
+        return (
+          <AttachmentTile
             key={i}
-            href={u}
-            target="_blank"
-            rel="noreferrer"
-            className={`block ${box} overflow-hidden rounded-lg border border-slate-200 hover:ring-2 hover:ring-violet-300`}
-            title={`${label} — open full size`}
-          >
-            <img src={u} alt={`${label} ${i + 1}`} className="size-full object-cover" />
-          </a>
-        ) : (
-          // Named, not silent. "This file exists but could not be loaded" is a
-          // different fact from "there is no evidence", and only one of them is
-          // the reviewer's problem to chase.
-          <span
-            key={i}
-            className={`flex ${box} items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-slate-400`}
-            title={`Could not load ${evidenceIds[i]}`}
-          >
-            <Paperclip size={12} />
-          </span>
-        ),
-      )}
+            size={size}
+            index={i}
+            kindLabel={label}
+            attachment={{ ...meta, storagePath: evidenceIds[i], url: u }}
+          />
+        );
+      })}
     </div>
   );
 }

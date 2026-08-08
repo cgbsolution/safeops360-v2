@@ -4,7 +4,10 @@ import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { uploadAuditPhoto, deleteAuditPhoto } from "../upload-photo";
+import {
+  uploadAuditAttachment, deleteAuditAttachment, IMAGE_ACCEPT, DOCUMENT_ACCEPT,
+} from "../upload-attachment";
+import { AttachmentStrip } from "../attachment-tile";
 import { EvidenceStrip } from "../evidence-strip";
 import { TeamEditor } from "./team-editor";
 import { AllocationWorkspace } from "./allocation-workspace";
@@ -12,7 +15,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   PlayCircle, CheckCircle2, XCircle, AlertTriangle, Lock,
   ChevronDown, ChevronRight, Camera, Loader2, ShieldCheck, Trash2, Users2,
-  MessageSquare, RotateCcw, ArrowUpCircle, FileWarning, Building2, ListChecks,
+  MessageSquare, RotateCcw, ArrowUpCircle, FileWarning, Building2, ListChecks, Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -928,18 +931,11 @@ function Block({ label, children }: { label: string; children: React.ReactNode }
   return <div className="text-sm"><div className="mb-0.5 text-[11px] font-medium uppercase tracking-wide text-slate-400">{label}</div>{children}</div>;
 }
 
-function PhotoStrip({ photos }: { photos?: { url: string; caption?: string }[] | null }) {
+/** The auditor's evidence on a finding — photographs and documents alike, which
+ *  is why it delegates to the shared tile rather than assuming an `<img>`. */
+function PhotoStrip({ photos }: { photos?: StoredPhoto[] | null }) {
   if (!photos || photos.length === 0) return null;
-  return (
-    <div className="mt-1.5 flex flex-wrap gap-2">
-      {photos.map((p, i) => (
-        // eslint-disable-next-line @next/next/no-img-element
-        <a key={i} href={p.url} target="_blank" rel="noreferrer" className="block size-16 overflow-hidden rounded-lg border border-slate-200 hover:ring-2 hover:ring-violet-300">
-          <img src={p.url} alt={p.caption || `photo ${i + 1}`} className="size-full object-cover" />
-        </a>
-      ))}
-    </div>
-  );
+  return <AttachmentStrip attachments={photos} size={16} className="mt-1.5" />;
 }
 
 // A-07 — report generation + history.
@@ -1019,26 +1015,31 @@ function RespondForm({ auditId, r, routedToMe, onChanged }: { auditId: string; r
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
 
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
+    const isDoc = !file.type.startsWith("image/");
     setUploading(true);
-    const res = await uploadAuditPhoto(file, { auditId, checkpointCode: code });
+    const res = await uploadAuditAttachment(file, { auditId, checkpointCode: code });
     setUploading(false);
-    if (!res.ok) { toast({ variant: "error", title: "Photo upload failed", description: res.error }); return; }
-    setPhotos((p) => [...p, res.photo]);
-    toast({ variant: "success", title: "Evidence uploaded" });
+    if (!res.ok) {
+      toast({ variant: "error", title: isDoc ? "Document upload failed" : "Photo upload failed", description: res.error });
+      return;
+    }
+    setPhotos((p) => [...p, res.attachment]);
+    toast({ variant: "success", title: "Evidence uploaded", description: isDoc ? res.attachment.fileName : undefined });
   }
 
   function removePhoto(i: number) {
     const removed = photos[i];
     setPhotos((prev) => prev.filter((_, idx) => idx !== i));
-    void deleteAuditPhoto(removed?.storagePath);
+    void deleteAuditAttachment(removed?.storagePath);
     // Annotated attachments carry the unmarked original too — drop both, or it
     // is orphaned in storage with no record pointing at it.
-    void deleteAuditPhoto(removed?.originalStoragePath);
+    void deleteAuditAttachment(removed?.originalStoragePath);
   }
 
   async function submit() {
@@ -1056,21 +1057,24 @@ function RespondForm({ auditId, r, routedToMe, onChanged }: { auditId: string; r
     <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
       <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-amber-800">Respond to this finding {routedToMe && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[9px] normal-case">assigned to you</span>}</div>
       <Textarea value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} rows={2} placeholder="Action taken to remediate…" className="min-h-[56px]" />
-      {photos.length > 0 && (
-        <div className="mt-2 flex flex-wrap gap-2">
-          {photos.map((p, i) => (
-            <div key={i} className="relative size-14 overflow-hidden rounded-lg border border-slate-200">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <a href={p.url} target="_blank" rel="noreferrer" className="block size-full"><img src={p.url} alt={`evidence ${i + 1}`} className="size-full object-cover" /></a>
-              <Button type="button" variant="destructive" size="icon" onClick={() => removePhoto(i)} title="Remove / replace" className="absolute right-1 top-1 size-5 rounded-full ring-1 ring-white"><Trash2 size={10} /></Button>
-            </div>
-          ))}
-        </div>
-      )}
-      <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onFile} />
+      <AttachmentStrip attachments={photos} onRemove={removePhoto} className="mt-2" />
+      {/* Remediation proof is more often paperwork than a photograph — a renewed
+          licence, a training record, a calibration certificate. Two pickers for
+          the same reason as the conduct screen: the photo input keeps
+          `capture` so a phone opens the camera, and documents must not be
+          made to travel through a viewfinder. */}
+      <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} capture="environment" className="hidden" onChange={onFile} />
+      <input ref={docRef} type="file" accept={DOCUMENT_ACCEPT} className="hidden" onChange={onFile} />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Input type="date" value={actionDate} onChange={(e) => setActionDate(e.target.value)} className="h-8 w-auto text-xs" />
-        <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />} {uploading ? "Uploading…" : `Add evidence${photos.length ? ` (${photos.length})` : ""}`}</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />} {uploading ? "Uploading…" : "Photo"}</Button>
+        <Button type="button" variant="outline" size="sm" onClick={() => docRef.current?.click()} disabled={uploading}
+          title="Attach a PDF, Word, Excel, CSV or text file as proof of remediation">
+          <Paperclip size={13} /> Document
+        </Button>
+        {photos.length > 0 && (
+          <span className="text-[11px] text-slate-500">{photos.length} attached</span>
+        )}
         <Button type="button" size="sm" className="ml-auto" onClick={submit} disabled={busy}>{busy && <Loader2 size={13} className="animate-spin" />} Submit response</Button>
       </div>
     </div>
