@@ -8,11 +8,18 @@ import { cn } from "@/lib/utils";
 export type AuditValue = "pass" | "partial" | "fail" | "na" | "yes" | "no" | null;
 
 /**
- * A photo stored inline on a checkpoint response. One entry = one thumbnail.
+ * One piece of evidence stored inline on a checkpoint response — a photograph
+ * OR a document (licence, certificate, test report, register extract).
+ *
  * An annotated capture is a SINGLE entry pointing at the marked render, with
  * `originalStoragePath` holding the untouched original — stored, not shown, so
  * the evidence survives the markup without the checkpoint sprouting a second
- * near-identical thumbnail. Mirrors AuditPhoto in upload-photo.ts.
+ * near-identical thumbnail. Mirrors AuditAttachment in upload-attachment.ts.
+ *
+ * The persisted key is still `photos`, and the type keeps its name to match:
+ * renaming a JSON key inside `auditorResponse` would need a data migration
+ * across every audit ever conducted, to buy nothing a comment cannot. Use the
+ * `StoredAttachment` alias in new code where "photo" would mislead.
  */
 export type StoredPhoto = {
   url: string;
@@ -20,7 +27,67 @@ export type StoredPhoto = {
   caption?: string;
   originalStoragePath?: string;
   originalUrl?: string;
+  /** Set on upload. ABSENT on everything attached before documents were
+   *  supported — `isImageAttachment` infers it rather than assuming. */
+  mimeType?: string;
+  /** The file's own name, so a document can be identified without opening it.
+   *  A photograph does not need one; `IMG_4821.jpg` tells a reviewer nothing. */
+  fileName?: string;
 };
+
+/** Reads better than `StoredPhoto` wherever documents are in play. */
+export type StoredAttachment = StoredPhoto;
+
+/**
+ * Is this attachment renderable as an image?
+ *
+ * Load-bearing, because the answer decides between an `<img>` thumbnail and a
+ * named file chip — and an `<img>` pointed at a PDF is a broken-image icon
+ * where a reviewer expects evidence.
+ *
+ * Three signals, in descending reliability: the recorded `mimeType`, then the
+ * extension of the file name, then the extension in the storage path. Every
+ * attachment stored before this shipped has only the third, which is why the
+ * inference exists at all rather than trusting `mimeType` and calling anything
+ * else a document.
+ *
+ * Unknown falls to TRUE — image — because that is what every historical
+ * attachment actually is: uploads were restricted to `image/*` at the picker,
+ * so a record with no type information is a photograph. Guessing "document"
+ * would turn every existing thumbnail in the product into a grey chip.
+ */
+export function isImageAttachment(a: Pick<StoredPhoto, "mimeType" | "fileName" | "storagePath" | "url">): boolean {
+  if (a.mimeType) return a.mimeType.startsWith("image/");
+  const source = a.fileName || a.storagePath || a.url || "";
+  const ext = /\.([a-z0-9]+)(?:[?#]|$)/i.exec(source)?.[1]?.toLowerCase();
+  if (!ext) return true;
+  if (["jpg", "jpeg", "png", "webp", "heic", "heif", "gif", "bmp", "avif"].includes(ext)) return true;
+  if (["pdf", "doc", "docx", "xls", "xlsx", "csv", "txt", "msg", "ppt", "pptx"].includes(ext)) return false;
+  return true;
+}
+
+/** Short label for a document chip — its own name, else the stored file name,
+ *  else something honest rather than a blank tile. */
+export function attachmentLabel(a: Pick<StoredPhoto, "caption" | "fileName" | "storagePath">): string {
+  if (a.fileName) return a.fileName;
+  // Storage paths are `audit-compliance/<audit>/<cp>/<8 hex>-<original name>`.
+  // Stripping the collision prefix recovers the name the auditor uploaded.
+  const tail = (a.storagePath || "").split("/").pop() ?? "";
+  const stripped = tail.replace(/^[0-9a-f]{8}-/i, "");
+  return stripped || a.caption || "Document";
+}
+
+/** Extension badge for a document chip ("PDF", "XLSX"). */
+export function attachmentExt(a: Pick<StoredPhoto, "mimeType" | "fileName" | "storagePath">): string {
+  const source = a.fileName || a.storagePath || "";
+  const ext = /\.([a-z0-9]+)$/i.exec(source)?.[1];
+  if (ext) return ext.toUpperCase().slice(0, 4);
+  if (a.mimeType?.includes("pdf")) return "PDF";
+  if (a.mimeType?.includes("wordprocessing") || a.mimeType === "application/msword") return "DOC";
+  if (a.mimeType?.includes("spreadsheet") || a.mimeType === "application/vnd.ms-excel") return "XLS";
+  if (a.mimeType === "text/csv") return "CSV";
+  return "FILE";
+}
 
 export type CheckpointResponse = {
   id: string;

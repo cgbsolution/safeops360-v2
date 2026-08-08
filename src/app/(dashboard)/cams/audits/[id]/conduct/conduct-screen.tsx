@@ -30,7 +30,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
   Check, Camera, AlertTriangle, Link2, Loader2, X, ArrowLeft,
-  Trash2, UserRound, Sparkles, Plus, Search, ListChecks, ChevronDown,
+  Trash2, UserRound, Sparkles, Plus, Search, ListChecks, ChevronDown, Paperclip,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,10 @@ import {
   RISK_META, RISK_ORDER, REQUIREMENT_TYPE_META,
   SCORE_CHOICES, FULL_SCORE, suggestScore, suggestStatus, requiresRiskGrade,
 } from "../../lib";
-import { uploadAuditPhoto, deleteAuditPhoto } from "../../upload-photo";
+import {
+  uploadAuditAttachment, deleteAuditAttachment, IMAGE_ACCEPT, DOCUMENT_ACCEPT,
+} from "../../upload-attachment";
+import { AttachmentStrip } from "../../attachment-tile";
 // WP-44: annotation + QR jump. Both reuse existing platform pieces rather
 // than introducing a second markup surface or a second QR scheme.
 import { PhotoAnnotator } from "@/components/assurance/photo-annotator";
@@ -304,7 +307,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     m.set(item.id, setTimeout(() => saveField(item, { auditFindings: text }, (r) => r), 700));
   }
 
-  // Offer markup first. Images only — a PDF has nothing to draw on, so it
+  // Offer markup first. Images only — a document has nothing to draw on, so it
   // goes straight up rather than opening a canvas over a blank frame.
   function addPhoto(item: Resp, file: File) {
     if (file.type.startsWith("image/")) {
@@ -315,24 +318,28 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   }
 
   async function uploadPhoto(item: Resp, file: File, annotated?: Blob) {
-    const res = await uploadAuditPhoto(file, { auditId: audit.id, checkpointCode: item.checkpointCode });
-    if (!res.ok) { toast({ variant: "error", title: "Photo upload failed", description: res.error }); return; }
+    const isDoc = !file.type.startsWith("image/");
+    const res = await uploadAuditAttachment(file, { auditId: audit.id, checkpointCode: item.checkpointCode });
+    if (!res.ok) {
+      toast({ variant: "error", title: isDoc ? "Document upload failed" : "Photo upload failed", description: res.error });
+      return;
+    }
 
     // One capture = ONE attachment. Both objects are still stored — the marked
     // copy is what the checkpoint shows, the untouched original hangs off it
     // via originalStoragePath — because two identical-looking thumbnails per
     // photo read as a duplication bug, while silently discarding the unmarked
     // evidence would be the worse trade.
-    let photo = res.photo;
+    let photo = res.attachment;
     if (annotated) {
       const marked = new File([annotated], `annotated-${file.name.replace(/\.[^.]+$/, "")}.jpg`, {
         type: "image/jpeg",
       });
-      const res2 = await uploadAuditPhoto(marked, { auditId: audit.id, checkpointCode: item.checkpointCode });
+      const res2 = await uploadAuditAttachment(marked, { auditId: audit.id, checkpointCode: item.checkpointCode });
       // If only the derivative fails, keep the original as the attachment
       // rather than losing the capture over a failed re-encode.
       if (res2.ok) {
-        photo = { ...res2.photo, originalStoragePath: res.photo.storagePath, originalUrl: res.photo.url };
+        photo = { ...res2.attachment, originalStoragePath: res.attachment.storagePath, originalUrl: res.attachment.url };
       }
     }
 
@@ -340,8 +347,10 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     await saveField(item, { photos }, (r) => ({ ...r, auditorResponse: { ...(r.auditorResponse ?? { value: null }), photos } }));
     toast({
       variant: "success",
-      title: annotated ? "Annotated photo attached" : "Photo attached",
-      description: annotated ? "The unmarked original is retained on the record." : undefined,
+      title: annotated ? "Annotated photo attached" : isDoc ? "Document attached" : "Photo attached",
+      description: annotated
+        ? "The unmarked original is retained on the record."
+        : isDoc ? photo.fileName : undefined,
     });
   }
 
@@ -358,10 +367,10 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     const removed = photos[i];
     const next = photos.filter((_, idx) => idx !== i);
     await saveField(item, { photos: next }, (r) => ({ ...r, auditorResponse: { ...(r.auditorResponse ?? { value: null }), photos: next } }));
-    void deleteAuditPhoto(removed?.storagePath);
+    void deleteAuditAttachment(removed?.storagePath);
     // An annotated attachment owns two objects. Dropping only the marked copy
     // would orphan the original in storage with nothing left referencing it.
-    void deleteAuditPhoto(removed?.originalStoragePath);
+    void deleteAuditAttachment(removed?.originalStoragePath);
   }
 
   async function bulkMark(value: "pass" | "na") {
@@ -665,6 +674,7 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
   onAddPhoto: (f: File) => void; onRemovePhoto: (i: number) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const docRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const grade = item.gradeAwarded ?? null;
   const photos = item.auditorResponse?.photos ?? [];
@@ -802,25 +812,30 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
         </div>
       )}
 
-      {/* Photos */}
+      {/* Evidence — photographs and documents.
+          Two pickers, not one, because they are different acts with different
+          hardware: "Add photo" carries `capture="environment"` so a phone opens
+          the rear camera directly, which is the whole point on a shop floor.
+          Putting documents behind that same input would make every licence
+          upload start with a camera viewfinder — and dropping `capture` to allow
+          both would cost the auditor a tap on every single photograph. */}
       <div className="mt-2.5">
-        {photos.length > 0 && (
-          <div className="mb-2 flex flex-wrap gap-2">
-            {photos.map((p, i) => (
-              <div key={i} className="relative size-14 overflow-hidden rounded-lg border border-slate-200">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <a href={p.url} target="_blank" rel="noreferrer" className="block size-full hover:ring-2 hover:ring-violet-300"><img src={p.url} alt={p.caption || `photo ${i + 1}`} className="size-full object-cover" /></a>
-                <Button type="button" variant="destructive" size="icon" onClick={() => onRemovePhoto(i)} className="absolute right-0.5 top-0.5 size-4 rounded-full shadow ring-1 ring-white"><Trash2 size={9} /></Button>
-              </div>
-            ))}
-          </div>
-        )}
-        <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={onPhoto} />
-        <div className="flex items-center gap-3">
+        <AttachmentStrip attachments={photos} onRemove={onRemovePhoto} className="mb-2" />
+        <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} capture="environment" className="hidden" onChange={onPhoto} />
+        <input ref={docRef} type="file" accept={DOCUMENT_ACCEPT} className="hidden" onChange={onPhoto} />
+        <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className={cn(needsPhoto && "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100")}>
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />} {uploading ? "Uploading…" : "Add photo"}
           </Button>
-          {needsPhoto && <span className="text-[11px] text-rose-600">Evidence photo required for this grade</span>}
+          <Button type="button" variant="outline" size="sm" onClick={() => docRef.current?.click()} disabled={uploading}
+            title="Attach a PDF, Word, Excel, CSV or text file — a licence, certificate, test report or register extract">
+            <Paperclip size={14} /> Attach document
+          </Button>
+          {/* The rule is EVIDENCE, and a licence scan satisfies it as well as a
+              photograph — `photos` holds both, so the requirement clears either
+              way. Worded to say so, because "photo required" next to a working
+              document button reads as a rule the auditor has already met. */}
+          {needsPhoto && <span className="text-[11px] text-rose-600">Evidence required for this grade — a photo or a document</span>}
         </div>
       </div>
     </div>
