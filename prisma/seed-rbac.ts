@@ -526,6 +526,12 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "FLRA",        actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
     // Training: R/EXP=DEPT
     { module: "TRAINING",    actions: ["READ", "EXPORT"],                    scope: "OWN_DEPARTMENT" },
+    // HIRA: read-only. The permit form and the permit detail page both render
+    // the "HIRA — Relevant Entries" panel (GET /api/hira/integrations/for-ptw),
+    // which is gated on HIRA.READ. Without this grant the Issuer — the one
+    // person who has to weigh those entries before approving — got HTTP 403
+    // on every permit. Read only: authoring the register stays with HSE.
+    { module: "HIRA",        actions: ["READ"],                              scope: "OWN_PLANT" },
     // Agent platform: Permit Issuer is the primary user of the Permit Risk
     // Reviewer agent (they read its advisory output on every submission
     // they review).
@@ -855,6 +861,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "INSPECTION_FINDING", actions: ["READ", "UPDATE", "CLOSE"],    scope: "OWN_PLANT" },
     // Maintenance Head owns equipment master configuration.
     { module: "CONFIGURATION", actions: ["MASTERS"],                         scope: "ALL_PLANTS" },
+    // HIRA read-only — they originate and approve permits (above), and the PTW
+    // form/detail pages render the HIRA relevant-entries panel, which is gated
+    // on HIRA.READ. Department scope matches their PTW scope.
+    { module: "HIRA",        actions: ["READ"],                              scope: "OWN_DEPARTMENT" },
     { module: "AGENT",       actions: ["RCA_INVOKE", "PERMIT_REVIEW_INVOKE", "TRIAGE_INVOKE", "HIRA_INVOKE", "CAPA_INVOKE"], scope: "OWN_PLANT" }
   ],
   // ════════════════════════════════════════════════════════════════════

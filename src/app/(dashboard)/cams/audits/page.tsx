@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { PlantSwitcher } from "@/components/plant-switcher";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { AuditRegisterView } from "./audit-register-view";
-import type { AuditRow, ProgrammeDashboard, AuditLibrary, AuditTemplate, PlantUser } from "./lib";
+import type { AuditRow, ProgrammeDashboard, AuditCategory, AuditLibrary, AuditTemplate, PlantUser } from "./lib";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,10 @@ export default async function AuditCompliancePage(props: { searchParams: Promise
     backendFetch<{ audits: AuditRow[] }>("/api/audit-compliance").catch(f({ audits: [] as AuditRow[] })),
     backendFetch<ProgrammeDashboard>("/api/audit-compliance/dashboard/programme").catch(f<ProgrammeDashboard | null>(null)),
     backendFetch<{ templates: AuditTemplate[] }>("/api/audit-compliance/templates").catch(f({ templates: [] as AuditTemplate[] })),
-    backendFetch<{ libraries: AuditLibrary[] }>("/api/audit-compliance/library").catch(f({ libraries: [] as AuditLibrary[] })),
+    // One payload carries both the libraries and the audit-category menu, so
+    // the scheduler can never show a category whose checklist is absent.
+    backendFetch<{ libraries: AuditLibrary[]; auditCategories?: AuditCategory[] }>("/api/audit-compliance/library")
+      .catch(f({ libraries: [] as AuditLibrary[], auditCategories: [] as AuditCategory[] })),
     plantId
       ? backendFetch<{ users: PlantUser[] }>("/api/audit-compliance/users", { query: { plantId } }).catch(f({ users: [] as PlantUser[] }))
       : Promise.resolve({ users: [] as PlantUser[] }),
@@ -28,7 +31,7 @@ export default async function AuditCompliancePage(props: { searchParams: Promise
       <PageHeader
         title="Audit & Compliance"
         breadcrumbs={[{ label: "Audit & Compliance" }]}
-        description="Internal audits against the Page Industries checklist — schedule, conduct on-site across HR, EHS and Production, grade each checkpoint, route findings to auditees, review and close. Critical failures auto-spawn CAPA."
+        description="Three audit categories — Internal (HR, EHS, Production), QMS/EMS/OHS (ISO 9001, 14001, 45001, 50001) and Social Compliance — in one format: schedule, conduct on-site, grade each checkpoint, route findings to auditees, review and close. Critical failures auto-spawn CAPA."
         action={<PlantSwitcher plants={plants} currentPlantId={plantId} />}
       />
       <AuditRegisterView
@@ -37,6 +40,7 @@ export default async function AuditCompliancePage(props: { searchParams: Promise
         dashboard={dash}
         templates={templates.templates}
         libraries={libraries.libraries}
+        auditCategories={libraries.auditCategories ?? []}
         users={usersR.users}
       />
     </div>

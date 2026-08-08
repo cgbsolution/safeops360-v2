@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Check, Building2, Factory } from "lucide-react";
+import { ClipboardList, Check, Building2, Factory, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IndependenceCheck, IndependenceDot } from "@/components/assurance/independence-check";
 import { usePickerPreflight } from "@/components/assurance/use-picker-preflight";
@@ -13,7 +13,11 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
-import { AuditLibrary, AuditTemplate, PlantUser, SCOPE_PRESETS, presetDisciplineCodes } from "./lib";
+import {
+  AuditCategory, AuditCategoryCode, AuditLibrary, AuditTemplate, PlantUser,
+  AUDIT_CATEGORY_FALLBACK, AUDIT_CATEGORY_ICON, SCOPE_PRESETS,
+  presetDisciplineCodes, resolveAuditCategories, scopedSelectableLibs,
+} from "./lib";
 
 /** A row from /api/cams-completion/suppliers/vendors (the vendor boundary DTO). */
 type VendorOption = {
@@ -38,18 +42,20 @@ type AssignableSlots = {
   auditee: PlantUser[];
 };
 
-/** The own-facility checklist for this instance — the Page Industries internal
- *  audit (HR / EHS / Production). There is no industry selector: this library
- *  is resolved, and the scheduler chooses disciplines within it. */
-const PAGE_LIBRARY_CODE = "PAGE_INDUSTRIES";
+/** Shared with the annual-programme wizard, which offers the same categories —
+ *  see `AUDIT_CATEGORY_ICON` in ./lib. */
+const CATEGORY_ICON = AUDIT_CATEGORY_ICON;
 
 export function ScheduleModal({
-  plantId, templates, libraries, users, onClose, defaultTitle, dialogTitle,
+  plantId, templates, libraries, users, auditCategories, onClose, defaultTitle, dialogTitle,
 }: {
   plantId: string | null;
   templates: AuditTemplate[];
   libraries: AuditLibrary[];
   users: PlantUser[];
+  /** The category menu from /api/audit-compliance/library. Optional so callers
+   *  that predate it keep working — the client-side mirror stands in. */
+  auditCategories?: AuditCategory[];
   onClose: () => void;
   // Optional pre-fill — used when launching from a Facility's Compliance tab so
   // the title arrives suggested and the header names the facility (Change 4).
@@ -76,76 +82,69 @@ export function ScheduleModal({
   const [supplierContactName, setSupplierContactName] = useState("");
   const [supplierContactEmail, setSupplierContactEmail] = useState("");
 
-  // ── Checklist libraries, scoped to the audit SUBJECT ──────────────────
+  // ── Audit category → checklist → disciplines ──────────────────────────
+  //
+  // The category is the scheduler's first real choice and the head of the
+  // chain: category resolves the library, the library supplies the disciplines,
+  // the ticked disciplines decide which checkpoints materialise. Nothing here
+  // is picked by sort order, which is the failure the previous single-library
+  // shortcut was written to avoid and this generalises rather than reopens.
+  const catalogue = auditCategories?.length ? auditCategories : AUDIT_CATEGORY_FALLBACK;
+  const categoryOptions = useMemo(
+    () => resolveAuditCategories(libraries, catalogue),
+    [libraries, catalogue],
+  );
+  const [auditCategory, setAuditCategory] = useState<AuditCategoryCode | "">(
+    () => categoryOptions[0]?.code ?? "",
+  );
+  const activeCategory =
+    categoryOptions.find((c) => c.code === auditCategory) ?? categoryOptions[0] ?? null;
+
+  // ── Supplier checklists, scoped to the audit SUBJECT ──────────────────
   //
   // The bug this prevents: the selector used to render the same list whatever
-  // the subject was, so a supplier audit could be scoped against
-  // "Garments 82" — an own-facility checklist — and would materialise plant
-  // checkpoints. The resulting report reads as an internal plant inspection of
-  // someone else's factory.
+  // the subject was, so a supplier audit could be scoped against an
+  // own-facility checklist and would materialise plant checkpoints. The
+  // resulting report reads as an internal plant inspection of someone else's
+  // factory.
   //
   // `subjectScope` is derived on the backend so there is one classifier; a
   // library missing the field (older payload) is treated as OWN_SITE, which
   // fails toward "not offered for supplier audits" rather than toward offering
-  // plant checklists.
-  const libsForSubject = useMemo(() => {
-    const wanted = subjectType === "VENDOR" ? "VENDOR" : "OWN_SITE";
-    const scoped = libraries.filter((l) => {
-      const scope = l.subjectScope ?? "OWN_SITE";
-      return scope === wanted || scope === "BOTH";
-    });
-    // Removing the industry PICKER is not the same as removing the industry
-    // CHOICE. The older libraries are still rows in the database (audits
-    // already materialised from them keep rendering), so if they stayed in this
-    // list an own-facility audit could still land on Garments or Cement purely
-    // by whichever sorted first. On this instance an own-facility audit means
-    // the Page Industries checklist and nothing else.
-    if (subjectType !== "VENDOR") {
-      const page = scoped.filter((l) => l.industryCode === PAGE_LIBRARY_CODE);
-      // Fall through to the full scoped list only if the Page library is
-      // genuinely absent — an honest empty state beats a silent wrong one, but
-      // a demo with no checklist at all is worse than either.
-      if (page.length > 0) return page;
-    }
-    return scoped;
-  }, [libraries, subjectType]);
-
-  // Structure without content is not selectable: the buyer regimes ship with
-  // zero checkpoints because the criteria are licensed, and scheduling against
-  // one would create an audit with nothing to assess.
-  const selectableLibs = useMemo(
-    () => libsForSubject.filter((l) => l.isSelectable ?? l.checkpointCount > 0),
-    [libsForSubject],
+  // plant checklists. A supplier audit carries NO category — the subject has
+  // already selected the checklist, so there is nothing left to categorise.
+  const vendorLibs = useMemo(
+    () => (subjectType === "VENDOR" ? scopedSelectableLibs(libraries, "VENDOR") : []),
+    [libraries, subjectType],
   );
   // Scoped correctly but empty — worth naming, because "5 supplier regimes
   // exist but none have content" is a different problem from "none exist", and
   // it tells the admin exactly what to load.
   const awaitingContentLibs = useMemo(
-    () => libsForSubject.filter((l) => !(l.isSelectable ?? l.checkpointCount > 0)),
-    [libsForSubject],
+    () =>
+      subjectType === "VENDOR"
+        ? libraries.filter((l) => {
+            const scope = l.subjectScope ?? "OWN_SITE";
+            return (scope === "VENDOR" || scope === "BOTH") && !(l.isSelectable ?? l.checkpointCount > 0);
+          })
+        : [],
+    [libraries, subjectType],
   );
 
-  // There is no industry to choose on this instance. An own-facility audit runs
-  // the Page Industries internal-audit checklist (HR / EHS / Production); a
-  // supplier audit runs whichever supplier-scoped checklist is configured. The
-  // library is therefore RESOLVED rather than picked — the scheduler's real
-  // choice is which disciplines are in scope, which is the field below.
-  //
-  // The ordering still matters: `orderedLibs[0]` is what every reset seeds
-  // from, so pinning PAGE_INDUSTRIES first is what makes "the default" correct
-  // rather than alphabetical.
-  const orderedLibs = useMemo(() => {
-    const page = selectableLibs.filter((l) => l.industryCode === PAGE_LIBRARY_CODE);
-    const rest = selectableLibs.filter((l) => l.industryCode !== PAGE_LIBRARY_CODE);
-    return [...page, ...rest];
-  }, [selectableLibs]);
+  // The resolved checklist. Own facility → whichever library the chosen
+  // category points at; supplier → whichever supplier-scoped checklist is
+  // configured. Derived rather than held in state so the category and the
+  // checklist can never disagree.
+  const library = subjectType === "VENDOR" ? vendorLibs[0] ?? null : activeCategory?.library ?? null;
+  const industryCode = library?.industryCode ?? "";
 
   const [title, setTitle] = useState(defaultTitle ?? "");
-  const [industryCode, setIndustryCode] = useState(orderedLibs[0]?.industryCode ?? "");
   const [templateId, setTemplateId] = useState("");
-  // Seed from the default library synchronously so the first paint already
+  // Seed from the resolved library synchronously so the first paint already
   // reflects the "Full library" default (no "Will materialize 0" flash).
-  const [selectedDisc, setSelectedDisc] = useState<string[]>(() => orderedLibs[0]?.categories.map((c) => c.category_code) ?? []);
+  const [selectedDisc, setSelectedDisc] = useState<string[]>(
+    () => categoryOptions[0]?.library.categories.map((c) => c.category_code) ?? [],
+  );
   const [scopePreset, setScopePreset] = useState<string>("FULL");
   const [scheduledDate, setScheduledDate] = useState(() => new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10));
   // No default lead: pre-selecting the alphabetically-first plant user was how
@@ -224,34 +223,24 @@ export function ScheduleModal({
   // already known to fail, with the reason already on screen.
   const [independenceBlocked, setIndependenceBlocked] = useState(false);
 
-  const library = orderedLibs.find((l) => l.industryCode === industryCode);
   const industryTemplates = useMemo(() => templates.filter((t) => t.baseIndustry === industryCode), [templates, industryCode]);
 
-  // When the resolved library changes, reset template + select all of its
-  // disciplines (= "Full library" preset).
+  // The resolved checklist changed — because the category changed, or because
+  // the SUBJECT toggle swapped the whole axis. Either way the previous
+  // discipline selection belongs to a different library and its codes are
+  // meaningless here, so it is re-seeded to that library's full scope and left
+  // EMPTY when there is no library at all. Keying on `industryCode` covers both
+  // causes with one rule, so there is no path to submitting disciplines the
+  // resolved checklist does not contain.
+  //
+  // `industryCode` is derived, so this effect only ever follows the resolution —
+  // it cannot fight it.
   useEffect(() => {
     setTemplateId("");
     setSelectedDisc(library ? library.categories.map((c) => c.category_code) : []);
     setScopePreset("FULL");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [industryCode]);
-
-  // Changing the SUBJECT invalidates the checklist choice.
-  //
-  // This is the sharp edge of the bug, not the visible list: narrowing the
-  // own-facility options is not enough, because `industryCode` would still hold
-  // the own-facility code from before the toggle and submit would post it. The
-  // selection is therefore cleared and re-seeded from the libraries that are
-  // valid for the new subject — and left EMPTY when none are, so there is no
-  // path to scheduling against a checklist the subject cannot use.
-  useEffect(() => {
-    const first = orderedLibs[0];
-    setIndustryCode(first?.industryCode ?? "");
-    setSelectedDisc(first ? first.categories.map((c) => c.category_code) : []);
-    setTemplateId("");
-    setScopePreset("FULL");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [subjectType]);
 
   const template = industryTemplates.find((t) => t.id === templateId);
 
@@ -286,17 +275,21 @@ export function ScheduleModal({
   // No checklist is AVAILABLE for this subject at all — a content gap, not
   // something the scheduler can fix by choosing differently. Worded so it points
   // at the person who can fix it.
-  const noLibraryForSubject = orderedLibs.length === 0;
-  // With the checklist resolved rather than chosen, the only remaining failure
-  // is that no checklist EXISTS for this subject — a content gap for an admin
-  // to fix, never something the scheduler can correct by choosing differently.
+  const noLibraryForSubject =
+    subjectType === "VENDOR" ? vendorLibs.length === 0 : categoryOptions.length === 0;
+  // With the checklist resolved by the category rather than chosen, the only
+  // remaining failure is that no checklist EXISTS for this subject — a content
+  // gap for an admin to fix, never something the scheduler can correct by
+  // choosing differently.
   const industryError = noLibraryForSubject
     ? subjectType === "VENDOR"
       ? "No supplier compliance checklist is configured yet — contact your admin."
-      : "No checklist library is available — contact your admin."
+      : "No audit category has a checklist loaded — contact your admin."
     : !industryCode || !library
       ? "The checklist could not be resolved — reload and try again."
       : null;
+  const categoryError =
+    subjectType === "VENDOR" || activeCategory ? null : "Choose an audit category.";
   const leadError = !leadAuditorUserId ? "Pick a lead auditor." : null;
   const disciplineError = selectedDisc.length === 0 ? "Select at least one discipline." : null;
   const supplierError =
@@ -311,14 +304,14 @@ export function ScheduleModal({
     noLibraryForSubject
       ? subjectType === "VENDOR"
         ? "No supplier compliance checklist is configured yet — contact your admin."
-        : "No checklist library is available."
+        : "No audit category has a checklist loaded."
       : !library
-        ? "Select a checklist first."
+        ? "Choose an audit category first."
         : checkpointCount === 0
           ? "This selection materialises no checkpoints — there would be nothing to assess."
           : null;
   const cannotSchedule = scheduleBlockReason !== null;
-  const firstError = titleError ?? industryError ?? supplierError ?? disciplineError ?? leadError;
+  const firstError = titleError ?? categoryError ?? industryError ?? supplierError ?? disciplineError ?? leadError;
 
   function toggleAuditee(id: string) {
     setAuditeeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -424,7 +417,12 @@ export function ScheduleModal({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         plantId, title, industryCode, templateId: templateId || null,
-        auditType: template?.auditType ?? "integrated_compliance_audit",
+        // The category's own audit type, so a report names the regime it was run
+        // under (internal / management system / social compliance) instead of
+        // the one generic label all three used to share. A template still wins
+        // when one is chosen — it is the more specific statement of intent.
+        auditType:
+          template?.auditType ?? activeCategory?.auditType ?? "integrated_compliance_audit",
         // The audited party. `plantId` above remains the owning plant.
         subjectType,
         vendorProfileId: subjectType === "VENDOR" ? vendorProfileId : null,
@@ -496,6 +494,73 @@ export function ScheduleModal({
               </p>
             )}
           </Field>
+
+          {/* ── Audit category — what KIND of audit this is ───────────────
+              The head of the scope chain: the category resolves the checklist,
+              and the discipline chips below are that checklist's. Rendered for
+              own-facility audits only — a supplier audit's checklist is already
+              settled by the subject, so a category there would be a second,
+              conflicting answer to the same question.
+
+              Only categories with a loaded checklist appear. A category on
+              screen is therefore always schedulable, and the count under each
+              says what it would cost before it is picked. */}
+          {subjectType === "OWN_SITE" && categoryOptions.length > 0 && (
+            <Field label="Audit category" required error={touched ? categoryError : null}>
+              {/* Columns follow the count, because the count is not fixed: only
+                  categories with a loaded checklist are rendered, so a partly
+                  seeded instance shows one or two — and three hardcoded columns
+                  would leave them squeezed into a third of the row. */}
+              <div
+                className={cn(
+                  "grid gap-1.5",
+                  categoryOptions.length === 1 ? "grid-cols-1"
+                    : categoryOptions.length === 2 ? "grid-cols-2" : "grid-cols-3",
+                )}
+              >
+                {categoryOptions.map((c) => {
+                  const on = activeCategory?.code === c.code;
+                  const Icon = CATEGORY_ICON[c.code] ?? Layers;
+                  return (
+                    <Button
+                      key={c.code} type="button" variant="ghost"
+                      onClick={() => setAuditCategory(c.code)}
+                      aria-pressed={on}
+                      title={`${c.description} · ${c.library.checkpointCount} checkpoints across ${c.library.categories.length} disciplines`}
+                      className={cn(
+                        "h-auto flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left transition",
+                        on
+                          ? "border-primary-600 bg-primary-50 text-primary-900 shadow-sm"
+                          : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
+                      )}
+                    >
+                      <span className="flex items-center gap-1.5 text-[12px] font-semibold leading-tight">
+                        <Icon size={13} className={on ? "text-primary-700" : "text-slate-400"} />
+                        {c.label}
+                      </span>
+                      <span className={cn("text-[10px] tabular-nums", on ? "text-primary-700" : "text-slate-400")}>
+                        {c.library.categories.length} disciplines · {c.library.checkpointCount} checkpoints
+                      </span>
+                    </Button>
+                  );
+                })}
+              </div>
+              {activeCategory && (
+                <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                  {activeCategory.description}
+                  {/* Said once, here: the category changes which questions are
+                      asked, never how they are answered. Every category grades
+                      on the same Grade / Compliance / Risk vocabulary and rolls
+                      up into the same score, so a scheduler picking QMS or
+                      Social Compliance knows they are not opting into a
+                      different kind of report. */}
+                  {activeCategory.code !== "INTERNAL" && (
+                    <> Conducted, graded and reported in the internal-audit format.</>
+                  )}
+                </p>
+              )}
+            </Field>
+          )}
 
           {subjectType === "VENDOR" && (
             <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/50 p-3">
@@ -574,11 +639,11 @@ export function ScheduleModal({
             </div>
           )}
 
-          {/* There is NO checklist field. This instance audits one thing — the
-              Page Industries internal checklist (HR / EHS / Production) for an
-              own-facility audit, the supplier checklist for a supplier audit —
-              so `industryCode` is resolved above and never shown. The
-              scheduler's real choice is the discipline scope below.
+          {/* There is still NO checklist field. The audit CATEGORY above names
+              the checklist for an own-facility audit and the subject names it
+              for a supplier audit, so `industryCode` is resolved either way and
+              never picked from a list of library names. The scheduler's choices
+              are the category and the discipline scope below it.
 
               The empty state survives, because "no checklist exists for this
               subject" is a content gap an admin has to fix and silently
@@ -588,8 +653,16 @@ export function ScheduleModal({
               <p className="text-[12px] font-medium text-amber-900">
                 {subjectType === "VENDOR"
                   ? "Supplier compliance checklist not yet configured — contact your admin."
-                  : "The Page Industries checklist is not loaded — contact your admin."}
+                  : "No audit category has a checklist loaded — contact your admin."}
               </p>
+              {subjectType === "OWN_SITE" && (
+                <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
+                  Seed them with <code className="rounded bg-amber-100 px-1">scripts/seed_page_industries_library.py</code>{" "}
+                  (Internal) and{" "}
+                  <code className="rounded bg-amber-100 px-1">scripts/seed_page_audit_category_libraries.py</code>{" "}
+                  (QMS/EMS/OHS and Social Compliance).
+                </p>
+              )}
               {subjectType === "VENDOR" && (
                 <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
                   {awaitingContentLibs.length > 0 ? (

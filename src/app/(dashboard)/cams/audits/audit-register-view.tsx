@@ -23,13 +23,13 @@ import { Card } from "@/components/ui/card";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { usePermission } from "@/components/auth/can";
 import {
-  AuditRow, ProgrammeDashboard, AuditLibrary, AuditTemplate, PlantUser,
+  AuditRow, ProgrammeDashboard, AuditCategory, AuditLibrary, AuditTemplate, PlantUser,
   STATUS_CHIP, STATUS_LABEL, Chip, fmtDate, complianceColor, complianceBg,
 } from "./lib";
 import { ScheduleModal } from "./schedule-modal";
 
 export function AuditRegisterView({
-  plantId, audits, dashboard, templates, libraries, users,
+  plantId, audits, dashboard, templates, libraries, users, auditCategories,
 }: {
   plantId: string | null;
   audits: AuditRow[];
@@ -37,6 +37,7 @@ export function AuditRegisterView({
   templates: AuditTemplate[];
   libraries: AuditLibrary[];
   users: PlantUser[];
+  auditCategories: AuditCategory[];
 }) {
   const [showSchedule, setShowSchedule] = useState(false);
   const [q, setQ] = useState("");
@@ -260,7 +261,7 @@ export function AuditRegisterView({
       </div>
 
       {showSchedule && (
-        <ScheduleModal plantId={plantId} templates={templates} libraries={libraries} users={users} onClose={() => setShowSchedule(false)} />
+        <ScheduleModal plantId={plantId} templates={templates} libraries={libraries} users={users} auditCategories={auditCategories} onClose={() => setShowSchedule(false)} />
       )}
     </div>
   );

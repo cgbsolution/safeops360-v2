@@ -2,6 +2,7 @@
 // Types mirror the FastAPI serialization in
 // safeops_360_bakend/app/services/audit_compliance.py.
 
+import { Gauge, Layers, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type AuditValue = "pass" | "partial" | "fail" | "na" | "yes" | "no" | null;
@@ -345,6 +346,68 @@ export type AuditDashboard = {
  */
 export type LibrarySubjectScope = "OWN_SITE" | "VENDOR" | "BOTH";
 
+/**
+ * The KIND of audit being scheduled — the scheduler's first choice, and what
+ * decides which disciplines are on offer.
+ *
+ * Each category resolves exactly one checkpoint library, which is what makes
+ * "the disciplines follow the category" a rule rather than a coincidence of
+ * whichever library happened to sort first. Derived on the backend
+ * (`library_audit_category`) so there is one classifier, in the same shape and
+ * for the same reason as `LibrarySubjectScope`.
+ *
+ * This is a DIFFERENT axis from the audit subject: a category picks what is
+ * asked (internal checklist / ISO management systems / social compliance),
+ * `subjectType` picks who is asked (our facility / a supplier). Supplier
+ * checklists therefore carry no category — the subject already selected them.
+ */
+export type AuditCategoryCode = "INTERNAL" | "MANAGEMENT_SYSTEMS" | "SOCIAL_COMPLIANCE";
+
+export type AuditCategory = {
+  code: AuditCategoryCode;
+  label: string;
+  description: string;
+  /** The library this category materialises from. */
+  industryCode: string;
+  /** Stamped onto the audit so a report names the regime it was run under. */
+  auditType: string;
+  standards: string[];
+};
+
+/**
+ * Client-side mirror of the backend's `AUDIT_CATEGORIES`, used only when the
+ * server list is unavailable (an older payload, or a caller that fetches the
+ * libraries without it). The server's list wins whenever it arrives — this
+ * exists so the category selector never renders empty and strands the
+ * scheduler on a modal with no checklist.
+ */
+export const AUDIT_CATEGORY_FALLBACK: AuditCategory[] = [
+  {
+    code: "INTERNAL",
+    label: "Internal",
+    description: "Page Industries internal audit — HR, EHS and Production.",
+    industryCode: "PAGE_INDUSTRIES",
+    auditType: "internal_audit",
+    standards: ["Page Industries Internal Audit"],
+  },
+  {
+    code: "MANAGEMENT_SYSTEMS",
+    label: "QMS, EMS, OHS",
+    description: "Integrated management-system audit against ISO 9001, 14001, 45001 and 50001.",
+    industryCode: "PAGE_IMS",
+    auditType: "management_system_audit",
+    standards: ["ISO 9001:2015", "ISO 14001:2015", "ISO 45001:2018", "ISO 50001:2018"],
+  },
+  {
+    code: "SOCIAL_COMPLIANCE",
+    label: "Social Compliance",
+    description: "PIL Social Compliance Audit checklist — labour, wages, safety and environment.",
+    industryCode: "PAGE_SOCIAL",
+    auditType: "social_compliance_audit",
+    standards: ["PIL Social Compliance Audit Checklist (Annexure-2, v4)"],
+  },
+];
+
 export type AuditLibrary = {
   id: string;
   industryCode: string;
@@ -352,10 +415,78 @@ export type AuditLibrary = {
   version: string;
   checkpointCount: number;
   subjectScope?: LibrarySubjectScope;
+  /** INTERNAL | MANAGEMENT_SYSTEMS | SOCIAL_COMPLIANCE, or null/absent for the
+   *  supplier checklists — which are reached through the audit SUBJECT, not
+   *  through a category. */
+  auditCategory?: AuditCategoryCode | null;
   /** Correctly scoped AND has checkpoints loaded. Structure alone is not enough. */
   isSelectable?: boolean;
   categories: { category_code: string; category_name: string; category_color: string; category_icon: string; checkpointCount: number }[];
 };
+
+/** An audit category paired with the library it resolved to. */
+export type ResolvedAuditCategory = AuditCategory & { library: AuditLibrary };
+
+/** One icon per category, so the scheduler and the programme wizard show the
+ *  same mark for the same category. */
+export const AUDIT_CATEGORY_ICON: Record<AuditCategoryCode, LucideIcon> = {
+  INTERNAL: Layers,
+  MANAGEMENT_SYSTEMS: Gauge,
+  SOCIAL_COMPLIANCE: Users,
+};
+
+/**
+ * Libraries valid for one audit subject, filtered to those with content.
+ *
+ * Pure and exported so the same resolution can run inside a `useMemo`, inside a
+ * lazy `useState` initializer (the first paint needs the answer, or the
+ * scheduler's footer flashes "Will materialize 0 checkpoints"), and inside a
+ * server component.
+ */
+export function scopedSelectableLibs(
+  libraries: AuditLibrary[],
+  subjectType: "OWN_SITE" | "VENDOR",
+): AuditLibrary[] {
+  const wanted = subjectType === "VENDOR" ? "VENDOR" : "OWN_SITE";
+  return libraries.filter((l) => {
+    const scope = l.subjectScope ?? "OWN_SITE";
+    if (!(scope === wanted || scope === "BOTH")) return false;
+    // Structure without content is not selectable: the buyer regimes ship with
+    // zero checkpoints because the criteria are licensed, and scoping against
+    // one would produce an audit — or a programme scope unit — with nothing to
+    // assess.
+    return l.isSelectable ?? l.checkpointCount > 0;
+  });
+}
+
+/**
+ * Pair each audit category with its library.
+ *
+ * ONE resolver, used by every surface that offers a category: the audit
+ * scheduler and the annual-programme wizard. They must agree — a programme that
+ * plans against a taxonomy the scheduler cannot materialise is a coverage matrix
+ * that can never go green.
+ *
+ * Matching prefers the library's own `auditCategory` (derived server-side) and
+ * falls back to the industry code, so a payload from a backend that predates the
+ * field still resolves.
+ *
+ * Categories with no usable library are dropped rather than disabled: an
+ * unusable category on screen is a promise the instance cannot keep, and each
+ * caller's empty state names the missing checklist for whoever can load it.
+ */
+export function resolveAuditCategories(
+  libraries: AuditLibrary[],
+  catalogue: AuditCategory[],
+): ResolvedAuditCategory[] {
+  const libs = scopedSelectableLibs(libraries, "OWN_SITE");
+  return catalogue.flatMap((c) => {
+    const library =
+      libs.find((l) => l.auditCategory === c.code) ??
+      libs.find((l) => l.industryCode === c.industryCode);
+    return library ? [{ ...c, library }] : [];
+  });
+}
 
 export type AuditTemplate = {
   id: string;
