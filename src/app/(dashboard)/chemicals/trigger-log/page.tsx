@@ -16,7 +16,8 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { TriggerLogEntry } from "@/lib/chemicals/types";
 import { fmtQty, prettyLabel } from "@/lib/chemicals/types";
-import { EmptyState, ErrorState, Kpi, StatusChip, SubNav, TILE } from "../_components";
+import { EmptyState, ErrorState, Kpi, StatusChip, SubNav } from "../_components";
+import { AcknowledgeButton } from "./acknowledge-button";
 
 export const dynamic = "force-dynamic";
 
@@ -120,7 +121,7 @@ export default async function TriggerLogPage({
               }
             />
           ) : (
-            <div className={TILE + " overflow-x-auto p-0"}>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <table className="w-full text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
                   <tr>
@@ -161,8 +162,13 @@ export default async function TriggerLogPage({
                               The change request was NOT created — raise it manually.
                               {e.acknowledgedAt
                                 ? ` Acknowledged ${new Date(e.acknowledgedAt).toLocaleString()}.`
-                                : " Not yet acknowledged."}
+                                : ""}
                             </div>
+                            {!e.acknowledgedAt && (
+                              <div className="mt-1.5">
+                                <AcknowledgeButton logId={e.id} />
+                              </div>
+                            )}
                           </div>
                         ) : e.mocId ? (
                           <Link href={`/moc/${e.mocId}`} className="text-xs font-medium text-slate-700 hover:underline">

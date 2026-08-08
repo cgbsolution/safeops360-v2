@@ -8,10 +8,12 @@
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
 import { resolvePlantContext } from "@/lib/plant-context";
 import type { DisposalRow } from "@/lib/chemicals/types";
 import { fmtDate, fmtQty, prettyLabel } from "@/lib/chemicals/types";
-import { Chip, EmptyState, ErrorState, Kpi, SubNav, TILE } from "../_components";
+import { EmptyState, ErrorState, Kpi, SubNav } from "../_components";
+import { EvidenceLink } from "../evidence-link";
 
 export const dynamic = "force-dynamic";
 
@@ -97,7 +99,7 @@ export default async function DisposalRegisterPage({
               hint="A disposal is posted against a batch and requires a manifest reference and an authorised vendor."
             />
           ) : (
-            <div className={TILE + " overflow-x-auto p-0"}>
+            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <table className="w-full text-sm">
                 <thead className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
                   <tr>
@@ -125,12 +127,13 @@ export default async function DisposalRegisterPage({
                       <td className="px-4 py-2.5">
                         <div className="text-slate-700">{r.manifestReference}</div>
                         {r.manifestAttachmentId ? (
-                          <a
-                            href={`/api/attachments/${r.manifestAttachmentId}/download`}
+                          <EvidenceLink
+                            entityType="chemical_disposal"
+                            entityId={r.id}
+                            attachmentId={r.manifestAttachmentId}
+                            label="View scan"
                             className="text-[11px] text-slate-500 underline"
-                          >
-                            View scan
-                          </a>
+                          />
                         ) : (
                           <span className="text-[11px] text-amber-600">No scan attached</span>
                         )}
@@ -149,9 +152,9 @@ export default async function DisposalRegisterPage({
                       </td>
                       <td className="px-4 py-2.5">
                         {r.eaiEntryId ? (
-                          <Chip label="Linked" tone="bg-emerald-50 text-emerald-700 border-emerald-200" />
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">Linked</Badge>
                         ) : (
-                          <Chip label="Not linked" tone="bg-amber-50 text-amber-800 border-amber-200" />
+                          <Badge className="bg-amber-50 text-amber-800 border-amber-200">Not linked</Badge>
                         )}
                       </td>
                     </tr>

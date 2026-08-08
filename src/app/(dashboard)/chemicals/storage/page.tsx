@@ -16,7 +16,12 @@ import { PageHeader } from "@/components/page-header";
 import { resolvePlantContext } from "@/lib/plant-context";
 import type { StorageLocation } from "@/lib/chemicals/types";
 import { fmtQty, prettyLabel } from "@/lib/chemicals/types";
-import { Chip, EmptyState, ErrorState, HazardChips, Kpi, SubNav, TILE } from "../_components";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
+import { EmptyState, ErrorState, HazardChips, Kpi, SubNav, TableNote } from "../_components";
+import { NewStorageLocationDialog } from "./storage-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -111,6 +116,7 @@ export default async function StorageMapPage({
   let locations: StorageLocation[] = [];
   let rules: IncompatRule[] = [];
   let overrides: Override[] = [];
+  let zones: { id: string; zoneCode: string; name: string }[] = [];
   let error: string | null = null;
   try {
     [locations, rules, overrides] = await Promise.all([
@@ -120,6 +126,16 @@ export default async function StorageMapPage({
     ]);
   } catch (e: any) {
     error = e?.message ?? "Failed to load storage locations";
+  }
+  // Fire zones are a nice-to-have for the create dialog: the Fire module may be
+  // unlicensed for this tenant, and a storage location without a zone link is
+  // still perfectly valid. Never let it break the page.
+  try {
+    const z = await backendFetch<{ items?: any[] } | any[]>("/api/fire/zones");
+    const list = Array.isArray(z) ? z : (z.items ?? []);
+    zones = list.map((r: any) => ({ id: r.id, zoneCode: r.zoneCode, name: r.name }));
+  } catch {
+    zones = [];
   }
 
   const perLocation = locations.map((l) => ({ loc: l, conflicts: conflictsIn(l, rules) }));
@@ -140,6 +156,7 @@ export default async function StorageMapPage({
           { label: "Storage" },
         ]}
         description="Chemical stores hang off the Fire & Life Safety zone model — one location hierarchy, so a co-storage rule and a fire zone describe the same physical space."
+        action={<NewStorageLocationDialog plantId={ctx.plantId} zones={zones} />}
       />
       <SubNav current="/chemicals/storage" />
 
@@ -204,10 +221,10 @@ export default async function StorageMapPage({
                         </div>
                       </div>
                       <div className="flex flex-wrap justify-end gap-1">
-                        {loc.ventilated && <Chip label="Ventilated" tone="bg-sky-50 text-sky-700 border-sky-200" />}
-                        {loc.bunded && <Chip label="Bunded" tone="bg-lime-50 text-lime-700 border-lime-200" />}
+                        {loc.ventilated && <Badge className="bg-sky-50 text-sky-700 border-sky-200">Ventilated</Badge>}
+                        {loc.bunded && <Badge className="bg-lime-50 text-lime-700 border-lime-200">Bunded</Badge>}
                         {loc.temperatureControlled && (
-                          <Chip label="Temp-controlled" tone="bg-cyan-50 text-cyan-700 border-cyan-200" />
+                          <Badge className="bg-cyan-50 text-cyan-700 border-cyan-200">Temp-controlled</Badge>
                         )}
                       </div>
                     </div>
@@ -286,7 +303,7 @@ export default async function StorageMapPage({
           )}
 
           {overrides.length > 0 && (
-            <div className={TILE + " mt-5 overflow-x-auto p-0"}>
+            <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white">
               <div className="border-b border-slate-200 px-4 py-3">
                 <h2 className="text-sm font-semibold text-slate-900">Co-storage overrides pending review</h2>
                 <p className="text-[11px] text-slate-500">
@@ -309,7 +326,7 @@ export default async function StorageMapPage({
                         {new Date(o.overriddenAt).toLocaleString()}
                       </td>
                       <td className="px-4 py-2.5">
-                        <Chip label={o.severity} tone="bg-amber-50 text-amber-800 border-amber-200" />
+                        <Badge className="bg-amber-50 text-amber-800 border-amber-200">{o.severity}</Badge>
                       </td>
                       <td className="px-4 py-2.5 text-slate-700">{o.overrideReason || "—"}</td>
                     </tr>

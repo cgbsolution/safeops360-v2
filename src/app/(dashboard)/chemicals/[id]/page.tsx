@@ -6,7 +6,9 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { Chemical, InventoryItem } from "@/lib/chemicals/types";
 import { fmtDate, fmtQty, prettyLabel } from "@/lib/chemicals/types";
-import { ErrorState, HazardChips, StatusChip, TILE } from "../_components";
+import { ErrorState, HazardChips, StatusChip } from "../_components";
+import { EvidenceLink } from "../evidence-link";
+import { ChemicalActions } from "./chemical-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -78,6 +80,7 @@ export default async function ChemicalDetailPage({
           { label: c.name },
         ]}
         description={c.commonName ?? undefined}
+        action={<ChemicalActions chemical={c} />}
       />
 
       {c.status === "RESTRICTED" && (
@@ -91,7 +94,7 @@ export default async function ChemicalDetailPage({
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* ── identity + classification ── */}
-        <div className={TILE + " lg:col-span-2"}>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Identity & hazard classification</h2>
             <StatusChip status={c.status} />
@@ -135,7 +138,7 @@ export default async function ChemicalDetailPage({
         </div>
 
         {/* ── SDS ── */}
-        <div className={TILE}>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Safety Data Sheet</h2>
           {!c.sdsAttachmentId ? (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
@@ -157,12 +160,12 @@ export default async function ChemicalDetailPage({
                   fmtDate(c.sdsReviewDueDate)
                 )}
               </Field>
-              <a
-                href={`/api/attachments/${c.sdsAttachmentId}/download`}
-                className="inline-block rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-              >
-                View SDS document
-              </a>
+              <EvidenceLink
+                entityType="chemical_master"
+                entityId={c.id}
+                attachmentId={c.sdsAttachmentId}
+                label="View SDS document"
+              />
               {c.sdsReviewOverdue && (
                 <p className="text-[11px] text-slate-500">
                   An overdue review is a compliance signal, not a stop: the chemical stays usable and
@@ -175,7 +178,7 @@ export default async function ChemicalDetailPage({
       </div>
 
       {/* ── inventory across sites ── */}
-      <div className={TILE + " mt-4 overflow-x-auto p-0"}>
+      <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="text-sm font-semibold text-slate-900">Inventory across sites</h2>
           <span className="text-xs text-slate-500">
@@ -218,7 +221,7 @@ export default async function ChemicalDetailPage({
 
       {/* ── HIRA linkage ── */}
       {hazards && (
-        <div className={TILE + " mt-4"}>
+        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">HIRA hazard rows implied</h2>
           <p className="mb-3 text-[11px] text-slate-500">
             These rows can be added to a HIRA entry that is being authored, carrying this chemical's

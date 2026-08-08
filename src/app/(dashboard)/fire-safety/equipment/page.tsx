@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { NewEquipmentDialog } from "./new-equipment";
 
 export const dynamic = "force-dynamic";
 
@@ -9,11 +10,15 @@ type Eq = {
   status: string; capacitySpec: string | null; lastInspectionDate: string | null; nextInspectionDueDate: string | null;
 };
 type Resp = { items: Eq[]; total: number };
+type Plant = { id: string; code: string; name: string };
 
 const STATUS_CHIP: Record<string, string> = {
   ACTIVE: "bg-emerald-100 text-emerald-800 border-emerald-200",
   DUE_INSPECTION: "bg-amber-100 text-amber-800 border-amber-200",
   OVERDUE: "bg-rose-100 text-rose-800 border-rose-200",
+  // Added by the Fire & Life Safety status engine: inspected on time and FAILED,
+  // which the P1-4 three-state engine had no way to express.
+  NON_COMPLIANT: "bg-rose-200 text-rose-900 border-rose-300",
   OUT_OF_SERVICE: "bg-slate-200 text-slate-700 border-slate-300",
   DECOMMISSIONED: "bg-slate-100 text-slate-500 border-slate-200",
 };
@@ -33,8 +38,13 @@ export default async function FireEquipmentPage(props: {
   } catch (e: any) {
     error = e?.message ?? "Failed to load equipment";
   }
+  // Plants for the create dialog's picker. Fetched here (server-side) so the
+  // dialog opens populated rather than showing an empty select while it loads.
+  // A failure degrades the dialog to a disabled label — it must never take the
+  // register itself down.
+  const plants = await backendFetch<Plant[]>("/api/plants").catch(() => [] as Plant[]);
 
-  const STATUSES = ["ACTIVE", "DUE_INSPECTION", "OVERDUE", "OUT_OF_SERVICE"];
+  const STATUSES = ["ACTIVE", "DUE_INSPECTION", "OVERDUE", "NON_COMPLIANT", "OUT_OF_SERVICE"];
   const chip = (val: string) => {
     const next = new URLSearchParams(sp as Record<string, string>);
     if (next.get("status") === val) next.delete("status"); else next.set("status", val);
@@ -59,8 +69,9 @@ export default async function FireEquipmentPage(props: {
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Status</span>
             {STATUSES.map(chip)}
-            <a href={`/api/fire/equipment-due?days=30`} className="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-slate-400">Due-this-month report</a>
-            <span className="text-xs text-slate-500">{data.total} item(s)</span>
+            <span className="ml-auto text-xs text-slate-500">{data.total} item(s)</span>
+            <a href={`/api/fire/equipment-due?days=30`} className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-slate-400">Due-this-month report</a>
+            <NewEquipmentDialog plants={plants} />
           </div>
           <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
             <table className="w-full min-w-[900px] text-sm">
@@ -75,7 +86,13 @@ export default async function FireEquipmentPage(props: {
                   <tr><td colSpan={7} className="px-3 py-10 text-center text-sm text-slate-400">No equipment matches the filter.</td></tr>
                 ) : data.items.map((e) => (
                   <tr key={e.id} className="border-t border-slate-100 hover:bg-slate-50/70">
-                    <td className="px-3 py-2.5 font-medium text-primary-700">{e.equipmentCode}</td>
+                    {/* Was plain text styled to look like a link, with no route
+                        behind it — the column read as clickable and wasn't. */}
+                    <td className="px-3 py-2.5 font-medium">
+                      <Link href={`/fire-safety/equipment/${e.id}`} className="text-primary-700 hover:underline">
+                        {e.equipmentCode}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2.5 text-xs text-slate-600">{e.type.replace(/_/g, " ")}</td>
                     <td className="px-3 py-2.5 text-xs text-slate-600">{e.location}</td>
                     <td className="px-3 py-2.5 text-xs text-slate-500">{e.capacitySpec ?? "—"}</td>
