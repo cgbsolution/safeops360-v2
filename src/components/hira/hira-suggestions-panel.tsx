@@ -67,22 +67,41 @@ export function HiraSuggestionsPanel({
   const [advisory, setAdvisory] = useState<string | null>(null);
   const [gatingBlockers, setGatingBlockers] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  // 403 = the caller's role has no HIRA.READ grant. This panel is advisory —
+  // a role that can raise a permit but not read the HIRA register is a valid
+  // configuration (contractor crew, for one), so we hide the panel entirely
+  // rather than parking a red "HTTP 403" on an otherwise healthy permit page.
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     if (!plantId) return;
     const ctrl = new AbortController();
     setLoading(true);
     setError(null);
+    setForbidden(false);
     const params = new URLSearchParams({ plantId });
     if (areaId) params.set("areaId", areaId);
     if (mode === "flra" && activityKeyword) params.set("activityKeyword", activityKeyword);
     if (mode === "ptw" && permitType) params.set("permitType", permitType);
     fetch(`/api/hira/integrations/for-${mode}?${params.toString()}`, { signal: ctrl.signal })
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      .then(async (r) => {
+        if (r.status === 401 || r.status === 403) {
+          setForbidden(true);
+          return null;
+        }
+        if (!r.ok) {
+          // Surface the backend's own message when it sends one — "HTTP 500"
+          // alone told nobody anything.
+          const detail = await r
+            .json()
+            .then((b) => b?.detail ?? b?.error ?? null)
+            .catch(() => null);
+          throw new Error(detail ? String(detail) : `Could not load HIRA entries (HTTP ${r.status})`);
+        }
         return r.json();
       })
       .then((data) => {
+        if (!data) return;
         setEntries(data.entries ?? []);
         setAdvisory(data.advisory ?? null);
         setGatingBlockers(data.gatingBlockers ?? 0);
@@ -93,6 +112,8 @@ export function HiraSuggestionsPanel({
       .finally(() => setLoading(false));
     return () => ctrl.abort();
   }, [mode, plantId, areaId, activityKeyword, permitType]);
+
+  if (forbidden) return null;
 
   if (!plantId) {
     return (

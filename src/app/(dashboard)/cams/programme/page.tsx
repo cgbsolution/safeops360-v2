@@ -8,21 +8,15 @@ import { cn } from "@/lib/utils";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { NewProgrammeButton } from "@/components/programme/new-programme-button";
 import type { WizardLibrary } from "@/components/programme/programme-wizard";
+import {
+  AUDIT_CATEGORY_FALLBACK, resolveAuditCategories,
+  type AuditCategory, type AuditLibrary,
+} from "../audits/lib";
 import { CYCLE_STATUS_CHIP, fmtDate, type ProgrammeRow } from "./lib-programme";
 
 export const dynamic = "force-dynamic";
 
 const f = <T,>(v: T) => () => v;
-
-type RawLibrary = {
-  industryCode: string;
-  industryName: string;
-  categories: { category_code: string; category_name: string; checkpointCount: number }[];
-};
-
-/** The one checklist this instance audits against — see the audit scheduler,
- *  which resolves the same library rather than offering a choice. */
-const PAGE_LIBRARY_CODE = "PAGE_INDUSTRIES";
 
 /**
  * Annual Audit Programme — the register.
@@ -49,26 +43,51 @@ export default async function ProgrammeListPage() {
   // coverage engine actually joins on.
   const [{ plants }, libs] = await Promise.all([
     resolvePlantContext(null).catch(f({ plantId: null, plants: [], isOverride: false })),
-    backendFetch<{ libraries: RawLibrary[] }>("/api/audit-compliance/library").catch(
-      f({ libraries: [] as RawLibrary[] }),
-    ),
+    backendFetch<{ libraries: AuditLibrary[]; auditCategories?: AuditCategory[] }>(
+      "/api/audit-compliance/library",
+    ).catch(f({ libraries: [] as AuditLibrary[], auditCategories: [] as AuditCategory[] })),
   ]);
-  // Narrowed to the Page Industries checklist, the same as the audit
-  // scheduler. The wizard renders a library selector whenever it is handed more
-  // than one, so leaving the older libraries in this list would put the
-  // industry choice back on screen in the one place it is hardest to notice —
-  // and a programme is what an auditor scopes a whole YEAR of audits against.
-  // Falls through to everything only if the Page library is genuinely absent.
-  const pageLibs = libs.libraries.filter((l) => l.industryCode === PAGE_LIBRARY_CODE);
-  const libraries: WizardLibrary[] = (pageLibs.length > 0 ? pageLibs : libs.libraries).map((l) => ({
+
+  // ── The taxonomies a programme may be scoped against ────────────────────
+  //
+  // The AUDIT CATEGORIES, resolved by the same `resolveAuditCategories` the
+  // scheduling wizard calls. One resolver, two surfaces — because a programme
+  // that plans against a taxonomy the scheduler cannot materialise is a coverage
+  // matrix that can never go green.
+  //
+  // The narrowing this replaces still matters: the retired industry libraries
+  // are rows in the database and the wizard renders a selector for whatever it is
+  // handed, so leaving them in would put the old industry choice back on screen
+  // in the one place it is hardest to notice — a programme scopes a whole YEAR of
+  // audits. What CHANGED is that THREE taxonomies here is now correct rather than
+  // a leak: each one is a category the programme legitimately covers, and
+  // offering only Internal would leave the annual programme silently unable to
+  // plan two thirds of what Page audit.
+  const resolved = resolveAuditCategories(
+    libs.libraries,
+    libs.auditCategories?.length ? libs.auditCategories : AUDIT_CATEGORY_FALLBACK,
+  );
+  const toWizard = (l: AuditLibrary): WizardLibrary => ({
     industryCode: l.industryCode,
     industryName: l.industryName,
+    checkpointCount: l.checkpointCount,
     categories: (l.categories ?? []).map((c) => ({
       code: c.category_code,
       name: c.category_name,
       checkpointCount: c.checkpointCount ?? 0,
     })),
-  }));
+  });
+  // Falls back to every library only when no category resolved — an honest
+  // plain-taxonomy dropdown beats an empty wizard.
+  const libraries: WizardLibrary[] =
+    resolved.length > 0
+      ? resolved.map((c) => ({
+          ...toWizard(c.library),
+          categoryCode: c.code,
+          categoryLabel: c.label,
+          categoryDescription: c.description,
+        }))
+      : libs.libraries.map(toWizard);
 
   return (
     <div>

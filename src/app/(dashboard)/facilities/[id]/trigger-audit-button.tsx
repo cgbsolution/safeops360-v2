@@ -15,10 +15,15 @@ import { ClipboardList, Loader2 } from "lucide-react";
 import { usePermission } from "@/components/auth/can";
 import { useToast } from "@/components/ui/toast";
 import { ScheduleModal } from "../../cams/audits/schedule-modal";
-import type { AuditLibrary, AuditTemplate, PlantUser } from "../../cams/audits/lib";
+import type { AuditCategory, AuditLibrary, AuditTemplate, PlantUser } from "../../cams/audits/lib";
 import type { FactoryProfileDetail } from "../lib";
 
-type SchedulerData = { templates: AuditTemplate[]; libraries: AuditLibrary[]; users: PlantUser[] };
+type SchedulerData = {
+  templates: AuditTemplate[];
+  libraries: AuditLibrary[];
+  users: PlantUser[];
+  auditCategories: AuditCategory[];
+};
 
 export function TriggerAuditButton({ profile }: { profile: FactoryProfileDetail }) {
   // Same gate as the audit register's Schedule Audit button — this launches
@@ -40,6 +45,7 @@ export function TriggerAuditButton({ profile }: { profile: FactoryProfileDetail 
       ]);
       setData({
         libraries: libR?.libraries ?? [],
+        auditCategories: libR?.auditCategories ?? [],
         templates: tplR?.templates ?? [],
         users: usrR?.users ?? [],
       });
@@ -70,6 +76,7 @@ export function TriggerAuditButton({ profile }: { profile: FactoryProfileDetail 
           templates={data.templates}
           libraries={data.libraries}
           users={data.users}
+          auditCategories={data.auditCategories}
           defaultTitle={suggestedTitle}
           dialogTitle={`Initiate Audit — ${profile.factoryName}`}
           onClose={() => setData(null)}

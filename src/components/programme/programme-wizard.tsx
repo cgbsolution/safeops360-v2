@@ -41,10 +41,32 @@ import { readApiError } from "@/lib/client-errors";
 
 export type WizardSite = { id: string; code: string; name: string };
 export type WizardDiscipline = { code: string; name: string; checkpointCount: number };
+/**
+ * A discipline taxonomy the programme can be scoped against.
+ *
+ * On this instance each one IS an audit category — Internal, QMS/EMS/OHS,
+ * Social Compliance — resolved by the page from the same
+ * `resolveAuditCategories` the audit scheduler uses, so the programme cannot
+ * plan against a taxonomy the scheduler is unable to materialise.
+ *
+ * The category fields are OPTIONAL because this component must not assume the
+ * categories exist: an instance with only plain industry libraries hands over
+ * a list with no `categoryCode`, and gets the plain dropdown instead of the
+ * category cards. Rendering is driven by the data, not by a flag.
+ */
 export type WizardLibrary = {
   industryCode: string;
   industryName: string;
   categories: WizardDiscipline[];
+  /** INTERNAL | MANAGEMENT_SYSTEMS | SOCIAL_COMPLIANCE, when this taxonomy is
+   *  one of the audit categories. */
+  categoryCode?: string;
+  /** Short name for the card — "QMS, EMS, OHS" rather than the library's own
+   *  "Page Industries — QMS, EMS & OHS". */
+  categoryLabel?: string;
+  categoryDescription?: string;
+  /** Total across every discipline, shown before one is ticked. */
+  checkpointCount?: number;
 };
 
 // The standards a programme typically discharges. Free text is still allowed —
@@ -372,7 +394,65 @@ export function ProgrammeWizard({
                 and the approval guard enforces.
               </p>
 
-              {libraries.length > 1 && (
+              {/* ── Audit category ────────────────────────────────────────
+                  The same first choice the audit scheduler asks, in the same
+                  shape, because the programme is what those audits discharge:
+                  a cycle scoped against one category's disciplines is planning
+                  that category's audits. Showing library NAMES here instead
+                  ("Page Industries — QMS, EMS & OHS") put the retired industry
+                  wording back in the one place it is hardest to notice — a
+                  programme scopes a whole YEAR.
+
+                  Switching clears the discipline ticks: the codes belong to the
+                  previous taxonomy and mean nothing in this one. */}
+              {libraries.length > 1 && libraries.some((l) => l.categoryCode) && (
+                <div>
+                  <Label className="text-xs">
+                    Audit category <span className="text-rose-600">*</span>
+                  </Label>
+                  <div className={cn(
+                    "mt-1 grid gap-1.5",
+                    libraries.length === 2 ? "grid-cols-2" : "grid-cols-3",
+                  )}>
+                    {libraries.map((l) => {
+                      const on = l.industryCode === industryCode;
+                      return (
+                        <Button
+                          key={l.industryCode} type="button" variant="ghost" aria-pressed={on}
+                          onClick={() => { setIndustryCode(l.industryCode); setDisciplineCodes([]); }}
+                          title={l.categoryDescription ?? l.industryName}
+                          className={cn(
+                            "h-auto flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left transition",
+                            on ? "border-violet-500 bg-violet-50 text-violet-900 shadow-sm"
+                               : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
+                          )}
+                        >
+                          <span className="text-[12px] font-semibold leading-tight">
+                            {l.categoryLabel ?? l.industryName}
+                          </span>
+                          <span className={cn(
+                            "text-[10px] tabular-nums",
+                            on ? "text-violet-700" : "text-slate-400",
+                          )}>
+                            {l.categories.length} disciplines
+                            {l.checkpointCount != null && ` · ${l.checkpointCount} checkpoints`}
+                          </span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                  {library?.categoryDescription && (
+                    <p className="mt-1 text-[11px] leading-relaxed text-slate-500">
+                      {library.categoryDescription}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* No categories in the payload — a plain industry taxonomy, which
+                  only a non-Page instance has. Kept so this component stays
+                  usable there rather than silently offering nothing. */}
+              {libraries.length > 1 && !libraries.some((l) => l.categoryCode) && (
                 <div>
                   <Label htmlFor="pw-lib" className="text-xs">Discipline taxonomy</Label>
                   <Select id="pw-lib" value={industryCode} className="mt-1"
