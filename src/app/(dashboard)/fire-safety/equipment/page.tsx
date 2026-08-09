@@ -2,15 +2,23 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { NewEquipmentDialog } from "./new-equipment";
+import { RowActions } from "./row-actions";
 
 export const dynamic = "force-dynamic";
 
 type Eq = {
   id: string; equipmentCode: string; type: string; location: string; buildingId: string | null;
   status: string; capacitySpec: string | null; lastInspectionDate: string | null; nextInspectionDueDate: string | null;
+  // plantId scopes the edit dialog's zone picker — a cross-plant zone is a 400
+  // from the backend, so offering one is offering a guaranteed failure.
+  plantId: string;
+  // Needed by the edit dialog so it opens pre-filled without a second fetch.
+  assetSubtype: string | null; zoneId: string | null; make: string | null; model: string | null;
+  serialNo: string | null; maintenanceContractor: string | null;
 };
 type Resp = { items: Eq[]; total: number };
 type Plant = { id: string; code: string; name: string };
+type Zone = { id: string; zoneCode: string; name: string; plantId: string };
 
 const STATUS_CHIP: Record<string, string> = {
   ACTIVE: "bg-emerald-100 text-emerald-800 border-emerald-200",
@@ -38,11 +46,26 @@ export default async function FireEquipmentPage(props: {
   } catch (e: any) {
     error = e?.message ?? "Failed to load equipment";
   }
-  // Plants for the create dialog's picker. Fetched here (server-side) so the
-  // dialog opens populated rather than showing an empty select while it loads.
-  // A failure degrades the dialog to a disabled label — it must never take the
-  // register itself down.
-  const plants = await backendFetch<Plant[]>("/api/plants").catch(() => [] as Plant[]);
+  // Picker data for the create/edit dialogs. Fetched server-side so the dialogs
+  // open populated instead of flashing an empty select, and in parallel — this
+  // page is force-dynamic, so two sequential round-trips are two round-trips on
+  // every single render. Skipped entirely when the register itself failed, since
+  // only the error panel renders and neither list would be shown.
+  //
+  // Both degrade to empty rather than throwing: a picker that cannot load must
+  // never take the register down with it.
+  const [plants, zones] = error
+    ? [[] as Plant[], [] as Zone[]]
+    : await Promise.all([
+        backendFetch<Plant[]>("/api/plants")
+          .then((d) => (Array.isArray(d) ? d : []))
+          .catch(() => [] as Plant[]),
+        // Tolerates both the {items} envelope this endpoint returns and a bare
+        // array, the shape other registers in this codebase use.
+        backendFetch<{ items: Zone[] } | Zone[]>("/api/fire/zones")
+          .then((d) => (Array.isArray(d) ? d : d?.items ?? []))
+          .catch(() => [] as Zone[]),
+      ]);
 
   const STATUSES = ["ACTIVE", "DUE_INSPECTION", "OVERDUE", "NON_COMPLIANT", "OUT_OF_SERVICE"];
   const chip = (val: string) => {
@@ -79,11 +102,12 @@ export default async function FireEquipmentPage(props: {
                 <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
                   <th className="px-3 py-2.5">Code</th><th className="px-3 py-2.5">Type</th><th className="px-3 py-2.5">Location</th>
                   <th className="px-3 py-2.5">Capacity</th><th className="px-3 py-2.5">Last</th><th className="px-3 py-2.5">Next Due</th><th className="px-3 py-2.5">Status</th>
+                  <th className="w-10 px-3 py-2.5 text-right"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
                 {data.items.length === 0 ? (
-                  <tr><td colSpan={7} className="px-3 py-10 text-center text-sm text-slate-400">No equipment matches the filter.</td></tr>
+                  <tr><td colSpan={8} className="px-3 py-10 text-center text-sm text-slate-400">No equipment matches the filter.</td></tr>
                 ) : data.items.map((e) => (
                   <tr key={e.id} className="border-t border-slate-100 hover:bg-slate-50/70">
                     {/* Was plain text styled to look like a link, with no route
@@ -99,6 +123,9 @@ export default async function FireEquipmentPage(props: {
                     <td className="px-3 py-2.5 text-xs text-slate-500">{e.lastInspectionDate ? new Date(e.lastInspectionDate).toLocaleDateString("en-IN") : "—"}</td>
                     <td className="px-3 py-2.5 text-xs tabular-nums text-slate-600">{e.nextInspectionDueDate ? new Date(e.nextInspectionDueDate).toLocaleDateString("en-IN") : "—"}</td>
                     <td className="px-3 py-2.5"><span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (STATUS_CHIP[e.status] ?? "bg-slate-100 text-slate-600 border-slate-200")}>{e.status.replace(/_/g, " ")}</span></td>
+                    <td className="px-3 py-2.5 text-right">
+                      <RowActions row={e} zones={zones.filter((z) => z.plantId === e.plantId)} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

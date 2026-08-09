@@ -21,6 +21,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Can } from "@/components/auth/can";
+
+// Mirrors the backend router's _WRITE constant. The FIRE module borrows the HSE
+// codes until dedicated FIRE.* grants are seeded.
+const WRITE_PERMISSION = "INCIDENT.UPDATE";
 
 type Plant = { id: string; code: string; name: string };
 type Zone = { id: string; zoneCode: string; name: string; plantId: string };
@@ -86,7 +91,9 @@ export function NewEquipmentDialog({ plants }: { plants: Plant[] }) {
     fetch("/api/fire/zones")
       .then((r) => (r.ok ? r.json() : { items: [] }))
       .then((d) => {
-        if (!cancelled) setZones((d.items ?? []).filter((z: Zone) => z.plantId === plantId));
+        // Tolerates the {items} envelope and a bare array alike.
+        const list: Zone[] = Array.isArray(d) ? d : d?.items ?? [];
+        if (!cancelled) setZones(list.filter((z) => z.plantId === plantId));
       })
       .catch(() => {
         // A zone list that fails to load must not block asset creation — zoneId
@@ -163,6 +170,9 @@ export function NewEquipmentDialog({ plants }: { plants: Plant[] }) {
   }
 
   return (
+    // Gated on the same code the backend enforces, so a read-only viewer is not
+    // offered a button that 403s once the form is filled in.
+    <Can permission={WRITE_PERMISSION}>
     <Dialog
       open={open}
       onOpenChange={(o) => {
@@ -310,5 +320,6 @@ export function NewEquipmentDialog({ plants }: { plants: Plant[] }) {
         </form>
       </DialogContent>
     </Dialog>
+    </Can>
   );
 }
