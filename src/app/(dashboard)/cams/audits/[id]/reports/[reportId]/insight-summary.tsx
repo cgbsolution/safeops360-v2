@@ -80,6 +80,7 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
           pct={gauge.pct}
           band={gauge.displayBand}
           label={(gauge.result ?? "—").replace(/_/g, " ")}
+          points={gauge.scoreAllotted ? `${gauge.scoreObtained} of ${gauge.scoreAllotted} points` : null}
         />
         <div className="grid flex-1 grid-cols-2 gap-2 sm:grid-cols-3">
           <Tile label="Assessed" value={`${gauge.assessed ?? "—"}/${gauge.applicable ?? "—"}`} />
@@ -124,12 +125,28 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
                 <div className={cn("w-14 shrink-0 text-right text-[12px] font-semibold tabular-nums", BAND_TEXT[c.band])}>
                   {c.pct == null ? "n/a" : `${c.pct}%`}
                 </div>
-                <div className="w-20 shrink-0 text-right text-[11px] tabular-nums text-slate-400">
-                  {c.assessed}/{c.total}
+                {/* The arithmetic behind the percentage and the FULL outcome
+                    split. This line used to read "32P 4F / 40", omitting
+                    Partial even though partials earn points toward the figure
+                    beside it — so the counts never summed to the total. */}
+                <div className="w-24 shrink-0 text-right text-[11px] tabular-nums text-slate-400">
+                  {c.scoreObtained}/{c.scoreAllotted} pts
+                </div>
+                <div className="hidden w-28 shrink-0 text-right text-[11px] tabular-nums text-slate-400 sm:block">
+                  {c.passed}P {c.partial}Pa {c.failed}F{c.na ? ` ${c.na}NA` : ""}
                 </div>
               </div>
             ))}
           </div>
+          {/* One sentence that answers the question the chart otherwise raises:
+              what IS this percentage? Without it a reader reasonably assumes
+              "85% of checkpoints passed", which it is not. */}
+          <p className="mt-2 text-[10px] leading-relaxed text-slate-400">
+            Score = points earned / points available. Each assessed checkpoint is worth 3 points:
+            Effective 3, Some Improvement Needed 2, Major Improvement Needed 1, Unsatisfactory 0,
+            and a repeat finding &minus;1. N/A checkpoints are excluded. Same calculation as the
+            overall score above.
+          </p>
         </div>
       )}
 
@@ -249,7 +266,9 @@ function Tile({ label, value, tone }: { label: string; value: string; tone?: str
 
 /** Radial gauge as inline SVG — a stroked circle with `stroke-dasharray`, which
  *  needs no library and prints identically to how it renders. */
-function Gauge({ pct, band, label }: { pct: number | null; band: InsightBand; label: string }) {
+function Gauge({ pct, band, label, points }: {
+  pct: number | null; band: InsightBand; label: string; points?: string | null;
+}) {
   const R = 34;
   const C = 2 * Math.PI * R;
   const frac = pct == null ? 0 : Math.max(0, Math.min(100, pct)) / 100;
@@ -277,6 +296,11 @@ function Gauge({ pct, band, label }: { pct: number | null; band: InsightBand; la
         </text>
       </svg>
       <div className={cn("mt-0.5 text-[11px] font-bold uppercase", BAND_TEXT[band])}>{label}</div>
+      {/* What the dial is made of, so the headline reconciles by hand against
+          the category table below it. */}
+      {!!points && (
+        <div className="text-[10px] tabular-nums text-slate-400">{points}</div>
+      )}
     </div>
   );
 }

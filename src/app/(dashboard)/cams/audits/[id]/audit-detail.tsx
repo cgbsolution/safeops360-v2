@@ -97,11 +97,18 @@ export function AuditDetailView({
   }, [audit, dashboard]);
 
   // Per-discipline RAG (from the rollup) — proper "Not started" pre-conduct.
+  //
+  // `scorePct` is the POINTS score the server already summed for this
+  // discipline (Σ obtained / Σ allotted). This used to recompute a pass-ratio
+  // in the browser instead, so the same discipline read one percentage here and
+  // a different one on its own audit report — Production showed 85% on this
+  // screen and 88.3% in the PDF. The points score is the authoritative one, and
+  // it is the only one that applies the -1 penalty a repeat finding carries.
   const disciplineRag = useMemo(() => {
     return (audit.disciplineRollup ?? []).map((c) => {
       const assessable = c.passed + c.partial + c.failed;
       // assessable===0 (nothing assessed, or all-NA) → null = neutral "Not started".
-      const pct = assessable === 0 ? null : Math.round(((c.passed + 0.5 * c.partial) / assessable) * 100);
+      const pct = assessable === 0 || !c.scoreAllotted ? null : c.scorePct;
       return { id: c.categoryId, name: c.categoryName, total: c.total, passed: c.passed, failed: c.failed, partial: c.partial, na: c.na, pct };
     });
   }, [audit.disciplineRollup]);

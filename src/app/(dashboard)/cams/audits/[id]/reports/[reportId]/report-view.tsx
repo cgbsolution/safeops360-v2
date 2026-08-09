@@ -175,9 +175,12 @@ export function ReportView({
                   <div className="mb-0.5 flex justify-between text-[12px]">
                     <span className="text-slate-600">{c.category_name}</span>
                     {pct == null ? (
-                      <span className="font-medium text-slate-400">Not assessed <span className="font-normal">(0✓ 0✗ of {c.total})</span></span>
+                      <span className="font-medium text-slate-400">Not assessed <span className="font-normal">(0 of {c.total})</span></span>
                     ) : (
-                      <span className={cn("font-semibold tabular-nums", ragText(pct))}>{pct}% <span className="font-normal text-slate-400">({c.passed}✓ {c.failed}✗ of {c.total})</span></span>
+                      // Full outcome split, not just pass/fail: a partial earns
+                      // points toward the percentage, so hiding it left the
+                      // counts unable to sum to the total.
+                      <span className={cn("font-semibold tabular-nums", ragText(pct))}>{pct}% <span className="font-normal text-slate-400">({c.score_obtained}/{c.score_allotted} pts · {c.passed}P {c.partial}Pa {c.failed}F{c.na ? ` ${c.na}NA` : ""} of {c.total})</span></span>
                     )}
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={cn("h-full rounded-full", ragBar(pct))} style={{ width: pct == null ? "100%" : `${pct}%`, opacity: pct == null ? 0.4 : 1 }} /></div>
@@ -202,6 +205,7 @@ export function ReportView({
                       <th className="px-1 text-center font-medium">Fail</th>
                       <th className="px-1 text-center font-medium">N/A</th>
                       <th className="px-1 text-center font-medium">Assessed</th>
+                      <th className="px-1 text-center font-medium">Points</th>
                       <th className="px-1 text-center font-medium">Score %</th>
                     </tr>
                   </thead>
@@ -217,6 +221,7 @@ export function ReportView({
                           <td className={cn("px-1 text-center tabular-nums", c.failed ? "font-semibold text-rose-700" : "")}>{c.failed}</td>
                           <td className="px-1 text-center tabular-nums text-slate-400">{c.na}</td>
                           <td className="px-1 text-center tabular-nums">{assessable}/{c.total}</td>
+                          <td className="px-1 text-center tabular-nums text-slate-500">{c.score_obtained}/{c.score_allotted}</td>
                           <td className={cn("px-1 text-center font-semibold tabular-nums", ragText(pct))}>
                             {pct == null ? "n/a" : pct}
                           </td>
@@ -358,18 +363,52 @@ export function ReportView({
           <FinalRegister reportId={report.id} userMap={userMap} />
         )}
 
-        {/* Sign-offs (final) */}
-        {isFinal && (report.signOffs?.length ?? 0) > 0 && (
+        {/* Sign-offs (final) — the RECORDED signatures, frozen at issue. A name
+            with no timestamp and no signature kind is not a sign-off, so each
+            entry prints all three, and roles that have not signed are named
+            rather than left as an absence a reader has to notice. */}
+        {isFinal && ((report.signOffs?.length ?? 0) > 0 || s.signOffSummary) && (
           <Section title="Sign-off">
-            <div className="grid grid-cols-2 gap-6">
-              {report.signOffs!.map((so, i) => (
-                <div key={i} className="border-t border-slate-300 pt-1.5 text-[12px]">
-                  <div className="font-semibold text-slate-800">{name(so.userId)}</div>
-                  <div className="text-slate-500">{so.role.replace(/_/g, " ")}</div>
-                  <div className="text-[11px] text-slate-400">{so.signedAt ? fmtDateTime(so.signedAt) : fmtDateTime(s.generatedAt)}</div>
-                </div>
-              ))}
-            </div>
+            {(report.signOffs?.length ?? 0) === 0 ? (
+              <p className="text-[12px] text-slate-500">No sign-off has been recorded for this audit.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {report.signOffs!.map((so, i) => (
+                  <div key={i} className="border-t border-slate-300 pt-1.5 text-[12px]">
+                    <div className="font-semibold text-slate-800">{so.name ?? so.typedName ?? name(so.userId)}</div>
+                    <div className="text-slate-500">
+                      {so.role.replace(/_/g, " ")}
+                      {so.disciplineCode ? ` · ${so.disciplineCode}` : ""}
+                      {so.designation ? ` · ${so.designation}` : ""}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      {so.signedAt ? `Signed ${fmtDateTime(so.signedAt)}` : "Signature time not recorded"}
+                      {so.signatureKind === "DRAWN" ? " · drawn signature on file"
+                        : so.signatureKind === "TYPED" ? ` · typed: ${so.typedName ?? so.name ?? "—"}` : ""}
+                    </div>
+                    {so.statement && (
+                      <div className="mt-0.5 text-[11px] italic text-slate-500">&ldquo;{so.statement}&rdquo;</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            {(s.signOffSummary?.missingRequiredRoles?.length ?? 0) > 0 ? (
+              <p className="mt-2 text-[11px] font-medium text-rose-700">
+                Outstanding required sign-off:{" "}
+                {s.signOffSummary!.missingRequiredRoles.map((r) => r.replace(/_/g, " ").toLowerCase()).join(", ")}.
+              </p>
+            ) : (report.signOffs?.length ?? 0) > 0 ? (
+              <p className="mt-2 text-[11px] text-slate-400">
+                All sign-offs required for closure were recorded.
+              </p>
+            ) : null}
+            {(s.signOffSummary?.awaitingRoles?.length ?? 0) > 0 && (
+              <p className="mt-1 text-[11px] text-slate-400">
+                Also nominated but not signed:{" "}
+                {s.signOffSummary!.awaitingRoles.map((r) => r.replace(/_/g, " ").toLowerCase()).join(", ")}.
+              </p>
+            )}
           </Section>
         )}
 

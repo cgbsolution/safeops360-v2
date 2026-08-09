@@ -655,13 +655,18 @@ export type ReportInsights = {
     bandLabel: string; criticalGate: boolean;
     result: string | null; passed: boolean | null; explanation: string | null;
     assessed: number | null; applicable: number | null; coverageLabel: string | null;
+    /** The arithmetic behind the dial — Σ points earned / Σ points available. */
+    scoreObtained?: number | null; scoreAllotted?: number | null;
   };
   criticalBanner: {
     count: number; headline: string; codes: string[]; disciplines: string[];
   } | null;
+  /** Per-discipline POINTS score (Σ obtained / Σ allotted) — the same formula
+   *  as the headline percentage, not the engine's superseded pass-ratio. */
   categoryChart: {
     categoryId: string; name: string; pct: number | null; band: InsightBand;
     total: number; passed: number; partial: number; failed: number; na: number; assessed: number;
+    scoreObtained: number; scoreAllotted: number;
   }[];
   capaStrip: {
     total: number; open: number; overdue: number; truncated: number; linkedShown: number;
@@ -688,6 +693,11 @@ export type AuditReportSnapshot = {
   leadAuditorId: string; plantManagerId: string | null; templateId: string | null; scopePresetUsed: string | null;
   disciplinesInScope: string[]; plannedDate: string | null; submittedAt: string | null; closedAt: string | null;
   overallScorePct: number | null; overallResult: string; auditPassed: boolean | null;
+  /** Arithmetic behind `overallScorePct`. Absent on snapshots frozen before it
+   *  was carried — an immutable snapshot cannot be backfilled. */
+  scoreObtained?: number; scoreAllotted?: number;
+  /** What was actually signed, and what is still outstanding. */
+  signOffSummary?: { recorded: number; awaitingRoles: string[]; missingRequiredRoles: string[] };
   checkpointsTotal: number; checkpointsAssessed: number; passCount: number; failCount: number; partialCount: number; naCount: number;
   categoryScores: CategoryScore[]; criticalFailures: number; majorFailures: number; minorFailures: number;
   openIterationsCount: number; criticalOpenCount: number; adHocCount: number;
@@ -830,7 +840,15 @@ export type ReportRegisterPage = {
 export type AuditReport = {
   id: string; auditId: string; siteId: string; reportType: string; reportCode: string;
   generatedById: string; generatedAt: string; snapshot: AuditReportSnapshot;
-  signOffs: { role: string; userId: string; signedAt?: string }[] | null;
+  /** The RECORDED sign-offs, frozen from `ComplianceAudit.signOffs` at issue —
+   *  written only by the authenticated `signoff.record_signoff` path, so a
+   *  caller cannot assert a signature that never happened. Older reports carry
+   *  only `role`/`userId`, hence everything past those two is optional. */
+  signOffs: {
+    role: string; userId: string; signedAt?: string; name?: string | null;
+    designation?: string | null; disciplineCode?: string | null;
+    signatureKind?: "DRAWN" | "TYPED"; typedName?: string | null; statement?: string | null;
+  }[] | null;
   pdfAttachmentId: string | null; isSuperseded: boolean;
 };
 
