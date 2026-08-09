@@ -2,7 +2,10 @@
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, Loader2, ChevronDown, FileDown } from "lucide-react";
+import {
+  ArrowLeft, Printer, Loader2, ChevronDown, FileDown,
+  XCircle, AlertCircle, CheckCircle2, MinusCircle, HelpCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,6 +15,7 @@ import {
 } from "../../../lib";
 import { useToast } from "@/components/ui/toast";
 import { ReportIntegrity } from "@/components/assurance/report-integrity";
+import { InsightSummary } from "./insight-summary";
 import { EvidenceStrip } from "../../../evidence-strip";
 import { usePermission } from "@/components/auth/can";
 import type { Erratum } from "../../../../lib-assurance";
@@ -130,6 +134,13 @@ export function ReportView({
           </div>
         </div>
 
+        {/* Section 1 — insight layer, read off the frozen snapshot. Placed
+            ahead of the executive summary: the register below is the record,
+            but a reader who only takes in one screenful should get the one that
+            says what the audit found. Absent on reports issued before the layer
+            shipped — an immutable snapshot cannot be backfilled. */}
+        {s.insights && <InsightSummary insights={s.insights} />}
+
         {/* Executive summary */}
         <Section title={isFinal ? "Executive summary" : "Provisional summary"}>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -175,6 +186,48 @@ export function ReportView({
             })}
           </div>
           )}
+          {/* The raw figures, kept and not cut — the chart above re-presents
+              them, it does not replace them. Collapsed on screen because an
+              assessor wants them and a reader scanning does not; always open
+              when printing, where nothing is expandable. */}
+          {s.categoryScores.some((c) => c.passed + c.partial + c.failed > 0) && (
+            <Collapse label="Underlying figures" className="mt-2">
+              <div className="overflow-x-auto">
+                <table className="w-full text-[11px]">
+                  <thead className="text-left text-slate-500">
+                    <tr className="border-b border-slate-200">
+                      <th className="py-1 pr-2 font-medium">Discipline</th>
+                      <th className="px-1 text-center font-medium">Pass</th>
+                      <th className="px-1 text-center font-medium">Partial</th>
+                      <th className="px-1 text-center font-medium">Fail</th>
+                      <th className="px-1 text-center font-medium">N/A</th>
+                      <th className="px-1 text-center font-medium">Assessed</th>
+                      <th className="px-1 text-center font-medium">Score %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {s.categoryScores.map((c) => {
+                      const assessable = c.passed + c.partial + c.failed;
+                      const pct = assessable === 0 ? null : c.score_pct;
+                      return (
+                        <tr key={c.category_id} className="border-b border-slate-100">
+                          <td className="py-1 pr-2 text-slate-700">{c.category_name}</td>
+                          <td className="px-1 text-center tabular-nums">{c.passed}</td>
+                          <td className="px-1 text-center tabular-nums">{c.partial}</td>
+                          <td className={cn("px-1 text-center tabular-nums", c.failed ? "font-semibold text-rose-700" : "")}>{c.failed}</td>
+                          <td className="px-1 text-center tabular-nums text-slate-400">{c.na}</td>
+                          <td className="px-1 text-center tabular-nums">{assessable}/{c.total}</td>
+                          <td className={cn("px-1 text-center font-semibold tabular-nums", ragText(pct))}>
+                            {pct == null ? "n/a" : pct}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Collapse>
+          )}
         </Section>
 
         {/* Standards rollup (final) */}
@@ -194,13 +247,29 @@ export function ReportView({
           </Section>
         )}
 
-        {/* Findings register */}
+        {/* Findings register — grouped by severity, worst tier first. Same
+            content as before, re-laid-out: a flat list made a reader scan every
+            row to find the two that fail the audit. An unrecognised severity
+            gets its own group under its own name rather than falling into a
+            default bucket, so a value the grading vocabulary grows later still
+            renders instead of silently vanishing. */}
         <Section title={`Findings (${s.findings.length})`}>
           {s.findings.length === 0 ? <p className="text-[13px] text-slate-400">No non-conformities recorded.</p> : (
-            <div className="space-y-2">
-              {s.findings.map((f) => (
-                <div key={f.checkpointCode} className="rounded-lg border border-slate-200 p-2.5 text-[12px]">
+            <div className="space-y-3">
+              {groupBySeverity(s.findings).map(([sev, group]) => (
+                <div key={sev} className="break-inside-avoid">
+                  <div className={cn("mb-1.5 flex items-center gap-2 rounded border-l-4 px-2 py-1", SEVERITY_GROUP[sev] ?? SEVERITY_GROUP_FALLBACK)}>
+                    <span className="text-[11px] font-bold uppercase tracking-wide">{sev}</span>
+                    <span className="text-[11px] opacity-70">{group.length} finding{group.length === 1 ? "" : "s"}</span>
+                  </div>
+                  <div className="space-y-2">
+              {group.map((f) => (
+                <div key={f.checkpointCode} className="break-inside-avoid rounded-lg border border-slate-200 p-2.5 text-[12px]">
                   <div className="flex flex-wrap items-center gap-2">
+                    {/* State icon — FAIL/PARTIAL are what the register holds
+                        today (PASS/NA raise no finding), but the map is keyed
+                        off whatever the row carries rather than assuming that. */}
+                    <StateMark status={f.assessmentStatus} />
                     <span className="font-mono text-slate-500">{f.checkpointCode}</span>
                     {f.requirementType && (
                       <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase", REQUIREMENT_TYPE_META[f.requirementType].chip)}
@@ -235,10 +304,23 @@ export function ReportView({
                     <span className="text-slate-400">{f.discipline}</span>
                     {WORKFLOW_STATE_META[f.workflowState] && <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", WORKFLOW_STATE_META[f.workflowState].chip)}>{WORKFLOW_STATE_META[f.workflowState].label}{f.round > 0 ? ` · R${f.round}` : ""}</span>}
                     {f.capaNumber && <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-800">{f.capaNumber}</span>}
+                    {f.isRepeat && (
+                      <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-rose-700">repeat</span>
+                    )}
                   </div>
                   <div className="mt-1 text-slate-700">{f.question}</div>
-                  {f.observation && <div className="mt-0.5 text-slate-500">Audit findings: {f.observation}</div>}
+                  {/* The observation, collapsed on screen and always open in
+                      print. Collapsed by DEFAULT, never dropped: what the
+                      auditor actually saw is the finding. */}
+                  {f.observation && (
+                    <Collapse label="Audit findings" className="mt-0.5">
+                      <div className="text-slate-500">{f.observation}</div>
+                    </Collapse>
+                  )}
                   {(f.standard || f.requirementReference) && <div className="mt-0.5 text-[11px] text-slate-400">{[f.requirementReference, f.standard].filter(Boolean).join(" · ")}</div>}
+                </div>
+              ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -574,6 +656,78 @@ export function ReportView({
   );
 }
 
+// ── Severity grouping (findings register) ────────────────────────────────
+// Known tiers first, worst first; anything else keeps its own name and sorts
+// after them. A default bucket would make a severity the grading vocabulary
+// grows later disappear from the register, which is the one thing a
+// record-of-truth may not do.
+const SEVERITY_ORDER = ["critical", "major", "minor"];
+const SEVERITY_GROUP: Record<string, string> = {
+  critical: "border-l-rose-500 bg-rose-50 text-rose-800",
+  major: "border-l-amber-500 bg-amber-50 text-amber-800",
+  minor: "border-l-primary-400 bg-primary-50 text-primary-800",
+};
+const SEVERITY_GROUP_FALLBACK = "border-l-slate-400 bg-slate-50 text-slate-700";
+
+function groupBySeverity<T extends { severity: string }>(items: T[]): [string, T[]][] {
+  const buckets = new Map<string, T[]>();
+  for (const it of items) {
+    const key = (it.severity ?? "unspecified").toLowerCase();
+    const list = buckets.get(key);
+    if (list) list.push(it);
+    else buckets.set(key, [it]);
+  }
+  const known = SEVERITY_ORDER.filter((k) => buckets.has(k)).map((k) => [k, buckets.get(k)!] as [string, T[]]);
+  const rest = [...buckets.keys()].filter((k) => !SEVERITY_ORDER.includes(k)).sort()
+    .map((k) => [k, buckets.get(k)!] as [string, T[]]);
+  return [...known, ...rest];
+}
+
+// Result state as a glyph. Keyed off whatever the row carries, so a status the
+// findings register does not produce today still renders if it ever does.
+const STATE_MARK: Record<string, { icon: typeof XCircle; className: string; label: string }> = {
+  FAIL: { icon: XCircle, className: "text-rose-600", label: "Fail" },
+  PARTIAL: { icon: AlertCircle, className: "text-amber-600", label: "Partial" },
+  PASS: { icon: CheckCircle2, className: "text-emerald-600", label: "Pass" },
+  NA: { icon: MinusCircle, className: "text-slate-400", label: "Not applicable" },
+  NOT_ASSESSED: { icon: HelpCircle, className: "text-slate-400", label: "Not assessed" },
+};
+
+function StateMark({ status }: { status: string }) {
+  const meta = STATE_MARK[status];
+  if (!meta) return <span className="text-[10px] uppercase text-slate-400">{status}</span>;
+  const Icon = meta.icon;
+  return <Icon size={13} className={cn("shrink-0", meta.className)} aria-label={meta.label} />;
+}
+
+/**
+ * Collapsed on screen, always open in print.
+ *
+ * Deliberately NOT `<details>`: a closed `<details>` is hidden by the browser's
+ * own shadow slot, which no print stylesheet on the child can override — the
+ * observation text would silently vanish from every printed report. Keeping the
+ * content in the DOM and toggling `display` is the only version of this that
+ * prints.
+ */
+function Collapse({ label, className, children }: {
+  label: string; className?: string; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className={className}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-slate-700 print:hidden"
+      >
+        <ChevronDown size={11} className={cn("transition-transform", open && "rotate-180")} />
+        {label}
+      </button>
+      <div className={cn("mt-0.5", !open && "hidden print:block")}>{children}</div>
+    </div>
+  );
+}
+
 function Meta({ label, value }: { label: string; value: string }) {
   return <div><div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div><div className="font-medium text-slate-700">{value}</div></div>;
 }
@@ -671,30 +825,47 @@ function FinalRegister({ reportId, userMap }: { reportId: string; userMap: Recor
                 {WORKFLOW_STATE_META[e.workflowState] && <span className="text-[11px] text-slate-400">{WORKFLOW_STATE_META[e.workflowState].label}</span>}
               </div>
               <div className="mt-0.5 text-slate-700">{e.question}</div>
-              {/* What the auditor actually saw, and the photographs that back
-                  it. The register printed the question and the verdict and
-                  stopped, so the one thing a reader opens a register FOR — the
-                  evidence behind an adverse finding — was the one thing it
-                  omitted. */}
-              {e.observation && (
-                <div className="mt-1 text-[11px] italic text-slate-500">{e.observation}</div>
-              )}
-              {(e.auditorEvidenceIds?.length ?? 0) > 0 && (
-                <EvidenceStrip evidenceIds={e.auditorEvidenceIds} label="Auditor evidence" size={12} />
-              )}
-              {(e.auditeeEvidenceIds?.length ?? 0) > 0 && (
-                <EvidenceStrip evidenceIds={e.auditeeEvidenceIds} label="Auditee evidence" size={12} />
-              )}
-              {e.interactions.length > 0 && (
-                <ol className="mt-1 space-y-0.5 border-l-2 border-slate-100 pl-2 text-[11px] text-slate-500">
-                  {e.interactions.map((i) => (
-                    <li key={i.id}>
-                      <span className="font-medium text-slate-600">{INTERACTION_LABEL[i.action] ?? i.action}</span>
-                      {" · "}{name(i.actorId)}{i.round > 0 ? ` · R${i.round}` : ""}{" · "}{fmtDateTime(i.timestamp)}
-                      {i.comment && <span className="text-slate-400"> — {i.comment}</span>}
-                    </li>
-                  ))}
-                </ol>
+              {/* Collapsed by default on screen, so 120 checkpoints read as a
+                  scannable index rather than one continuous block — and open in
+                  full when printed, where nothing is expandable.
+                  NOTHING is dropped: the observation, both evidence strips and
+                  the complete iteration thread are all inside. This section is
+                  the audit-trail record of truth and the redesign only changes
+                  how it is laid out. */}
+              {(e.observation
+                || (e.auditorEvidenceIds?.length ?? 0) > 0
+                || (e.auditeeEvidenceIds?.length ?? 0) > 0
+                || e.interactions.length > 0) && (
+                <Collapse
+                  className="mt-1"
+                  label={`Detail${e.interactions.length ? ` · ${e.interactions.length} iteration${e.interactions.length === 1 ? "" : "s"}` : ""}`}
+                >
+                  {/* What the auditor actually saw, and the photographs that
+                      back it. The register printed the question and the verdict
+                      and stopped, so the one thing a reader opens a register
+                      FOR — the evidence behind an adverse finding — was the one
+                      thing it omitted. */}
+                  {e.observation && (
+                    <div className="text-[11px] italic text-slate-500">{e.observation}</div>
+                  )}
+                  {(e.auditorEvidenceIds?.length ?? 0) > 0 && (
+                    <EvidenceStrip evidenceIds={e.auditorEvidenceIds} label="Auditor evidence" size={12} />
+                  )}
+                  {(e.auditeeEvidenceIds?.length ?? 0) > 0 && (
+                    <EvidenceStrip evidenceIds={e.auditeeEvidenceIds} label="Auditee evidence" size={12} />
+                  )}
+                  {e.interactions.length > 0 && (
+                    <ol className="mt-1 space-y-0.5 border-l-2 border-slate-100 pl-2 text-[11px] text-slate-500">
+                      {e.interactions.map((i) => (
+                        <li key={i.id}>
+                          <span className="font-medium text-slate-600">{INTERACTION_LABEL[i.action] ?? i.action}</span>
+                          {" · "}{name(i.actorId)}{i.round > 0 ? ` · R${i.round}` : ""}{" · "}{fmtDateTime(i.timestamp)}
+                          {i.comment && <span className="text-slate-400"> — {i.comment}</span>}
+                        </li>
+                      ))}
+                    </ol>
+                  )}
+                </Collapse>
               )}
             </div>
           ))}

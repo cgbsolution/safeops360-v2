@@ -622,6 +622,67 @@ export type ReportRegisterEntry = ReportGrading & {
   ownerId: string | null; capaNumber: string | null; auditorEvidenceIds: string[]; auditeeEvidenceIds: string[];
   interactions: CheckpointInteraction[];
 };
+// ── Section 1 insight layer ──────────────────────────────────────────────
+// Mirrors `app/services/insights/rules_audit_report.py`. Every field is READ
+// here and computed there: the screen and the PDF render the same frozen block,
+// which is what stops them from disagreeing about what the audit found.
+export type InsightBand = "green" | "amber" | "red" | "neutral";
+export type InsightSeverity = "critical" | "high" | "watch" | "info";
+
+export type ReportInsightPattern = {
+  id: string;
+  kind: string;
+  severity: InsightSeverity;
+  confidence: "low" | "medium" | "high";
+  headline: string;
+  evidence: string;
+  recordRefs: string[];
+  refCount: number;
+  suggestedAction: string | null;
+  /** Present only on the identical-wording pattern, whose evidence is freeform
+   *  observation TEXT rather than a structured field — the UI caveats it. */
+  basis?: "observation_text";
+  ownerId?: string;
+};
+
+export type ReportInsights = {
+  version: number;
+  gauge: {
+    pct: number | null; showGrade: boolean;
+    band: InsightBand;
+    /** What the dial is PAINTED — red on a critical fail whatever the pct. */
+    displayBand: InsightBand;
+    bandLabel: string; criticalGate: boolean;
+    result: string | null; passed: boolean | null; explanation: string | null;
+    assessed: number | null; applicable: number | null; coverageLabel: string | null;
+  };
+  criticalBanner: {
+    count: number; headline: string; codes: string[]; disciplines: string[];
+  } | null;
+  categoryChart: {
+    categoryId: string; name: string; pct: number | null; band: InsightBand;
+    total: number; passed: number; partial: number; failed: number; na: number; assessed: number;
+  }[];
+  capaStrip: {
+    total: number; open: number; overdue: number; truncated: number; linkedShown: number;
+    chips: { capaNumber: string; checkpointCode: string; status: string; severity: string; discipline: string }[];
+  };
+  repeats: {
+    count: number; headline: string; evidence: string; disciplines: string[]; truncated: number;
+    items: {
+      checkpointCode: string; discipline: string; severity: string; question: string;
+      observation: string | null; statusLabel: string; ownerId: string | null; capaNumber: string | null;
+    }[];
+  } | null;
+  patterns: ReportInsightPattern[];
+  patternsSuppressedCount?: number;
+  suppressed: boolean;
+  reason: string | null;
+  /** Why the pattern list is empty, when it is. Rendered rather than left as a
+   *  silent gap, which reads as a component that failed. */
+  patternNote?: string;
+};
+
 export type AuditReportSnapshot = {
   reportType: string; auditCode: string; title: string; siteId: string; industryCode: string; auditType: string;
   leadAuditorId: string; plantManagerId: string | null; templateId: string | null; scopePresetUsed: string | null;
@@ -730,6 +791,15 @@ export type AuditReportSnapshot = {
       statement: string;
     } | null;
   };
+  /**
+   * Section 1 insight layer, computed by `services/insights/rules_audit_report`
+   * and FROZEN into this snapshot at issue — it is hashed with everything else,
+   * so re-viewing an issued report can never change a headline here. Optional:
+   * reports issued before the layer shipped do not carry it and render without
+   * Section 1 rather than having one reconstructed at view time, which would be
+   * a claim about a reading nobody took.
+   */
+  insights?: ReportInsights;
   distributionList?: { userId: string; role: string; name?: string }[];
   revisionHistory?: {
     reportCode: string; reportType: string; generatedAt: string | null;
