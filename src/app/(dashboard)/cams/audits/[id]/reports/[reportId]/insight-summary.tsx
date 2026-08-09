@@ -132,8 +132,8 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
                 <div className="w-24 shrink-0 text-right text-[11px] tabular-nums text-slate-400">
                   {c.scoreObtained}/{c.scoreAllotted} pts
                 </div>
-                <div className="hidden w-28 shrink-0 text-right text-[11px] tabular-nums text-slate-400 sm:block">
-                  {c.passed}P {c.partial}Pa {c.failed}F{c.na ? ` ${c.na}NA` : ""}
+                <div className="hidden w-32 shrink-0 text-right text-[11px] tabular-nums text-slate-400 sm:block">
+                  {c.passed}P {c.partial}Ptl {c.failed}F{c.na ? ` ${c.na}NA` : ""} / {c.total}
                 </div>
               </div>
             ))}

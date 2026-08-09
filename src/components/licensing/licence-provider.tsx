@@ -3,9 +3,15 @@
 // Client-side licence state. Two layers:
 //   * deployment view  — /api/licensing/status (status, edition, limits…),
 //   * per-factory set   — /api/licensing/modules?plantId=<active>, the modules
-//     usable in the ACTIVE factory (signed ceiling minus the admin's per-factory
-//     restrictions). hasModule() reflects the active factory, so nav + the route
-//     guard gate per factory.
+//     usable in the ACTIVE factory (signed ceiling minus what the Super Admin
+//     turned off org-wide minus the admin's per-factory restrictions).
+//     hasModule() reflects the active factory, so nav + the route guard gate
+//     per factory.
+//
+// `orgDisabledModules` is tracked separately from the enabled set because a
+// missing module has two very different explanations, and the user's next step
+// differs: the licence never included it (contact Vizionforge) vs the Super
+// Admin turned it off for the organisation (contact your Super Admin).
 //
 // The active plant is resolved from ?plantId= (the plant switcher) or the user's
 // home plant, and written to the `safeops_active_plant` cookie so the API proxy
@@ -35,9 +41,12 @@ export type LicenceStatusView = {
   gracePeriodDays: number | null;
   warnDaysWindow: number | null;
   enabledModules: LicenceModule[];
+  // Licensed modules the Super Admin has switched off for the organisation.
+  orgDisabledModules?: string[];
   limits: { maxSites: number | null; maxUsers: number | null; maxFactories: number | null };
   featureFlags: Record<string, boolean>;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
   usage?: { users: number; sites: number; factories: number };
   installationId?: string | null;
   clockTamperWarning?: boolean;
@@ -50,9 +59,13 @@ type LicenceContextValue = {
   loading: boolean;
   view: LicenceStatusView | null;
   enabledModules: Set<string>;
+  /** Licensed modules the Super Admin switched off for the whole organisation. */
+  orgDisabledModules: Set<string>;
   isLocked: boolean;
   activePlantId: string | null;
   hasModule: (code: string) => boolean;
+  /** True when `code` is unavailable specifically because of an org-level decision. */
+  isOrgDisabled: (code: string) => boolean;
   refresh: () => Promise<void>;
 };
 
@@ -60,9 +73,11 @@ const FALLBACK: LicenceContextValue = {
   loading: true,
   view: null,
   enabledModules: new Set(),
+  orgDisabledModules: new Set(),
   isLocked: false,
   activePlantId: null,
   hasModule: () => true,
+  isOrgDisabled: () => false,
   refresh: async () => {},
 };
 
@@ -87,6 +102,8 @@ export function LicenceProvider({ children }: { children: React.ReactNode }) {
   const [view, setView] = useState<LicenceStatusView | null>(null);
   // effective module codes for the active factory; null until first load.
   const [effective, setEffective] = useState<Set<string> | null>(null);
+  // licensed-but-org-disabled codes, for the "ask your Super Admin" message.
+  const [orgDisabled, setOrgDisabled] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -100,12 +117,15 @@ export function LicenceProvider({ children }: { children: React.ReactNode }) {
       if (modulesRes.ok) {
         const j = await modulesRes.json();
         setEffective(new Set<string>(j.enabledModules ?? []));
+        setOrgDisabled(new Set<string>(j.orgDisabledModules ?? []));
       } else {
         setEffective(null);
+        setOrgDisabled(new Set());
       }
     } catch {
       setView(null);
       setEffective(null);
+      setOrgDisabled(new Set());
     } finally {
       setLoading(false);
     }
@@ -131,13 +151,17 @@ export function LicenceProvider({ children }: { children: React.ReactNode }) {
       loading,
       view,
       enabledModules: set,
+      orgDisabledModules: orgDisabled,
       isLocked: known ? view!.isLocked : false,
       activePlantId,
       hasModule: (code: string) =>
         !known && !effective ? true : set.has(code),
+      // Only meaningful for a module that is NOT in the effective set — it
+      // answers "why is this missing", not "is this missing".
+      isOrgDisabled: (code: string) => orgDisabled.has(code),
       refresh,
     };
-  }, [view, effective, loading, activePlantId, refresh]);
+  }, [view, effective, orgDisabled, loading, activePlantId, refresh]);
 
   return <LicenceContext.Provider value={value}>{children}</LicenceContext.Provider>;
 }

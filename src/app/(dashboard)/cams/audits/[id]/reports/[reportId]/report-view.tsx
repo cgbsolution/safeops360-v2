@@ -180,7 +180,7 @@ export function ReportView({
                       // Full outcome split, not just pass/fail: a partial earns
                       // points toward the percentage, so hiding it left the
                       // counts unable to sum to the total.
-                      <span className={cn("font-semibold tabular-nums", ragText(pct))}>{pct}% <span className="font-normal text-slate-400">({c.score_obtained}/{c.score_allotted} pts · {c.passed}P {c.partial}Pa {c.failed}F{c.na ? ` ${c.na}NA` : ""} of {c.total})</span></span>
+                      <span className={cn("font-semibold tabular-nums", ragText(pct))}>{pct}% <span className="font-normal text-slate-400">({c.score_obtained}/{c.score_allotted} pts · {c.passed}P {c.partial}Ptl {c.failed}F{c.na ? ` ${c.na}NA` : ""} of {c.total})</span></span>
                     )}
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={cn("h-full rounded-full", ragBar(pct))} style={{ width: pct == null ? "100%" : `${pct}%`, opacity: pct == null ? 0.4 : 1 }} /></div>
@@ -403,10 +403,11 @@ export function ReportView({
                 All sign-offs required for closure were recorded.
               </p>
             ) : null}
-            {(s.signOffSummary?.awaitingRoles?.length ?? 0) > 0 && (
-              <p className="mt-1 text-[11px] text-slate-400">
-                Also nominated but not signed:{" "}
-                {s.signOffSummary!.awaitingRoles.map((r) => r.replace(/_/g, " ").toLowerCase()).join(", ")}.
+            {(s.signOffSummary?.unsignedDisciplines?.length ?? 0) > 0 && (
+              <p className="mt-1 text-[11px] text-amber-700">
+                Discipline sign-off outstanding ({s.signOffSummary!.disciplinesSigned} of{" "}
+                {s.signOffSummary!.disciplinesTotal} signed):{" "}
+                {s.signOffSummary!.unsignedDisciplines.join(", ")}.
               </p>
             )}
           </Section>

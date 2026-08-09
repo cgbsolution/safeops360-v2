@@ -11,7 +11,10 @@ import { Factory, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-type MatrixModule = { code: string; name: string; group: string };
+// `orgDisabled` = the Super Admin has switched this module off for the whole
+// organisation. It still appears here (so the per-factory setting is visible
+// and editable) but has no effect until the organisation re-enables it.
+type MatrixModule = { code: string; name: string; group: string; orgDisabled?: boolean };
 type Override = { enabled: boolean; validFrom: string | null; validUntil: string | null };
 type MatrixFactory = {
   id: string;
@@ -172,7 +175,19 @@ export function FactoryModuleMatrix({ onSaved }: { onSaved?: () => void | Promis
                               {m.name}
                             </span>
                           </label>
-                          {r.enabled && (
+                          {/* Already off for the whole organisation — this row's
+                              setting is real but inert until the Super Admin
+                              turns the module back on. Say so rather than let an
+                              admin toggle it and wonder why nothing changed. */}
+                          {m.orgDisabled && (
+                            <span
+                              className="rounded bg-amber-50 px-2 py-0.5 text-xs text-amber-800 border border-amber-200"
+                              title="Switched off org-wide by the Super Admin. This factory setting has no effect until it is re-enabled."
+                            >
+                              Off org-wide
+                            </span>
+                          )}
+                          {r.enabled && !m.orgDisabled && (
                             <div className="flex items-center gap-2 text-xs text-slate-500 ml-auto">
                               <span>From</span>
                               <input

@@ -14,7 +14,9 @@ import {
   Stethoscope,
   UploadCloud,
 } from "lucide-react";
+import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLicence } from "@/components/licensing/licence-provider";
 import { LicenceUpload } from "@/components/licensing/licence-upload";
@@ -204,6 +206,27 @@ export default function LicencePage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* ── Organisation-wide module access (Super Admin) ──
+          Only a pointer, not the controls: the per-factory matrix below sits
+          INSIDE whatever the organisation has enabled, and mixing the two
+          scopes on one screen invites turning a module off for every plant
+          when you meant to turn it off for one. */}
+      {view.isSuperAdmin && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <div className="text-sm text-slate-600">
+              <span className="font-medium text-slate-800">Organisation-wide module access</span>
+              {view.orgDisabledModules?.length
+                ? ` — ${view.orgDisabledModules.length} licensed module(s) are currently off for the whole organisation.`
+                : " — every licensed module is currently available across the organisation."}
+            </div>
+            <Button asChild variant="outline">
+              <Link href="/organisation/modules">Manage organisation modules</Link>
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Per-factory module access (admin) ── */}

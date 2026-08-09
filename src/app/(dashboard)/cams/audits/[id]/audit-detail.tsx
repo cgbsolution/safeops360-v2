@@ -426,8 +426,6 @@ export function AuditDetailView({
         canInterim={canExport && !["scheduled", "cancelled"].includes(audit.status)}
         canFinal={canClose && !!audit.finalizability?.finalizable}
         finalizable={!!audit.finalizability?.finalizable}
-        leadAuditorId={audit.leadAuditorUserId}
-        plantManagerId={audit.plantManagerUserId}
       />
 
       {audit.status === "closed" && (
@@ -946,9 +944,9 @@ function PhotoStrip({ photos }: { photos?: StoredPhoto[] | null }) {
 }
 
 // A-07 — report generation + history.
-function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finalizable, leadAuditorId, plantManagerId }: {
+function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finalizable }: {
   auditId: string; reports: AuditReport[]; userMap: Record<string, string>;
-  canInterim: boolean; canFinal: boolean; finalizable: boolean; leadAuditorId: string; plantManagerId: string | null;
+  canInterim: boolean; canFinal: boolean; finalizable: boolean;
 }) {
   const router = useRouter();
   const { toast } = useToast();
@@ -956,11 +954,17 @@ function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finaliz
 
   async function generate(reportType: "INTERIM" | "FINAL") {
     setBusy(reportType);
-    const signOffs = reportType === "FINAL"
-      ? [{ role: "LEAD_AUDITOR", userId: leadAuditorId }, ...(plantManagerId ? [{ role: "PLANT_MANAGER", userId: plantManagerId }] : [])]
-      : [];
+    // No signOffs are sent. This used to post a hardcoded lead-auditor +
+    // plant-manager pair, which was never on the sign-off WRITE path (that is
+    // the signature panel, POST /assurance/audits/{id}/signoff) — it was an
+    // assertion by the client about who had signed, and the server froze it
+    // verbatim into an immutable report. Two nameless, timeless stubs are how
+    // "LEAD_AUDITOR: -  -" reached an issued PDF.
+    //
+    // The generator now reads the recorded sign-offs itself, so a client cannot
+    // claim a signature that was never captured.
     const res = await fetch(`/api/audit-compliance/${auditId}/reports`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reportType, signOffs }),
+      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reportType }),
     });
     const j = await res.json().catch(() => ({}));
     setBusy(null);

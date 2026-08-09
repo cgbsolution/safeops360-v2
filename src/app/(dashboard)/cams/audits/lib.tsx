@@ -697,7 +697,13 @@ export type AuditReportSnapshot = {
    *  was carried — an immutable snapshot cannot be backfilled. */
   scoreObtained?: number; scoreAllotted?: number;
   /** What was actually signed, and what is still outstanding. */
-  signOffSummary?: { recorded: number; awaitingRoles: string[]; missingRequiredRoles: string[] };
+  signOffSummary?: {
+    recorded: number; missingRequiredRoles: string[];
+    /** Disciplines whose auditor has not signed — derived server-side from who
+     *  actually held allocated checkpoints, not from anything a client sends. */
+    unsignedDisciplines: string[]; disciplinesSigned: number; disciplinesTotal: number;
+    statement: string;
+  };
   checkpointsTotal: number; checkpointsAssessed: number; passCount: number; failCount: number; partialCount: number; naCount: number;
   categoryScores: CategoryScore[]; criticalFailures: number; majorFailures: number; minorFailures: number;
   openIterationsCount: number; criticalOpenCount: number; adHocCount: number;

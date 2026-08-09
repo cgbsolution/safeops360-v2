@@ -371,6 +371,18 @@ const SECTIONS: NavSection[] = [
       { href: "/licence", label: "Licence & Entitlements", icon: ScrollText },
     ],
   },
+  {
+    // Super Admin only. Its own section rather than a row under Configuration
+    // because the authority is genuinely different in kind: Configuration
+    // changes how the portal behaves, this decides which modules the
+    // ORGANISATION has at all — every plant, every user, at once.
+    key: "organisation",
+    label: "Organisation",
+    permissionPrefix: "ORGANISATION",
+    items: [
+      { href: "/organisation/modules", label: "Modules", icon: Building2, permission: "ORGANISATION.MODULES" },
+    ],
+  },
 ];
 
 export function AppSidebar() {

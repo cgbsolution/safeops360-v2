@@ -18,6 +18,12 @@ const prisma = new PrismaClient();
 // EMERGENCY_RESPONSE_COORDINATOR, INDUSTRIAL_HYGIENIST, WORKER) we add the
 // roles the brief assumes. SYSTEM_ADMIN is an alias for ADMIN.
 const ADDITIONAL_ROLES: { code: string; name: string; description: string; isSystem: boolean; sortOrder: number; defaultLanding: string }[] = [
+  // SUPER_ADMIN owns the ORGANISATION (this portal is single-tenant: one
+  // organisation, many plants). Everything SYSTEM_ADMIN can do, plus the one
+  // authority no other role has — deciding which licensed modules the
+  // organisation uses at all (ORGANISATION.MODULES). sortOrder 0 puts it above
+  // System Administrator in every role list.
+  { code: "SUPER_ADMIN", name: "Super Administrator", description: "Organisation owner. Everything a System Administrator can do, plus enabling/disabling modules for the whole organisation.", isSystem: true, sortOrder: 0, defaultLanding: "/organisation/modules" },
   { code: "SYSTEM_ADMIN", name: "System Administrator", description: "Full configuration access. Alias of ADMIN.", isSystem: true, sortOrder: 1, defaultLanding: "/configuration/workflows" },
   { code: "CORPORATE_HSE", name: "Corporate HSE", description: "All-plants HSE leadership; manages master data and roll-up reports.", isSystem: true, sortOrder: 5, defaultLanding: "/dashboard" },
   { code: "PERMIT_ISSUER", name: "Permit Issuer", description: "Originates and approves permits as Issuer (first approval step).", isSystem: true, sortOrder: 25, defaultLanding: "/inbox" },
@@ -153,6 +159,10 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "CONFIGURATION.ROLES",       module: "CONFIGURATION", action: "ROLES",       description: "Create / edit roles and assign role membership" },
   { code: "LICENSING.MANAGE",          module: "LICENSING",     action: "MANAGE",      description: "View licence diagnostics, upload/renew the licence file, view installation id" },
   { code: "AUDIT.VIEW",                module: "AUDIT",         action: "VIEW",        description: "Read audit log" },
+  // Organisation ownership — the Super Admin's distinguishing authority. Turning
+  // a module off here removes it for EVERY plant and every role at once, so it
+  // is granted to SUPER_ADMIN only, never to SYSTEM_ADMIN / ADMIN.
+  { code: "ORGANISATION.MODULES",      module: "ORGANISATION",  action: "MODULES",     description: "Enable / disable modules for the whole organisation (Super Admin)" },
 
   // Inspection masters & finding lifecycle (production-depth refactor)
   { code: "INSPECTION_TYPE.CREATE",    module: "INSPECTION_TYPE",    action: "CREATE",  description: "Create new inspection types (statutory / routine / pre-op / etc.)" },
@@ -1307,6 +1317,24 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "INCIDENT",         actions: ["READ"], scope: "OWN_PLANT" }
   ]
 };
+
+// ══════════════════════════════════════════════════════════════════════════
+// SUPER_ADMIN — the organisation owner.
+//
+// DERIVED from SYSTEM_ADMIN rather than copied. ADMIN and SYSTEM_ADMIN were
+// written as two hand-maintained lists that were meant to be identical, and
+// they have since drifted (ADMIN has the HIRA/CAPA extras, SYSTEM_ADMIN has the
+// EAI/RISK/CONTROL/VENDOR/INSURANCE ones). Deriving means a future grant added
+// to SYSTEM_ADMIN is automatically held by the Super Admin too, which is the
+// invariant we actually want: the Super Admin can do everything the System
+// Admin can, plus own the organisation.
+//
+// ORGANISATION.MODULES is the one authority no other role gets — switching a
+// module off there removes it from every plant at once.
+ROLE_GRANTS.SUPER_ADMIN = [
+  ...ROLE_GRANTS.SYSTEM_ADMIN,
+  { module: "ORGANISATION", actions: ["MODULES"], scope: "ALL_PLANTS" }
+];
 
 async function main() {
   console.log("🔐  RBAC seed: roles + permissions + grants + user-role assignments");

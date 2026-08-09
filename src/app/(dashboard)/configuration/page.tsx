@@ -4,7 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Workflow, ListChecks, Users, Shield, ChevronRight, Flag,
-  Sparkles, Grid3X3, AlertTriangle, ShieldCheck, CalendarClock, Gauge
+  Sparkles, Grid3X3, AlertTriangle, ShieldCheck, CalendarClock, Gauge, Building2
 } from "lucide-react";
 import { requirePermission } from "@/lib/auth/server";
 import { getServerSession } from "next-auth";
@@ -22,6 +22,10 @@ export default async function ConfigurationLandingPage() {
   // Don't hard-block — admin is a multi-tile landing; show only the tiles
   // the caller has permission for, and 403 in deeper pages.
   const tiles: { title: string; href: string; icon: any; description: string; permission: string; badge?: string | number }[] = [
+    // Super Admin only — listed first because it sits above everything else
+    // here: a module switched off org-wide is gone from every plant at once.
+    { title: "Organisation Modules", href: "/organisation/modules", icon: Building2, permission: "ORGANISATION.MODULES",
+      description: "Super Admin — enable or disable modules for the whole organisation. Applies to every plant and every user immediately." },
     { title: "Form Dropdowns", href: "/configuration/dropdowns", icon: ListChecks, permission: "CONFIGURATION.MASTERS",
       description: "Add, edit, or remove values used in module form dropdowns (shifts, hazard categories, root causes, observation categories, etc.)." },
     { title: "Users", href: "/configuration/users", icon: Users, permission: "CONFIGURATION.USERS",
