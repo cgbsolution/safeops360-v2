@@ -43,6 +43,7 @@
 //   Step 31 — Controlled Documents + Document Versions      (seed-docs-data)
 //   Step 32 — GMP Audit Entries (Part 11 audit trail)       (seed-gmp-audit)
 //   Step 33 — Historical activity data (12 mo × 5 modules × 2 plants) (seed-historical-data)
+//   Step 41 — Named all-plant accounts (group-wide logins)   (seed-named-users)
 //
 // QA checkpoint after loading:
 //   • Dashboard shows: 28 days since LTI
@@ -123,6 +124,9 @@ async function main() {
     ["seed-cams.ts",                 "Step 38 — CAMS: 8 audit types + 4 clause-mapped templates + 3 recurrence rules + 14 engagements + ~16 findings (AUDIT-source CAPAs)"],
     ["seed-factory.ts",              "Step 39 — Facilities: 3 garment factory profiles (Tirupur 1 / Ludhiana / Surat) + buildings + workforce + processes + certs + contacts + personas"],
     ["seed-factory-ops.ts",          "Step 40 — Facilities Phase D: light operational data (CAMS audits/findings, CAPA, obligations, incidents) for the 3 sites → live dashboard roll-ups"],
+    // Last on purpose: grants one PLANT-scoped role row per plant, so every
+    // plant-creating step above must have run first.
+    ["seed-named-users.ts",          "Step 41 — Named all-plant accounts (group-wide HSE Manager logins)"],
   ];
 
   const start = Date.now();

@@ -9,6 +9,7 @@
 
 import { PrismaClient } from "@prisma/client";
 import { parseDemoEmail } from "./demo-users-config";
+import { syncNamedAllPlantUsers } from "./named-users-sync";
 
 const prisma = new PrismaClient();
 
@@ -1497,6 +1498,15 @@ async function main() {
       await prisma.userRole.createMany({ data: crossRows, skipDuplicates: true });
       console.log(`   cross-plant (NW↔SW) entries added: ${crossRows.length}`);
     }
+  }
+
+  // Named all-plant accounts (NAMED_ALL_PLANT_USERS). Re-granted here because
+  // the deleteMany above wiped their per-plant rows, and neither the back-fill
+  // (home plant only) nor the NW↔SW block (matches `.it.nw@` / `.it.sw@`) would
+  // restore group-wide reach.
+  const namedSynced = await syncNamedAllPlantUsers(prisma);
+  for (const n of namedSynced) {
+    console.log(`   named all-plant user: ${n.email} → ${n.roleCode} × ${n.plantsGranted} plants`);
   }
 
   const userRoleCount = await prisma.userRole.count();

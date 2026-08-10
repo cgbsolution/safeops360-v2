@@ -11,6 +11,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:seed-workflows": "tsx prisma/seed-workflows.ts",
     "db:seed-rbac": "tsx prisma/seed-rbac.ts",
+    "db:seed-named-users": "tsx prisma/seed-named-users.ts",
     "db:seed-agents": "tsx prisma/seed-agents.ts",
     "db:reset": "prisma db push --force-reset && tsx prisma/seed-all.ts",
     "db:seed-hira": "tsx prisma/seed-hira-masters.ts",

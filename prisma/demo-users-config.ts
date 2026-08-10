@@ -108,6 +108,39 @@ export function nameForCell(roleIndex: number, deptIndex: number, plantIndex: nu
   return `${NAME_POOL[seed % NAME_POOL.length]} ${SURNAME_POOL[seed % SURNAME_POOL.length]}`;
 }
 
+// ─── Named all-plant accounts (outside the demo matrix) ──────────────────────
+// Real-person logins on their own company domain — NOT part of the
+// {role}.{dept}.{plant} matrix, so parseDemoEmail() ignores them and their role
+// comes from this list instead.
+//
+// The distinguishing property is reach: a matrix HSE Manager holds UserRole rows
+// for their own plant (+ the NW↔SW pair), so getAccessiblePlantIds() returns two
+// plants. These accounts get one PLANT-scoped UserRole row per plant that
+// exists, so the same HSE_MANAGER permission set applies group-wide.
+//
+// Used by:
+//   - prisma/named-users-sync.ts  (creates the users + the per-plant role rows)
+//   - prisma/seed-rbac.ts         (re-grants the rows after it rebuilds UserRole)
+export type NamedUser = {
+  email: string;
+  name: string;
+  roleCode: string;      // Role.code — also written to the legacy User.role column
+  designation: string;
+  department: string;
+  homePlantCode: string; // Plant.code used for User.plantId
+};
+
+export const NAMED_ALL_PLANT_USERS: NamedUser[] = [
+  {
+    email: "swapnil.bhamare@cgbsolution.com",
+    name: "Swapnil Bhamare",
+    roleCode: "HSE_MANAGER",
+    designation: "HSE Manager",
+    department: "HSE",
+    homePlantCode: "NW"
+  }
+];
+
 // ─── Industry Tenants — 10 vertical demo companies ───────────────────────────
 // Each has its own plant, named primary persona (HSE Manager), and 5 supporting
 // users. Demo state: 17 months manhours, 3-4 LTI incidents, 2 active permits.
