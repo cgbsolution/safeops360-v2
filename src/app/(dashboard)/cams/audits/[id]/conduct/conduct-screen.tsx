@@ -95,10 +95,22 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     && (audit.coAuditors ?? []).some((c) => (typeof c === "string" ? c : c.userId) === me);
   const [mineOnly, setMineOnly] = useState(false);
 
+  // Names come from the AUDIT first, the plant directory second.
+  //
+  // `users` is fetched as /users?plantId=<the audit's plant>, so it can only
+  // ever name people who work at that plant — and a checkpoint may legitimately
+  // be assigned to someone who does not. That is how the EMS and EnMS
+  // disciplines came to read "Unknown user" on every checkpoint while QMS and
+  // OHS looked fine: their owners simply belonged to a different site.
+  //
+  // `audit.userNames` is built server-side from everyone named on this audit,
+  // whatever their plant, so it is the authoritative map; the directory is kept
+  // as a fallback for anyone the payload predates.
   const userName = useMemo(() => {
-    const m = new Map(users.map((u) => [u.id, u.name] as const));
+    const m = new Map<string, string>(users.map((u) => [u.id, u.name] as const));
+    for (const [id, name] of Object.entries(audit.userNames ?? {})) m.set(id, name);
     return (id: string | null | undefined) => (id ? m.get(id) ?? "Unknown user" : null);
-  }, [users]);
+  }, [users, audit.userNames]);
 
   // Live discipline rollup (drives the navigator + overall progress). Seeded
   // from the slim detail payload and kept in sync as responses are saved.

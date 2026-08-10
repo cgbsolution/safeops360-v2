@@ -48,10 +48,21 @@ type Slots = {
 type Mode = "discipline" | "checkpoint";
 const PAGE = 50;
 
-export function AllocationWorkspace({ auditId, plantId, disciplines, onClose, onChanged }: {
+export function AllocationWorkspace({ auditId, plantId, disciplines, knownNames = {}, onClose, onChanged }: {
   auditId: string;
   plantId: string;
   disciplines: DisciplineRollup[];
+  /**
+   * Names of everyone already on this audit, from the audit payload.
+   *
+   * The pickers below list only people ASSIGNABLE at this plant, and a
+   * checkpoint's CURRENT assignee need not be one of them — assign someone from
+   * another site and this screen could no longer name the person it was showing
+   * you, so it printed "Unknown user" and kept printing it after a reset. The
+   * audit's own map is the authority for who is already there; the pickers stay
+   * the authority for who may be chosen next.
+   */
+  knownNames?: Record<string, string>;
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -80,10 +91,10 @@ export function AllocationWorkspace({ auditId, plantId, disciplines, onClose, on
   }, [plantId]);
 
   const nameOf = useMemo(() => {
-    const m = new Map<string, string>();
+    const m = new Map<string, string>(Object.entries(knownNames));
     for (const list of Object.values(slots ?? {})) for (const u of list) m.set(u.id, u.name);
     return (id: string | null | undefined) => (id ? m.get(id) ?? "Unknown user" : null);
-  }, [slots]);
+  }, [slots, knownNames]);
 
   /** One allocation call. `set*` flags say which axis is changing, because a
    *  null id means "unassign", not "leave alone". */

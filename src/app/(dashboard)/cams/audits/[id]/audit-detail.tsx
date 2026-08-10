@@ -62,6 +62,18 @@ export function AuditDetailView({
   const me = (session?.user as any)?.id as string | undefined;
   const canExecute = usePermission("AUDIT_COMPLIANCE.EXECUTE");
   const canApprove = usePermission("AUDIT_COMPLIANCE.APPROVE");
+  // Raising a CAPA from a finding really does create a CAPA, so it needs
+  // CAPA.CREATE — a permission several audit-capable roles do NOT hold. Without
+  // this the button was always offered and the server's 403 came back as
+  // "please retry", a loop that could never succeed.
+  const canCreateCapa = usePermission("CAPA.CREATE");
+  // Deciding an escalated finding is the DESIGNATED reviewer's job, not
+  // everyone-with-APPROVE's. Mirrors the server rule in transition_checkpoint;
+  // the server is the gate, this just stops offering an action that will fail.
+  const isAuditTeam = !!me && (me === audit.leadAuditorUserId
+    || (audit.coAuditors ?? []).some((c) => (typeof c === "string" ? c : c.userId) === me));
+  const canDecideEscalation = canApprove && !isAuditTeam
+    && (!audit.plantManagerUserId || me === audit.plantManagerUserId);
   const canClose = usePermission("AUDIT_COMPLIANCE.CLOSE");
   const canUpdate = usePermission("AUDIT_COMPLIANCE.UPDATE");
   const canExport = usePermission("AUDIT_COMPLIANCE.EXPORT");
@@ -409,7 +421,8 @@ export function AuditDetailView({
               <div className="divide-y divide-slate-100">
                 {g.items.map((r) => (
                   <FindingRow key={r.id} auditId={audit.id} r={r} me={me} userMap={userMap}
-                    canExecute={canExecute} canApprove={canApprove} canUpdate={canUpdate}
+                    canExecute={canExecute} canApprove={canDecideEscalation} canUpdate={canUpdate}
+                    canCreateCapa={canCreateCapa} plantManagerId={audit.plantManagerUserId}
                     auditOpen={!["closed", "cancelled"].includes(audit.status)} onChanged={() => router.refresh()} />
                 ))}
               </div>
@@ -440,6 +453,7 @@ export function AuditDetailView({
           auditId={audit.id}
           plantId={audit.plantId}
           disciplines={audit.disciplineRollup ?? []}
+          knownNames={audit.userNames ?? {}}
           onClose={() => setShowAllocate(false)}
           onChanged={() => router.refresh()}
         />
@@ -612,9 +626,10 @@ function Gauge({ pct, accent = "#7c3aed" }: { pct: number; accent?: string }) {
 }
 
 
-function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate, auditOpen, onChanged }: {
+function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate, canCreateCapa, plantManagerId, auditOpen, onChanged }: {
   auditId: string; r: CheckpointResponse; me: string | undefined; userMap: Record<string, string>;
-  canExecute: boolean; canApprove: boolean; canUpdate: boolean; auditOpen: boolean; onChanged: () => void;
+  canExecute: boolean; canApprove: boolean; canUpdate: boolean; canCreateCapa: boolean;
+  plantManagerId: string | null; auditOpen: boolean; onChanged: () => void;
 }) {
   const ws = r.workflowState;
   const inFlight = ["AWAITING_AUDITEE", "AUDITEE_RESPONDED", "MORE_INFO_REQUESTED", "ESCALATED_PM"].includes(ws);
@@ -664,11 +679,17 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
             {wmeta && ws !== "OPEN" && ws !== "PASSED" && <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", wmeta.chip)}>{wmeta.label}</span>}
             {r.currentRound > 0 && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Round {r.currentRound}</span>}
             {r.isAdHoc && <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-violet-700">Custom</span>}
-            {r.assignedOwnerId
-              ? <span className="text-[11px] text-slate-500">→ {name(r.assignedOwnerId)}</span>
-              : r.routedToUserId
-                ? <span className="text-[11px] text-slate-400">→ {name(r.routedToUserId)} <span className="text-slate-300">(routed)</span></span>
-                : <span className="text-[11px] font-medium text-amber-600">unassigned</span>}
+            {/* Who the ball is with. While a finding sits at ESCALATED_PM it is
+                the designated reviewer's, NOT the auditee it was originally
+                routed to — showing the auditee there is what made an escalation
+                look like it had gone to the wrong person. */}
+            {ws === "ESCALATED_PM"
+              ? <span className="text-[11px] font-medium text-rose-700">→ {plantManagerId ? name(plantManagerId) : "no reviewer assigned"} <span className="font-normal text-rose-400">(deciding)</span></span>
+              : r.assignedOwnerId
+                ? <span className="text-[11px] text-slate-500">→ {name(r.assignedOwnerId)}</span>
+                : r.routedToUserId
+                  ? <span className="text-[11px] text-slate-400">→ {name(r.routedToUserId)} <span className="text-slate-300">(routed)</span></span>
+                  : <span className="text-[11px] font-medium text-amber-600">unassigned</span>}
             {r.capa?.capa_number && <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800"><AlertTriangle size={10} /> {r.capa.capa_number}</span>}
           </div>
           <div className="mt-1 text-sm text-slate-800">{r.checkpointQuestion}</div>
@@ -702,7 +723,7 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
           {/* Role + state gated action bar */}
           <CheckpointActions
             auditId={auditId} r={r} me={me} canExecute={canExecute} canApprove={canApprove} canUpdate={canUpdate}
-            auditOpen={auditOpen} onChanged={onChanged}
+            canCreateCapa={canCreateCapa} auditOpen={auditOpen} onChanged={onChanged}
           />
         </div>
       )}
@@ -744,9 +765,10 @@ function IterationThread({ interactions, userMap, knownPhotos = [] }: {
 }
 
 // Unified, role + state gated action bar driving the iteration state machine.
-function CheckpointActions({ auditId, r, me, canExecute, canApprove, canUpdate, auditOpen, onChanged }: {
+function CheckpointActions({ auditId, r, me, canExecute, canApprove, canUpdate, canCreateCapa, auditOpen, onChanged }: {
   auditId: string; r: CheckpointResponse; me: string | undefined;
-  canExecute: boolean; canApprove: boolean; canUpdate: boolean; auditOpen: boolean; onChanged: () => void;
+  canExecute: boolean; canApprove: boolean; canUpdate: boolean; canCreateCapa: boolean;
+  auditOpen: boolean; onChanged: () => void;
 }) {
   const ws = r.workflowState;
   const routedToMe = r.routedToUserId === me || r.assignedOwnerId === me;
@@ -758,11 +780,11 @@ function CheckpointActions({ auditId, r, me, canExecute, canApprove, canUpdate, 
   }
   // Auditor review — after the auditee responded.
   if (canExecute && ws === "AUDITEE_RESPONDED") {
-    return <AuditorReview auditId={auditId} r={r} onChanged={onChanged} />;
+    return <AuditorReview auditId={auditId} r={r} canCreateCapa={canCreateCapa} onChanged={onChanged} />;
   }
   // Plant manager decision — when escalated.
   if (canApprove && ws === "ESCALATED_PM") {
-    return <PmDecision auditId={auditId} r={r} onChanged={onChanged} />;
+    return <PmDecision auditId={auditId} r={r} canCreateCapa={canCreateCapa} onChanged={onChanged} />;
   }
   // Re-assess a reopened/unassessed checkpoint (the only post-submit path back to terminal).
   if (canExecute && ws === "OPEN") {
@@ -818,7 +840,7 @@ async function postTransition(auditId: string, checkpointId: string, body: Recor
   return { ok: false, detail: apiErrorMessage(j, res.status) };
 }
 
-function AuditorReview({ auditId, r, onChanged }: { auditId: string; r: CheckpointResponse; onChanged: () => void }) {
+function AuditorReview({ auditId, r, canCreateCapa, onChanged }: { auditId: string; r: CheckpointResponse; canCreateCapa: boolean; onChanged: () => void }) {
   const { toast } = useToast();
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -837,14 +859,26 @@ function AuditorReview({ auditId, r, onChanged }: { auditId: string; r: Checkpoi
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="success" size="sm" onClick={() => act("ACCEPT")} disabled={!!busy}><CheckCircle2 size={14} /> Accept & resolve</Button>
         <Button type="button" variant="outline" size="sm" onClick={() => act("REQUEST_MORE_INFO", true)} disabled={!!busy}><RotateCcw size={14} /> Request more info</Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => act("RAISE_CAPA")} disabled={!!busy}><FileWarning size={14} /> Raise CAPA</Button>
+        {/* Hidden rather than disabled when the reviewer cannot create CAPAs:
+            a greyed button invites a click and explains nothing, and the line
+            below names the missing grant so it can actually be fixed. */}
+        {canCreateCapa && (
+          <Button type="button" variant="outline" size="sm" onClick={() => act("RAISE_CAPA")} disabled={!!busy}><FileWarning size={14} /> Raise CAPA</Button>
+        )}
         <Button type="button" variant="outline" size="sm" onClick={() => act("ESCALATE")} disabled={!!busy}><ArrowUpCircle size={14} /> Escalate</Button>
       </div>
+      {!canCreateCapa && (
+        <p className="mt-1.5 text-[11px] text-slate-500">
+          Raising a CAPA needs <span className="font-medium">CAPA.CREATE</span> at this plant,
+          which you don&apos;t hold — ask an admin to grant it in Configuration → Roles, or escalate
+          the finding instead.
+        </p>
+      )}
     </div>
   );
 }
 
-function PmDecision({ auditId, r, onChanged }: { auditId: string; r: CheckpointResponse; onChanged: () => void }) {
+function PmDecision({ auditId, r, canCreateCapa, onChanged }: { auditId: string; r: CheckpointResponse; canCreateCapa: boolean; onChanged: () => void }) {
   const { toast } = useToast();
   const [comment, setComment] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -861,7 +895,9 @@ function PmDecision({ auditId, r, onChanged }: { auditId: string; r: CheckpointR
       <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Decision comments…" className="mb-2 h-8 text-xs" />
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="success" size="sm" onClick={() => act("PM_ACCEPT")} disabled={!!busy}><CheckCircle2 size={14} /> Accept</Button>
-        <Button type="button" variant="outline" size="sm" onClick={() => act("PM_RAISE_CAPA")} disabled={!!busy}><FileWarning size={14} /> Raise CAPA</Button>
+        {canCreateCapa && (
+          <Button type="button" variant="outline" size="sm" onClick={() => act("PM_RAISE_CAPA")} disabled={!!busy}><FileWarning size={14} /> Raise CAPA</Button>
+        )}
         <Button type="button" variant="destructive" size="sm" onClick={() => act("PM_SEND_BACK")} disabled={!!busy}><RotateCcw size={14} /> Send back</Button>
       </div>
     </div>
