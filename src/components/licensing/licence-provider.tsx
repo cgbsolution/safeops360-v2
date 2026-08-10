@@ -66,6 +66,11 @@ type LicenceContextValue = {
   hasModule: (code: string) => boolean;
   /** True when `code` is unavailable specifically because of an org-level decision. */
   isOrgDisabled: (code: string) => boolean;
+  /** Nav hrefs the Super Admin has hidden organisation-wide. */
+  disabledSubModules: Set<string>;
+  /** False when the Super Admin switched this exact screen off. Independent of
+   *  hasModule() — a screen can be hidden inside a module you still hold. */
+  isNavEnabled: (href: string) => boolean;
   refresh: () => Promise<void>;
 };
 
@@ -78,6 +83,8 @@ const FALLBACK: LicenceContextValue = {
   activePlantId: null,
   hasModule: () => true,
   isOrgDisabled: () => false,
+  disabledSubModules: new Set(),
+  isNavEnabled: () => true,
   refresh: async () => {},
 };
 
@@ -104,6 +111,9 @@ export function LicenceProvider({ children }: { children: React.ReactNode }) {
   const [effective, setEffective] = useState<Set<string> | null>(null);
   // licensed-but-org-disabled codes, for the "ask your Super Admin" message.
   const [orgDisabled, setOrgDisabled] = useState<Set<string>>(new Set());
+  // Screen-level hides. Kept separate from orgDisabled: that set holds module
+  // codes, this one holds nav hrefs, and they are consumed by different gates.
+  const [subDisabled, setSubDisabled] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
@@ -118,14 +128,17 @@ export function LicenceProvider({ children }: { children: React.ReactNode }) {
         const j = await modulesRes.json();
         setEffective(new Set<string>(j.enabledModules ?? []));
         setOrgDisabled(new Set<string>(j.orgDisabledModules ?? []));
+        setSubDisabled(new Set<string>(j.disabledSubModules ?? []));
       } else {
         setEffective(null);
         setOrgDisabled(new Set());
+        setSubDisabled(new Set());
       }
     } catch {
       setView(null);
       setEffective(null);
       setOrgDisabled(new Set());
+      setSubDisabled(new Set());
     } finally {
       setLoading(false);
     }
@@ -159,9 +172,14 @@ export function LicenceProvider({ children }: { children: React.ReactNode }) {
       // Only meaningful for a module that is NOT in the effective set — it
       // answers "why is this missing", not "is this missing".
       isOrgDisabled: (code: string) => orgDisabled.has(code),
+      disabledSubModules: subDisabled,
+      // Trailing slashes are normalised the same way the backend key is built,
+      // so "/cams/" and "/cams" can never disagree about one screen.
+      isNavEnabled: (href: string) =>
+        !subDisabled.has(href.replace(/\/+$/, "") || "/"),
       refresh,
     };
-  }, [view, effective, orgDisabled, loading, activePlantId, refresh]);
+  }, [view, effective, orgDisabled, subDisabled, loading, activePlantId, refresh]);
 
   return <LicenceContext.Provider value={value}>{children}</LicenceContext.Provider>;
 }

@@ -97,7 +97,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 
-type NavItem = {
+export type NavItem = {
   href: string;
   label: string;
   icon: any;
@@ -107,14 +107,18 @@ type NavItem = {
   exact?: boolean;
 };
 
-type NavSection = {
+export type NavSection = {
   key: string;
   label: string | null;
   items: NavItem[];
   permissionPrefix?: string;
 };
 
-const SECTIONS: NavSection[] = [
+// Exported so the Super Admin's Organisation → Modules screen renders the SAME
+// tree the sidebar renders. One source of truth: a screen that exists in the
+// nav is a screen the Super Admin can switch off, with no second catalogue to
+// drift out of step.
+export const SECTIONS: NavSection[] = [
   {
     key: "top",
     label: null,
@@ -390,7 +394,7 @@ export function AppSidebar() {
   const { data: session } = useSession();
   const user = session?.user as any;
   const permissions = usePermissions();
-  const { hasModule } = useLicence();
+  const { hasModule, isNavEnabled } = useLicence();
   const [inboxCount, setInboxCount] = React.useState<number | null>(null);
   // Hydration guard. `permissions` and `hasModule()` come from client-only state
   // (async permission fetch + per-factory licence fetch) whose value at the first
@@ -515,6 +519,11 @@ export function AppSidebar() {
             // always pass. This is UX; the API enforces independently.
             const mod = moduleForPath(item.href);
             if (mod && !hasModule(mod)) return false;
+            // Screen-level gate — the Super Admin can hide an individual screen
+            // inside a module the organisation still has. Switching off a whole
+            // section is the same thing applied to each of its items, so an
+            // emptied section drops out via the visibleItems.length check below.
+            if (!isNavEnabled(item.href)) return false;
             if (!item.permission) return true;
             return !!permissions[item.permission];
           });
