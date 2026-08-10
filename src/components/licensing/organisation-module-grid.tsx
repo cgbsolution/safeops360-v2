@@ -10,7 +10,7 @@
 // request access to this module."
 
 import { useEffect, useMemo, useState } from "react";
-import { Building2, Save, ShieldOff, AlertTriangle } from "lucide-react";
+import { Building2, Save, ShieldOff, AlertTriangle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -19,6 +19,9 @@ type OrgModule = {
   name: string;
   group: string;
   enabled: boolean;
+  /** False = outside the signed licence. Setting is stored but inert until a
+   *  licence including the module is uploaded. */
+  licensed: boolean;
   note: string | null;
   updatedBy: string | null;
   updatedAt: string | null;
@@ -67,11 +70,18 @@ export function OrganisationModuleGrid({ onSaved }: { onSaved?: () => void | Pro
     setMsg(null);
   }, [modules]);
 
+  // Groups A–Z, and modules A–Z by display name within each group, so the
+  // catalogue reads predictably at 40+ entries.
   const grouped = useMemo(() => {
     const g: Record<string, OrgModule[]> = {};
     for (const m of modules) (g[m.group] ??= []).push(m);
-    return g;
+    for (const list of Object.values(g)) list.sort((a, b) => a.name.localeCompare(b.name));
+    return Object.fromEntries(
+      Object.entries(g).sort(([a], [b]) => a.localeCompare(b))
+    ) as Record<string, OrgModule[]>;
   }, [modules]);
+
+  const unlicensed = useMemo(() => modules.filter((m) => !m.licensed), [modules]);
 
   // Only send what actually changed — a no-op save shouldn't rewrite every
   // row's updatedBy/updatedAt and destroy the audit trail of who turned what
@@ -161,17 +171,29 @@ export function OrganisationModuleGrid({ onSaved }: { onSaved?: () => void | Pro
         </div>
         <div className="text-xs text-slate-500">
           {modules.length - offCount} of {modules.length} on
+          {unlicensed.length ? ` · ${unlicensed.length} not in licence` : ""}
           {org?.plantCount ? ` · applies to all ${org.plantCount} plant(s)` : ""}
         </div>
       </CardHeader>
 
       <CardContent>
         <p className="text-sm text-slate-600 mb-4">
-          Switching a module off removes it across the entire organisation — every plant, every
-          role. Users who try to open it are told to contact you. Only modules included in your
-          licence
-          {org?.edition ? ` (${org.edition} edition)` : ""} can be managed here.
+          Every module this portal ships, {modules.length} in total. Switching one off removes it
+          across the entire organisation — every plant, every role — and users who try to open it
+          are told to contact you.
         </p>
+
+        {unlicensed.length > 0 && (
+          <div className="mb-4 flex items-start gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <Info size={16} className="mt-0.5 shrink-0 text-slate-400" />
+            <span>
+              <strong>{unlicensed.length}</strong> module(s) are not part of your current licence
+              {org?.edition ? ` (${org.edition} edition)` : ""} and are already unavailable
+              organisation-wide. They are listed for completeness — you can set them now, and the
+              setting applies the moment a licence including them is uploaded.
+            </span>
+          </div>
+        )}
 
         {turningOff.length > 0 && (
           <div className="mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -204,11 +226,21 @@ export function OrganisationModuleGrid({ onSaved }: { onSaved?: () => void | Pro
                         />
                         <span className="min-w-0">
                           <span
-                            className={`block text-sm font-medium ${
+                            className={`flex items-center gap-2 text-sm font-medium ${
                               row.enabled ? "text-slate-900" : "text-slate-400 line-through"
                             }`}
                           >
                             {m.name}
+                            {/* Outside the licence: already unreachable, so the
+                                toggle records intent rather than taking effect. */}
+                            {!m.licensed && (
+                              <span
+                                className="rounded border border-slate-300 bg-slate-100 px-1.5 py-0.5 text-[10px] font-normal uppercase tracking-wide text-slate-500 no-underline"
+                                title="Not included in the current licence. This setting is stored but has no effect until a licence including this module is uploaded."
+                              >
+                                not in licence
+                              </span>
+                            )}
                           </span>
                           <span className="block text-xs text-slate-400">{m.code}</span>
                         </span>
