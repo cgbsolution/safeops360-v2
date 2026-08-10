@@ -10506,8 +10506,9 @@ model EngagementCompetenceSnapshot {
 /// ComplianceAudit.openingRemarks/closingRemarks are free text with no
 /// attendees, no time and no acknowledgement, so the report could only ever
 /// assert a meeting the product had no evidence of. This is the evidence.
-/// attendees is [{userId}] OR [{name, organisation, role}] — buyer auditors and
-/// certification assessors attend these meetings and are not platform users.
+/// attendees is [{userId}] OR [{name, organisation, email, role}] — buyer
+/// auditors and certification assessors attend these meetings and are not
+/// platform users; email is optional and only external entries carry it.
 model EngagementMeeting {
   id                          String    @id @default(cuid())
   engagementKind              String
@@ -10515,6 +10516,10 @@ model EngagementMeeting {
   meetingType                 String // OPENING | CLOSING
   heldAt                      DateTime
   attendees                   Json      @default("[]")
+  /// Carry these attendees onto the engagement's calendar bookings. Stored, not
+  /// acted on once — calendar_booking recomputes the desired state on every
+  /// sync, so a one-shot invite would be dropped by the next recompute.
+  addToCalendar               Boolean   @default(false)
   scopeConfirmed              Boolean   @default(false)
   findingsSummaryPresented    String?
   auditeeAcknowledgedByUserId String?

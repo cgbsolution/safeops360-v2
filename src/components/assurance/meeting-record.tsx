@@ -154,6 +154,14 @@ function MeetingCard({
           <span className="text-[10px] text-slate-500">+{(record.attendeeCount ?? 0) - 6} more</span>
         )}
       </div>
+      {record.addToCalendar && (
+        <p className="mt-1.5 text-[11px] text-slate-600">
+          On the audit&apos;s calendar
+          {(record.unreachableCount ?? 0) > 0
+            ? ` — except ${record.unreachableCount} external with no email address.`
+            : "."}
+        </p>
+      )}
       {record.meetingType === "OPENING" && record.scopeConfirmed && (
         <p className="mt-1.5 text-[11px] text-emerald-700">Scope confirmed with the auditee.</p>
       )}
@@ -197,6 +205,11 @@ function MeetingForm({
   const [notes, setNotes] = useState(existing?.notes ?? "");
   const [extName, setExtName] = useState("");
   const [extOrg, setExtOrg] = useState("");
+  const [extEmail, setExtEmail] = useState("");
+  // Ticked by default on a NEW record: someone who has just typed a list of
+  // people almost always wants those people on the closing invitation. An
+  // existing record keeps whatever was decided when it was saved.
+  const [addToCalendar, setAddToCalendar] = useState(existing?.addToCalendar ?? true);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -209,11 +222,21 @@ function MeetingForm({
     if (!n) return;
     setAttendees((prev) => [
       ...prev,
-      { name: n, organisation: extOrg.trim() || "External", external: true },
+      {
+        name: n,
+        organisation: extOrg.trim() || "External",
+        email: extEmail.trim() || undefined,
+        external: true,
+      },
     ]);
     setExtName("");
     setExtOrg("");
+    setExtEmail("");
   }
+
+  // Externals with no address. They are a legitimate minute entry — a contractor
+  // rep with no email still attended — so this informs rather than blocks.
+  const unreachable = attendees.filter((a) => a.external && !a.email);
 
   async function submit() {
     setBusy(true);
@@ -231,6 +254,7 @@ function MeetingForm({
         findingsSummaryPresented: meetingType === "CLOSING" ? summary : null,
         auditeeAcknowledged: meetingType === "CLOSING" ? acknowledged : false,
         notes,
+        addToCalendar,
       }),
     });
     setBusy(false);
@@ -288,6 +312,17 @@ function MeetingForm({
                 placeholder="Organisation"
                 className="h-8 w-32 text-xs"
               />
+              {/* Optional — an external with no address is still a valid minute
+                  entry, so this cannot be required. It is what decides whether
+                  they can be put on the calendar. */}
+              <Input
+                value={extEmail}
+                onChange={(e) => setExtEmail(e.target.value)}
+                type="email"
+                inputMode="email"
+                placeholder="Email (for the invite)"
+                className="h-8 w-44 text-xs"
+              />
               <Button
                 type="button"
                 size="sm"
@@ -312,6 +347,9 @@ function MeetingForm({
                       {a.organisation ? (
                         <span className="text-slate-500"> · {a.organisation}</span>
                       ) : null}
+                      {a.external && !a.email ? (
+                        <span className="text-amber-700"> · no email</span>
+                      ) : null}
                     </span>
                     <button
                       type="button"
@@ -329,6 +367,35 @@ function MeetingForm({
               <p className="mt-1 text-[11px] text-slate-400">
                 At least one attendee is required — a meeting record with no attendees is not a
                 record.
+              </p>
+            )}
+          </div>
+
+          {/* The minute is the only place the department owners identified at the
+              opening meeting are ever named. This is what puts them on the
+              closing invitation — nothing in the audit team fields knows them. */}
+          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
+            <label className="flex items-start gap-2 text-xs text-slate-700">
+              <input
+                type="checkbox"
+                checked={addToCalendar}
+                onChange={(e) => setAddToCalendar(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>
+                Add these attendees to the audit&apos;s calendar.
+                <span className="mt-0.5 block text-[11px] text-slate-500">
+                  {meetingType === "OPENING"
+                    ? "They are invited to the opening and closing meetings — not to the fieldwork block."
+                    : "They are invited to the closing meeting."}{" "}
+                  Anyone already on the audit team keeps the invitation they have.
+                </span>
+              </span>
+            </label>
+            {addToCalendar && unreachable.length > 0 && (
+              <p className="mt-1.5 pl-6 text-[11px] text-amber-700">
+                {unreachable.length} external attendee{unreachable.length > 1 ? "s have" : " has"} no
+                email address — recorded in the minute, but no calendar invitation can be sent.
               </p>
             )}
           </div>

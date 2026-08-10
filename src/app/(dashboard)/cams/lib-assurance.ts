@@ -253,6 +253,9 @@ export type MeetingAttendee = {
   userId?: string;
   name: string;
   organisation?: string;
+  /** Externals only — an internal attendee's address comes from their user
+   *  record. Without one they stay in the minute but reach no calendar. */
+  email?: string;
   role?: string | null;
   external?: boolean;
 };
@@ -263,6 +266,10 @@ export type MeetingRecord = {
   heldAt?: string | null;
   attendees?: MeetingAttendee[];
   attendeeCount?: number;
+  /** These attendees are carried onto the engagement's calendar bookings. */
+  addToCalendar?: boolean;
+  /** Externals recorded without an address — in the minute, not in a calendar. */
+  unreachableCount?: number;
   scopeConfirmed?: boolean;
   findingsSummaryPresented?: string | null;
   auditeeAcknowledged?: boolean;
