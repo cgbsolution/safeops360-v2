@@ -37,7 +37,7 @@ export default async function AssessmentPage(props: {
   // assessor (TRAINER / LD / HSE / ADMIN).
   const role = (session.user as any)?.role ?? "";
   const isOwner = reg.userId === userId;
-  const isAssessor = ["TRAINER", "LD_MANAGER", "HSE_MANAGER", "ADMIN", "SYSTEM_ADMIN"].includes(role);
+  const isAssessor = ["TRAINER", "LD_MANAGER", "HSE_MANAGER", "ADMIN"].includes(role);
   if (!isOwner && !isAssessor) {
     return (
       <div className="max-w-2xl mx-auto py-12 text-center text-sm text-slate-600">

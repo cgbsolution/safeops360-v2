@@ -16,15 +16,20 @@ const prisma = new PrismaClient();
 // Beyond the original 9 (ADMIN, PLANT_HEAD, HSE_MANAGER, ENVIRONMENT_MANAGER,
 // CONTRACTOR_COORDINATOR, OCCUPATIONAL_HEALTH_OFFICER,
 // EMERGENCY_RESPONSE_COORDINATOR, INDUSTRIAL_HYGIENIST, WORKER) we add the
-// roles the brief assumes. SYSTEM_ADMIN is an alias for ADMIN.
+// roles the brief assumes. ADMIN is the single portal administrator role.
 const ADDITIONAL_ROLES: { code: string; name: string; description: string; isSystem: boolean; sortOrder: number; defaultLanding: string }[] = [
   // SUPER_ADMIN owns the ORGANISATION (this portal is single-tenant: one
-  // organisation, many plants). Everything SYSTEM_ADMIN can do, plus the one
+  // organisation, many plants). Everything ADMIN can do, plus the one
   // authority no other role has — deciding which licensed modules the
   // organisation uses at all (ORGANISATION.MODULES). sortOrder 0 puts it above
-  // System Administrator in every role list.
-  { code: "SUPER_ADMIN", name: "Super Administrator", description: "Organisation owner. Everything a System Administrator can do, plus enabling/disabling modules for the whole organisation.", isSystem: true, sortOrder: 0, defaultLanding: "/organisation/modules" },
-  { code: "SYSTEM_ADMIN", name: "System Administrator", description: "Full configuration access. Alias of ADMIN.", isSystem: true, sortOrder: 1, defaultLanding: "/configuration/workflows" },
+  // Administrator in every role list.
+  { code: "SUPER_ADMIN", name: "Super Administrator", description: "Organisation owner. Everything an Administrator can do, plus enabling/disabling modules for the whole organisation.", isSystem: true, sortOrder: 0, defaultLanding: "/organisation/modules" },
+  // SYSTEM_ADMIN was removed — it and ADMIN were declared aliases but had
+  // drifted into two different grant sets, which meant "the admin role" quietly
+  // depended on which of the two a user happened to hold. ADMIN is now the
+  // single portal administrator and absorbed everything SYSTEM_ADMIN held; see
+  // the union assembled below the ROLE_GRANTS literal.
+  { code: "ADMIN", name: "Administrator", description: "Full configuration access — users, roles, workflows, masters and every module across all plants.", isSystem: true, sortOrder: 1, defaultLanding: "/configuration/workflows" },
   { code: "CORPORATE_HSE", name: "Corporate HSE", description: "All-plants HSE leadership; manages master data and roll-up reports.", isSystem: true, sortOrder: 5, defaultLanding: "/dashboard" },
   { code: "PERMIT_ISSUER", name: "Permit Issuer", description: "Originates and approves permits as Issuer (first approval step).", isSystem: true, sortOrder: 25, defaultLanding: "/inbox" },
   { code: "SAFETY_OFFICER", name: "Safety Officer", description: "Verifies observations, near-miss closure, permit safety conditions.", isSystem: true, sortOrder: 27, defaultLanding: "/inbox" },
@@ -46,7 +51,7 @@ const ADDITIONAL_ROLES: { code: string; name: string; description: string; isSys
 
   // Skill Matrix — Phase 1 IMS (competency / HR-adjacent wedge). Only these
   // two are new; LD_MANAGER, TRAINER, SUPERVISOR, DEPARTMENT_HEAD, HSE_MANAGER,
-  // PLANT_HEAD, CORPORATE_HSE, SYSTEM_ADMIN already exist and just gain grants.
+  // PLANT_HEAD, CORPORATE_HSE, ADMIN already exist and just gain grants.
   { code: "HR_HEAD",           name: "HR Head",            description: "Owns competency management cross-plant (HR territory). Configures competencies + role definitions; suspends for HR reasons.", isSystem: false, sortOrder: 35, defaultLanding: "/skill-matrix" },
   { code: "EXTERNAL_ASSESSOR", name: "External Assessor",  description: "External party scoped to specific competency assessments they are assigned. No master or role-definition authority.", isSystem: false, sortOrder: 95, defaultLanding: "/skill-matrix" },
 
@@ -128,7 +133,7 @@ const OPERATIONAL_MODULES = [
   // RECERT_CYCLE, etc.) are in EXTRA_PERMISSIONS.
   "SKILL_MATRIX",
   // MOC — Management of Change (IMS Phase 1, 4th module). CRUD + the 9
-  // lifecycle actions auto-generate below; ADMIN/SYSTEM_ADMIN get them via the
+  // lifecycle actions auto-generate below; ADMIN gets them via the
   // spread. Explicit grants for operational roles are in ROLE_GRANTS.
   "MOC",
   // AUDIT_COMPLIANCE — Audit & Compliance Management. Industry-checklist audits.
@@ -161,7 +166,7 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "AUDIT.VIEW",                module: "AUDIT",         action: "VIEW",        description: "Read audit log" },
   // Organisation ownership — the Super Admin's distinguishing authority. Turning
   // a module off here removes it for EVERY plant and every role at once, so it
-  // is granted to SUPER_ADMIN only, never to SYSTEM_ADMIN / ADMIN.
+  // is granted to SUPER_ADMIN only, never to ADMIN.
   { code: "ORGANISATION.MODULES",      module: "ORGANISATION",  action: "MODULES",     description: "Enable / disable modules for the whole organisation (Super Admin)" },
 
   // Inspection masters & finding lifecycle (production-depth refactor)
@@ -243,7 +248,7 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   // ─── User-initiated AI agent platform (Commit 1) ──────────────────────
   // One INVOKE permission per agent so RBAC can restrict pilots to specific
   // plants/roles. Scope=OWN_PLANT for HSE Manager / Plant Head / Safety
-  // Officer; ALL_PLANTS for Corporate HSE; SYSTEM_ADMIN gets everything.
+  // Officer; ALL_PLANTS for Corporate HSE; ADMIN gets everything.
   // AGENT.RCA_CONFIGURE gates authority-level changes and prompt edits;
   // AGENT.AUDIT_VIEW gates the transparency drawer (raw context + API
   // response). Adding a new agent means adding its INVOKE row here plus
@@ -685,7 +690,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Change Management ────────────────────────────────────────────
     { module: "MOC",          actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],              scope: "OWN_PLANT" },
     // ── Audit & Compliance ──────────────────────────────────────────
-    // SCHEDULE is currently held ONLY by HSE Manager + ADMIN / SYSTEM_ADMIN.
+    // SCHEDULE is currently held ONLY by HSE Manager + ADMIN.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "SCHEDULE"],        scope: "OWN_PLANT" },
     { module: "AUDIT",        actions: ["VIEW"],                                                                                              scope: "OWN_PLANT" },
     // ── PPE ──────────────────────────────────────────────────────────
@@ -936,7 +941,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "AGENT",       actions: ["RCA_INVOKE"],                       scope: "OWN_PLANT" }
   ],
   // ════════════════════════════════════════════════════════════════════
-  // ADMIN + SYSTEM_ADMIN — everything everywhere.
+  // ADMIN — everything everywhere. Merged with the former SYSTEM_ADMIN below.
   // ════════════════════════════════════════════════════════════════════
   ADMIN: [
     ...OPERATIONAL_MODULES.map((m) => ({ module: m, actions: [...OPERATIONAL_ACTIONS], scope: "ALL_PLANTS" as Scope })),
@@ -1025,6 +1030,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // CAPA — owns calibration-failure CAPAs. Can close low/moderate.
     { module: "CAPA",        actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "CLOSE", "EXPORT"], scope: "OWN_PLANT" }
   ],
+  // Former standalone role; merged into ADMIN below and then deleted.
   SYSTEM_ADMIN: [
     ...OPERATIONAL_MODULES.map((m) => ({ module: m, actions: [...OPERATIONAL_ACTIONS], scope: "ALL_PLANTS" as Scope })),
     // Guided Field Capture + Daily Alert Brief (UNMASK is admin-only per spec)
@@ -1319,20 +1325,27 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-// SUPER_ADMIN — the organisation owner.
+// ══════════════════════════════════════════════════════════════════════
+// The two administrator roles.
 //
-// DERIVED from SYSTEM_ADMIN rather than copied. ADMIN and SYSTEM_ADMIN were
-// written as two hand-maintained lists that were meant to be identical, and
-// they have since drifted (ADMIN has the HIRA/CAPA extras, SYSTEM_ADMIN has the
-// EAI/RISK/CONTROL/VENDOR/INSURANCE ones). Deriving means a future grant added
-// to SYSTEM_ADMIN is automatically held by the Super Admin too, which is the
-// invariant we actually want: the Super Admin can do everything the System
-// Admin can, plus own the organisation.
+// ADMIN absorbs SYSTEM_ADMIN. The two were written as separate hand-maintained
+// lists that were meant to be identical and had drifted — ADMIN uniquely held
+// the HIRA/CAPA extras, SYSTEM_ADMIN uniquely held EAI/RISK/CONTROL/VENDOR/
+// INSURANCE. Taking the UNION rather than picking one keeps every capability
+// that existed under either name. `skipDuplicates` on the insert absorbs the
+// overlap, so the shared majority is written once.
+ROLE_GRANTS.ADMIN = [...ROLE_GRANTS.ADMIN, ...ROLE_GRANTS.SYSTEM_ADMIN];
+delete ROLE_GRANTS.SYSTEM_ADMIN;
+
+// SUPER_ADMIN — the organisation owner. DERIVED from ADMIN rather than copied,
+// so a grant added to ADMIN is automatically held here too. That is the
+// invariant we want: the Super Admin can do everything the Administrator can,
+// plus own the organisation.
 //
 // ORGANISATION.MODULES is the one authority no other role gets — switching a
 // module off there removes it from every plant at once.
 ROLE_GRANTS.SUPER_ADMIN = [
-  ...ROLE_GRANTS.SYSTEM_ADMIN,
+  ...ROLE_GRANTS.ADMIN,
   { module: "ORGANISATION", actions: ["MODULES"], scope: "ALL_PLANTS" }
 ];
 
@@ -1439,11 +1452,11 @@ async function main() {
   console.log(`   structured emails → role assigned: ${structuredAssigned}`);
   console.log(`   non-structured emails (back-filled): ${backfilled}`);
 
-  // Anchor admin (admin@safeops360.in) — also layer SYSTEM_ADMIN on top so
-  // configuration access keys off the new role code regardless of which path
+  // Anchor admin (admin@safeops360.in) — also layer ADMIN on top so
+  // configuration access keys off the role code regardless of which path
   // created the user.
   const anchorAdmin = allUsers.find((u) => u.email === "admin@safeops360.in");
-  const sysAdminRoleId = roleIdByCode.get("SYSTEM_ADMIN");
+  const sysAdminRoleId = roleIdByCode.get("ADMIN");
   if (anchorAdmin && sysAdminRoleId) {
     const existing = await prisma.userRole.findFirst({
       where: { userId: anchorAdmin.id, roleId: sysAdminRoleId }

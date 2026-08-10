@@ -4,7 +4,7 @@
 // roles holding PTW.DELETE per the RBAC matrix see it:
 //   • PERMIT_ISSUER (OWN — own draft permits)
 //   • HSE_MANAGER   (PLANT)
-//   • SYSTEM_ADMIN  (ALL)
+//   • ADMIN  (ALL)
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";

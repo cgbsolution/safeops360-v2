@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { readApiError } from "@/lib/client-errors";
 
-const APPROVER_ROLES = ["HSE_MANAGER", "ADMIN", "SYSTEM_ADMIN"];
-const RETIRER_ROLES = ["HSE_MANAGER", "ADMIN", "SYSTEM_ADMIN", "LD_MANAGER"];
+const APPROVER_ROLES = ["HSE_MANAGER", "ADMIN"];
+const RETIRER_ROLES = ["HSE_MANAGER", "ADMIN", "LD_MANAGER"];
 
 export function ProgramApprovalActions({
   programId,

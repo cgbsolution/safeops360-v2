@@ -115,7 +115,7 @@ export default async function NearMissDetail(
   const currentStep = instance?.definition.steps.find((s: any) => s.id === instance.currentStepId);
 
   // Permission gates
-  const isHseManagerLike = role === "HSE_MANAGER" || role === "ADMIN" || role === "SYSTEM_ADMIN" || role === "CORPORATE_HSE";
+  const isHseManagerLike = role === "HSE_MANAGER" || role === "ADMIN" || role === "CORPORATE_HSE";
   // Only the actor who currently holds the "Review Meeting & CAPA Definition"
   // task may define CAPAs — not every HSE Manager, and not the reporter. This
   // mirrors the backend gate in near_miss.create_capa (_is_capa_definition_actor).

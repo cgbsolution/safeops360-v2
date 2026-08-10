@@ -12,7 +12,6 @@ const REVIEWER_ROLES = [
   "HSE_MANAGER",
   "LD_MANAGER",
   "ADMIN",
-  "SYSTEM_ADMIN",
   "SUPERVISOR",
 ];
 

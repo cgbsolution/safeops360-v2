@@ -92,7 +92,7 @@ async function main() {
   // Resolve a creator (createdByUserId is required). Prefer an admin; fall back
   // to any user, then to the sentinel "system" so the seed never hard-fails.
   const creator =
-    (await prisma.user.findFirst({ where: { role: { in: ["ADMIN", "SYSTEM_ADMIN"] } } })) ??
+    (await prisma.user.findFirst({ where: { role: "ADMIN" } })) ??
     (await prisma.user.findFirst());
   const creatorId = creator?.id ?? "system";
 

@@ -1,7 +1,7 @@
 "use client";
 
 // Inline trash icon for the FLRA list row. Permission-gated so only
-// HSE_MANAGER (own plant) and SYSTEM_ADMIN (all plants) — the two roles
+// HSE_MANAGER (own plant) and ADMIN (all plants) — the two roles
 // holding FLRA.DELETE per the RBAC matrix — see it.
 
 import { useState } from "react";

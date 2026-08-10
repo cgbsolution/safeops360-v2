@@ -62,7 +62,7 @@ const GRANTS: GrantSpec[] = [
     { role, permission: "ALERT.ACK",      scope: "ALL_PLANTS" },
     { role, permission: "ALERT.MUTE",     scope: "ALL_PLANTS" },
   ]),
-  ...["ADMIN", "SYSTEM_ADMIN"].flatMap((role) => [
+  ...["ADMIN"].flatMap((role) => [
     { role, permission: "CAPTURE.CREATE", scope: "ALL_PLANTS" },
     { role, permission: "CAPTURE.READ",   scope: "ALL_PLANTS" },
     { role, permission: "CAPTURE.TRIAGE", scope: "ALL_PLANTS" },

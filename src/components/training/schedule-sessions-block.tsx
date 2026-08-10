@@ -19,7 +19,6 @@ const ALLOWED_TRAINER_ROLES = [
   "LD_MANAGER",
   "HSE_MANAGER",
   "ADMIN",
-  "SYSTEM_ADMIN",
 ];
 
 type Session = {

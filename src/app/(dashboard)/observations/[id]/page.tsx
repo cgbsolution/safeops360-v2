@@ -42,7 +42,6 @@ const DEROSTER_DECISION_ROLES = [
   "HSE_MANAGER",
   "PLANT_HSE_HEAD",
   "CORPORATE_HSE",
-  "SYSTEM_ADMIN",
   "ADMIN"
 ];
 import { formatDate, statusColor, severityColor, humanize } from "@/lib/utils";

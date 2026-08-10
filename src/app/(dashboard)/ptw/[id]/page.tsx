@@ -149,7 +149,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
   const canSuspendResume = role === "HSE_MANAGER" || role === "ADMIN";
   const canVerifyRoles =
     role === "PERMIT_ISSUER" || role === "SAFETY_OFFICER" || role === "PLANT_HEAD" ||
-    role === "HSE_MANAGER" || role === "ADMIN" || role === "SYSTEM_ADMIN";
+    role === "HSE_MANAGER" || role === "ADMIN";
   const canCancel =
     canVerifyRoles || userId === p.originatorId || userId === p.issuerId;
 

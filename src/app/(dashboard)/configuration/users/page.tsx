@@ -9,7 +9,7 @@ import { UsersTable, type UserRow } from "./users-table";
 
 export const dynamic = "force-dynamic";
 
-const ADMIN_LIKE_ROLES = new Set(["SYSTEM_ADMIN", "CORPORATE_HSE", "PLANT_HEAD"]);
+const ADMIN_LIKE_ROLES = new Set(["ADMIN", "CORPORATE_HSE", "PLANT_HEAD"]);
 
 export default async function UsersPage(props: {
   searchParams: Promise<{ q?: string; role?: string; plant?: string }>;

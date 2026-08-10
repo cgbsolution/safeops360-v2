@@ -1,7 +1,7 @@
 // Targeted, idempotent grant of the HIRA.OVERRIDE_UNACCEPTABLE permission.
 //
 // Adds the permission row and grants it to the elevated approver tier only
-// (Plant Head + Corporate HSE + ADMIN/SYSTEM_ADMIN) — NOT HSE Manager, who can
+// (Plant Head + Corporate HSE + ADMIN) — NOT HSE Manager, who can
 // approve normally but must escalate an Unacceptable-risk override.
 //
 // Written as a surgical upsert (not the full seed-rbac.ts) so it is safe to run
@@ -17,8 +17,7 @@ const CODE = "HIRA.OVERRIDE_UNACCEPTABLE";
 const GRANTS: { roleCode: string; scope: string }[] = [
   { roleCode: "PLANT_HEAD", scope: "OWN_PLANT" },
   { roleCode: "CORPORATE_HSE", scope: "ALL_PLANTS" },
-  { roleCode: "ADMIN", scope: "ALL_PLANTS" },
-  { roleCode: "SYSTEM_ADMIN", scope: "ALL_PLANTS" }
+  { roleCode: "ADMIN", scope: "ALL_PLANTS" }
 ];
 
 async function main() {

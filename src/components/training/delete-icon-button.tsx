@@ -3,7 +3,7 @@
 // Inline trash icon for the Training list row. Permission-gated to:
 //   • LD_MANAGER   (OWN — own draft training records)
 //   • HSE_MANAGER  (PLANT)
-//   • SYSTEM_ADMIN (ALL)
+//   • ADMIN (ALL)
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";

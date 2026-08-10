@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { readApiError } from "@/lib/client-errors";
 
-const SCHEDULER_ROLES = ["LD_MANAGER", "HSE_MANAGER", "ADMIN", "SYSTEM_ADMIN"];
+const SCHEDULER_ROLES = ["LD_MANAGER", "HSE_MANAGER", "ADMIN"];
 
 export function ScheduleLifecyclePanel({
   scheduleId,

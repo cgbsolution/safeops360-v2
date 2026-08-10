@@ -128,13 +128,13 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
   // Privileged-legal comment visibility: HSE Manager / Plant Head /
   // Corporate HSE / Admin can see them. Workers and supervisors cannot.
   const role = (session?.user as any)?.role ?? "";
-  const canSeePrivilegedComments = ["HSE_MANAGER", "PLANT_HEAD", "CORPORATE_HSE", "ADMIN", "SYSTEM_ADMIN"].includes(role);
+  const canSeePrivilegedComments = ["HSE_MANAGER", "PLANT_HEAD", "CORPORATE_HSE", "ADMIN"].includes(role);
   // Feature 5 — the numeric risk score is visible to Plant Head and above.
-  const canSeeScore = ["PLANT_HEAD", "CORPORATE_HSE", "ADMIN", "SYSTEM_ADMIN"].includes(role);
+  const canSeeScore = ["PLANT_HEAD", "CORPORATE_HSE", "ADMIN"].includes(role);
   // Features 1/2 — who may run AI assist + raise CAPAs from causes (backend
   // re-checks INCIDENT.UPDATE; this only gates the UI).
   const canManageIntel =
-    ["HSE_MANAGER", "PLANT_HEAD", "CORPORATE_HSE", "ADMIN", "SYSTEM_ADMIN"].includes(role) ||
+    ["HSE_MANAGER", "PLANT_HEAD", "CORPORATE_HSE", "ADMIN"].includes(role) ||
     i.investigationTeamLead === userId;
 
   const initialPhotoCount = await prisma.incidentAttachment.count({

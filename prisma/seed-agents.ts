@@ -94,7 +94,7 @@ function loadPrompt(): string {
 
 async function findCreatorUserId(): Promise<string> {
   // Prefer the anchor admin used elsewhere in seeding; fall back to
-  // any SYSTEM_ADMIN-roled user; fall back to any user.
+  // any ADMIN-roled user; fall back to any user.
   const anchor = await prisma.user.findFirst({
     where: { email: "admin@safeops360.in" },
     select: { id: true }
@@ -102,7 +102,7 @@ async function findCreatorUserId(): Promise<string> {
   if (anchor) return anchor.id;
 
   const sysAdmin = await prisma.user.findFirst({
-    where: { role: "SYSTEM_ADMIN" },
+    where: { role: "ADMIN" },
     select: { id: true }
   });
   if (sysAdmin) return sysAdmin.id;

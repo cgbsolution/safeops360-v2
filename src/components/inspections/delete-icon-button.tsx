@@ -1,7 +1,7 @@
 "use client";
 
 // Inline trash icon for the Inspection list row. Permission-gated to
-// HSE_MANAGER (own plant) and SYSTEM_ADMIN (all plants) — the only roles
+// HSE_MANAGER (own plant) and ADMIN (all plants) — the only roles
 // holding INSPECTION.DELETE per the RBAC matrix.
 
 import { useState } from "react";

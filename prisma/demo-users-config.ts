@@ -60,7 +60,6 @@ export const DEMO_ROLES: DemoRole[] = [
   // Cross-plant / system
   { roleCode: "CORPORATE_HSE",                   emailSlug: "corporate-hse",         legacyRole: "HSE_MANAGER",   label: "Corporate HSE" },
   { roleCode: "ADMIN",                           emailSlug: "admin",                 legacyRole: "ADMIN",         label: "Admin" },
-  { roleCode: "SYSTEM_ADMIN",                    emailSlug: "system-admin",          legacyRole: "ADMIN",         label: "System Admin" }
 ];
 
 // Build the Cartesian email for a (role × dept × plant) cell.

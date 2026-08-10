@@ -5,7 +5,7 @@
 // matrix see it:
 //   • HSE_MANAGER   (ALL_PLANTS — any originator, any plant)
 //   • CORPORATE_HSE (ALL_PLANTS)
-//   • SYSTEM_ADMIN  (ALL_PLANTS)
+//   • ADMIN  (ALL_PLANTS)
 //
 // Incident is a *governed* entity, so the backend soft-deletes it (never a hard
 // delete): it drops out of every view and its live workflow tasks are removed,
