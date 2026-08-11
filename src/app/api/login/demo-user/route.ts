@@ -9,6 +9,7 @@
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { backendFetch } from "@/lib/backend-fetch";
+import { isDemoPickable } from "@/lib/demo-picker-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,9 @@ function getPrisma() {
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const email = (url.searchParams.get("email") ?? "").trim().toLowerCase();
-  if (!email || !email.endsWith("@safeops360.in")) {
+  // Same scope as the search — the demo domain plus the explicitly named
+  // accounts. Anything else 400s rather than confirming an address exists.
+  if (!email || !isDemoPickable(email)) {
     return NextResponse.json({ error: "demo email required" }, { status: 400 });
   }
 

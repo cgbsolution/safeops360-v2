@@ -17,6 +17,11 @@
 // block's time is derived from the audit's own scheduled date and duration, and
 // letting it be edited from here would give the schedule two owners that could
 // disagree. The panel says that in words rather than just disabling a control.
+//
+// Scheduling an audit books the FIELDWORK BLOCK only. The opening and closing
+// meetings appear here once someone records them, because that is when their
+// time and their attendees are actually known — so a panel showing one booking
+// is the normal state of a freshly scheduled audit, not a half-finished one.
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -160,7 +165,7 @@ export function CalendarBookingsPanel({
         <Header provider={provider} />
         <p className="mt-2 text-xs text-slate-500">
           {data
-            ? "Nothing is in anyone's calendar for this audit."
+            ? "Nothing is in anyone's calendar for this audit yet."
             : "Calendar bookings are unavailable — the feature may not be installed on this deployment yet."}
         </p>
         {data && canManage && !locked && (

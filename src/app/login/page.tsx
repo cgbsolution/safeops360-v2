@@ -18,6 +18,46 @@ import {
   buildDemoEmail
 } from "../../../prisma/demo-users-config";
 
+/**
+ * Where to land after a successful sign-in.
+ *
+ * Notification emails link to `/go?to=<path>`, which sends a signed-out reader
+ * here with `?callbackUrl=<path>`. Without honouring it, every emailed deep
+ * link would dump the recipient on the Inbox and lose the record the email was
+ * about — which is most of the point of sending the email.
+ *
+ * Read from `window.location` at submit time rather than via `useSearchParams`
+ * so this page needs no Suspense boundary and cannot cause a hydration
+ * mismatch. Same-origin absolute paths only: anything else (a full URL, a
+ * protocol-relative `//host`) is an open redirect, so it falls back to /inbox.
+ */
+function resolveCallbackUrl(): string {
+  if (typeof window === "undefined") return "/inbox";
+  const raw = new URLSearchParams(window.location.search).get("callbackUrl");
+  if (!raw) return "/inbox";
+  let path = raw;
+  try {
+    path = decodeURIComponent(raw);
+  } catch {
+    return "/inbox";
+  }
+  // NextAuth writes an absolute callbackUrl of its own; accept it when it is
+  // this origin and reduce it to a path, reject it otherwise.
+  if (/^https?:\/\//i.test(path)) {
+    try {
+      const u = new URL(path);
+      if (u.origin !== window.location.origin) return "/inbox";
+      path = `${u.pathname}${u.search}${u.hash}`;
+    } catch {
+      return "/inbox";
+    }
+  }
+  if (!path.startsWith("/") || path.startsWith("//") || path.startsWith("/\\")) return "/inbox";
+  // Bouncing back to /login would loop.
+  if (path === "/login" || path.startsWith("/login?")) return "/inbox";
+  return path;
+}
+
 const ANCHOR_ADMIN = {
   label: "Global Admin",
   email: "admin@safeops360.in",
@@ -184,7 +224,7 @@ export default function LoginPage() {
     } else {
       setLoading(false);
       setRedirecting(true);
-      router.push("/inbox");
+      router.push(resolveCallbackUrl());
     }
   }
 

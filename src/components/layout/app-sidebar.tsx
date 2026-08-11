@@ -419,7 +419,11 @@ export function AppSidebar() {
         const r = await fetch("/api/workflow/my-count");
         if (!r.ok) return;
         const j = await r.json();
-        if (!cancelled) setInboxCount(j.count ?? 0);
+        // `count` is open workflow tasks only. The Inbox also has a
+        // Notifications tab (audit assignments, risk-owner handovers) whose
+        // rows have no task behind them — left out, the badge reads zero while
+        // the Inbox has unread items in it.
+        if (!cancelled) setInboxCount((j.count ?? 0) + (j.unreadNotifications ?? 0));
       } catch {}
     }
     function start() {

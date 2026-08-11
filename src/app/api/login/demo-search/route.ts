@@ -5,12 +5,15 @@
 //   2. Fall back to a direct Prisma query so the picker keeps working when the
 //      Python service is stopped (local dev, cold-start, etc.).
 //
-// Scope is deliberately limited to @safeops360.in demo accounts — this is a
-// demo convenience, not a directory endpoint for real tenants.
+// Scope is deliberately limited to @safeops360.in demo accounts plus the
+// explicitly named ones below — this is a demo convenience, not a directory
+// endpoint for real tenants. It answers before anyone has signed in, so a
+// whole-domain rule would make the login page enumerate real staff.
 
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 import { backendFetch } from "@/lib/backend-fetch";
+import { demoPickerExtraEmails } from "@/lib/demo-picker-scope";
 
 export const dynamic = "force-dynamic";
 
@@ -47,10 +50,21 @@ export async function GET(req: Request) {
   try {
     const users = await getPrisma().user.findMany({
       where: {
-        email: { endsWith: "@safeops360.in" },
-        OR: [
-          { name: { contains: q, mode: "insensitive" } },
-          { email: { contains: q, mode: "insensitive" } }
+        // Scope AND term, kept as two AND-ed clauses — folding the scope into
+        // the same OR as the search term would make every user matchable.
+        AND: [
+          {
+            OR: [
+              { email: { endsWith: "@safeops360.in" } },
+              { email: { in: demoPickerExtraEmails(), mode: "insensitive" } }
+            ]
+          },
+          {
+            OR: [
+              { name: { contains: q, mode: "insensitive" } },
+              { email: { contains: q, mode: "insensitive" } }
+            ]
+          }
         ]
       },
       select: {

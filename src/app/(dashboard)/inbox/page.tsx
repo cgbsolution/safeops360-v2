@@ -7,12 +7,14 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, AlertTriangle, Eye, FileCheck, Hourglass, Inbox as InboxIcon, Send } from "lucide-react";
+import { Bell, CheckCircle2, AlertTriangle, Eye, FileCheck, Hourglass, Inbox as InboxIcon, Send } from "lucide-react";
 import { formatDateTime, humanize, cn } from "@/lib/utils";
 import { WorkflowEngine } from "@/lib/workflow/engine";
 import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
 import { unreadInboxCounts } from "@/lib/workflow/read-state";
+import { backendFetch } from "@/lib/backend";
 import { MarkAllReadButton } from "./mark-all-read";
+import { NotificationList, type InboxNotification } from "./notification-list";
 import { formatPartyMeta, formatPartyName } from "@/lib/users/user-ref";
 
 export const dynamic = "force-dynamic";
@@ -48,9 +50,39 @@ const TABS = [
   { key: "approvals", label: "Pending Approvals", icon: FileCheck },
   { key: "tasks", label: "My Tasks", icon: Hourglass },
   { key: "verifications", label: "Pending Verification", icon: CheckCircle2 },
+  // Events with no workflow task behind them — audit assignments, risk-owner
+  // handovers, overdue treatments. They were being written to the backend
+  // Notification table and shown nowhere, so email was the only channel that
+  // actually reached anyone. See ./notification-list.tsx.
+  { key: "notifications", label: "Notifications", icon: Bell },
   { key: "submitted", label: "Submitted by Me", icon: Send },
   { key: "overdue", label: "Overdue / Escalated", icon: AlertTriangle }
 ] as const;
+
+/**
+ * The backend notification feed. Returns an empty list rather than throwing:
+ * this is one tab of six, and a backend hiccup must not 500 the whole Inbox.
+ */
+async function loadNotifications(): Promise<InboxNotification[]> {
+  try {
+    const res = await backendFetch<{ notifications: InboxNotification[] }>(
+      "/api/notifications?limit=100"
+    );
+    return res?.notifications ?? [];
+  } catch (e) {
+    console.error("Inbox notifications fetch failed:", e);
+    return [];
+  }
+}
+
+async function loadUnreadNotificationCount(): Promise<number> {
+  try {
+    const res = await backendFetch<{ count: number }>("/api/notifications/unread-count");
+    return res?.count ?? 0;
+  } catch {
+    return 0;
+  }
+}
 
 // Every module the workflow engine mints tasks for MUST appear here. A module
 // missing from these maps renders a blank badge and links to /dashboard instead
@@ -114,7 +146,7 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
   // OVERDUE/ESCALATED status — the previous code summed all PENDING
   // tasks too, which made the badge show "2" even when nothing was
   // actually overdue.
-  const [taskCounts, submittedCount, overdueRealCount, unread] = await Promise.all([
+  const [taskCounts, submittedCount, overdueRealCount, unread, unreadNotifications] = await Promise.all([
     prisma.workflowTask.groupBy({
       by: ["taskType"],
       where: { assignedToId: userId, status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
@@ -124,7 +156,8 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
     prisma.workflowTask.count({
       where: { assignedToId: userId, status: { in: ["OVERDUE", "ESCALATED"] } }
     }),
-    unreadInboxCounts(userId)
+    unreadInboxCounts(userId),
+    loadUnreadNotificationCount()
   ]);
 
   const approvalCount = taskCounts.find((r) => r.taskType === "APPROVAL")?._count._all ?? 0;
@@ -136,6 +169,10 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
     approvals: approvalCount,
     tasks: taskCount,
     verifications: verificationCount,
+    // The tab badge counts UNREAD here, not total. A notification feed has no
+    // "open" state to count — every notification ever sent is still in it — so
+    // a total would be a number that only grows and means nothing.
+    notifications: unreadNotifications,
     submitted: submittedCount,
     overdue: overdueCount
   };
@@ -146,6 +183,9 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
     approvals: unread.approvals,
     tasks: unread.tasks,
     verifications: unread.verifications,
+    // The count badge on this tab is ALREADY the unread number, so a rose pip
+    // beside it would say the same thing twice.
+    notifications: 0,
     submitted: 0,
     overdue: unread.overdue
   };
@@ -156,8 +196,11 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
   let verifications: any[] = [];
   let submitted: any[] = [];
   let overdue: any[] = [];
+  let notifications: InboxNotification[] = [];
 
-  if (tab === "approvals") {
+  if (tab === "notifications") {
+    notifications = await loadNotifications();
+  } else if (tab === "approvals") {
     pendingApprovals = await prisma.workflowTask.findMany({
       where: { assignedToId: userId, taskType: "APPROVAL", status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
       include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
@@ -252,6 +295,7 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
           {tab === "approvals" && <TaskList tasks={pendingApprovals} actionLabel="Approve" emptyText="No pending approvals — you're all caught up." />}
           {tab === "tasks" && <TaskList tasks={executionTasks} actionLabel="Execute" emptyText="No execution tasks assigned to you." />}
           {tab === "verifications" && <TaskList tasks={verifications} actionLabel="Verify" emptyText="No items awaiting your verification." />}
+          {tab === "notifications" && <NotificationList items={notifications} />}
           {tab === "submitted" && <SubmittedList items={submitted} />}
           {tab === "overdue" && <TaskList tasks={overdue} actionLabel="Open" emptyText="🎉 Nothing overdue. Keep it up." overdueMode />}
         </CardContent>

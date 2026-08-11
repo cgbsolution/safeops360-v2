@@ -271,7 +271,8 @@ export function Sidebar({
         const r = await fetch("/api/workflow/my-count");
         if (!r.ok) return;
         const j = await r.json();
-        if (!cancelled) setInboxCount(j.count ?? 0);
+        // See app-sidebar.tsx — `count` omits the Notifications tab.
+        if (!cancelled) setInboxCount((j.count ?? 0) + (j.unreadNotifications ?? 0));
       } catch {}
     }
 
