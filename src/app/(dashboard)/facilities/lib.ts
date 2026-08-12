@@ -1,6 +1,34 @@
 // Facilities module — shared types + chip maps.
 // Mirrors app/schemas/factory.py (the API contract). camelCase throughout.
 
+// ── Standardised units of measure ────────────────────────────────────────────
+// One canonical unit per measure, for the whole module. Field headings render
+// the unit from here rather than spelling it out inline, so "Area" always means
+// m² and "Water capacity" always means KL/day — on the profile, in the building
+// and floor registers, in exports and in cross-factory benchmarking alike.
+//
+// These are deliberately NOT selectable at data-entry time. A per-row unit
+// dropdown makes two factories' numbers incomparable and quietly corrupts every
+// roll-up built on them; the storage columns are named for their unit
+// (`areaSqm`, `waterCapacityKld`, `powerRatingKva`, …) to keep that honest all
+// the way down to the database.
+export const UNITS = {
+  length: "m",
+  height: "m",
+  area: "m²",
+  volume: "KL",
+  water: "KL/day",
+  waste: "kg/day",
+  production: "pcs/day",
+  fabric: "m/day",
+  power: "kVA",
+  people: "persons",
+} as const;
+
+/** `"Area"` → `"Area (m²)"`. The one way a unit reaches a label. */
+export const withUnit = (label: string, unit: keyof typeof UNITS): string =>
+  `${label} (${UNITS[unit]})`;
+
 export type FactoryStatus =
   | "OPERATIONAL"
   | "UNDER_CONSTRUCTION"
@@ -63,6 +91,60 @@ export type FactoryProfile = {
   updatedAt: string | null;
 };
 
+// ── Floor register + per-floor activity mapping ──────────────────────────────
+// A building's `floors` is a count; BuildingFloor rows are the addressable
+// levels, and each carries as many activities as it actually hosts — Block A /
+// Floor 1 / Sewing, Floor 2 / Packing, Floor 3 / Canteen, DG yard / 1250 kVA DG
+// set + STP. Every measure below has a fixed unit (see UNITS).
+export type ActivityType =
+  | "PROCESS"
+  | "UTILITY"
+  | "WELFARE"
+  | "STORAGE"
+  | "ADMIN"
+  | "EFFLUENT"
+  | "POWER"
+  | "OTHER";
+
+export type FloorActivity = {
+  id: string;
+  factoryProfileId: string;
+  buildingId: string;
+  floorId: string;
+  siteId: string;
+  activityType: ActivityType;
+  activityName: string;
+  processId: string | null;
+  description: string | null;
+  sequenceOrder: number | null;
+  areaSqm: number | null;                     // m²
+  headcount: number | null;                   // persons
+  productionCapacityPcsPerDay: number | null; // pcs/day
+  fabricConsumptionMPerDay: number | null;    // m/day
+  powerRatingKva: number | null;              // kVA
+  waterCapacityKld: number | null;            // KL/day
+  wasteGeneratedKgPerDay: number | null;      // kg/day
+  keyHazards: string[];
+  isActive: boolean;
+  updatedAt: string | null;
+};
+
+export type BuildingFloor = {
+  id: string;
+  factoryProfileId: string;
+  buildingId: string;
+  siteId: string;
+  floorLabel: string;
+  floorLevel: number; // -1 basement | 0 ground | 1, 2, 3 …
+  areaSqm: number | null;          // m²
+  headroomM: number | null;        // m
+  occupancyPersons: number | null; // persons
+  notes: string | null;
+  isActive: boolean;
+  activities: FloorActivity[];
+  updatedAt: string | null;
+};
+
 export type Building = {
   id: string;
   factoryProfileId: string;
@@ -78,6 +160,7 @@ export type Building = {
   emergencyExits: number | null;
   occupancyCertificateNo: string | null;
   isActive: boolean;
+  floorRegister: BuildingFloor[];
   updatedAt: string | null;
 };
 
@@ -303,6 +386,56 @@ export type FactoryProfileDetail = FactoryProfile & {
   hazardousMaterials: HazardousMaterial[];
   regulatoryRegistrations: RegulatoryRegistration[];
   lifecycleEvents: FactoryLifecycleEvent[];
+  // governed-edit trail
+  pendingChangeRequest: ProfileChangeRequest | null;
+  changeRequests: ProfileChangeRequest[];
+  /** True once the profile is ACTIVE: an edit becomes an approval, not a save. */
+  editRequiresApproval: boolean;
+};
+
+// ── Profile change requests (Plant Head → Compliance Lead Auditor) ──
+export type ChangeRequestStatus =
+  | "PENDING_UNIT"
+  | "PENDING_COMPLIANCE"
+  | "APPLIED"
+  | "REJECTED"
+  | "WITHDRAWN";
+
+export type ProfileFieldChange = {
+  field: string;
+  label: string;
+  from: string | null;
+  to: string | null;
+};
+
+export type ProfileChangeRequest = {
+  id: string;
+  factoryProfileId: string;
+  siteId: string;
+  version: number;
+  changes: ProfileFieldChange[];
+  reason: string | null;
+  status: ChangeRequestStatus;
+  requestedBy: string | null;
+  requestedByName: string | null;
+  requestedByRole: string | null;
+  requestedAt: string | null;
+  unitApprovedBy: string | null;
+  unitApprovedByName: string | null;
+  unitApprovedAt: string | null;
+  unitApprovalComment: string | null;
+  complianceApprovedBy: string | null;
+  complianceApprovedByName: string | null;
+  complianceApprovedAt: string | null;
+  complianceApprovalComment: string | null;
+  rejectedBy: string | null;
+  rejectedByName: string | null;
+  rejectedAt: string | null;
+  rejectedAtStep: string | null;
+  rejectionReason: string | null;
+  appliedAt: string | null;
+  /** Edit made while the profile was still being drafted — history, not a gate. */
+  autoApplied: boolean;
 };
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -455,8 +588,18 @@ export type RegistrationType =
   | "PF"
   | "GST"
   | "FIRE_LICENSE"
+  | "FIRE_NOC"
+  | "STABILITY_CERT"
   | "PCB"
+  | "PCB_CONSENT_ESTABLISH"
+  | "PCB_CONSENT_OPERATE"
+  | "HAZWASTE_AUTHORISATION"
   | "BOILER"
+  | "PESO_LICENSE"
+  | "LIFT_LICENSE"
+  | "ELECTRICAL_SAFETY"
+  | "TRADE_LICENSE"
+  | "CLRA_LICENSE"
   | "BUILDING_CERT"
   | "OTHER";
 export type RenewalFrequency = "ANNUAL" | "BIENNIAL" | "TRIENNIAL" | "ONEOFF" | "ONGOING";
@@ -919,30 +1062,116 @@ export const GHS_SIGNAL_CHIP: Record<string, string> = {
 };
 
 // ── Regulatory registrations ──
+// Ordered the way a compliance pack is assembled: the licence to run the
+// factory, then fire, then structure, then environment, then equipment, then
+// the labour/tax registrations.
 export const REGISTRATION_TYPES: RegistrationType[] = [
   "FACTORY_ACT",
   "FIRE_LICENSE",
+  "FIRE_NOC",
+  "STABILITY_CERT",
+  "BUILDING_CERT",
   "PCB",
+  "PCB_CONSENT_ESTABLISH",
+  "PCB_CONSENT_OPERATE",
+  "HAZWASTE_AUTHORISATION",
   "BOILER",
+  "PESO_LICENSE",
+  "LIFT_LICENSE",
+  "ELECTRICAL_SAFETY",
+  "TRADE_LICENSE",
+  "CLRA_LICENSE",
   "ESI",
   "PF",
   "GST",
-  "BUILDING_CERT",
   "OTHER",
 ];
 export const RENEWAL_FREQUENCIES: RenewalFrequency[] = ["ANNUAL", "BIENNIAL", "TRIENNIAL", "ONEOFF", "ONGOING"];
 export const COMPLIANCE_IMPACTS: ComplianceImpact[] = ["CRITICAL", "HIGH", "MEDIUM", "LOW"];
 
 export const REGISTRATION_TYPE_LABEL: Record<string, string> = {
-  FACTORY_ACT: "Factory Act",
+  FACTORY_ACT: "Factory Act Licence",
   ESI: "ESI",
   PF: "Provident Fund",
   GST: "GST",
   FIRE_LICENSE: "Fire Licence",
+  FIRE_NOC: "Fire NOC / Compliance Certificate",
+  STABILITY_CERT: "Structural Stability Certificate",
   PCB: "Pollution Control (PCB)",
+  // "KSPCB consent" and its equivalents in every other state — the board is
+  // captured on the profile (pollutionControlBoard), the consent itself here.
+  PCB_CONSENT_ESTABLISH: "PCB Consent to Establish (CFE)",
+  PCB_CONSENT_OPERATE: "PCB Consent to Operate (CFO)",
+  HAZWASTE_AUTHORISATION: "Hazardous Waste Authorisation",
   BOILER: "Boiler",
-  BUILDING_CERT: "Building / Occupancy",
+  PESO_LICENSE: "PESO Licence",
+  LIFT_LICENSE: "Lift / Hoist Licence",
+  ELECTRICAL_SAFETY: "Electrical Safety Certificate",
+  TRADE_LICENSE: "Trade Licence",
+  CLRA_LICENSE: "Contract Labour (CLRA) Licence",
+  BUILDING_CERT: "Building / Occupancy Certificate",
   OTHER: "Other",
+};
+
+// ── Building floors + activity mapping ──
+export const ACTIVITY_TYPES: ActivityType[] = [
+  "PROCESS",
+  "UTILITY",
+  "POWER",
+  "EFFLUENT",
+  "STORAGE",
+  "WELFARE",
+  "ADMIN",
+  "OTHER",
+];
+
+export const ACTIVITY_TYPE_LABEL: Record<string, string> = {
+  PROCESS: "Production process",
+  UTILITY: "Utility",
+  POWER: "Power / DG",
+  EFFLUENT: "Effluent / STP / ETP",
+  STORAGE: "Storage",
+  WELFARE: "Welfare / amenity",
+  ADMIN: "Administration",
+  OTHER: "Other",
+};
+
+export const ACTIVITY_TYPE_CHIP: Record<string, string> = {
+  PROCESS: "bg-primary-50 text-primary-700 border-primary-200",
+  UTILITY: "bg-sky-50 text-sky-700 border-sky-200",
+  POWER: "bg-amber-50 text-amber-800 border-amber-200",
+  EFFLUENT: "bg-teal-50 text-teal-700 border-teal-200",
+  STORAGE: "bg-slate-100 text-slate-600 border-slate-200",
+  WELFARE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  ADMIN: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  OTHER: "bg-slate-100 text-slate-500 border-slate-200",
+};
+
+/** "Ground Floor" / "Floor 3" / "Basement 1" from a level ordinal. */
+export const floorLabelForLevel = (level: number): string =>
+  level === 0 ? "Ground Floor" : level < 0 ? `Basement ${-level}` : `Floor ${level}`;
+
+// ── Profile change requests ──
+export const CHANGE_REQUEST_STATUS_LABEL: Record<string, string> = {
+  PENDING_UNIT: "Awaiting Plant Head",
+  PENDING_COMPLIANCE: "Awaiting Compliance (Lead Auditor)",
+  APPLIED: "Applied",
+  REJECTED: "Rejected",
+  WITHDRAWN: "Withdrawn",
+};
+
+export const CHANGE_REQUEST_STATUS_CHIP: Record<string, string> = {
+  PENDING_UNIT: "bg-amber-100 text-amber-800 border-amber-200",
+  PENDING_COMPLIANCE: "bg-sky-100 text-sky-800 border-sky-200",
+  APPLIED: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  REJECTED: "bg-rose-100 text-rose-800 border-rose-200",
+  WITHDRAWN: "bg-slate-100 text-slate-500 border-slate-200",
+};
+
+/** The permission that may act on a request sitting at this status. */
+export const CHANGE_REQUEST_STEP_PERMISSION: Record<string, string> = {
+  PENDING_UNIT: "FACILITY.PROFILE_APPROVE_UNIT",
+  PENDING_COMPLIANCE: "FACILITY.PROFILE_APPROVE_COMPLIANCE",
 };
 
 export const RENEWAL_FREQUENCY_LABEL: Record<string, string> = {

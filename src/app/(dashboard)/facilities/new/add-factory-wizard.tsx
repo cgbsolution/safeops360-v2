@@ -13,10 +13,19 @@ import {
   OWNERSHIP_TYPES,
   OWNERSHIP_LABEL,
   titleCase,
+  UNITS,
+  withUnit,
   type BuildingType,
   type FactoryStatus,
   type OwnershipType,
 } from "../lib";
+
+// Ownership types that describe a Page-owned, in-house facility. For these the
+// Site is not a separate thing the operator maintains — the factory *is* the
+// site — so the Site picker is optional and the backend provisions one.
+// A supplier arrangement is the case where mapping onto an existing Site
+// carries real meaning, so there the picker stays prominent.
+const IN_HOUSE_OWNERSHIP: OwnershipType[] = ["OWNED", "LEASED"];
 
 export type SiteOption = {
   id: string;
@@ -122,13 +131,18 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
     </Field>
   );
 
-  const canNext0 = siteId !== "" && factoryName.trim().length >= 2;
+  const inHouse = IN_HOUSE_OWNERSHIP.includes(ownershipType);
+  // Site is only a hard requirement where the mapping means something: a
+  // supplier factory has to land on the Site it is being managed under. An
+  // in-house factory can proceed without one and gets a Site provisioned.
+  const canNext0 = factoryName.trim().length >= 2 && (inHouse || siteId !== "");
 
   async function submit() {
     setSubmitting(true);
     setError(null);
     const payload = {
-      siteId,
+      // Omitted rather than "" — the API reads absent as "provision one for me".
+      siteId: siteId || undefined,
       factoryName,
       factoryCode: factoryCode.trim() || undefined,
       status,
@@ -214,9 +228,11 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
         {step === 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Field label="Site (1:1 link — required)">
+              <Field label={inHouse ? "Site (optional)" : "Site (1:1 link — required)"}>
                 <Select value={siteId} onChange={(e) => onPickSite(e.target.value)}>
-                  <option value="">Select a site…</option>
+                  <option value="">
+                    {inHouse ? "Not linked — create a site for this factory" : "Select a site…"}
+                  </option>
                   {sites.map((s) => (
                     <option key={s.id} value={s.id} disabled={s.linked}>
                       {s.code} — {s.name}
@@ -225,6 +241,11 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
                   ))}
                 </Select>
               </Field>
+              <p className="mt-1 text-[11px] text-slate-500">
+                {inHouse
+                  ? "For a Page-owned facility the factory is the site — leave this blank and one is created from the factory’s own name and location. Pick a site only if this factory must roll up under an existing one."
+                  : "A supplier factory is managed under a site, so the mapping is required here. One site carries one factory profile."}
+              </p>
             </div>
             <Field label="Factory name *">
               <Input value={factoryName} onChange={(e) => setFactoryName(e.target.value)} placeholder="Meridian Apparel — Tirupur 1" />
@@ -294,10 +315,10 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
                 <Input value={applicableActsText} onChange={(e) => setApplicableActsText(e.target.value)} />
               </Field>
             </div>
-            <Field label="Total land area (sqm)">
+            <Field label={withUnit("Total land area", "area")}>
               <Input value={totalLandAreaSqm} onChange={(e) => setTotalLandAreaSqm(e.target.value)} />
             </Field>
-            <Field label="Built-up area (sqm)">
+            <Field label={withUnit("Built-up area", "area")}>
               <Input value={builtUpAreaSqm} onChange={(e) => setBuiltUpAreaSqm(e.target.value)} />
             </Field>
             <div className="sm:col-span-2">
@@ -393,7 +414,7 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
                     />
                     <Input
                       className="sm:col-span-2"
-                      placeholder="Area sqm"
+                      placeholder={`Area ${UNITS.area}`}
                       value={b.areaSqm}
                       onChange={(e) => setBuildings(buildings.map((x, j) => (j === i ? { ...x, areaSqm: e.target.value } : x)))}
                     />
@@ -472,7 +493,7 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-[11px] font-semibold text-primary-700">{i + 1}</span>
                     </div>
                     <Input className="sm:col-span-4" placeholder="Process (Stitching)" value={p.processName} onChange={(e) => setProcs(procs.map((x, j) => (j === i ? { ...x, processName: e.target.value } : x)))} />
-                    <Input className="sm:col-span-3" placeholder="Capacity (12,000 pcs/day)" value={p.installedCapacity} onChange={(e) => setProcs(procs.map((x, j) => (j === i ? { ...x, installedCapacity: e.target.value } : x)))} />
+                    <Input className="sm:col-span-3" placeholder={`Installed capacity (${UNITS.production})`} value={p.installedCapacity} onChange={(e) => setProcs(procs.map((x, j) => (j === i ? { ...x, installedCapacity: e.target.value } : x)))} />
                     <Input className="sm:col-span-3" placeholder="Shifts (2 shifts)" value={p.shiftPattern} onChange={(e) => setProcs(procs.map((x, j) => (j === i ? { ...x, shiftPattern: e.target.value } : x)))} />
                     <div className="flex items-center sm:col-span-1">
                       <Button
@@ -496,7 +517,11 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
         {step === 5 && (
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-3">
-              <Review label="Site">{selectedSite ? `${selectedSite.code} — ${selectedSite.name}` : "—"}</Review>
+              <Review label="Site">
+                {selectedSite
+                  ? `${selectedSite.code} — ${selectedSite.name}`
+                  : "New site — created from this factory"}
+              </Review>
               <Review label="Factory">{factoryName || "—"}</Review>
               <Review label="Code">{factoryCode || "auto"}</Review>
               <Review label="Status">{titleCase(status)}</Review>
@@ -508,7 +533,8 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
             </div>
             <p className="text-xs text-slate-500">
               The profile is created as <strong>DRAFT</strong> and auto-promoted to <strong>ACTIVE</strong> once name, site link
-              and location are present. Workforce, processes and certifications can be completed afterwards.
+              and location are present. Workforce, processes and certifications can be completed afterwards — as can the
+              floor-by-floor process mapping under each building.
             </p>
           </div>
         )}

@@ -43,7 +43,7 @@ export default async function NewFactoryPage() {
       <PageHeader
         title="Add Factory"
         breadcrumbs={[{ label: "Facilities", href: "/facilities" }, { label: "Add Factory" }]}
-        description="Create a factory profile linked 1:1 to an existing Site. Workforce, processes and certifications can be added after the profile is created."
+        description="Create a factory profile. Link it to an existing Site when the factory is managed under one (typically a supplier); for a Page-owned facility leave the Site blank and one is created for it. Workforce, processes, floor mapping and certifications can be added afterwards."
       />
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>

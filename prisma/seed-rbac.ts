@@ -89,6 +89,17 @@ const ADDITIONAL_ROLES: { code: string; name: string; description: string; isSys
   { code: "AUDIT_MANAGER", name: "Audit Manager",  description: "Owns the audit programme: plans/approves the programme, authors + approves templates, schedules engagements, runs analytics & benchmarking cross-site.", isSystem: false, sortOrder: 31, defaultLanding: "/cams" },
   { code: "LEAD_AUDITOR",  name: "Lead Auditor",   description: "Leads audit engagements for their own team/site — schedules, executes, closes own engagements, authors templates, raises findings & CAPAs.", isSystem: false, sortOrder: 32, defaultLanding: "/cams/engagements" },
   { code: "AUDITOR",       name: "Auditor",        description: "Field auditor — executes assigned engagements, records findings, raises CAPAs; sees own-audit analytics.", isSystem: false, sortOrder: 33, defaultLanding: "/cams/engagements" },
+  // The audited party, as a role of its own. It used to be borrowed —
+  // DEPARTMENT_HEAD or SUPERVISOR happened to carry the right grants — which
+  // works until you need to seat someone who is an auditee and NOTHING else.
+  // Borrowing a department head's seat hands them approval authority over
+  // observations, near misses, permits, MOC and HIRA across a whole department,
+  // none of which answering an audit finding requires.
+  //
+  // Deliberately has no AUDIT_COMPLIANCE.EXECUTE: accepting a response, raising
+  // a CAPA from a finding and escalating are the AUDITOR's side of the same
+  // conversation. An auditee holding it could accept their own answers.
+  { code: "AUDITEE",       name: "Auditee",        description: "The audited party — reads audits they are seated on, answers findings routed to them with evidence, and works the corrective actions they own. No auditor authority.", isSystem: false, sortOrder: 34, defaultLanding: "/cams/audits" },
 
   // ─── ERM Tier 3 — Controls / Vendor / Insurance specialist roles ─────────
   { code: "CONTROLS_TESTER",     name: "Controls Tester",       description: "Internal-audit / controls function: control library, risk-control mapping, control testing (cannot test own-owned controls), deficiency management.", isSystem: false, sortOrder: 30, defaultLanding: "/erm/controls" },
@@ -244,7 +255,13 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "FACILITY.CERT_MANAGE",      module: "FACILITY", action: "CERT_MANAGE",      description: "Manage factory certifications (SA8000, WRAP, ISO, SMETA, …) and expiry tracking" },
   { code: "FACILITY.CONTACT_MANAGE",   module: "FACILITY", action: "CONTACT_MANAGE",   description: "Manage factory contacts (factory manager, safety / compliance / HR officers)" },
   { code: "FACILITY.COMPARE",          module: "FACILITY", action: "COMPARE",          description: "Use factory comparison / benchmarking" },
-  { code: "FACILITY.SITE_LINK",        module: "FACILITY", action: "SITE_LINK",        description: "Configure the 1:1 Site link and profile review settings" },
+  { code: "FACILITY.SITE_LINK",        module: "FACILITY", action: "SITE_LINK",        description: "Configure the 1:1 Site link (incl. provisioning a Site for an in-house factory) and profile review settings" },
+  // Two-step sign-off on an edit to an ACTIVE factory profile: the Unit
+  // confirms the change is factually right, Compliance confirms it is
+  // admissible. Deliberately separate codes — held by different people is the
+  // whole point, and the API refuses both steps from the same user.
+  { code: "FACILITY.PROFILE_APPROVE_UNIT",       module: "FACILITY", action: "PROFILE_APPROVE_UNIT",       description: "Approve a factory-profile change request at the Unit (Plant Head)" },
+  { code: "FACILITY.PROFILE_APPROVE_COMPLIANCE", module: "FACILITY", action: "PROFILE_APPROVE_COMPLIANCE", description: "Give the final factory-profile change approval (Compliance Team — Lead Auditor)" },
 
   // ─── User-initiated AI agent platform (Commit 1) ──────────────────────
   // One INVOKE permission per agent so RBAC can restrict pilots to specific
@@ -635,6 +652,13 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Audit & Compliance — Department Head is an auditee for their area; reads
     // routed audits and responds on own checkpoints.
     { module: "AUDIT_COMPLIANCE", actions: ["READ", "UPDATE"],              scope: "OWN_RECORDS" },
+    // CAMS.READ is what makes the above reachable. The audited party is the one
+    // role CAMS deliberately has no dedicated code for — an auditee is an area
+    // owner who also answers findings — and the taxonomy note at the top of this
+    // file says they "inherit an existing area-owner role + CAMS.READ". Without
+    // it the engagement screen carrying their own findings 403s, and the
+    // AUDIT_COMPLIANCE grants above are unreachable in the UI.
+    { module: "CAMS",        actions: ["READ"],                             scope: "OWN_PLANT" },
     { module: "AGENT",       actions: ["RCA_INVOKE", "PERMIT_REVIEW_INVOKE", "TRIAGE_INVOKE", "HIRA_INVOKE", "CAPA_INVOKE"], scope: "OWN_DEPARTMENT" }
   ],
   // ════════════════════════════════════════════════════════════════════
@@ -768,7 +792,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "CAMS",        actions: ["READ", "SCHEDULE", "CLOSE", "ANALYTICS"], scope: "OWN_PLANT" },
     // ── Facilities — consolidated estate view + full profile management.
     // ALL_PLANTS so the group dashboard populates (factories sit on their own Sites).
-    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "SITE_LINK"], scope: "ALL_PLANTS" }
+    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "SITE_LINK"], scope: "ALL_PLANTS" },
+    // The Unit-level sign-off on a profile edit is the Plant Head's, and it is
+    // OWN_PLANT: a Plant Head approves changes to their own factory, not the estate.
+    { module: "FACILITY",    actions: ["PROFILE_APPROVE_UNIT"], scope: "OWN_PLANT" }
   ],
   // ════════════════════════════════════════════════════════════════════
   // Corporate HSE — cross-plant governance. Per matrix: never EXECUTES
@@ -977,7 +1004,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // CAMS — full audit/inspection authority cross-site.
     { module: "CAMS",        actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
     // Facilities — full factory-profile authority cross-site.
-    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK"], scope: "ALL_PLANTS" }
+    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK", "PROFILE_APPROVE_UNIT", "PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" }
   ],
   // ════════════════════════════════════════════════════════════════════
   // CAPA generalization — 6 new roles. Each is source-scoped by default
@@ -1070,7 +1097,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Skill Matrix governance (config only; no ASSESS/SUSPEND — admin governs, doesn't operate)
     { module: "SKILL_MATRIX", actions: ["COMPETENCY_CONFIGURE", "ROLE_DEF_CONFIGURE", "ASSESS", "SUSPEND", "APPROVE_OVERRIDE", "RECERT_CYCLE", "CROSS_PERSON_VIEW", "VERSION_VIEW"], scope: "ALL_PLANTS" },
     { module: "CAMS",        actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
-    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK"], scope: "ALL_PLANTS" }
+    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK", "PROFILE_APPROVE_UNIT", "PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" }
   ],
   // ════════════════════════════════════════════════════════════════════
   // Skill Matrix — 2 new roles (Phase 1 IMS). Grants per spec §8.1.
@@ -1289,7 +1316,32 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // reports (EXPORT). No APPROVE — plant-manager review of auditee responses
     // is the segregation-of-duties counterparty, not the lead auditor.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
-    { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT"], scope: "OWN_PLANT" }
+    { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT"], scope: "OWN_PLANT" },
+    // Facilities — the Lead Auditor is the Compliance Team's final signatory on
+    // a factory-profile change (after the Plant Head's Unit approval). READ so
+    // the profile and its proposed diff are actually openable; no UPDATE, which
+    // keeps the approver off the requesting side of the same change.
+    { module: "FACILITY", actions: ["READ"], scope: "ALL_PLANTS" },
+    { module: "FACILITY", actions: ["PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" }
+  ],
+  AUDITEE: [
+    // Open the audit screens at all. Without this the grants below are
+    // unreachable in the UI — the engagement page carrying their own findings
+    // 403s before it can render them.
+    { module: "CAMS", actions: ["READ"], scope: "OWN_PLANT" },
+    // READ + UPDATE at OWN_RECORDS is exactly the auditee shape. The audit
+    // detail endpoint passes `_reader_record(audit)`, which flattens every party
+    // to the engagement into `teamMembers`, so a seated auditee matches and
+    // nobody else's audit is visible. AUDITEE_RESPOND is gated on UPDATE with
+    // `record={"routedToUserId": user.id}` — a checkpoint routed to them, and
+    // only that one.
+    { module: "AUDIT_COMPLIANCE", actions: ["READ", "UPDATE"], scope: "OWN_RECORDS" },
+    // Evidence upload needs no more than READ: /upload-url mints a signed
+    // Supabase URL and the response carries the storage paths.
+    //
+    // The corrective actions arising from their findings. OWN_RECORDS, so they
+    // work the CAPAs they own and see no others.
+    { module: "CAPA", actions: ["READ", "UPDATE", "EXECUTE"], scope: "OWN_RECORDS" }
   ],
   AUDITOR: [
     // Executes assigned engagements; records findings; raises CAPAs; own-audit analytics.
@@ -1307,7 +1359,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // ════════════════════════════════════════════════════════════════════
   FACILITIES_MANAGER: [
     // Group view — sees and edits every factory cross-site.
-    { module: "FACILITY",         actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK"], scope: "ALL_PLANTS" },
+    { module: "FACILITY",         actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK", "PROFILE_APPROVE_UNIT", "PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" },
     // Live drill-down into the operational engines (read-only).
     { module: "CAMS",             actions: ["READ", "ANALYTICS"], scope: "ALL_PLANTS" },
     { module: "CAPA",             actions: ["READ"], scope: "ALL_PLANTS" },

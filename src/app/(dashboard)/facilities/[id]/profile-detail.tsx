@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ClipboardCheck, MapPin, Pencil, Plus, Trash2 } from "lucide-react";
+import { ClipboardCheck, MapPin, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { Can, usePermission } from "@/components/auth/can";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,10 @@ import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { EvidenceAttachment } from "@/components/evidence/EvidenceAttachment";
 import { TriggerAuditButton } from "./trigger-audit-button";
+import { FloorMapping } from "./floor-mapping";
+import { ProfileEditPanel } from "./profile-edit-panel";
 import {
   BUILDING_TYPES,
   BUILDING_TYPE_LABEL,
@@ -59,6 +62,8 @@ import {
   SOCIAL_FLAG_LABEL,
   STATUS_CHIP,
   titleCase,
+  UNITS,
+  withUnit,
   type Building,
   type BuildingType,
   type CertificationType,
@@ -87,7 +92,9 @@ const TABS = [
   "Equipment",
   "Hazmat",
   "Certifications",
-  "Regulatory",
+  // Named for what it holds — the factory's statutory licences, certificates
+  // and consents — rather than the abstract "Regulatory".
+  "Factory Licences",
   "Contacts",
   "Compliance & Audit",
   "Audit Trail",
@@ -154,6 +161,9 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
         </div>
       </div>
 
+      {/* Edit the profile itself + the approval trail governing that edit */}
+      <ProfileEditPanel profile={profile} />
+
       {/* Lifecycle workflow stepper */}
       <LifecycleStepper profile={profile} />
 
@@ -182,7 +192,7 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
       {tab === "Equipment" && <EquipmentTab profile={profile} />}
       {tab === "Hazmat" && <HazmatTab profile={profile} />}
       {tab === "Certifications" && <CertificationsTab profile={profile} />}
-      {tab === "Regulatory" && <RegulatoryTab profile={profile} />}
+      {tab === "Factory Licences" && <RegulatoryTab profile={profile} />}
       {tab === "Contacts" && <ContactsTab profile={profile} />}
       {tab === "Compliance & Audit" && <ComplianceAuditTab profile={profile} />}
       {tab === "Audit Trail" && <AuditTrailTab profile={profile} />}
@@ -191,6 +201,7 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
 }
 
 function OverviewTab({ profile }: { profile: FactoryProfileDetail }) {
+  const canEdit = usePermission("FACILITY.UPDATE");
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
       <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -200,8 +211,8 @@ function OverviewTab({ profile }: { profile: FactoryProfileDetail }) {
           <Row label="Licence valid until">{fmtDate(profile.factoryLicenseValidUntil)}</Row>
           <Row label="Pollution Control Board">{profile.pollutionControlBoard ?? "—"}</Row>
           <Row label="Established">{profile.establishedYear ? String(profile.establishedYear) : "—"}</Row>
-          <Row label="Land area">{profile.totalLandAreaSqm ? `${fmtNum(profile.totalLandAreaSqm)} sqm` : "—"}</Row>
-          <Row label="Built-up area">{profile.builtUpAreaSqm ? `${fmtNum(profile.builtUpAreaSqm)} sqm` : "—"}</Row>
+          <Row label={withUnit("Land area", "area")}>{profile.totalLandAreaSqm != null ? fmtNum(profile.totalLandAreaSqm) : "—"}</Row>
+          <Row label={withUnit("Built-up area", "area")}>{profile.builtUpAreaSqm != null ? fmtNum(profile.builtUpAreaSqm) : "—"}</Row>
         </dl>
         <div className="mt-3">
           <div className="mb-1 text-[10px] uppercase tracking-wide text-slate-400">Applicable acts</div>
@@ -245,6 +256,28 @@ function OverviewTab({ profile }: { profile: FactoryProfileDetail }) {
           <Row label="Geo">{profile.latitude != null && profile.longitude != null ? `${profile.latitude}, ${profile.longitude}` : "—"}</Row>
           <Row label="Next review">{fmtDate(profile.nextReviewDate)}</Row>
         </dl>
+      </div>
+
+      {/* Documents belonging to the factory as a whole, rather than to one
+          licence — the plot plan, the occupancy certificate, land records.
+          Per-licence documents live on each row of the Factory Licences tab. */}
+      <div className="lg:col-span-2">
+        <EvidenceAttachment
+          entityType="factory_profile"
+          entityId={profile.id}
+          canManage={canEdit}
+          title="Factory documents"
+          help="Site layout / plot plan, occupancy certificate, land records. PDF or image, up to 25 MB."
+          categories={[
+            { value: "SITE_LAYOUT", label: "Site layout / plot plan" },
+            { value: "OCCUPANCY_CERTIFICATE", label: "Occupancy certificate" },
+            { value: "LAND_RECORD", label: "Land record" },
+            { value: "LICENSE", label: "Licence" },
+            { value: "CERTIFICATE", label: "Certificate" },
+            { value: "REPORT", label: "Report" },
+            { value: "OTHER", label: "Other" },
+          ]}
+        />
       </div>
     </div>
   );
@@ -396,7 +429,7 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
               <TableHead>Building</TableHead>
               <TableHead>Type</TableHead>
               <TableHead className="text-right">Floors</TableHead>
-              <TableHead className="text-right">Area (sqm)</TableHead>
+              <TableHead className="text-right">{withUnit("Area", "area")}</TableHead>
               <TableHead>Assembly point</TableHead>
               <TableHead className="text-right">Exits</TableHead>
               {canEdit && <TableHead></TableHead>}
@@ -423,7 +456,7 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
                           </Select>
                         </div>
                         {editField("floors", "Floors", { type: "number", w: "w-16" })}
-                        {editField("areaSqm", "Area (sqm)", { type: "number", w: "w-24" })}
+                        {editField("areaSqm", withUnit("Area", "area"), { type: "number", w: "w-24" })}
                         {editField("assemblyPoint", "Assembly point", { ph: "AP-1 (East gate)" })}
                         {editField("emergencyExits", "Exits", { type: "number", w: "w-16" })}
                         <Button type="button" size="sm" onClick={saveEdit} disabled={busy || !ef.buildingName.trim()}>Save</Button>
@@ -432,26 +465,35 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  <TableRow key={b.id}>
-                    <TableCell className="font-medium text-slate-700">{b.buildingName}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{BUILDING_TYPE_LABEL[b.buildingType] ?? b.buildingType}</TableCell>
-                    <TableCell className="text-right tabular-nums">{b.floors}</TableCell>
-                    <TableCell className="text-right tabular-nums">{b.areaSqm != null ? fmtNum(b.areaSqm) : "—"}</TableCell>
-                    <TableCell className="text-xs text-slate-500">{b.assemblyPoint ?? "—"}</TableCell>
-                    <TableCell className="text-right tabular-nums">{b.emergencyExits ?? "—"}</TableCell>
-                    {canEdit && (
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button type="button" variant="ghost" size="icon" onClick={() => startEdit(b)} disabled={busy} title="Edit building" className="h-auto w-auto text-slate-400 hover:text-primary-700 disabled:opacity-40">
-                            <Pencil size={15} />
-                          </Button>
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeBuilding(b)} disabled={busy} title="Delete building" className="h-auto w-auto text-slate-400 hover:text-rose-600 disabled:opacity-40">
-                            <Trash2 size={16} />
-                          </Button>
-                        </div>
+                  <Fragment key={b.id}>
+                    <TableRow>
+                      <TableCell className="font-medium text-slate-700">{b.buildingName}</TableCell>
+                      <TableCell className="text-xs text-slate-500">{BUILDING_TYPE_LABEL[b.buildingType] ?? b.buildingType}</TableCell>
+                      <TableCell className="text-right tabular-nums">{b.floors}</TableCell>
+                      <TableCell className="text-right tabular-nums">{b.areaSqm != null ? fmtNum(b.areaSqm) : "—"}</TableCell>
+                      <TableCell className="text-xs text-slate-500">{b.assemblyPoint ?? "—"}</TableCell>
+                      <TableCell className="text-right tabular-nums">{b.emergencyExits ?? "—"}</TableCell>
+                      {canEdit && (
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => startEdit(b)} disabled={busy} title="Edit building" className="h-auto w-auto text-slate-400 hover:text-primary-700 disabled:opacity-40">
+                              <Pencil size={15} />
+                            </Button>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeBuilding(b)} disabled={busy} title="Delete building" className="h-auto w-auto text-slate-400 hover:text-rose-600 disabled:opacity-40">
+                              <Trash2 size={16} />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      )}
+                    </TableRow>
+                    {/* Floors and what each one actually carries — collapsed by
+                        default so the register stays scannable. */}
+                    <TableRow>
+                      <TableCell colSpan={canEdit ? 7 : 6} className="p-0">
+                        <FloorMapping building={b} processes={profile.processes} onError={setErr} />
                       </TableCell>
-                    )}
-                  </TableRow>
+                    </TableRow>
+                  </Fragment>
                 )
               )
             )}
@@ -1068,7 +1110,7 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
                 <div className="w-72 space-y-2 rounded-xl border border-primary-200 bg-primary-50/40 p-3">
                   {efField("processName", "Process name", "Stitching")}
                   <div className="flex gap-2">
-                    <div className="flex-1">{efField("installedCapacity", "Capacity", "12,000 pcs/day")}</div>
+                    <div className="flex-1">{efField("installedCapacity", withUnit("Installed capacity", "production"), "12000")}</div>
                     <div className="w-24">{efField("shiftPattern", "Shifts", "2 shifts")}</div>
                   </div>
                   {efField("keyHazards", "Key hazards (comma)", "Needle injury, Noise")}
@@ -1098,7 +1140,7 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
                     )}
                   </div>
                   <div className="mt-1 space-y-0.5 text-[11px] text-slate-500">
-                    {p.installedCapacity && <div>Capacity: {p.installedCapacity}</div>}
+                    {p.installedCapacity && <div>Installed capacity: {p.installedCapacity} {UNITS.production}</div>}
                     {p.shiftPattern && <div>Shifts: {p.shiftPattern}</div>}
                   </div>
                   {p.keyHazards.length > 0 && (
@@ -1124,8 +1166,8 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
               <Input value={f.processName} onChange={(e) => setF({ ...f, processName: e.target.value })} placeholder="Stitching" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Capacity</label>
-              <Input value={f.installedCapacity} onChange={(e) => setF({ ...f, installedCapacity: e.target.value })} placeholder="12,000 pcs/day" />
+              <label className="block text-xs font-medium text-slate-600 mb-1">{withUnit("Installed capacity", "production")}</label>
+              <Input value={f.installedCapacity} onChange={(e) => setF({ ...f, installedCapacity: e.target.value })} placeholder="12000" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-600 mb-1">Shifts</label>
@@ -1159,6 +1201,9 @@ function CertificationsTab({ profile }: { profile: FactoryProfileDetail }) {
   const canEdit = usePermission("FACILITY.CERT_MANAGE");
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Which certificate's document drawer is open — one at a time, so opening a
+  // row doesn't fetch attachment lists nobody is looking at.
+  const [docsFor, setDocsFor] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [f, setF] = useState<{ certificationType: CertificationType; certificateNo: string; issuingBody: string; expiryDate: string; renewalLeadDays: number; status: "" | CertStatus }>({
@@ -1277,7 +1322,8 @@ function CertificationsTab({ profile }: { profile: FactoryProfileDetail }) {
               </TableRow>
             ) : (
               profile.certifications.map((c) => (
-                <TableRow key={c.id}>
+                <Fragment key={c.id}>
+                <TableRow>
                   <TableCell className="font-medium">
                     <Link
                       href={`/facilities/certifications?facility=${encodeURIComponent(profile.factoryCode)}&type=${encodeURIComponent(c.certificationType)}`}
@@ -1306,6 +1352,9 @@ function CertificationsTab({ profile }: { profile: FactoryProfileDetail }) {
                   {canEdit && (
                     <TableCell className="text-right">
                       <div className="inline-flex items-center gap-2">
+                        <Button type="button" variant="ghost" onClick={() => setDocsFor(docsFor === c.id ? null : c.id)} title="Certificate documents" className="h-auto gap-1 text-[11px] font-medium text-primary-700 hover:underline">
+                          <Paperclip size={12} /> Documents
+                        </Button>
                         <Button type="button" variant="ghost" size="icon" onClick={() => startEdit(c)} disabled={busy} title="Edit" className="h-auto w-auto text-slate-400 hover:text-primary-700 disabled:opacity-40">
                           <Pencil size={15} />
                         </Button>
@@ -1316,6 +1365,27 @@ function CertificationsTab({ profile }: { profile: FactoryProfileDetail }) {
                     </TableCell>
                   )}
                 </TableRow>
+                {docsFor === c.id && (
+                  <TableRow>
+                    <TableCell colSpan={canEdit ? 6 : 5} className="bg-slate-50/60 p-3">
+                      <EvidenceAttachment
+                        entityType="factory_certification"
+                        entityId={c.id}
+                        canManage={canEdit}
+                        title={`${CERT_TYPE_LABEL[c.certificationType] ?? c.certificationType} — documents`}
+                        help="The certificate as issued, plus the audit report and scope document behind it."
+                        categories={[
+                          { value: "CERTIFICATE", label: "Certificate" },
+                          { value: "AUDIT_REPORT", label: "Audit report" },
+                          { value: "SCOPE_DOCUMENT", label: "Scope document" },
+                          { value: "CORRESPONDENCE", label: "Correspondence" },
+                          { value: "OTHER", label: "Other" },
+                        ]}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
               ))
             )}
           </TableBody>
@@ -2601,6 +2671,11 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
   const [f, setF] = useState<Record<string, any>>(EMPTY_REG);
   const [renewFor, setRenewFor] = useState<string | null>(null);
   const [renew, setRenew] = useState<Record<string, any>>({ newExpiryDate: "", renewalCost: "", notes: "" });
+  // Which licence's document drawer is open. One at a time — each drawer loads
+  // its own attachment list, so opening every row at once would be a burst of
+  // requests for documents nobody is looking at.
+  const [docsFor, setDocsFor] = useState<string | null>(null);
+  const canEdit = usePermission("FACILITY.UPDATE");
 
   const rows = profile.regulatoryRegistrations;
   const expired = rows.filter((r) => r.status === "EXPIRED").length;
@@ -2694,7 +2769,7 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
       <ErrorNote err={err} />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Chip className="bg-slate-100 text-slate-600 border-slate-200">{fmtNum(rows.length)} registrations</Chip>
+        <Chip className="bg-slate-100 text-slate-600 border-slate-200">{fmtNum(rows.length)} licences &amp; registrations</Chip>
         {expired > 0 && <Chip className={REG_STATUS_CHIP.EXPIRED}>{expired} expired</Chip>}
         {expiring > 0 && <Chip className={REG_STATUS_CHIP.EXPIRING_SOON}>{expiring} expiring soon</Chip>}
         {pending > 0 && <Chip className={REG_STATUS_CHIP.PENDING_RENEWAL}>{pending} renewal in progress</Chip>}
@@ -2714,10 +2789,11 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
           </TableHeader>
           <TableBody>
             {rows.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="py-8 text-center text-slate-400">No regulatory registrations recorded yet.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="py-8 text-center text-slate-400">No licences or registrations recorded yet.</TableCell></TableRow>
             ) : (
               rows.map((r) => (
-                <TableRow key={r.id} className="align-top">
+                <Fragment key={r.id}>
+                <TableRow className="align-top">
                   <TableCell>
                     <div className="font-medium text-slate-700">{REGISTRATION_TYPE_LABEL[r.registrationType] ?? r.registrationType}</div>
                     <div className="text-xs text-slate-400">{r.registrationName}{r.registrationNumber ? ` · ${r.registrationNumber}` : ""}</div>
@@ -2733,6 +2809,7 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
                   <Can permission="FACILITY.UPDATE">
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button type="button" variant="ghost" onClick={() => setDocsFor(docsFor === r.id ? null : r.id)} className="h-auto gap-1 text-[11px] font-medium text-primary-700 hover:underline"><Paperclip size={12} /> Documents</Button>
                         <Button type="button" variant="ghost" onClick={() => setRenewFor(renewFor === r.id ? null : r.id)} className="h-auto text-[11px] font-medium text-primary-700 hover:underline">Mark renewed</Button>
                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(r.id)} disabled={busy} className="h-auto w-auto text-slate-400 hover:text-rose-600 disabled:opacity-40"><Trash2 size={16} /></Button>
                       </div>
@@ -2752,6 +2829,36 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
                     </TableCell>
                   </Can>
                 </TableRow>
+                {/* Licence documents — the statutory approval itself, stored
+                    against the licence rather than in a shared drive. Uses the
+                    platform-wide evidence store: signed-URL upload, permissioned
+                    download, soft delete. No slotKey, because this drawer holds
+                    several kinds of document at once (the licence, its renewal
+                    application, the inspection report) and a shared slot would
+                    make each new upload supersede an unrelated file. */}
+                {docsFor === r.id && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="bg-slate-50/60 p-3">
+                      <EvidenceAttachment
+                        entityType="factory_registration"
+                        entityId={r.id}
+                        canManage={canEdit}
+                        title={`${REGISTRATION_TYPE_LABEL[r.registrationType] ?? r.registrationType} — documents`}
+                        help="The licence / certificate / consent as issued, plus renewal applications and inspection reports. PDF or image, up to 25 MB."
+                        categories={[
+                          { value: "LICENSE", label: "Licence" },
+                          { value: "CERTIFICATE", label: "Certificate" },
+                          { value: "CONSENT", label: "Consent order" },
+                          { value: "RENEWAL_APPLICATION", label: "Renewal application" },
+                          { value: "INSPECTION_REPORT", label: "Inspection report" },
+                          { value: "CORRESPONDENCE", label: "Correspondence" },
+                          { value: "OTHER", label: "Other" },
+                        ]}
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
+                </Fragment>
               ))
             )}
           </TableBody>
@@ -2768,7 +2875,7 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
                   {REGISTRATION_TYPES.map((t) => <option key={t} value={t}>{REGISTRATION_TYPE_LABEL[t]}</option>)}
                 </Select>
               </div>
-              {text("registrationName", "Name / description", "Factory licence")}
+              {text("registrationName", "Name / description", "Structural Stability Certificate — Block A")}
               {text("registrationNumber", "Number")}
               {text("issuingAuthority", "Issuing authority")}
               <div>

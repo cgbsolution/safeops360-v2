@@ -45,7 +45,13 @@ export async function syncNamedAllPlantUsers(
   const passwordHash = await bcrypt.hash(DEMO_PASSWORD, 10);
   const results: NamedUserSyncResult[] = [];
 
-  for (const nu of NAMED_ALL_PLANT_USERS) {
+  for (const raw of NAMED_ALL_PLANT_USERS) {
+    // Sign-in looks the address up as `email.lower()` — an exact match, both in
+    // the backend (`select(User).where(User.email == payload.email.lower())`)
+    // and the Prisma fallback. A capitalised address in the config would create
+    // an account nobody could ever sign into, so it is normalised here rather
+    // than trusted to whoever pasted it out of a customer's email.
+    const nu = { ...raw, email: raw.email.trim().toLowerCase() };
     const homePlantId = plantIdByCode.get(nu.homePlantCode);
     if (!homePlantId) {
       console.warn(`   ⚠️  Home plant ${nu.homePlantCode} not found — skipping ${nu.email}.`);
@@ -93,6 +99,15 @@ export async function syncNamedAllPlantUsers(
         scopeValue: p.id
       })),
       skipDuplicates: true
+    });
+
+    // Drop any role this person used to hold. This list is the source of truth
+    // for a named account's role, so changing `roleCode` here has to actually
+    // change what they can do — leaving the old rows would ADD the new role to
+    // the old one, since permission grants are additive. Someone moved from
+    // DEPARTMENT_HEAD to AUDITEE would keep every department-head approval.
+    await prisma.userRole.deleteMany({
+      where: { userId: user.id, roleId: { not: roleId } }
     });
 
     results.push({

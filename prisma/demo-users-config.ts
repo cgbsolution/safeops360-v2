@@ -138,6 +138,63 @@ export const NAMED_ALL_PLANT_USERS: NamedUser[] = [
     designation: "HSE Manager",
     department: "HSE",
     homePlantCode: "NW"
+  },
+
+  // ── Jockey India / Page Industries — internal-audit PoC cast ────────────
+  // One audit's worth of people: the process owner who oversees it, the team
+  // that conducts it, and the two department owners who answer the findings.
+  //
+  // The roleCode is the PLATFORM role — what the person may do anywhere.
+  // "Lead auditor", "co-auditor" and "auditee" are ENGAGEMENT seats, named per
+  // audit on the audit itself. The two are related but not the same, and the
+  // seat is what the calendar, routing and independence guard read:
+  //   Narasimhan → LEAD_AUDITOR   → seat him as Lead auditor on the audit
+  //   Sachin     → AUDITOR        → seat him as a Co-auditor
+  //   Ramesh, Dhananjaya          → seat them as Auditees
+  //
+  // Auditees hold DEPARTMENT_HEAD because CAMS has no auditee role by design:
+  // the audited party is an area owner who also answers findings, which is
+  // AUDIT_COMPLIANCE READ+UPDATE at OWN_RECORDS — precisely what a routed
+  // checkpoint gives them (`record={"routedToUserId": user.id}`).
+  {
+    email: "mervyn.davis@jockeyindia.com",
+    name: "Mervyn Davis",
+    roleCode: "HSE_MANAGER",
+    designation: "HSE Manager · Process Owner",
+    department: "HSE",
+    homePlantCode: "NW"
+  },
+  {
+    email: "narasimhan.rajan@jockeyindia.com",
+    name: "Narasimhan Rajan",
+    roleCode: "LEAD_AUDITOR",
+    designation: "Internal Audit Manager",
+    department: "Internal Audit",
+    homePlantCode: "NW"
+  },
+  {
+    email: "sachin.pampanna@jockeyindia.com",
+    name: "Sachin Pampanna",
+    roleCode: "AUDITOR",
+    designation: "Audit Executive",
+    department: "Internal Audit",
+    homePlantCode: "NW"
+  },
+  {
+    email: "ramesh.thimmappa@jockeyindia.com",
+    name: "Ramesh Thimmappa",
+    roleCode: "AUDITEE",
+    designation: "Auditee · Department Owner",
+    department: "Operations",
+    homePlantCode: "NW"
+  },
+  {
+    email: "dhananjaya.hp@jockeyindia.com",
+    name: "Dhananjaya HP",
+    roleCode: "AUDITEE",
+    designation: "Auditee · Department Owner",
+    department: "Operations",
+    homePlantCode: "NW"
   }
 ];
 

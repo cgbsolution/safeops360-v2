@@ -9505,6 +9505,9 @@ model FactoryProfile {
   hazardousMaterials    HazardousMaterial[]
   regulatoryRegistrations RegulatoryRegistration[]
   lifecycleEvents       FactoryLifecycleEvent[]
+  buildingFloors        BuildingFloor[]
+  floorActivities       BuildingFloorActivity[]
+  changeRequests        FactoryProfileChangeRequest[]
 
   createdAt DateTime @default(now())
   createdBy String?
@@ -9534,6 +9537,10 @@ model Building {
   emergencyExits         Int?
   occupancyCertificateNo String?
   isActive               Boolean @default(true)
+
+  // `floors` above stays the headline count; floorRegister holds the addressable
+  // levels that processes/activities are mapped onto.
+  floorRegister BuildingFloor[]
 
   createdAt DateTime @default(now())
   createdBy String?
@@ -10002,6 +10009,143 @@ model FactoryLifecycleEvent {
 
   @@index([factoryProfileId])
   @@index([siteId])
+}
+
+// ── Building Floor ───────────────────────────────────────────────────────────
+// A named level within a Building. `Building.floors` (an Int) stays as the
+// headline count; these rows are the addressable levels that activities hang
+// off, so a factory layout reads "Block A / Floor 1 / Sewing" end to end.
+// `floorLevel` is the sortable ordinal (-1 basement, 0 ground, 1, 2 …) and is
+// unique per building so two "Floor 1" rows can't exist.
+model BuildingFloor {
+  id               String         @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  buildingId       String
+  building         Building       @relation(fields: [buildingId], references: [id], onDelete: Cascade)
+  siteId           String
+
+  floorLabel String // "Ground Floor", "Floor 1", "DG Yard"
+  floorLevel Int    @default(0) // -1 basement | 0 ground | 1, 2, 3 …
+  // Standardised units — baked into the column name, never user-selectable.
+  areaSqm         Float? // m²
+  headroomM       Float? // m
+  occupancyPersons Int?
+  notes           String? @db.Text
+  isActive        Boolean @default(true)
+
+  activities BuildingFloorActivity[]
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@unique([buildingId, floorLevel])
+  @@index([factoryProfileId])
+  @@index([buildingId])
+  @@index([siteId])
+}
+
+// ── Building Floor Activity ──────────────────────────────────────────────────
+// Many activities per floor — the multi-process mapping the single
+// `Building.buildingType` could never express (Floor 1 Sewing, Floor 2 Packing,
+// Floor 3 Canteen, DG yard with a 1250 kVA set + STP on the same level).
+// `processId` optionally binds the activity to the ProductionProcess register so
+// the process flow and the physical layout stay one dataset.
+// Every quantity column carries ONE fixed unit in its name (spec: units are
+// standardised references, never a dropdown).
+model BuildingFloorActivity {
+  id               String         @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  buildingId       String
+  floorId          String
+  floor            BuildingFloor  @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  siteId           String
+
+  activityType String  @default("PROCESS") // PROCESS | UTILITY | WELFARE | STORAGE | ADMIN | EFFLUENT | POWER | OTHER
+  activityName String // "Sewing", "Packing", "Canteen", "DG Set", "STP"
+  processId    String? // loose link to ProductionProcess.id (no FK — a process may be archived)
+  description  String? @db.Text
+  sequenceOrder Int?
+
+  // Standardised measures (fixed units — see UNITS in facilities/lib.ts)
+  areaSqm                    Float? // m²
+  headcount                  Int? // persons
+  productionCapacityPcsPerDay Float? // pcs/day
+  fabricConsumptionMPerDay   Float? // m/day
+  powerRatingKva             Float? // kVA
+  waterCapacityKld           Float? // KL/day
+  wasteGeneratedKgPerDay     Float? // kg/day
+
+  keyHazards Json    @default("[]") // string[]
+  isActive   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@index([factoryProfileId])
+  @@index([buildingId])
+  @@index([floorId])
+  @@index([siteId])
+  @@index([siteId, activityType])
+}
+
+// ── Factory Profile Change Request (edit approval + version history) ─────────
+// Once a profile reaches lifecycleStage ACTIVE its master data is governed: an
+// edit is captured here as a proposed diff and applied only after the Unit
+// (Plant Head) and then the Compliance Team (Lead Auditor) approve. Rows are
+// never deleted — APPLIED / REJECTED / WITHDRAWN rows are the version history.
+model FactoryProfileChangeRequest {
+  id               String         @id @default(cuid())
+  factoryProfileId String
+  factoryProfile   FactoryProfile @relation(fields: [factoryProfileId], references: [id], onDelete: Cascade)
+  siteId           String
+
+  version Int // 1-based, sequential per profile
+  // [{ field, label, from, to }] — the proposed diff, computed on submit.
+  changes Json   @default("[]")
+  reason  String? @db.Text
+  // PENDING_UNIT | PENDING_COMPLIANCE | APPLIED | REJECTED | WITHDRAWN
+  status  String @default("PENDING_UNIT")
+
+  requestedBy     String?
+  requestedByRole String?
+  requestedAt     DateTime @default(now())
+
+  unitApprovedBy      String? // Plant Head
+  unitApprovedAt      DateTime?
+  unitApprovalComment String?  @db.Text
+
+  complianceApprovedBy      String? // Compliance Team — Lead Auditor
+  complianceApprovedAt      DateTime?
+  complianceApprovalComment String?   @db.Text
+
+  rejectedBy     String?
+  rejectedAt     DateTime?
+  rejectedAtStep String? // UNIT | COMPLIANCE
+  rejectionReason String?  @db.Text
+
+  appliedAt DateTime?
+  // True when the edit bypassed approval because the profile was still being
+  // drafted (lifecycleStage before ACTIVE) — the row is history, not a request.
+  autoApplied Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  createdBy String?
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+  isDeleted Boolean  @default(false)
+
+  @@unique([factoryProfileId, version])
+  @@index([factoryProfileId])
+  @@index([siteId])
+  @@index([status])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
