@@ -27,6 +27,7 @@
     "db:seed-erm-p3": "tsx prisma/seed-erm-p3.ts",
     "db:seed-erm-t3": "tsx prisma/seed-erm-t3.ts",
     "db:seed-cams": "tsx prisma/seed-cams.ts",
+    "db:apply-factory-profile-v2": "tsx prisma/apply-factory-profile-v2-ddl.ts",
     "db:seed-factory": "tsx prisma/seed-factory.ts",
     "db:seed-factory-ops": "tsx prisma/seed-factory-ops.ts",
     "db:seed-facility-rollup": "tsx prisma/seed-facility-rollup.ts",

@@ -46,6 +46,16 @@ type AssignableSlots = {
  *  see `AUDIT_CATEGORY_ICON` in ./lib. */
 const CATEGORY_ICON = AUDIT_CATEGORY_ICON;
 
+/**
+ * An external participant on a supplier audit.
+ *
+ * No `userId`: they have no account here. The email is the identity and the thing
+ * the access link is issued to, which is why it is the only required field.
+ */
+type ExternalParty = { email: string; name: string; disciplineIds: string[] };
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 export function ScheduleModal({
   plantId, templates, libraries, users, auditCategories, onClose, defaultTitle, dialogTitle,
 }: {
@@ -90,13 +100,22 @@ export function ScheduleModal({
   // is picked by sort order, which is the failure the previous single-library
   // shortcut was written to avoid and this generalises rather than reopens.
   const catalogue = auditCategories?.length ? auditCategories : AUDIT_CATEGORY_FALLBACK;
+  // Categories are filtered by the SUBJECT, so the two axes stay untangled:
+  // Own facility offers Internal and QMS/EMS/OHS; Supplier offers Social
+  // Compliance and the Supplier Code of Conduct. Social Compliance sits on the
+  // supplier side because its questions — valid factory licence, minimum wages,
+  // no child labour — are put to a supplier's factory, and for our own site the
+  // internal HR/EHS audit already covers that ground.
   const categoryOptions = useMemo(
-    () => resolveAuditCategories(libraries, catalogue),
-    [libraries, catalogue],
+    () => resolveAuditCategories(libraries, catalogue, subjectType),
+    [libraries, catalogue, subjectType],
   );
   const [auditCategory, setAuditCategory] = useState<AuditCategoryCode | "">(
-    () => categoryOptions[0]?.code ?? "",
+    () => resolveAuditCategories(libraries, catalogue, "OWN_SITE")[0]?.code ?? "",
   );
+  // Falls back to the first option for THIS subject, which is what makes the
+  // toggle land on a valid category instead of stranding a supplier audit on
+  // "Internal" — the codes are per-subject and do not survive the switch.
   const activeCategory =
     categoryOptions.find((c) => c.code === auditCategory) ?? categoryOptions[0] ?? null;
 
@@ -111,12 +130,13 @@ export function ScheduleModal({
   // `subjectScope` is derived on the backend so there is one classifier; a
   // library missing the field (older payload) is treated as OWN_SITE, which
   // fails toward "not offered for supplier audits" rather than toward offering
-  // plant checklists. A supplier audit carries NO category — the subject has
-  // already selected the checklist, so there is nothing left to categorise.
+  // plant checklists. `vendorLibs` now only answers "does a supplier checklist
+  // exist at all" for the empty state — WHICH one is used is the category's job.
   const vendorLibs = useMemo(
     () => (subjectType === "VENDOR" ? scopedSelectableLibs(libraries, "VENDOR") : []),
     [libraries, subjectType],
   );
+  const isVendor = subjectType === "VENDOR";
   // Scoped correctly but empty — worth naming, because "5 supplier regimes
   // exist but none have content" is a different problem from "none exist", and
   // it tells the admin exactly what to load.
@@ -135,7 +155,11 @@ export function ScheduleModal({
   // category points at; supplier → whichever supplier-scoped checklist is
   // configured. Derived rather than held in state so the category and the
   // checklist can never disagree.
-  const library = subjectType === "VENDOR" ? vendorLibs[0] ?? null : activeCategory?.library ?? null;
+  // ONE rule for both subjects: the chosen category names the checklist. The
+  // supplier branch used to take `vendorLibs[0]` — whichever sorted first — and
+  // with two supplier checklists now live (Social Compliance and the Code of
+  // Conduct) that is exactly the pick-by-sort-order bug the categories replaced.
+  const library = activeCategory?.library ?? null;
   const industryCode = library?.industryCode ?? "";
 
   const [title, setTitle] = useState(defaultTitle ?? "");
@@ -157,6 +181,11 @@ export function ScheduleModal({
   // auditorDisc = userId → discipline codes they conduct (lead covers the rest).
   const [coAuditorIds, setCoAuditorIds] = useState<string[]>([]);
   const [auditorDisc, setAuditorDisc] = useState<Record<string, string[]>>({});
+  // External parties on a SUPPLIER audit. They hold no platform seat, so there
+  // is nothing to pick from a directory — the email IS the identity, and each
+  // address gets its own access link.
+  const [extCoAuditors, setExtCoAuditors] = useState<ExternalParty[]>([]);
+  const [extAuditees, setExtAuditees] = useState<ExternalParty[]>([]);
 
   // Loaded lazily — an own-facility audit (the common case) should not pay for
   // the vendor list.
@@ -294,6 +323,18 @@ export function ScheduleModal({
   const disciplineError = selectedDisc.length === 0 ? "Select at least one discipline." : null;
   const supplierError =
     subjectType === "VENDOR" && !vendorProfileId ? "Pick the supplier being audited." : null;
+  // Required on a supplier audit, not optional as the old "contact" fields were.
+  // They are no longer a nicety for a follow-up email: the supplier manager IS
+  // the reviewer counterpart, and their address is the credential the access
+  // link is issued to — an audit with neither has nobody to answer for it.
+  const supplierManagerError =
+    isVendor && supplierContactName.trim().length < 2
+      ? "Name the supplier manager who answers for this factory."
+      : null;
+  const supplierEmailError =
+    isVendor && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(supplierContactEmail.trim())
+      ? "A valid email is needed — the access link is issued to it."
+      : null;
 
   // Hard block on submit, distinct from field-level validation: these are
   // states where the form CANNOT produce a valid audit, so the button is
@@ -311,7 +352,8 @@ export function ScheduleModal({
           ? "This selection materialises no checkpoints — there would be nothing to assess."
           : null;
   const cannotSchedule = scheduleBlockReason !== null;
-  const firstError = titleError ?? categoryError ?? industryError ?? supplierError ?? disciplineError ?? leadError;
+  const firstError = titleError ?? categoryError ?? industryError ?? supplierError
+    ?? supplierManagerError ?? supplierEmailError ?? disciplineError ?? leadError;
 
   function toggleAuditee(id: string) {
     setAuditeeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -433,8 +475,19 @@ export function ScheduleModal({
         scopePresetUsed: scopePreset,
         scheduledDate: new Date(scheduledDate + "T09:00:00").toISOString(),
         scheduledStartTime: "09:00", estimatedDurationHours: 4,
-        leadAuditorUserId, plantManagerUserId: plantManagerUserId || null,
-        coAuditors, auditees, scopeDescription: `${library!.industryName} compliance audit`,
+        leadAuditorUserId,
+        // Not merely hidden — cleared. A reviewer chosen before the subject was
+        // switched to Supplier would otherwise still be posted, seating an
+        // internal plant manager over an audit of someone else's factory.
+        plantManagerUserId: isVendor ? null : plantManagerUserId || null,
+        coAuditors: isVendor ? [] : coAuditors,
+        auditees: isVendor ? [] : auditees,
+        // Externals only travel on a supplier audit. Sending them for an
+        // own-facility audit would mint external credentials for an audit whose
+        // participants all have accounts.
+        externalCoAuditors: isVendor ? extCoAuditors.filter((p) => p.email.trim()) : [],
+        externalAuditees: isVendor ? extAuditees.filter((p) => p.email.trim()) : [],
+        scopeDescription: `${library!.industryName} compliance audit`,
       }),
     });
     setBusy(false);
@@ -444,7 +497,18 @@ export function ScheduleModal({
       return;
     }
     const created = await res.json();
-    toast({ variant: "success", title: "Audit scheduled", description: `${created.auditNumber} — ${created.totalCheckpoints} checkpoints materialized.` });
+    // The links come back ONCE — only a hash of each token is stored, so this
+    // response is the only place the usable URLs ever exist. Saying how many went
+    // out is the difference between "scheduled" and "scheduled AND the factory can
+    // actually reach it".
+    const links: { role: string; email: string }[] = created.portalLinks ?? [];
+    toast({
+      variant: "success",
+      title: "Audit scheduled",
+      description: links.length
+        ? `${created.auditNumber} — ${created.totalCheckpoints} checkpoints. ${links.length} access link${links.length === 1 ? "" : "s"} issued (${[...new Set(links.map((l) => l.role.replace(/_/g, " ").toLowerCase()))].join(", ")}).`
+        : `${created.auditNumber} — ${created.totalCheckpoints} checkpoints materialized.`,
+    });
     startTransition(() => {
       onClose();
       router.push(`/cams/audits/${created.id}`);
@@ -499,13 +563,14 @@ export function ScheduleModal({
               The head of the scope chain: the category resolves the checklist,
               and the discipline chips below are that checklist's. Rendered for
               own-facility audits only — a supplier audit's checklist is already
-              settled by the subject, so a category there would be a second,
-              conflicting answer to the same question.
+              filtered by that subject: Own facility offers Internal and
+              QMS/EMS/OHS, Supplier offers Social Compliance and the Code of
+              Conduct. Same control either way — only the options change.
 
               Only categories with a loaded checklist appear. A category on
               screen is therefore always schedulable, and the count under each
               says what it would cost before it is picked. */}
-          {subjectType === "OWN_SITE" && categoryOptions.length > 0 && (
+          {categoryOptions.length > 0 && (
             <Field label="Audit category" required error={touched ? categoryError : null}>
               {/* Columns follow the count, because the count is not fixed: only
                   categories with a loaded checklist are rendered, so a partly
@@ -616,24 +681,31 @@ export function ScheduleModal({
                     placeholder="e.g. Unit 2, Tirupur"
                   />
                 </Field>
-                <Field label="Supplier contact name">
+                <Field label="Supplier manager" required error={touched ? supplierManagerError : null}>
                   <Input
                     value={supplierContactName}
                     onChange={(e) => setSupplierContactName(e.target.value)}
-                    placeholder="Factory manager"
+                    placeholder="Name of the factory / supplier manager"
+                    aria-invalid={!!(touched && supplierManagerError)}
                   />
                 </Field>
               </div>
-              <Field label="Supplier contact email">
+              <Field label="Supplier manager email" required error={touched ? supplierEmailError : null}>
                 <Input
                   type="email"
                   value={supplierContactEmail}
                   onChange={(e) => setSupplierContactEmail(e.target.value)}
-                  placeholder="name@supplier.com"
+                  placeholder="manager@supplier.com"
+                  aria-invalid={!!(touched && supplierEmailError)}
                 />
+                {/* The supplier manager stands in for the plant manager on a
+                    supplier audit: they are the counterpart who answers for the
+                    factory. They hold no platform seat, so the email is the
+                    identity — it is what the access link is issued to. */}
                 <p className="mt-1 text-[11px] text-slate-500">
-                  Used to send the corrective-action link after the audit closes. It can
-                  be added later.
+                  A secure link is issued to this address. The supplier manager signs in
+                  with the link alone — no account — and sees only this audit, nothing else
+                  in SafeOps360.
                 </p>
               </Field>
             </div>
@@ -763,21 +835,60 @@ export function ScheduleModal({
             </Field>
           </div>
 
-          <Field label="Plant manager (reviewer)">
-            <Select value={plantManagerUserId} onChange={(e) => setPM(e.target.value)} disabled={assignableLoading}>
-              <option value="">— none —</option>
-              {pmCandidates.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.role.replace(/_/g, " ")})</option>)}
-            </Select>
-            <SlotHint
-              loading={assignableLoading}
-              count={pmCandidates.length}
-              permission="AUDIT_COMPLIANCE.APPROVE"
-              error={assignableError}
-            />
-          </Field>
+          {/* The reviewer seat, and who fills it.
+              On an OWN-FACILITY audit it is our plant manager. On a SUPPLIER
+              audit there is no plant manager to name — the audited factory is
+              not ours — so the counterpart is the supplier manager captured
+              above, and this internal picker is not shown at all rather than
+              offered and left empty. */}
+          {!isVendor && (
+            <Field label="Plant manager (reviewer)">
+              <Select value={plantManagerUserId} onChange={(e) => setPM(e.target.value)} disabled={assignableLoading}>
+                <option value="">— none —</option>
+                {pmCandidates.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.role.replace(/_/g, " ")})</option>)}
+              </Select>
+              <SlotHint
+                loading={assignableLoading}
+                count={pmCandidates.length}
+                permission="AUDIT_COMPLIANCE.APPROVE"
+                error={assignableError}
+              />
+            </Field>
+          )}
+
+          {/* ── External co-auditors and auditees (supplier audits) ───────
+              A supplier audit is conducted at a factory that is not ours, by and
+              with people who have no accounts here. So instead of directory
+              pickers this collects addresses: every one gets its own link into
+              this audit and nothing else.
+
+              The internal pickers below are hidden for a supplier audit rather
+              than shown alongside — offering both would leave it ambiguous who
+              is actually expected to turn up. */}
+          {isVendor && (
+            <>
+              <EmailPartyField
+                label="External co-auditors"
+                hint="Each auditor gets their own link and conducts the disciplines you scope them to. Leave empty if the audit is conducted only by our own team."
+                parties={extCoAuditors}
+                onChange={setExtCoAuditors}
+                disciplines={selectedDisc.map((c) => ({ code: c, name: discName(c) }))}
+                addLabel="Add co-auditor"
+              />
+              <EmailPartyField
+                label="Factory auditees"
+                hint="Findings in their disciplines route to them, and they respond through their own link."
+                parties={extAuditees}
+                onChange={setExtAuditees}
+                disciplines={selectedDisc.map((c) => ({ code: c, name: discName(c) }))}
+                addLabel="Add auditee"
+              />
+            </>
+          )}
 
           {/* Co-auditors by discipline — the lead conducts any discipline not
               assigned to a co-auditor. */}
+          {!isVendor && (
           <Field label={`Co-auditors by discipline — ${coAuditorIds.length} selected`}>
             <SlotHint
               loading={assignableLoading}
@@ -836,7 +947,9 @@ export function ScheduleModal({
               </div>
             )}
           </Field>
+          )}
 
+          {!isVendor && (
           <Field label={`Auditees (failed checkpoints route to them) — ${auditeeIds.length} selected`}>
             <SlotHint
               loading={assignableLoading}
@@ -864,6 +977,7 @@ export function ScheduleModal({
               })}
             </div>
           </Field>
+          )}
 
           {/* Auditor independence, checked INLINE at team assignment
               (docs/cams/09 §2.1.5). Running it here rather than on submit means
@@ -1006,5 +1120,116 @@ function Field({ label, required, error, children }: { label: string; required?:
       {children}
       {error && <p className="text-[11px] text-rose-600">{error}</p>}
     </div>
+  );
+}
+
+/**
+ * A repeatable list of external participants — name, email, disciplines.
+ *
+ * Rows rather than a comma-separated textarea, deliberately: each participant
+ * carries a discipline scope and gets their own credential, so they are records
+ * and not a string to be split. A textarea would also silently accept an address
+ * that fails validation, and the whole point of this field is that a mistyped
+ * address means one person never gets their link.
+ *
+ * Empty by default and with no blank first row: a supplier audit conducted only
+ * by our own team needs none of these, and an empty row reads as an unfilled
+ * required field.
+ */
+function EmailPartyField({
+  label, hint, parties, onChange, disciplines, addLabel,
+}: {
+  label: string;
+  hint: string;
+  parties: ExternalParty[];
+  onChange: (next: ExternalParty[]) => void;
+  disciplines: { code: string; name: string }[];
+  addLabel: string;
+}) {
+  function update(i: number, patch: Partial<ExternalParty>) {
+    onChange(parties.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
+  }
+  function toggleDisc(i: number, code: string) {
+    const cur = parties[i].disciplineIds;
+    update(i, { disciplineIds: cur.includes(code) ? cur.filter((c) => c !== code) : [...cur, code] });
+  }
+
+  return (
+    <Field label={`${label}${parties.length ? ` — ${parties.length}` : ""}`}>
+      <p className="mb-1.5 text-[11px] leading-relaxed text-slate-500">{hint}</p>
+      <div className="space-y-2">
+        {parties.map((p, i) => {
+          // Only flag a bad address once something has been typed — a row the
+          // scheduler is still filling in is not an error yet.
+          const bad = p.email.trim().length > 0 && !EMAIL_RE.test(p.email.trim());
+          return (
+            <div key={i} className="rounded-lg border border-amber-200 bg-white p-2">
+              <div className="flex gap-2">
+                <Input
+                  value={p.name}
+                  onChange={(e) => update(i, { name: e.target.value })}
+                  placeholder="Name (optional)"
+                  className="h-8 flex-1 text-xs"
+                />
+                <Input
+                  type="email"
+                  value={p.email}
+                  onChange={(e) => update(i, { email: e.target.value })}
+                  placeholder="name@company.com"
+                  aria-invalid={bad}
+                  className={cn("h-8 flex-[1.4] text-xs", bad && "border-rose-300")}
+                />
+                <Button
+                  type="button" variant="outline" size="sm"
+                  onClick={() => onChange(parties.filter((_, idx) => idx !== i))}
+                  title="Remove"
+                  className="h-8 px-2 text-[11px]"
+                >
+                  Remove
+                </Button>
+              </div>
+              {bad && <p className="mt-1 text-[11px] text-rose-600">This address can&apos;t receive a link.</p>}
+              {disciplines.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    Disciplines
+                  </span>
+                  {disciplines.map((d) => {
+                    const on = p.disciplineIds.includes(d.code);
+                    return (
+                      <Button
+                        key={d.code} type="button" variant="ghost" aria-pressed={on}
+                        onClick={() => toggleDisc(i, d.code)}
+                        className={cn(
+                          "h-auto rounded-full border px-2 py-0.5 text-[11px] transition",
+                          on ? "border-amber-500 bg-amber-500 text-white"
+                             : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
+                        )}
+                      >
+                        {d.name}
+                      </Button>
+                    );
+                  })}
+                  {/* None ticked is not a mistake — it means the whole audit
+                      scope, matching how an empty discipline list is read
+                      everywhere else. Said plainly so nobody ticks all of them
+                      thinking it is required. */}
+                  {p.disciplineIds.length === 0 && (
+                    <span className="text-[10px] text-slate-400">none ticked = all in scope</span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <Button
+        type="button" variant="outline" size="sm"
+        onClick={() => onChange([...parties, { email: "", name: "", disciplineIds: [] }])}
+        className="mt-2 h-7 px-2 text-[11px]"
+      >
+        + {addLabel}
+      </Button>
+    </Field>
   );
 }

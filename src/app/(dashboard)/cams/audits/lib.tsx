@@ -2,7 +2,7 @@
 // Types mirror the FastAPI serialization in
 // safeops_360_bakend/app/services/audit_compliance.py.
 
-import { Gauge, Layers, Users, type LucideIcon } from "lucide-react";
+import { Gauge, Layers, ScrollText, Users, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type AuditValue = "pass" | "partial" | "fail" | "na" | "yes" | "no" | null;
@@ -428,7 +428,9 @@ export type LibrarySubjectScope = "OWN_SITE" | "VENDOR" | "BOTH";
  * `subjectType` picks who is asked (our facility / a supplier). Supplier
  * checklists therefore carry no category — the subject already selected them.
  */
-export type AuditCategoryCode = "INTERNAL" | "MANAGEMENT_SYSTEMS" | "SOCIAL_COMPLIANCE";
+export type AuditCategoryCode =
+  | "INTERNAL" | "MANAGEMENT_SYSTEMS"        // own facility
+  | "SOCIAL_COMPLIANCE" | "SUPPLIER_COC";    // a supplier's factory
 
 export type AuditCategory = {
   code: AuditCategoryCode;
@@ -436,6 +438,16 @@ export type AuditCategory = {
   description: string;
   /** The library this category materialises from. */
   industryCode: string;
+  /**
+   * Which audit SUBJECT this category belongs to.
+   *
+   * The two axes stay untangled by filtering on this: Social Compliance asks
+   * whether "the factory" holds a valid licence and pays minimum wages —
+   * questions put to a SUPPLIER, not to our own site, where the internal
+   * HR/EHS audit already covers that ground. Offering it for an own-facility
+   * audit produced a report reading as though we screened ourselves as a vendor.
+   */
+  subjectType: "OWN_SITE" | "VENDOR";
   /** Stamped onto the audit so a report names the regime it was run under. */
   auditType: string;
   standards: string[];
@@ -454,6 +466,7 @@ export const AUDIT_CATEGORY_FALLBACK: AuditCategory[] = [
     label: "Internal",
     description: "Page Industries internal audit — HR, EHS and Production.",
     industryCode: "PAGE_INDUSTRIES",
+    subjectType: "OWN_SITE",
     auditType: "internal_audit",
     standards: ["Page Industries Internal Audit"],
   },
@@ -462,16 +475,27 @@ export const AUDIT_CATEGORY_FALLBACK: AuditCategory[] = [
     label: "QMS, EMS, OHS",
     description: "Integrated management-system audit against ISO 9001, 14001, 45001 and 50001.",
     industryCode: "PAGE_IMS",
+    subjectType: "OWN_SITE",
     auditType: "management_system_audit",
     standards: ["ISO 9001:2015", "ISO 14001:2015", "ISO 45001:2018", "ISO 50001:2018"],
   },
   {
     code: "SOCIAL_COMPLIANCE",
     label: "Social Compliance",
-    description: "PIL Social Compliance Audit checklist — labour, wages, safety and environment.",
+    description: "PIL Social Compliance Audit checklist — labour, wages, safety and environment at a supplier's factory.",
     industryCode: "PAGE_SOCIAL",
+    subjectType: "VENDOR",
     auditType: "social_compliance_audit",
     standards: ["PIL Social Compliance Audit Checklist (Annexure-2, v4)"],
+  },
+  {
+    code: "SUPPLIER_COC",
+    label: "Supplier Code of Conduct",
+    description: "Supplier Code of Conduct — labour standards, health & safety, environment, ethics and management system.",
+    industryCode: "SUPPLIER_COC",
+    subjectType: "VENDOR",
+    auditType: "supplier_coc_audit",
+    standards: ["Supplier Code of Conduct"],
   },
 ];
 
@@ -500,6 +524,7 @@ export const AUDIT_CATEGORY_ICON: Record<AuditCategoryCode, LucideIcon> = {
   INTERNAL: Layers,
   MANAGEMENT_SYSTEMS: Gauge,
   SOCIAL_COMPLIANCE: Users,
+  SUPPLIER_COC: ScrollText,
 };
 
 /**
@@ -545,9 +570,10 @@ export function scopedSelectableLibs(
 export function resolveAuditCategories(
   libraries: AuditLibrary[],
   catalogue: AuditCategory[],
+  subjectType: "OWN_SITE" | "VENDOR" = "OWN_SITE",
 ): ResolvedAuditCategory[] {
-  const libs = scopedSelectableLibs(libraries, "OWN_SITE");
-  return catalogue.flatMap((c) => {
+  const libs = scopedSelectableLibs(libraries, subjectType);
+  return catalogue.filter((c) => c.subjectType === subjectType).flatMap((c) => {
     const library =
       libs.find((l) => l.auditCategory === c.code) ??
       libs.find((l) => l.industryCode === c.industryCode);
