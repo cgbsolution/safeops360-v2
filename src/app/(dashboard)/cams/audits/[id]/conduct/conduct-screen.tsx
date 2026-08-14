@@ -108,6 +108,28 @@ const GRADE_TABS: { key: GradeFilter; label: string }[] = [
   ...GRADE_ORDER.map((g) => ({ key: g as GradeFilter, label: GRADE_META[g].short })),
 ];
 
+/**
+ * The same filter row, in the customer's vocabulary.
+ *
+ * A filter has to offer the words the cards answer in. Showing "Unsat. / Major
+ * Imp. / Some Imp. / Effective" over a department audit whose cards say
+ * Conformance / Non-Conformance / Observation asks the auditor to translate
+ * between two vocabularies to find their own findings.
+ *
+ * The KEYS are still grade codes, so this needs no new server filter — each
+ * parameter maps 1:1 onto the grade it writes, which is exactly what
+ * `CONFORMANCE_META[c].grade` already says.
+ */
+const TRISTATE_TABS: { key: GradeFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "ungraded", label: "Not graded" },
+  ...CONFORMANCE_ORDER.map((c) => ({
+    key: CONFORMANCE_META[c].grade as GradeFilter,
+    label: CONFORMANCE_META[c].label,
+  })),
+  { key: "NA", label: "N/A" },
+];
+
 // Grade → rollup bucket key (null = not graded). The rollup still counts in the
 // engine's four buckets, so the navigator and the RAG bars keep working exactly
 // as before — the grade is a richer face on the same verdict.
@@ -171,6 +193,14 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   const isDeptAudit = streams.length > 0;
   const [streamFilter, setStreamFilter] = useState<StreamFilter>("all");
   const pageSize = isDeptAudit ? PAGE_PAIRED : PAGE;
+  // The filter offers the words the cards answer in. Keyed off the AUDIT's
+  // conformance mode (server-derived from its own materialised rows) rather
+  // than off `isDeptAudit`, so it stays correct for any future tristate
+  // checklist that is not department-segregated — and for a mixed audit, where
+  // the server answers FULL because that is the only vocabulary every card can
+  // be found by.
+  const isTristateAudit = audit.conformanceMode === "TRISTATE";
+  const gradeTabs = isTristateAudit ? TRISTATE_TABS : GRADE_TABS;
   // WP-44: a captured photo held for markup before it is attached. The
   // ORIGINAL is always uploaded; the annotated copy is uploaded alongside it.
   const [pendingPhoto, setPendingPhoto] = useState<{ item: Resp; file: File; url: string } | null>(null);
@@ -184,6 +214,26 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   const [loadingMore, setLoadingMore] = useState(false);
 
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+
+  // ── What is actually on the server, and what is not ───────────────────
+  //
+  // Every write here is an autosave, and an autosave that fails quietly is
+  // indistinguishable from one that worked — which is how graded checkpoints
+  // came back blank with a "saved" tick still on the card. Three states are
+  // tracked so the screen can never claim more than it knows:
+  //
+  //   savedIds   confirmed by a 2xx in THIS session
+  //   failedIds  a write that was attempted and did not land
+  //   pendingText  audit findings typed but not yet posted (700ms debounce)
+  //
+  // `failedIds` is deliberately sticky: a toast can be missed, and the one
+  // thing the auditor must not be able to miss is that their work is not on
+  // the server. It clears only when a later write for that row succeeds.
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
+  const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
+  const pendingText = useRef<Map<string, { item: Resp; text: string }>>(new Map());
+  const [pendingCount, setPendingCount] = useState(0);
+  const [flushing, setFlushing] = useState(false);
   const [showSubmit, setShowSubmit] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -215,7 +265,14 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
       if (!reset && cur) params.set("cursor", cur);
       if (reset) setLoading(true); else setLoadingMore(true);
       try {
-        const res = await fetch(`/api/audit-compliance/${audit.id}/checkpoints?${params.toString()}`);
+        // `no-store`, not politeness: this GET is what the auditor sees when
+        // they come BACK to a department they have already graded. A response
+        // replayed from the browser cache renders their saved verdicts as
+        // blank cards — work that is on the server and looks lost.
+        const res = await fetch(
+          `/api/audit-compliance/${audit.id}/checkpoints?${params.toString()}`,
+          { cache: "no-store" },
+        );
         if (!res.ok) {
           const j = await res.json().catch(() => ({}));
           toast({ variant: "error", title: "Couldn't load checkpoints", description: apiErrorMessage(j, res.status) });
@@ -234,8 +291,18 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   );
 
   // Refetch when scope/filter/search changes.
+  //
+  // Pending text is flushed FIRST. Changing department replaces every row on
+  // screen, so a debounce still in flight would be posting against cards the
+  // auditor can no longer see — and if it failed, against cards they could not
+  // get back to.
   useEffect(() => {
-    fetchPage(true, null);
+    let cancelled = false;
+    void (async () => {
+      await flushPending();
+      if (!cancelled) fetchPage(true, null);
+    })();
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disciplineId, gradeFilter, qDebounced, mineOnly, streamFilter]);
 
@@ -288,15 +355,33 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     async (item: Resp, body: Record<string, unknown>, optimistic: (r: Resp) => Resp) => {
       patchItem(item.id, (r) => { const o = optimistic(r); return { ...o, auditorResponse: { ...(o.auditorResponse ?? { value: null }), is_saved: false } }; });
       setSavingIds((s) => new Set(s).add(item.id));
+      setSavedIds((s) => { const n = new Set(s); n.delete(item.id); return n; });
       try {
         const doPost = () => fetch(`/api/audit-compliance/${audit.id}/responses`, {
           method: "POST", headers: { "content-type": "application/json" },
+          // A verdict must never be answered from a cached response — a 200 the
+          // browser replayed would mark the card saved without the server ever
+          // hearing about it.
+          cache: "no-store",
           body: JSON.stringify({ checkpointCode: item.checkpointCode, ...body }),
         }).catch(() => null);
         let r = await doPost();
         if (!r || r.status >= 500) { await new Promise((res) => setTimeout(res, 500)); r = await doPost(); }
-        if (!r) { toast({ variant: "error", title: "Network error", description: "Your last change wasn't saved." }); return false; }
-        if (!r.ok) { const j = await r.json().catch(() => ({})); toast({ variant: "error", title: "Couldn't save", description: apiErrorMessage(j, r.status) }); return false; }
+        const fail = (title: string, description: string) => {
+          // Sticky, not just a toast: the card keeps a "Not saved" badge and the
+          // footer keeps a count, because a toast that scrolled past is exactly
+          // how unsaved work looks identical to saved work.
+          setFailedIds((s) => new Set(s).add(item.id));
+          toast({ variant: "error", title, description });
+          return false;
+        };
+        if (!r) return fail("Not saved — network error", `${item.checkpointCode} is still only on this device. Use “Save now” once you are back online.`);
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({}));
+          return fail("Not saved", `${item.checkpointCode}: ${apiErrorMessage(j, r.status)}`);
+        }
+        setFailedIds((s) => { const n = new Set(s); n.delete(item.id); return n; });
+        setSavedIds((s) => new Set(s).add(item.id));
         patchItem(item.id, (rr) => ({ ...rr, auditorResponse: { ...(rr.auditorResponse ?? { value: null }), is_saved: true } }));
         return true;
       } finally {
@@ -322,7 +407,15 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
 
     // Status is only auto-suggested when the auditor has not already chosen
     // one — re-grading must never downgrade a Repeated Non Compliance.
-    const status = next === null ? null : (item.complianceStatus ?? suggestStatus(next));
+    //
+    // N/A is the exception, and it has to be: marking a checkpoint not
+    // applicable is a statement that it was never assessed, so keeping the
+    // status it carried before would leave the row reading "Complied" and
+    // "Not applicable" at once — and on a tristate card BOTH controls would
+    // light up. Preserving a status the grade contradicts is not caution.
+    const status = next === null ? null
+      : next === "NA" ? "NA"
+      : (item.complianceStatus ?? suggestStatus(next));
     const score = suggestScore(next, status);
     const allotted = next === null || next === "NA" ? null : FULL_SCORE;
     const risk = carriesRiskGrade(next) ? item.riskGrade : null;
@@ -414,14 +507,92 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     if (ok) applyDelta(item.categoryId, null, null, false, score - (item.scoreObtained ?? 0), 0);
   }
 
-  // Debounced audit-findings save (column G).
+  // ── Audit findings (column G) — debounced, but never abandoned ────────
+  //
+  // Typing posts 700ms after the last keystroke. That window is the single
+  // biggest way work was being lost: an auditor who typed a finding and
+  // immediately tapped back left the sentence in a timer that the unmounting
+  // component then threw away. The text is now ALSO held in `pendingText`, so
+  // it can be flushed on demand — by the Save button, by leaving the screen, by
+  // switching department, and by the browser trying to close the tab.
   const obsTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const syncPendingCount = useCallback(() => setPendingCount(pendingText.current.size), []);
+
   function setObservation(item: Resp, text: string) {
     patchItem(item.id, (r) => ({ ...r, auditorResponse: { ...(r.auditorResponse ?? { value: null }), text_observation: text } }));
+    pendingText.current.set(item.checkpointCode, { item, text });
+    syncPendingCount();
     const m = obsTimers.current;
     if (m.get(item.id)) clearTimeout(m.get(item.id)!);
-    m.set(item.id, setTimeout(() => saveField(item, { auditFindings: text }, (r) => r), 700));
+    m.set(item.id, setTimeout(() => { void flushOne(item.checkpointCode); }, 700));
   }
+
+  const flushOne = useCallback(async (code: string) => {
+    const entry = pendingText.current.get(code);
+    if (!entry) return true;
+    // Removed BEFORE the await so a keystroke landing mid-flight re-queues the
+    // newer text rather than being cancelled by this write finishing.
+    pendingText.current.delete(code);
+    setPendingCount(pendingText.current.size);
+    const ok = await saveField(entry.item, { auditFindings: entry.text }, (r) => r);
+    if (!ok && !pendingText.current.has(code)) {
+      // Failed and nothing newer replaced it — keep it queued so "Save now"
+      // and the leave-guard can still rescue the text.
+      pendingText.current.set(code, entry);
+      setPendingCount(pendingText.current.size);
+    }
+    return ok;
+  }, [saveField]);
+
+  /** Post everything still sitting in a debounce timer. Returns false if any
+   *  write failed, so a caller about to navigate can stop and say so. */
+  const flushPending = useCallback(async () => {
+    for (const t of obsTimers.current.values()) clearTimeout(t);
+    obsTimers.current.clear();
+    const codes = [...pendingText.current.keys()];
+    if (codes.length === 0) return true;
+    setFlushing(true);
+    try {
+      const results = await Promise.all(codes.map((c) => flushOne(c)));
+      return results.every(Boolean);
+    } finally {
+      setFlushing(false);
+    }
+  }, [flushOne]);
+
+  const unsavedCount = pendingCount + failedIds.size;
+
+  // The browser's own guard, for the tab-close and hard-navigation cases React
+  // never sees. Only armed when there is something to lose.
+  useEffect(() => {
+    if (unsavedCount === 0 && savingIds.size === 0) return;
+    const onBeforeUnload = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ""; };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [unsavedCount, savingIds.size]);
+
+  // Backgrounding the tab on a phone is the commonest way a shop-floor auditor
+  // leaves this screen, and it fires no navigation event at all.
+  useEffect(() => {
+    const onHide = () => { if (document.visibilityState === "hidden") void flushPending(); };
+    document.addEventListener("visibilitychange", onHide);
+    return () => document.removeEventListener("visibilitychange", onHide);
+  }, [flushPending]);
+
+  /** Leave the screen, but not before the typing is on the server. */
+  const leaveTo = useCallback(async (href: string) => {
+    const ok = await flushPending();
+    if (!ok) {
+      toast({
+        variant: "error",
+        title: "Some changes didn't save",
+        description: "Staying on this screen so nothing is lost — try “Save now”.",
+      });
+      return;
+    }
+    router.push(href);
+  }, [flushPending, router, toast]);
 
   // Offer markup first. Images only — a document has nothing to draw on, so it
   // goes straight up rather than opening a canvas over a blank frame.
@@ -565,7 +736,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   }
 
   const refreshRollup = useCallback(async () => {
-    const res = await fetch(`/api/audit-compliance/${audit.id}`);
+    const res = await fetch(`/api/audit-compliance/${audit.id}`, { cache: "no-store" });
     if (!res.ok) return;
     const j = await res.json();
     if (Array.isArray(j.disciplineRollup)) {
@@ -636,7 +807,14 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
       {/* Header + overall progress */}
       <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-t-xl">
         <div className="flex items-center gap-2">
-          <Link href={`/cams/audits/${audit.id}`} className="rounded-md p-1 text-slate-400 hover:bg-slate-100"><ArrowLeft size={18} /></Link>
+          {/* Back is a BUTTON, not a bare link: leaving is the moment a
+              700ms debounce gets thrown away, so it flushes first and refuses
+              to leave if a write is still failing. */}
+          <Button type="button" variant="ghost" aria-label="Back to the audit"
+            onClick={() => void leaveTo(`/cams/audits/${audit.id}`)}
+            className="h-auto rounded-md p-1 text-slate-400 hover:bg-slate-100">
+            <ArrowLeft size={18} />
+          </Button>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold text-slate-800">{audit.title}</div>
             <div className="text-[11px] text-slate-400">{audit.auditNumber}</div>
@@ -746,7 +924,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
               </div>
             )}
             <div className="flex flex-wrap items-center gap-1.5">
-              {GRADE_TABS.map((t) => (
+              {gradeTabs.map((t) => (
                 <Button key={t.key} type="button" variant="ghost" onClick={() => setGradeFilter(t.key)}
                   className={cn("h-auto rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
                     gradeFilter === t.key ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
@@ -800,14 +978,9 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
                     {bulkBusy === "pass" ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
                     {isDeptAudit ? "Conformance" : "Effective"}
                   </Button>
-                  {/* N/A is not offered on a department audit: its checklist has
-                      three parameters and no N/A, so a bulk path that wrote one
-                      would produce rows the card cannot render or change back. */}
-                  {!isDeptAudit && (
-                    <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!!bulkBusy || selectedDisc.answered >= selectedDisc.total} onClick={() => bulkMark("na")}>
-                      N/A
-                    </Button>
-                  )}
+                  <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!!bulkBusy || selectedDisc.answered >= selectedDisc.total} onClick={() => bulkMark("na")}>
+                    N/A
+                  </Button>
                 </div>
               </div>
             )}
@@ -830,7 +1003,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
               </div>
               {cards.map((card) => (
                 <CheckpointCard key={card[0].id} card={card}
-                  savingIds={savingIds} ownerName={userName}
+                  savingIds={savingIds} failedIds={failedIds} ownerName={userName}
                   replicateBusy={replicateBusy}
                   onGrade={setGrade} onStatus={setStatus} onConformance={setConformance}
                   onRiskGrade={setRiskGrade} onScore={setScore}
@@ -848,13 +1021,53 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         </main>
       </div>
 
-      {/* Sticky submit bar */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t border-slate-200 bg-white/95 p-3 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center gap-3">
+      {/* Sticky bar — progress, save state, submit.
+          Grading autosaves, but "it saves as you go" is only believable if the
+          screen says so out loud and offers a way to force it. This is the one
+          place an auditor can answer "is my work safe?" without guessing. */}
+      <div className={cn(
+        "fixed inset-x-0 bottom-0 z-20 border-t p-3 backdrop-blur transition-colors",
+        unsavedCount > 0 ? "border-amber-300 bg-amber-50/95" : "border-slate-200 bg-white/95",
+      )}>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3">
           <div className="flex-1 text-xs text-slate-500">
             <span className="font-semibold text-slate-700">{answeredTotal}</span>/{grandTotal} answered · {grandTotal - answeredTotal} remaining
           </div>
-          <Button type="button" onClick={() => setShowSubmit(true)}>Submit Audit</Button>
+
+          <div className="flex items-center gap-2 text-xs">
+            {savingIds.size > 0 || flushing ? (
+              <span className="inline-flex items-center gap-1.5 text-slate-500">
+                <Loader2 size={13} className="animate-spin" /> Saving…
+              </span>
+            ) : unsavedCount > 0 ? (
+              <span className="inline-flex items-center gap-1.5 font-medium text-amber-800">
+                <AlertTriangle size={13} />
+                {unsavedCount} change{unsavedCount === 1 ? "" : "s"} not saved
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-emerald-600">
+                <Check size={13} /> All changes saved
+              </span>
+            )}
+            <Button type="button" variant="outline" size="sm"
+              disabled={flushing || savingIds.size > 0 || unsavedCount === 0}
+              onClick={async () => {
+                const ok = await flushPending();
+                // A retry also has to clear rows whose LAST failure was a
+                // verdict rather than typed text — those carry no pending
+                // entry, so they are re-read from the server instead.
+                if (failedIds.size > 0) { await refreshRollup(); fetchPage(true, null); }
+                toast(ok
+                  ? { variant: "success", title: "Saved", description: "Everything on this screen is on the server." }
+                  : { variant: "error", title: "Some changes still aren't saved", description: "Check your connection and try again." });
+              }}>
+              {flushing ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />} Save now
+            </Button>
+          </div>
+
+          <Button type="button" onClick={async () => { await flushPending(); setShowSubmit(true); }}>
+            Submit Audit
+          </Button>
         </div>
       </div>
 
@@ -995,12 +1208,14 @@ function DiscButton({ label, color, active, answered, total, failed, onClick }: 
  * verdict to the IMS row.
  */
 function CheckpointCard({
-  card, savingIds, ownerName, replicateBusy,
+  card, savingIds, failedIds, ownerName, replicateBusy,
   onGrade, onStatus, onConformance, onRiskGrade, onScore, onObservation,
   onAddPhoto, onRemovePhoto, onReplicate,
 }: {
   card: Resp[];
   savingIds: Set<string>;
+  /** Rows whose last write did not reach the server. Sticky until one does. */
+  failedIds: Set<string>;
   ownerName: (id: string | null | undefined) => string | null;
   replicateBusy: string | null;
   onGrade: (item: Resp, g: GradeAwarded) => void;
@@ -1024,6 +1239,8 @@ function CheckpointCard({
   const item = card.find((c) => c.checkpointCode === activeCode) ?? card[0];
   const isPaired = card.length > 1;
   const saving = savingIds.has(item.id);
+  const failed = failedIds.has(item.id);
+  const answered = item.assessmentStatus !== "NOT_ASSESSED";
 
   // Which conformance control this row offers. Read per ROW, not per audit: one
   // register can legitimately hold both (an internal audit and an IMS audit at
@@ -1111,9 +1328,20 @@ function CheckpointCard({
         {item.isAdHoc && (
           <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-violet-700"><Sparkles size={11} /> Custom</span>
         )}
+        {/* The save badge reports the ROW, not the last request.
+            It used to read `auditorResponse.is_saved`, which a server echoes
+            back on any write — so an ungraded checkpoint that had once received
+            an observation-only autosave displayed a green "saved" tick beside
+            empty controls. "Saved" now requires there to be a verdict to have
+            saved, and a failed write says so and keeps saying so. */}
         <span className="ml-auto text-[11px] text-slate-400">
-          {saving ? <span className="inline-flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> saving…</span>
-            : item.auditorResponse?.is_saved ? <span className="inline-flex items-center gap-1 text-emerald-600"><Check size={12} /> saved</span> : null}
+          {saving ? (
+            <span className="inline-flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> saving…</span>
+          ) : failed ? (
+            <span className="inline-flex items-center gap-1 font-medium text-rose-600"><AlertTriangle size={12} /> not saved</span>
+          ) : answered ? (
+            <span className="inline-flex items-center gap-1 text-emerald-600"><Check size={12} /> saved</span>
+          ) : null}
         </span>
       </div>
 
@@ -1132,9 +1360,26 @@ function CheckpointCard({
            underneath — the score, the routing and both reports read those and
            need no branch of their own. */
         <div className="mt-3">
-          <label className="mb-1 block text-xs font-medium text-slate-600">
-            Conformance <span className="text-rose-500">*</span>
-          </label>
+          <div className="mb-1 flex items-center justify-between">
+            <label className="block text-xs font-medium text-slate-600">
+              Conformance <span className="text-rose-500">*</span>
+            </label>
+            {/* N/A is an APPLICABILITY flag, not a fourth conformance parameter
+                — a checkpoint that does not apply to this department was never
+                conforming or non-conforming. Kept visually secondary for that
+                reason, and it is what takes the row out of the score
+                denominator. Without it the "N/A" filter would be a chip that
+                can never match anything. */}
+            <Button type="button" variant="ghost" onClick={() => onGrade(item, "NA")}
+              title="This checkpoint does not apply to this department — excluded from the score"
+              className={cn("h-auto rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition",
+                grade === "NA"
+                  ? "border-slate-400 bg-slate-100 text-slate-700"
+                  : "border-slate-200 bg-white text-slate-400 hover:bg-slate-50")}>
+              {grade === "NA" && <Check size={11} className="mr-1 inline" />}
+              Not applicable
+            </Button>
+          </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
             {CONFORMANCE_ORDER.map((c) => {
               const meta = CONFORMANCE_META[c]; const on = conformance === c;
@@ -1150,6 +1395,12 @@ function CheckpointCard({
               );
             })}
           </div>
+          {grade === "NA" && (
+            <p className="mt-1.5 text-[11px] text-slate-500">
+              Marked not applicable — excluded from this department&apos;s score. Pick a
+              parameter above to bring it back in.
+            </p>
+          )}
         </div>
       ) : (
         /* Column C — Grade Awarded. The one control that drives the rest. */

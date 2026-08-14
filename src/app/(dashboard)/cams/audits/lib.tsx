@@ -359,6 +359,15 @@ export type AuditDetail = AuditRow & {
   /** Per-report progress on a department audit. Empty on every other audit,
    *  which is what tells a screen there is ONE report here rather than two. */
   streamRollup?: StreamRollup[];
+  /**
+   * Which conformance vocabulary THIS audit's checkpoints were materialised
+   * with — derived server-side from the rows, not from the library, because the
+   * rows are what the auditor answers and the library may have moved on.
+   *
+   * A mixed audit reports FULL: the filter row and the bulk actions have to
+   * offer a vocabulary every card can be found by. Absent reads as FULL.
+   */
+  conformanceMode?: ConformanceMode;
   allocationSummary?: { assigned: number; unassigned: number; total: number };
   progress: {
     total: number;
