@@ -1,13 +1,13 @@
-import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { ObservationForm } from "../observation-form";
 import { requirePermission } from "@/lib/auth/server";
+import { getPlantsWithAreas } from "@/lib/masters/plants";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewObservationPage() {
   await requirePermission("OBSERVATION.CREATE");
-  const plants = await prisma.plant.findMany({ include: { areas: true }, orderBy: { name: "asc" } });
+  const plants = await getPlantsWithAreas();
 
   return (
     <div className="max-w-3xl">

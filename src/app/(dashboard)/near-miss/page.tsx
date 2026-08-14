@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -18,45 +18,49 @@ import { fetchInsights } from "@/lib/insights";
 
 export const dynamic = "force-dynamic";
 
+// One row of /api/near-miss. The backend applies NEAR_MISS.READ scope, joins
+// the plant name and attaches the workflow chip; the response also carries the
+// status tab counts and the per-step dwell used by the "Where it's stuck" panel.
+type NearMissListItem = {
+  id: string;
+  number: string;
+  /** ISO string over the wire, not a Date. */
+  date: string;
+  location: string | null;
+  description: string;
+  potentialSeverity: string;
+  promotedToIncident: boolean;
+  status: string;
+  rootCauseCategory: string | null;
+  initialRootCauseCategory: string | null;
+  plantName: string | null;
+  workflow: { status: string; currentStepName: string | null } | null;
+};
+
 export default async function NearMissPage(props: { searchParams: Promise<{ status?: string; insight?: string }> }) {
   const searchParams = await props.searchParams;
-  const where = searchParams.status ? { status: searchParams.status as any } : {};
-  const [items, counts, insights] = await Promise.all([
-    prisma.nearMiss.findMany({
-      where,
-      select: {
-        id: true,
-        number: true,
-        date: true,
-        location: true,
-        description: true,
-        potentialSeverity: true,
-        promotedToIncident: true,
-        status: true,
-        rootCauseCategory: true,
-        initialRootCauseCategory: true,
-        plant: { select: { name: true } }
-      },
-      // Newest-created first (platform-wide list convention) — see observations.
-      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-      take: 100
-    }),
-    prisma.nearMiss.groupBy({ by: ["status"], _count: true }),
+  const [register, insights] = await Promise.all([
+    backendFetch<{
+      items: NearMissListItem[];
+      statusCounts: Record<string, number>;
+      bottleneck: { step: string; count: number; avgDays: number }[];
+    }>("/api/near-miss").catch(() => ({
+      items: [] as NearMissListItem[],
+      statusCounts: {} as Record<string, number>,
+      bottleneck: [] as { step: string; count: number; avgDays: number }[]
+    })),
     fetchInsights("nearmiss")
   ]);
 
-  const ids = items.map((i) => i.id);
-  const instances = ids.length
-    ? await prisma.workflowInstance.findMany({
-        where: { module: "NEAR_MISS", recordId: { in: ids } },
-        select: { recordId: true, status: true, currentStepName: true }
-      })
-    : [];
-  const instanceByRecord = new Map(instances.map((i) => [i.recordId, i]));
-  const statusCounts: Record<string, number> = {};
-  counts.forEach((c) => {
-    statusCounts[c.status] = c._count;
-  });
+  // The status filter narrows client-side: the register returns the accessible
+  // set in one call, and the tab counts must keep describing all of it.
+  const allItems = register.items;
+  const items = searchParams.status
+    ? allItems.filter((n) => n.status === searchParams.status)
+    : allItems;
+  const statusCounts = register.statusCounts;
+  const nmBottleneck = register.bottleneck;
+
   const total = Object.values(statusCounts).reduce((a, b) => a + b, 0);
 
   const closed = items.filter((i) => i.status === "CLOSED").length;
@@ -64,14 +68,14 @@ export default async function NearMissPage(props: { searchParams: Promise<{ stat
   const critical = items.filter((i) => i.potentialSeverity === "CRITICAL").length;
 
   const rows: NearMissRow[] = items.map((n) => {
-    const inst = instanceByRecord.get(n.id);
+    const inst = n.workflow;
     const workflowStep = inst ? inst.currentStepName ?? "Completed" : humanize(n.status);
     const workflowColor = inst ? workflowChipColor(inst.status) : statusColor(n.status);
     return {
       id: n.id,
       number: n.number,
-      date: n.date.toISOString(),
-      plantName: n.plant.name.replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
+      date: n.date,
+      plantName: (n.plantName ?? "").replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
       location: n.location ?? "",
       description: n.description,
       potentialSeverity: n.potentialSeverity,
@@ -95,10 +99,10 @@ export default async function NearMissPage(props: { searchParams: Promise<{ stat
   // (the same format as Safety Observations), driven by near-miss records.
   const nmHero = buildHeroFromRecords(
     items.map((n) => ({
-      date: n.date,
+      date: new Date(n.date),
       open: n.status !== "CLOSED",
       severity: n.potentialSeverity,
-      group: n.location || n.plant.name
+      group: n.location || n.plantName || ""
     })),
     {
       type: "near-miss risk",
@@ -113,38 +117,11 @@ export default async function NearMissPage(props: { searchParams: Promise<{ stat
   );
 
   // Secondary-row panels — reuse ObservationAnalyticsPanels per near-miss:
-  // "Where it's stuck" (workflow dwell) + "Where it's concentrated" (potential
-  // severity). Duplicates omitted (near-miss has no duplicate insight) → 2 cards.
+  // "Where it's stuck" (workflow dwell, computed backend-side alongside the
+  // register) + "Where it's concentrated" (root cause).
+
+  // Open backlog, used as the denominator for the duplicate-rate card.
   const nmOpenIds = items.filter((n) => n.status !== "CLOSED").map((n) => n.id);
-  const nmWfInstances = nmOpenIds.length
-    ? await prisma.workflowInstance.findMany({
-        where: { module: "NEAR_MISS", recordId: { in: nmOpenIds }, status: "IN_PROGRESS" },
-        select: { id: true, currentStepName: true, initiatedAt: true }
-      })
-    : [];
-  const nmWfHistory = nmWfInstances.length
-    ? await prisma.workflowHistory.findMany({
-        where: { instanceId: { in: nmWfInstances.map((i) => i.id) } },
-        select: { instanceId: true, performedAt: true },
-        orderBy: { performedAt: "asc" }
-      })
-    : [];
-  const nmEnteredAt = new Map<string, Date>();
-  nmWfHistory.forEach((h) => nmEnteredAt.set(h.instanceId, h.performedAt));
-  const nmNowMs = Date.now();
-  const nmStepAgg = new Map<string, { count: number; totalDays: number }>();
-  nmWfInstances.forEach((i) => {
-    if (!i.currentStepName) return;
-    const entered = nmEnteredAt.get(i.id) ?? i.initiatedAt;
-    const days = Math.max(0, Math.floor((nmNowMs - entered.getTime()) / 86_400_000));
-    const e = nmStepAgg.get(i.currentStepName) ?? { count: 0, totalDays: 0 };
-    e.count += 1;
-    e.totalDays += days;
-    nmStepAgg.set(i.currentStepName, e);
-  });
-  const nmBottleneck = Array.from(nmStepAgg.entries())
-    .map(([step, v]) => ({ step, count: v.count, avgDays: Math.round((v.totalDays / v.count) * 10) / 10 }))
-    .sort((a, b) => b.avgDays - a.avgDays);
 
   // "Where it's concentrated" by ROOT CAUSE (not severity) — near-miss carries a
   // root-cause category (HUMAN_FACTOR / EQUIPMENT / PROCESS / …).

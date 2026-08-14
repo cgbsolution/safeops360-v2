@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,29 +33,10 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
   const session = await getServerSession(authOptions);
   const userId = (session?.user as any)?.id ?? "";
 
-  const f = await prisma.fLRA.findUnique({
-    where: { id: params.id },
-    include: {
-      plant: true,
-      leader: true,
-      permit: { include: { plant: true, area: true } },
-      toolboxTalkBy: true,
-      teamMembers: { include: { user: true } },
-      crewSignatures: {
-        include: { user: { select: { id: true, name: true, designation: true } } },
-        orderBy: { signedAt: "asc" }
-      },
-      jobSteps: {
-        orderBy: { sequence: "asc" },
-        include: { hazards: true }
-      },
-      fitnessDeclarations: {
-        include: { user: { select: { id: true, name: true } } }
-      },
-      supersededBy: { select: { id: true, number: true } },
-      supersedes: { select: { id: true, number: true, supersededReason: true } }
-    }
-  });
+  // Plant, leader, linked permit, crew signatures, team, job steps with their
+  // hazards, fitness declarations and the re-do chain all arrive nested. The
+  // endpoint enforces FLRA.READ for this record, so no access means null here.
+  const f = await backendFetch<any>(`/api/flra/${params.id}`).catch(() => null);
   if (!f) return notFound();
 
   const hazards: any[] = (() => {
@@ -67,10 +48,10 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
     }
   })();
 
-  const myCrewRow = f.crewSignatures.find((s) => s.userId === userId) ?? null;
+  const myCrewRow = f.crewSignatures.find((s: any) => s.userId === userId) ?? null;
   const isOnCrew = !!myCrewRow;
-  const allSigned = f.crewSignatures.length > 0 && f.crewSignatures.every((s) => s.signed);
-  const signedCount = f.crewSignatures.filter((s) => s.signed).length;
+  const allSigned = f.crewSignatures.length > 0 && f.crewSignatures.every((s: any) => s.signed);
+  const signedCount = f.crewSignatures.filter((s: any) => s.signed).length;
 
   // Re-do is gated to crew members + privileged roles, while the FLRA is live
   const role = (session?.user as any)?.role ?? "";
@@ -151,7 +132,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
       )}
       {f.supersedes.length > 0 && (
         <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">
-          Supersedes: {f.supersedes.map((s, i) => (
+          Supersedes: {f.supersedes.map((s: any, i: number) => (
             <span key={s.id}>
               <Link href={`/flra/${s.id}`} className="font-mono hover:underline text-slate-800">{s.number}</Link>
               {s.supersededReason && <span className="text-slate-500"> ({s.supersededReason})</span>}
@@ -170,7 +151,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
             flraStatus={f.status}
             permitLocked={permitLocked}
             currentUserId={userId}
-            crew={f.crewSignatures.map((s) => ({
+            crew={f.crewSignatures.map((s: any) => ({
               id: s.id,
               userId: s.userId,
               name: s.user.name,
@@ -193,7 +174,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
                 <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Team Members</div>
                 <div className="flex flex-wrap gap-2">
                   {f.teamMembers.length === 0 && <span className="text-slate-400 text-xs">—</span>}
-                  {f.teamMembers.map((m) => (
+                  {f.teamMembers.map((m: any) => (
                     <Badge key={m.id} className="bg-slate-100 text-slate-700 border-slate-200">
                       {m.user.name}{m.user.designation ? ` · ${m.user.designation}` : ""}
                     </Badge>
@@ -212,7 +193,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
                 <CardDescription>5×5 risk matrix · likelihood × severity</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {f.jobSteps.map((s) => (
+                {f.jobSteps.map((s: any) => (
                   <div key={s.id} className="rounded-md border border-slate-200 bg-white p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
@@ -221,7 +202,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
                       <div className="text-sm font-medium">{s.stepDescription}</div>
                     </div>
                     <div className="space-y-2">
-                      {s.hazards.map((h) => (
+                      {s.hazards.map((h: any) => (
                         <div key={h.id} className="text-xs rounded border border-slate-200 bg-slate-50 p-2">
                           <div className="font-medium text-slate-800">{h.hazardDescription}</div>
                           <div className="grid sm:grid-cols-2 gap-2 mt-1.5">
@@ -305,7 +286,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-1.5">
-                {f.fitnessDeclarations.map((fd) => (
+                {f.fitnessDeclarations.map((fd: any) => (
                   <div
                     key={fd.id}
                     className={[

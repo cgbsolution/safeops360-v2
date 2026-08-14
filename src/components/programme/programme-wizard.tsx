@@ -67,7 +67,30 @@ export type WizardLibrary = {
   categoryDescription?: string;
   /** Total across every discipline, shown before one is ticked. */
   checkpointCount?: number;
+  /**
+   * What a "category" of this taxonomy IS. Derived server-side
+   * (`library_segregation`) and passed through by the page.
+   *
+   * A programme scopes a whole YEAR, so this is the place a mislabelled axis
+   * does the most damage: the QMS/EMS/OHS taxonomy is segregated by DEPARTMENT
+   * (HR / Admin / OHC), and planning it under a heading reading "Disciplines"
+   * would leave a coverage matrix nobody can read against the audits that
+   * discharge it. Optional, and absent reads as DISCIPLINE.
+   */
+  segregation?: "DISCIPLINE" | "DEPARTMENT";
 };
+
+/** The words for one taxonomy's scope axis. Mirrors `cams/audits/lib`'s
+ *  `scopeAxisWords`; kept local because this component is deliberately
+ *  independent of the audit module's types. */
+function axisWords(lib: Pick<WizardLibrary, "segregation"> | null | undefined) {
+  const dept = lib?.segregation === "DEPARTMENT";
+  return {
+    one: dept ? "department" : "discipline",
+    many: dept ? "departments" : "disciplines",
+    Title: dept ? "Departments" : "Disciplines",
+  };
+}
 
 // The standards a programme typically discharges. Free text is still allowed —
 // a buyer or social-compliance programme will not be on this list.
@@ -389,9 +412,9 @@ export function ProgrammeWizard({
           {step === 3 && (
             <>
               <p className="text-xs text-slate-500">
-                Scope units are the atomic covered thing — one row per site × discipline. Each
-                carries a required frequency, which ISO 45001/9001/14001 cl.9.2.2 makes mandatory
-                and the approval guard enforces.
+                Scope units are the atomic covered thing — one row per site × {axisWords(library).one}.
+                Each carries a required frequency, which ISO 45001/9001/14001 cl.9.2.2 makes
+                mandatory and the approval guard enforces.
               </p>
 
               {/* ── Audit category ────────────────────────────────────────
@@ -434,7 +457,7 @@ export function ProgrammeWizard({
                             "text-[10px] tabular-nums",
                             on ? "text-violet-700" : "text-slate-400",
                           )}>
-                            {l.categories.length} disciplines
+                            {l.categories.length} {axisWords(l).many}
                             {l.checkpointCount != null && ` · ${l.checkpointCount} checkpoints`}
                           </span>
                         </Button>
@@ -454,7 +477,7 @@ export function ProgrammeWizard({
                   usable there rather than silently offering nothing. */}
               {libraries.length > 1 && !libraries.some((l) => l.categoryCode) && (
                 <div>
-                  <Label htmlFor="pw-lib" className="text-xs">Discipline taxonomy</Label>
+                  <Label htmlFor="pw-lib" className="text-xs">{axisWords(library).Title.slice(0, -1)} taxonomy</Label>
                   <Select id="pw-lib" value={industryCode} className="mt-1"
                     onChange={(e) => { setIndustryCode(e.target.value); setDisciplineCodes([]); }}>
                     {libraries.map((l) => (
@@ -500,7 +523,7 @@ export function ProgrammeWizard({
               <div>
                 <div className="flex items-center justify-between">
                   <Label className="text-xs">
-                    Disciplines — {disciplineCodes.length}/{library?.categories.length ?? 0}{" "}
+                    {axisWords(library).Title} — {disciplineCodes.length}/{library?.categories.length ?? 0}{" "}
                     <span className="text-rose-600">*</span>
                   </Label>
                   <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]"
@@ -537,7 +560,7 @@ export function ProgrammeWizard({
                   })}
                   {!library?.categories.length && (
                     <p className="p-3 text-xs text-slate-400">
-                      No checkpoint library is available to draw disciplines from.
+                      No checkpoint library is available to draw {axisWords(library).many} from.
                     </p>
                   )}
                 </div>

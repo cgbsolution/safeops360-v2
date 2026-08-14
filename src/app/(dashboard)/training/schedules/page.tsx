@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -10,59 +10,71 @@ export const dynamic = "force-dynamic";
 
 type Filter = "all" | "draft" | "published" | "open" | "active" | "completed" | "cancelled";
 
+// A row of /api/training/schedules. The backend joins the programme, plant and
+// trainer names and tallies registrations + sessions, so the register renders
+// from one call instead of a query per relation.
+type ScheduleListItem = {
+  id: string;
+  scheduleNumber: string;
+  /** NOT NULL in the schema. */
+  venue: string;
+  /** ISO strings over the wire, not Dates. */
+  startDate: string;
+  endDate: string;
+  isExternalTrainer: boolean;
+  externalTrainerName: string | null;
+  externalTrainerOrg: string | null;
+  maxParticipants: number;
+  status: string;
+  programName: string | null;
+  programIsStatutory: boolean;
+  plantName: string | null;
+  trainerName: string | null;
+  registrationCount: number;
+  sessionCount: number;
+};
+
 export default async function TrainingSchedulesPage(props: { searchParams: Promise<{ filter?: Filter }> }) {
   const searchParams = await props.searchParams;
   const filter = (searchParams.filter ?? "all") as Filter;
 
-  const where: any = {};
-  if (filter === "draft") where.status = "DRAFT";
-  else if (filter === "published") where.status = "PUBLISHED";
-  else if (filter === "open") where.status = "NOMINATIONS_OPEN";
-  else if (filter === "active") where.status = "IN_PROGRESS";
-  else if (filter === "completed") where.status = "COMPLETED";
-  else if (filter === "cancelled") where.status = "CANCELLED";
+  const STATUS_BY_FILTER: Record<Filter, string | undefined> = {
+    all: undefined,
+    draft: "DRAFT",
+    published: "PUBLISHED",
+    open: "NOMINATIONS_OPEN",
+    active: "IN_PROGRESS",
+    completed: "COMPLETED",
+    cancelled: "CANCELLED"
+  };
 
-  const [schedules, counts] = await Promise.all([
-    prisma.trainingSchedule.findMany({
-      where,
-      select: {
-        id: true,
-        scheduleNumber: true,
-        venue: true,
-        startDate: true,
-        endDate: true,
-        isExternalTrainer: true,
-        externalTrainerName: true,
-        externalTrainerOrg: true,
-        maxParticipants: true,
-        status: true,
-        program: { select: { programName: true, name: true, isStatutory: true, category: true } },
-        plant: { select: { name: true } },
-        trainer: { select: { name: true } },
-        _count: { select: { registrations: true, sessions: true } }
-      },
-      orderBy: { startDate: "desc" },
-      take: 200
-    }),
-    prisma.trainingSchedule.groupBy({ by: ["status"], _count: true })
-  ]);
-  const cnt = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
+  const register = await backendFetch<{
+    items: ScheduleListItem[];
+    statusCounts: Record<string, number>;
+  }>("/api/training/schedules", {
+    query: { status_filter: STATUS_BY_FILTER[filter] }
+  }).catch(() => ({ items: [] as ScheduleListItem[], statusCounts: {} as Record<string, number> }));
+
+  const schedules = register.items;
+  // Counts come from the unfiltered register, so the chips keep showing the
+  // whole picture while one of them is selected.
+  const cnt = (s: string) => register.statusCounts[s] ?? 0;
 
   const rows: ScheduleRow[] = schedules.map((s) => ({
     id: s.id,
     scheduleNumber: s.scheduleNumber,
-    programName: s.program.programName ?? s.program.name,
-    isStatutory: s.program.isStatutory,
-    plantName: s.plant.name,
+    programName: s.programName ?? "—",
+    isStatutory: s.programIsStatutory,
+    plantName: s.plantName ?? "—",
     venue: s.venue,
-    startDate: s.startDate.toISOString(),
-    endDate: s.endDate.toISOString(),
+    startDate: s.startDate,
+    endDate: s.endDate,
     trainerLabel: s.isExternalTrainer
       ? `${s.externalTrainerName ?? "—"} (${s.externalTrainerOrg ?? "external"})`
-      : s.trainer?.name ?? "—",
-    registrationsCount: s._count.registrations,
+      : s.trainerName ?? "—",
+    registrationsCount: s.registrationCount,
     maxParticipants: s.maxParticipants,
-    sessionsCount: s._count.sessions,
+    sessionsCount: s.sessionCount,
     status: s.status
   }));
 

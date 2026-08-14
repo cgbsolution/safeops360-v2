@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { incidentReadScopeWhere } from "@/lib/auth/incident-access";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,25 @@ const STATUS_OPTIONS = [
   { code: "CLOSED", label: "Closed" }
 ];
 
+// One row of /api/incidents. The backend applies INCIDENT.READ scope, joins the
+// plant name, and attaches the workflow chip — the three things this page used
+// to assemble from three separate Prisma queries.
+type IncidentListItem = {
+  id: string;
+  number: string;
+  /** ISO string over the wire, not a Date. */
+  date: string;
+  type: string;
+  location: string | null;
+  description: string;
+  /** NOT NULL with default 0 in the schema — never absent. */
+  lostDays: number;
+  propertyDamageCost: string | number | null;
+  status: string;
+  plantName: string | null;
+  workflow: { status: string; currentStepName: string | null } | null;
+};
+
 export default async function IncidentsPage(
   props: { searchParams: Promise<{ status?: string; type?: string; denied?: string; insight?: string }> }
 ) {
@@ -65,59 +84,45 @@ export default async function IncidentsPage(
     signalByRecord: new Map(),
     signalsByRecord: new Map(),
   };
-  const [items, statusCounts, insightsBundle] =
+  // The register endpoint applies INCIDENT.READ scope itself and returns the
+  // rows, the plant names, the status tab counts over the whole accessible set,
+  // and the workflow chip per row. `accessWhere === false` is the local
+  // short-circuit for "no read grant at all" — the backend would return an
+  // empty set anyway, but skipping the call keeps the denied banner instant.
+  const [register, insightsBundle] =
     accessWhere === false
-      ? [[], [] as { status: string; _count: number }[], emptyBundle]
+      ? [{ items: [] as IncidentListItem[], statusCounts: {} as Record<string, number> }, emptyBundle]
       : await Promise.all([
-          prisma.incident.findMany({
-            where: { AND: [accessWhere, filters] },
-            select: {
-              id: true,
-              number: true,
-              date: true,
-              type: true,
-              location: true,
-              description: true,
-              lostDays: true,
-              propertyDamageCost: true,
-              status: true,
-              plant: { select: { name: true } }
-            },
-            // Newest-created first (platform-wide list convention).
-            orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-            take: 100
-          }),
-          // Counts reflect the accessible set across all statuses.
-          prisma.incident.groupBy({ by: ["status"], where: accessWhere, _count: true }),
+          backendFetch<{ items: IncidentListItem[]; statusCounts: Record<string, number> }>(
+            "/api/incidents",
+            {
+              query: {
+                status_filter: searchParams.status,
+                type_filter: searchParams.type
+              }
+            }
+          ).catch(() => ({ items: [] as IncidentListItem[], statusCounts: {} as Record<string, number> })),
           // Deterministic insight layer for this screen (tolerant — degrades
           // to an empty bundle if the backend is unavailable).
           fetchInsights("incident")
         ]);
 
-  const ids = items.map((i) => i.id);
-  const instances = ids.length
-    ? await prisma.workflowInstance.findMany({
-        where: { module: "INCIDENT", recordId: { in: ids } },
-        select: { recordId: true, status: true, currentStepName: true }
-      })
-    : [];
-  const instanceByRecord = new Map(instances.map((i) => [i.recordId, i]));
-  const statusCountMap: Record<string, number> = {};
-  statusCounts.forEach((c) => { statusCountMap[c.status] = c._count; });
+  const items = register.items;
+  const statusCountMap = register.statusCounts;
   const all = Object.values(statusCountMap).reduce((a, b) => a + b, 0);
 
   // Type aggregates for header cards (use filtered slice for headline number to match what user sees)
   const rows: IncidentRow[] = items.map((i) => {
-    const inst = instanceByRecord.get(i.id);
+    const inst = i.workflow;
     const workflowStep = inst ? inst.currentStepName ?? "Completed" : humanize(i.status);
     const workflowColor = inst ? workflowChipColor(inst.status) : statusColor(i.status);
     return {
       id: i.id,
       number: i.number,
-      date: i.date.toISOString(),
+      date: i.date,
       type: i.type,
       typeColor: TYPE_COLOR[i.type] ?? "bg-slate-100 text-slate-800 border-slate-200",
-      plantName: i.plant.name.replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
+      plantName: (i.plantName ?? "").replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
       location: i.location ?? "",
       description: i.description,
       lostDays: i.lostDays,
@@ -139,7 +144,7 @@ export default async function IncidentsPage(
   // "This week's focus" hero + panels — reuse the shared builder + component.
   const incOpen = items.filter((i) => i.status !== "CLOSED");
   const incHero = buildHeroFromRecords(
-    items.map((i) => ({ date: i.date, open: i.status !== "CLOSED", severity: i.type, group: i.location || i.plant.name })),
+    items.map((i) => ({ date: new Date(i.date), open: i.status !== "CLOSED", severity: i.type, group: i.location || i.plantName || "" })),
     {
       type: "incident risk",
       critical: ["LTI", "FATALITY"],
@@ -155,8 +160,8 @@ export default async function IncidentsPage(
   const incNowMs = Date.now();
   const incStepAgg = new Map<string, { count: number; totalDays: number }>();
   incOpen.forEach((i) => {
-    const step = instanceByRecord.get(i.id)?.currentStepName ?? humanize(i.status);
-    const days = Math.max(0, Math.floor((incNowMs - i.date.getTime()) / 86_400_000));
+    const step = i.workflow?.currentStepName ?? humanize(i.status);
+    const days = Math.max(0, Math.floor((incNowMs - new Date(i.date).getTime()) / 86_400_000));
     const e = incStepAgg.get(step) ?? { count: 0, totalDays: 0 };
     e.count += 1;
     e.totalDays += days;

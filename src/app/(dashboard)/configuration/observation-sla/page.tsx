@@ -1,5 +1,5 @@
 import { backendFetch } from "@/lib/backend/fetch";
-import { prisma } from "@/lib/prisma";
+import { getPlants } from "@/lib/masters/plants";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { SlaMatrixEditor, type SlaConfig, type CategoryGroupRow } from "./sla-matrix-editor";
@@ -26,10 +26,7 @@ export default async function ObservationSlaPage(props: {
     backendFetch<CategoryGroupRow[]>("/api/observations/sla-config/category-groups").catch(
       () => [] as CategoryGroupRow[]
     ),
-    prisma.plant.findMany({
-      select: { id: true, name: true, code: true },
-      orderBy: { name: "asc" }
-    })
+    getPlants()
   ]);
 
   return (

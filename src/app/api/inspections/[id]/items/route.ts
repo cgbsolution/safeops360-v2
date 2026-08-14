@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/auth/permissions";
 import { spawnFindingsFromInspection } from "@/lib/inspections/finding-engine";
 import { recomputeAfterCompletion } from "@/lib/inspections/schedule-generator";
-import { WorkflowEngine } from "@/lib/workflow/engine";
+import { backendFetch } from "@/lib/backend/fetch";
 
 export const dynamic = "force-dynamic";
 
@@ -186,12 +186,21 @@ export async function POST(req: NextRequest, props: { params: Promise<{ id: stri
           ]);
           workflowAdvancedTo = downstreamPending.stepName;
         } else {
-          const adv = await WorkflowEngine.submitExecution({
-            taskId: pendingTask.id,
-            userId,
-            comments: "Inspection checklist submitted.",
-            plantId: insp.plantId
-          });
+          // The engine itself lives in Python — this posts the same arguments
+          // the local copy took, and the backend re-checks that `userId` is
+          // actually the task's assignee before advancing.
+          const adv = await backendFetch<{ advancedTo?: string | null }>(
+            "/api/workflow/submit-execution",
+            {
+              method: "POST",
+              userId,
+              body: {
+                taskId: pendingTask.id,
+                comments: "Inspection checklist submitted.",
+                plantId: insp.plantId
+              }
+            }
+          );
           workflowAdvancedTo = adv?.advancedTo ?? null;
         }
       }

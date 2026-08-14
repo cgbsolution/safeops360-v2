@@ -1,84 +1,50 @@
-// Incident READ access — single source of truth.
+// Incident READ access.
 //
 // The Incident Investigation RBAC matrix scopes who can see which records:
-//   • Worker / Contractor Workman           → OWN_RECORDS  (reported themselves)
-//   • Supervisor / Permit Issuer / Dept Head → OWN_DEPARTMENT (their department)
-//   • Safety Officer / HSE Manager / Plant Head → OWN_PLANT (their plant)
-//   • Corporate HSE / Admin                  → ALL_PLANTS (everything)
+//   • Worker / Contractor Workman            → OWN_RECORDS  (reported themselves)
+//   • Supervisor / Permit Issuer / Dept Head → OWN_DEPARTMENT
+//   • Safety Officer / HSE Manager / Plant Head → OWN_PLANT
+//   • Corporate HSE / Admin                  → ALL_PLANTS
 //
-// This helper turns the caller's scopes into a Prisma `where` fragment. Both
-// the LIST page (to hide rows the user can't open and to scope the counts)
-// and the DETAIL page (as the read gate) use it, so the two can never
-// disagree — the list never shows a row that the detail page would deny.
+// Row filtering is no longer done here. `/api/incidents` applies the scope
+// itself and `/api/incidents/{id}` 403s a record the caller may not read, so
+// this file's remaining job is only to answer two questions the UI asks
+// *before* it fetches:
+//
+//   1. "does this user hold INCIDENT.READ at all?" — so the list page can
+//      render a denied banner instead of an empty table;
+//   2. "may this user open THIS record?" — the detail page's gate, which
+//      decides between rendering and redirecting.
+//
+// Keeping (2) as a real backend call matters: the detail page fetches a dozen
+// child collections, and every one of them would 403 individually. Asking once
+// up front is what turns a screen plastered with "Failed to load" into a clean
+// redirect.
 
-import type { Prisma } from "@prisma/client";
-import { prisma } from "@/lib/prisma";
-import { getScopesFor } from "@/lib/auth/permissions";
-import { getAccessiblePlantIds } from "@/lib/dashboard/scope";
+import { backendFetch } from "@/lib/backend/fetch";
+import { can } from "@/lib/auth/permissions";
 
-// `{}`    → unrestricted (ALL_PLANTS)
-// `false` → no access at all (render nothing)
-// object  → a where-fragment limiting to the accessible records
-export type IncidentReadScope = Prisma.IncidentWhereInput | false;
+// `{}`    → the caller holds INCIDENT.READ; the backend narrows the rows.
+// `false` → no access at all (render the denied state, skip the fetch).
+export type IncidentReadScope = Record<string, never> | false;
 
 export async function incidentReadScopeWhere(userId: string): Promise<IncidentReadScope> {
   if (!userId) return false;
-
-  // Soft-deleted incidents (governed-entity delete) are never readable, at any
-  // scope. The backend hides them via its ORM filter; the frontend reads via
-  // Prisma directly, so we AND this in here — the single source of truth for
-  // incident reads (list + detail gate).
-  const notDeleted: Prisma.IncidentWhereInput = { isDeleted: false };
-
-  const scopes = await getScopesFor(userId, "INCIDENT.READ");
-  if (scopes.length === 0) return false;
-  if (scopes.includes("ALL_PLANTS")) return notDeleted;
-
-  const me = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { plantId: true, department: true }
-  });
-
-  const ors: Prisma.IncidentWhereInput[] = [];
-
-  // OWN_PLANT — every incident at the user's accessible plants.
-  // Uses getAccessiblePlantIds() so multi-plant users (e.g. NW+SW HSE Manager)
-  // see incidents from all their plants, not just their primary plantId.
-  if (scopes.includes("OWN_PLANT")) {
-    const plantIds = await getAccessiblePlantIds();
-    if (plantIds && plantIds.length > 0) {
-      ors.push(plantIds.length === 1 ? { plantId: plantIds[0] } : { plantId: { in: plantIds } });
-    } else if (me?.plantId) {
-      ors.push({ plantId: me.plantId });
-    }
-  }
-
-  // OWN_DEPARTMENT — incidents at the user's plant(s) in their department.
-  if (scopes.includes("OWN_DEPARTMENT") && me?.plantId) {
-    ors.push(
-      me.department
-        ? { plantId: me.plantId, department: { is: { name: me.department } } }
-        : { plantId: me.plantId }
-    );
-  }
-
-  // OWN_RECORDS — only incidents the user reported themselves.
-  if (scopes.includes("OWN_RECORDS")) {
-    ors.push({ reporterId: userId });
-  }
-
-  if (ors.length === 0) return false;
-  const scopeWhere = ors.length === 1 ? ors[0] : { OR: ors };
-  return { AND: [notDeleted, scopeWhere] };
+  const check = await can(userId, "INCIDENT.READ", {});
+  return check.allowed ? {} : false;
 }
 
-// True if `userId` may READ the given incident — used by the detail-page gate.
+/** True if `userId` may READ this incident — the detail page's gate.
+ *  Soft-deleted incidents are unreadable at every scope; the backend's own
+ *  filter enforces that, so a deleted record answers false here too. */
 export async function canReadIncident(userId: string, incidentId: string): Promise<boolean> {
-  const scope = await incidentReadScopeWhere(userId);
-  if (scope === false) return false;
-  const hit = await prisma.incident.findFirst({
-    where: { AND: [{ id: incidentId }, scope] },
-    select: { id: true }
-  });
-  return hit !== null;
+  if (!userId || !incidentId) return false;
+  try {
+    await backendFetch(`/api/incidents/${encodeURIComponent(incidentId)}`, { userId });
+    return true;
+  } catch {
+    // Any non-2xx — 403 (out of scope), 404 (absent or soft-deleted) — means
+    // "don't render". Fail closed: a transport error must not open the page.
+    return false;
+  }
 }

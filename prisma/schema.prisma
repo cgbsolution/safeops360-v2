@@ -7173,6 +7173,21 @@ model AuditCheckpointResponse {
   // audits it — so the auditor sees it read-only.
   requirementType String? // STATUTORY_REGULATORY | INTERNAL_REQUIREMENT
 
+  // ── Department-segregated management-system audits (PAGE_IMS) ─────────
+  // Page audit HR / Admin / OHC separately and assess each department against
+  // BOTH source sheets — the IMS one (ISO 9001/14001/45001) and the EnMS one
+  // (ISO 50001). categoryId above carries the DEPARTMENT; these carry what that
+  // axis cannot express. All nullable — every other library materialises rows
+  // with none of it.
+  streamCode      String? // IMS | ENMS — which of the two reports this row belongs to
+  replicationKey  String? // the same workbook line in another department ("IMS-007")
+  pairKey         String? // the same requirement on the other sheet, in this department
+  conformanceMode String? // FULL (7-value status) | TRISTATE (Conformance/Non-Conformance/Observation)
+  // Structured standards: [{ code, standard, clause }]. `standard` above is the
+  // display join. An IMS line cites three ISO standards at once, and the
+  // standards rollup must report three, not one concatenated string.
+  standardClauses Json @default("[]")
+
   // Denormalized per-checkpoint rules (so submit/save never re-parse the library).
   requiresPhotoOnFail   Boolean @default(false)
   autoTriggerCapaOnFail Boolean @default(false)
@@ -7252,6 +7267,9 @@ model AuditCheckpointResponse {
   @@index([auditId, workflowState])
   @@index([auditId, sequence])
   @@index([auditId, gradeAwarded])
+  @@index([auditId, streamCode])
+  @@index([auditId, replicationKey])
+  @@index([auditId, pairKey])
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -7290,6 +7308,11 @@ model AuditReport {
   siteId        String
   reportType    String // INTERIM | FINAL
   reportCode    String          @unique
+  // IMS | ENMS, or null for a report covering the whole audit (every report
+  // before this, and every single-stream library still). A department audit
+  // issues two separate documents, one per stream, and superseding is per
+  // (type, stream) so re-issuing one must not mark the other stale.
+  reportStream  String?
   generatedById String
   generatedAt   DateTime        @default(now())
   snapshot      Json // frozen metrics + per-discipline scores + open iterations + capa summary
@@ -7307,6 +7330,7 @@ model AuditReport {
   updatedAt DateTime @updatedAt
 
   @@index([auditId, reportType])
+  @@index([auditId, reportType, reportStream])
 }
 
 // ─────────────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
+import { getPlants } from "@/lib/masters/plants";
 import { PageHeader } from "@/components/page-header";
 import { ScheduleForm } from "../schedule-form";
 import { requirePermission } from "@/lib/auth/server";
@@ -8,27 +9,12 @@ export const dynamic = "force-dynamic";
 export default async function NewTrainingSchedulePage() {
   await requirePermission("TRAINING.CREATE");
   const [plants, programs] = await Promise.all([
-    prisma.plant.findMany({
-      select: { id: true, name: true, code: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.trainingProgram.findMany({
-      where: { approvalStatus: "APPROVED", isActive: true },
-      select: {
-        id: true,
-        programCode: true,
-        code: true,
-        programName: true,
-        name: true,
-        category: true,
-        durationHours: true,
-        durationSessions: true,
-        maxParticipantsPerBatch: true,
-        language: true,
-        isStatutory: true,
-      },
-      orderBy: [{ isStatutory: "desc" }, { name: "asc" }],
-    }),
+    getPlants(),
+    // Only APPROVED + ACTIVE programmes can be scheduled — the endpoint's
+    // default "workable set" is exactly that, so no filter is needed here.
+    backendFetch<{ items: any[] }>("/api/training/programs")
+      .then((r) => r.items)
+      .catch(() => [] as any[])
   ]);
 
   return (

@@ -71,6 +71,10 @@ export default async function ProgrammeListPage() {
     industryCode: l.industryCode,
     industryName: l.industryName,
     checkpointCount: l.checkpointCount,
+    // What a category of this taxonomy IS — a discipline or a department.
+    // A programme scopes a whole YEAR, so a mislabelled axis here produces a
+    // coverage matrix nobody can read against the audits that discharge it.
+    segregation: l.segregation,
     categories: (l.categories ?? []).map((c) => ({
       code: c.category_code,
       name: c.category_name,

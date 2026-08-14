@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Archive, FileDown, Plus } from "lucide-react";
 import { statusColor, humanize } from "@/lib/utils";
-import { WorkflowEngine } from "@/lib/workflow/engine";
 import { Can } from "@/components/auth/can";
 import { PtwTable, type PermitRow } from "./ptw-table";
 import { FilterTab, FilterTabsList } from "@/components/ui/filter-tabs";
@@ -58,16 +57,37 @@ function permitWorkflowColor(workflowStatus: string | undefined, permitStatus: s
   return statusColor(permitStatus);
 }
 
+// A row of /api/ptw. The backend applies PTW.READ scope (including the crew
+// membership path for OWN_RECORDS), filters soft-deleted permits, joins plant
+// and area names, and attaches the workflow chip.
+type PermitListItem = {
+  id: string;
+  number: string;
+  type: string;
+  scopeOfWork: string;
+  /** ISO strings over the wire, not Dates. */
+  validFrom: string;
+  validTo: string;
+  status: string;
+  plantName: string | null;
+  areaName: string | null;
+  workflow: { status: string; currentStepName: string | null } | null;
+};
+
+type PermitRegister = {
+  items: PermitListItem[];
+  statusCounts: Record<string, number>;
+  typeCounts: Record<string, number>;
+};
+
+const EMPTY_PERMIT_REGISTER: PermitRegister = { items: [], statusCounts: {}, typeCounts: {} };
+
 export default async function PTWPage(props: { searchParams: Promise<{ type?: string; status?: string; archived?: string }> }) {
   const searchParams = await props.searchParams;
 
-  // Lazy auto-expiry sweep — flips permits whose validTo has passed to EXPIRED
-  // before we render counts. Cheap when nothing is overdue.
-  try {
-    await WorkflowEngine.sweepExpiredPermits();
-  } catch (e) {
-    console.error("PTW expiry sweep failed:", e);
-  }
+  // Auto-expiry (validTo passed → EXPIRED) is the ptw_expiry_scan scheduler
+  // job on the backend now, so a permit expires on time rather than whenever
+  // this page next happens to be opened.
 
   // Hide soft-deleted permits (governed-entity delete). The backend filters
   // these out of its API reads; the frontend reads via Prisma directly, so we
@@ -75,49 +95,20 @@ export default async function PTWPage(props: { searchParams: Promise<{ type?: st
   // Archived permits (closed-loop retention flag) are hidden from the default
   // register; ?archived=1 shows only the archived ones.
   const showArchived = searchParams.archived === "1";
-  const where: any = { isDeleted: false, isArchived: showArchived };
-  if (searchParams.type) where.type = searchParams.type;
-  if (searchParams.status) where.status = searchParams.status;
+  // One register call: rows + tab counts, all scoped backend-side. The type and
+  // status filters narrow client-side so the tab counts keep describing the
+  // whole accessible register rather than the filtered slice.
+  const register = await backendFetch<PermitRegister>("/api/ptw", {
+    query: { include_archived: showArchived }
+  }).catch(() => EMPTY_PERMIT_REGISTER);
 
-  // Three independent reads — run them in parallel.
-  const [items, typeCounts, statusCounts] = await Promise.all([
-    prisma.permit.findMany({
-      where,
-      select: {
-        id: true,
-        number: true,
-        type: true,
-        scopeOfWork: true,
-        validFrom: true,
-        validTo: true,
-        status: true,
-        plant: { select: { name: true } },
-        area: { select: { name: true } }
-      },
-      orderBy: { createdAt: "desc" },
-      take: 80
-    }),
-    prisma.permit.groupBy({ by: ["type"], where: { isDeleted: false }, _count: true }),
-    prisma.permit.groupBy({ by: ["status"], where: { isDeleted: false }, _count: true })
-  ]);
-
-  const typeCountMap: Record<string, number> = {};
-  typeCounts.forEach((c) => {
-    typeCountMap[c.type] = c._count;
-  });
-
-  const ids = items.map((i) => i.id);
-  const instances = ids.length
-    ? await prisma.workflowInstance.findMany({
-        where: { module: "PTW", recordId: { in: ids } },
-        select: { recordId: true, status: true, currentStepName: true }
-      })
-    : [];
-  const instanceByRecord = new Map(instances.map((i) => [i.recordId, i]));
-  const statusCountMap: Record<string, number> = {};
-  statusCounts.forEach((c) => {
-    statusCountMap[c.status] = c._count;
-  });
+  const items = register.items.filter(
+    (p) =>
+      (!searchParams.type || p.type === searchParams.type) &&
+      (!searchParams.status || p.status === searchParams.status)
+  );
+  const typeCountMap = register.typeCounts;
+  const statusCountMap = register.statusCounts;
 
   const all = Object.values(statusCountMap).reduce((a, b) => a + b, 0);
   const active = statusCountMap.ACTIVE ?? 0;
@@ -126,7 +117,7 @@ export default async function PTWPage(props: { searchParams: Promise<{ type?: st
   const suspended = statusCountMap.SUSPENDED ?? 0;
 
   const rows: PermitRow[] = items.map((p) => {
-    const inst = instanceByRecord.get(p.id);
+    const inst = p.workflow;
     const workflowStep = inst ? inst.currentStepName ?? "Completed" : humanize(p.status);
     const workflowColor = permitWorkflowColor(inst?.status, p.status);
     return {
@@ -134,11 +125,11 @@ export default async function PTWPage(props: { searchParams: Promise<{ type?: st
       number: p.number,
       type: p.type,
       typeColor: PERMIT_TYPE_COLORS[p.type] ?? "bg-slate-100 text-slate-800 border-slate-200",
-      plantName: p.plant.name.replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
-      areaName: p.area?.name ?? null,
+      plantName: (p.plantName ?? "").replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
+      areaName: p.areaName,
       scopeOfWork: p.scopeOfWork,
-      validFrom: p.validFrom.toISOString(),
-      validTo: p.validTo.toISOString(),
+      validFrom: p.validFrom,
+      validTo: p.validTo,
       workflowStep,
       workflowColor
     };

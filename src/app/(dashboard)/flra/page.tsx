@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -8,31 +8,31 @@ import { FlraTable, type FlraRow } from "./flra-table";
 
 export const dynamic = "force-dynamic";
 
+// The register rows come from FastAPI, which applies FLRA.READ plant scope and
+// joins the display names (plant / leader / permit number) server-side.
+interface FlraListItem {
+  id: string;
+  number: string;
+  date: string;
+  jobDescription: string;
+  permitId: string | null;
+  plantName: string;
+  leaderName: string;
+  permitNumber: string | null;
+}
+
 export default async function FLRAPage() {
-  const items = await prisma.fLRA.findMany({
-    select: {
-      id: true,
-      number: true,
-      date: true,
-      jobDescription: true,
-      plant: { select: { name: true } },
-      leader: { select: { name: true } },
-      permit: { select: { id: true, number: true } }
-    },
-    // Newest-created first (platform-wide list convention).
-    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
-    take: 100
-  });
+  const { items } = await backendFetch<{ items: FlraListItem[] }>("/api/flra");
 
   const rows: FlraRow[] = items.map((f) => ({
     id: f.id,
     number: f.number,
-    date: f.date.toISOString(),
-    plantName: f.plant.name.replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
+    date: f.date,
+    plantName: f.plantName.replace(" Integrated Unit", "").replace(" Grinding Unit", ""),
     jobDescription: f.jobDescription,
-    leaderName: f.leader.name,
-    permitId: f.permit?.id ?? null,
-    permitNumber: f.permit?.number ?? null
+    leaderName: f.leaderName,
+    permitId: f.permitId,
+    permitNumber: f.permitNumber
   }));
 
   return (

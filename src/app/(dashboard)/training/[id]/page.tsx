@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,14 +14,10 @@ export const dynamic = "force-dynamic";
 
 export default async function TrainingDetailPage(props: { params: Promise<{ id: string }> }) {
   const params = await props.params;
-  const r = await prisma.trainingRecord.findUnique({
-    where: { id: params.id },
-    include: {
-      employee: { select: { id: true, name: true, designation: true, department: true } },
-      program: true,
-      trainer: { select: { id: true, name: true, designation: true } }
-    }
-  });
+  // The endpoint nests employee / programme / trainer and enforces
+  // TRAINING.READ for this specific record — a 403 lands here as null, which
+  // renders as not-found rather than leaking that the record exists.
+  const r = await backendFetch<any>(`/api/training/${params.id}`).catch(() => null);
   if (!r) return notFound();
 
   const now = new Date();

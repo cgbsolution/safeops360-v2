@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import { CapaPlanSection } from "@/components/near-miss/capa-plan-section";
 import { CommentsThread } from "@/components/near-miss/comments-thread";
 import PrintButtonClient from "./print-button";
 import { formatDate, formatDateTime, statusColor, severityColor, humanize } from "@/lib/utils";
+import { getWorkflowState } from "@/lib/workflow/state";
 import {
   CalendarDays,
   MapPin,
@@ -61,38 +62,16 @@ export default async function NearMissDetail(
   const justCreated = searchParams?.["just-created"] === "1";
   const photoErrors = parseInt(searchParams?.["photo-errors"] ?? "0", 10) || 0;
 
-  const n: any = await prisma.nearMiss.findUnique({
-    where: { id: params.id },
-    include: {
-      plant: true,
-      area: true,
-      reporter: true,
-      suggestedActionOwner: true,
-      actionOwner: true,
-      department: true,
-      equipment: true,
-      contractorCompany: true,
-      activePermit: { select: { id: true, number: true, type: true } },
-      promotedIncident: { select: { id: true, number: true, type: true, status: true } },
-      personsInvolved: { include: { user: { select: { id: true, name: true, designation: true } } } },
-      personsPotentiallyAffected: { include: { user: { select: { id: true, name: true, designation: true } } } },
-      witnesses: { include: { witness: { select: { id: true, name: true, designation: true } } } }
-    }
-  });
+  // Plant, area, reporter, owners, department, equipment, contractor, the
+  // cross-module links and all three people child tables arrive nested.
+  const n: any = await backendFetch<any>(`/api/near-miss/${params.id}`).catch(() => null);
   if (!n) return notFound();
 
   // Opening the record clears its Inbox unread state, however the viewer got
   // here. No-op unless they're the action owner.
   await markRecordTasksRead({ module: "NEAR_MISS", recordId: n.id, userId });
 
-  const instance: any = await prisma.workflowInstance.findUnique({
-    where: { module_recordId: { module: "NEAR_MISS", recordId: n.id } },
-    include: {
-      definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
-      pendingTasks: { include: { assignedTo: { include: PARTY_INCLUDE } } }
-    }
-  });
+  const instance: any = await getWorkflowState("NEAR_MISS", n.id);
 
   // A task assigned to me is actionable whenever it is still OPEN — that
   // includes the SLA states OVERDUE / ESCALATED, not just PENDING. The

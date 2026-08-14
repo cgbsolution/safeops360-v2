@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,22 +23,13 @@ export default async function MyCertificationsPage() {
   if (!session) redirect("/login");
   const userId = (session.user as any)?.id ?? "";
 
-  const certs = await prisma.trainingCertificate.findMany({
-    where: { userId },
-    include: {
-      program: {
-        select: {
-          programName: true,
-          name: true,
-          programCode: true,
-          code: true,
-          isStatutory: true,
-          statutoryReference: true,
-        },
-      },
-    },
-    orderBy: [{ status: "asc" }, { validTo: "asc" }],
-  });
+  // /certificates/me is already scoped to the caller — there is no request
+  // shape that returns someone else's certificates.
+  const certs = (
+    await backendFetch<{ items: any[] }>("/api/training/certificates/me", { userId }).catch(
+      () => ({ items: [] as any[] })
+    )
+  ).items;
 
   const now = new Date();
   const activeCount = certs.filter((c) => c.status === "ACTIVE").length;
@@ -105,9 +96,9 @@ export default async function MyCertificationsPage() {
                   <div className="flex-1">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="font-medium text-slate-900 text-sm">
-                        {c.program.programName ?? c.program.name}
+                        {c.programName ?? "—"}
                       </span>
-                      {c.program.isStatutory && (
+                      {c.programIsStatutory && (
                         <Badge className="bg-rose-100 text-rose-800 border-rose-200 text-[10px]">
                           <ShieldAlert size={10} /> Statutory
                         </Badge>

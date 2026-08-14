@@ -27,6 +27,7 @@ import { useToast } from "@/components/ui/toast";
 import { usePermission } from "@/components/auth/can";
 import {
   AuditDetail, AuditDashboard, AuditTeam, AuditTeamMember, CheckpointResponse, CheckpointInteraction, Finalizability, PlantUser, AuditReport, DisciplineRollup, StoredPhoto,
+  StreamRollup, StreamCode, STREAM_META, CONFORMANCE_META, conformanceOf,
   STATUS_CHIP, STATUS_LABEL, CRITICALITY_CHIP, CRITICALITY_FALLBACK, VALUE_META,
   GRADE_META, STATUS_META, RISK_META, REQUIREMENT_TYPE_META, scoreBandLabel,
   WORKFLOW_STATE_META, INTERACTION_LABEL, Chip, fmtDate, fmtDateTime, apiErrorMessage, complianceColor, ragBar, ragText,
@@ -439,6 +440,7 @@ export function AuditDetailView({
         canInterim={canExport && !["scheduled", "cancelled"].includes(audit.status)}
         canFinal={canClose && !!audit.finalizability?.finalizable}
         finalizable={!!audit.finalizability?.finalizable}
+        streams={audit.streamRollup ?? []}
       />
 
       {audit.status === "closed" && (
@@ -980,16 +982,32 @@ function PhotoStrip({ photos }: { photos?: StoredPhoto[] | null }) {
 }
 
 // A-07 — report generation + history.
-function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finalizable }: {
+/**
+ * The audit's reports, and the buttons that issue them.
+ *
+ * A department audit issues TWO — an IMS report (ISO 9001/14001/45001) and an
+ * EnMS one (ISO 50001) — because Page's own workbook is two sheets read by two
+ * different certification scopes. That is expressed as one interim/final pair
+ * PER STREAM rather than a single pair with a dropdown, so both documents are
+ * visible as things that exist and can be seen to be missing.
+ *
+ * `streams` comes from the audit's own materialised rows, not from the library:
+ * an audit scoped to departments that happen to hold no EnMS checkpoint must
+ * not offer an EnMS report with nothing in it.
+ */
+function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finalizable, streams = [] }: {
   auditId: string; reports: AuditReport[]; userMap: Record<string, string>;
   canInterim: boolean; canFinal: boolean; finalizable: boolean;
+  streams?: StreamRollup[];
 }) {
   const router = useRouter();
   const { toast } = useToast();
   const [busy, setBusy] = useState<string | null>(null);
+  const isDeptAudit = streams.length > 0;
 
-  async function generate(reportType: "INTERIM" | "FINAL") {
-    setBusy(reportType);
+  async function generate(reportType: "INTERIM" | "FINAL", stream?: StreamCode) {
+    const key = `${reportType}:${stream ?? ""}`;
+    setBusy(key);
     // No signOffs are sent. This used to post a hardcoded lead-auditor +
     // plant-manager pair, which was never on the sign-off WRITE path (that is
     // the signature panel, POST /assurance/audits/{id}/signoff) — it was an
@@ -1000,12 +1018,14 @@ function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finaliz
     // The generator now reads the recorded sign-offs itself, so a client cannot
     // claim a signature that was never captured.
     const res = await fetch(`/api/audit-compliance/${auditId}/reports`, {
-      method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ reportType }),
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ reportType, ...(stream ? { stream } : {}) }),
     });
     const j = await res.json().catch(() => ({}));
     setBusy(null);
     if (res.ok) {
-      toast({ variant: "success", title: `${reportType === "FINAL" ? "Final" : "Interim"} report generated`, description: j.reportCode });
+      const what = `${stream ? `${STREAM_META[stream].label} ` : ""}${reportType === "FINAL" ? "final" : "interim"}`;
+      toast({ variant: "success", title: `${what.charAt(0).toUpperCase()}${what.slice(1)} report generated`, description: j.reportCode });
       router.refresh();
       router.push(`/cams/audits/${auditId}/reports/${j.id}`);
     } else {
@@ -1021,18 +1041,55 @@ function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finaliz
         <FileText size={16} className="text-primary-700" />
         <h3 className="text-sm font-semibold text-slate-800">Audit reports</h3>
         <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{reports.length}</span>
-        <div className="ml-auto flex gap-2">
-          {canInterim && (
-            <Button type="button" variant="outline" size="sm" onClick={() => generate("INTERIM")} disabled={!!busy}>
-              {busy === "INTERIM" ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Generate interim
+        {!isDeptAudit && (
+          <div className="ml-auto flex gap-2">
+            {canInterim && (
+              <Button type="button" variant="outline" size="sm" onClick={() => generate("INTERIM")} disabled={!!busy}>
+                {busy === "INTERIM:" ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Generate interim
+              </Button>
+            )}
+            <Button type="button" size="sm" onClick={() => generate("FINAL")} disabled={!!busy || !canFinal}
+              title={!finalizable ? "Resolve every checkpoint to issue a final report" : undefined}>
+              {busy === "FINAL:" ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />} Generate final
             </Button>
-          )}
-          <Button type="button" size="sm" onClick={() => generate("FINAL")} disabled={!!busy || !canFinal}
-            title={!finalizable ? "Resolve every checkpoint to issue a final report" : undefined}>
-            {busy === "FINAL" ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />} Generate final
-          </Button>
-        </div>
+          </div>
+        )}
       </div>
+
+      {/* One row per report this audit issues. Each names its standards, so a
+          reader can see at a glance that the IMS document and the EnMS one are
+          two separate certification scopes rather than two copies. */}
+      {isDeptAudit && (
+        <div className="divide-y divide-slate-100 border-b border-slate-100 bg-slate-50/60">
+          {streams.map((s) => {
+            const issued = reports.filter((r) => r.reportStream === s.code && !r.isSuperseded);
+            return (
+              <div key={s.code} className="flex flex-wrap items-center gap-3 px-4 py-2.5">
+                <span className={cn("size-2 shrink-0 rounded-full", STREAM_META[s.code].dot)} />
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold text-slate-800">{s.reportTitle}</div>
+                  <div className="text-[11px] text-slate-400">
+                    {s.standards} · {s.answered}/{s.total} answered
+                    {issued.length > 0 && ` · ${issued.length} current`}
+                  </div>
+                </div>
+                <div className="ml-auto flex gap-2">
+                  {canInterim && (
+                    <Button type="button" variant="outline" size="sm" onClick={() => generate("INTERIM", s.code)} disabled={!!busy}>
+                      {busy === `INTERIM:${s.code}` ? <Loader2 size={14} className="animate-spin" /> : <FileText size={14} />} Interim
+                    </Button>
+                  )}
+                  <Button type="button" size="sm" onClick={() => generate("FINAL", s.code)} disabled={!!busy || !canFinal}
+                    title={!finalizable ? "Resolve every checkpoint to issue a final report" : undefined}>
+                    {busy === `FINAL:${s.code}` ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />} Final
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       {reports.length === 0 ? (
         <div className="p-5 text-center text-xs text-slate-400">No reports yet. Generate a provisional interim report any time, or a final report once every checkpoint is resolved.</div>
       ) : (
@@ -1040,6 +1097,11 @@ function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finaliz
           {reports.map((rep) => (
             <Link key={rep.id} href={`/cams/audits/${auditId}/reports/${rep.id}`} className="flex flex-wrap items-center gap-3 px-4 py-2.5 text-sm hover:bg-slate-50">
               <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", rep.reportType === "FINAL" ? "bg-emerald-100 text-emerald-800" : "bg-sky-100 text-sky-800")}>{rep.reportType}</span>
+              {rep.reportStream && STREAM_META[rep.reportStream] && (
+                <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", STREAM_META[rep.reportStream].chip)}>
+                  {STREAM_META[rep.reportStream].label}
+                </span>
+              )}
               <span className="font-mono text-[12px] text-slate-600">{rep.reportCode}</span>
               {rep.isSuperseded && <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-400">superseded</span>}
               <span className="text-[11px] text-slate-400">{fmtDateTime(rep.generatedAt)} · {userMap[rep.generatedById] ?? "—"}</span>

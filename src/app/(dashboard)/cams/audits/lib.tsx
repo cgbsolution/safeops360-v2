@@ -113,6 +113,24 @@ export type CheckpointResponse = {
   scoreObtained: number | null;
   complianceStatus: ComplianceStatus | null;
   riskGrade: RiskGrade | null;
+  // ── Department-segregated management-system audits (PAGE_IMS) ──────────
+  // `categoryId` above carries the DEPARTMENT; these carry what that axis
+  // cannot express. All null on every other library.
+  //
+  // `streamCode`      which of the two reports this row belongs to
+  // `replicationKey`  the same workbook line in another department
+  // `pairKey`         the same requirement on the other sheet, this department
+  // `conformanceMode` which conformance control this row offers
+  // `conformance`     the three-parameter face of `complianceStatus`, derived
+  //                   server-side so the client cannot drift from the mapping
+  // `standardClauses` the standards this line is assessed against — an IMS row
+  //                   cites up to three at once
+  streamCode: StreamCode | null;
+  replicationKey: string | null;
+  pairKey: string | null;
+  conformanceMode: ConformanceMode | null;
+  conformance: Conformance | null;
+  standardClauses: { code: string; standard: string; clause: string }[];
   requiresPhotoOnFail: boolean;
   autoTriggerCapaOnFail: boolean;
   capaSeverity: string | null;
@@ -338,6 +356,9 @@ export type AuditDetail = AuditRow & {
   responses: CheckpointResponse[];
   responsesTruncated?: boolean;
   disciplineRollup: DisciplineRollup[];
+  /** Per-report progress on a department audit. Empty on every other audit,
+   *  which is what tells a screen there is ONE report here rather than two. */
+  streamRollup?: StreamRollup[];
   allocationSummary?: { assigned: number; unassigned: number; total: number };
   progress: {
     total: number;
@@ -370,6 +391,30 @@ export type DisciplineRollup = {
   scorePct: number;
   repeatFindings: number;
   statutoryFindings: number;
+};
+
+/**
+ * Per-report rollup on a department audit — the "IMS 41/62 · EnMS 12/22" line,
+ * and what each of the two report buttons is offering to issue.
+ * Mirrors `svc.stream_rollup`.
+ */
+export type StreamRollup = {
+  code: StreamCode;
+  label: string;
+  longLabel: string;
+  reportTitle: string;
+  standards: string;
+  color: string;
+  total: number;
+  answered: number;
+  passed: number;
+  partial: number;
+  failed: number;
+  na: number;
+  criticalFailed: number;
+  scoreAllotted: number;
+  scoreObtained: number;
+  scorePct: number;
 };
 
 // Paginated checkpoint slice (GET /{id}/checkpoints).
@@ -512,8 +557,33 @@ export type AuditLibrary = {
   auditCategory?: AuditCategoryCode | null;
   /** Correctly scoped AND has checkpoints loaded. Structure alone is not enough. */
   isSelectable?: boolean;
+  /**
+   * What a "category" of this library IS. Derived server-side
+   * (`library_segregation`) so there is one classifier.
+   *
+   * The scheduling wizard, the programme wizard and the conduct navigator all
+   * label this axis, and "Disciplines in scope" over a list reading HR / Admin
+   * / OHC is a false statement on screen. Absent on an older payload, which
+   * reads as DISCIPLINE — the historic behaviour exactly.
+   */
+  segregation?: "DISCIPLINE" | "DEPARTMENT";
+  /** Which conformance control this library's checkpoints will offer. */
+  conformanceMode?: ConformanceMode;
+  /** The reports it produces. Empty when it is reported as one document. */
+  streams?: { code: StreamCode; label: string; longLabel: string; standards: string }[];
   categories: { category_code: string; category_name: string; category_color: string; category_icon: string; checkpointCount: number }[];
 };
+
+/** The label for a library's scope axis — one place, so the scheduler and the
+ *  programme wizard cannot call the same thing two different things. */
+export function scopeAxisWords(lib: Pick<AuditLibrary, "segregation"> | null | undefined) {
+  const dept = lib?.segregation === "DEPARTMENT";
+  return {
+    one: dept ? "department" : "discipline",
+    many: dept ? "departments" : "disciplines",
+    Title: dept ? "Departments" : "Disciplines",
+  };
+}
 
 /** An audit category paired with the library it resolved to. */
 export type ResolvedAuditCategory = AuditCategory & { library: AuditLibrary };
@@ -716,6 +786,22 @@ export type ReportInsights = {
 
 export type AuditReportSnapshot = {
   reportType: string; auditCode: string; title: string; siteId: string; industryCode: string; auditType: string;
+  /**
+   * Which of the two documents a department audit issues. Null on a report
+   * covering the whole audit, which is every report from every other library
+   * and every report frozen before streams existed — so a renderer must treat
+   * absence as "one report", never as a missing field.
+   *
+   * Every number in this snapshot is scoped to it: the headline percentage on
+   * the IMS report is IMS points over the IMS allotment.
+   */
+  reportStream?: StreamCode | null;
+  reportStreamLabel?: string | null;
+  reportStreamTitle?: string | null;
+  reportStreamStandards?: string | null;
+  /** Whether `categoryScores` / `disciplineRag` break down by discipline or by
+   *  department. Absent reads as DISCIPLINE — the historic behaviour. */
+  scopeAxis?: "DISCIPLINE" | "DEPARTMENT";
   leadAuditorId: string; plantManagerId: string | null; templateId: string | null; scopePresetUsed: string | null;
   disciplinesInScope: string[]; plannedDate: string | null; submittedAt: string | null; closedAt: string | null;
   overallScorePct: number | null; overallResult: string; auditPassed: boolean | null;
@@ -882,6 +968,10 @@ export type AuditReport = {
     signatureKind?: "DRAWN" | "TYPED"; typedName?: string | null; statement?: string | null;
   }[] | null;
   pdfAttachmentId: string | null; isSuperseded: boolean;
+  /** IMS | ENMS, or null for a report covering the whole audit. Superseding is
+   *  per (type, stream), so an IMS re-issue never marks the EnMS one stale. */
+  reportStream?: StreamCode | null;
+  reportStreamLabel?: string | null;
 };
 
 export const REPORT_RESULT_META: Record<string, { label: string; chip: string }> = {
@@ -908,7 +998,9 @@ export type MyCheckpointsResponse = { audits: MyAuditGroup[]; totals: { total: n
 export type ScopePreset = { key: string; label: string; desc: string; match: (categoryName: string) => boolean };
 
 export const SCOPE_PRESETS: ScopePreset[] = [
-  { key: "FULL", label: "Full library", desc: "Every discipline", match: () => true },
+  // Deliberately axis-neutral: this same preset is offered over a library whose
+  // categories are departments, where "Every discipline" is simply wrong.
+  { key: "FULL", label: "Full library", desc: "Everything in the checklist", match: () => true },
   { key: "FIRE_FOCUSED", label: "Fire-Focused", desc: "Fire & emergency", match: (n) => /fire|emergency/i.test(n) },
   {
     key: "SA8000_ISO45001",
@@ -1124,10 +1216,176 @@ export function suggestStatus(grade: GradeAwarded | null): ComplianceStatus | nu
   } as Record<GradeAwarded, ComplianceStatus>)[grade];
 }
 
-/** A finding needs a risk grade; an Effective or N/A checkpoint does not. */
-export function requiresRiskGrade(grade: GradeAwarded | null): boolean {
+/**
+ * Whether a risk grade is MEANINGFUL on this grade — i.e. the checkpoint is a
+ * finding at all. Drives whether the control unfolds and whether a stale risk
+ * grade is cleared.
+ */
+export function carriesRiskGrade(grade: GradeAwarded | null): boolean {
   return grade === "UNSATISFACTORY" || grade === "MAJOR_IMPROVEMENT_NEEDED"
     || grade === "SOME_IMPROVEMENT_NEEDED";
+}
+
+/**
+ * Whether the audit can be SUBMITTED without one. Mirrors
+ * `page_grading.requires_risk_grade`, including the TRISTATE exemption: the
+ * customer's IMS/EnMS department form has no risk column, so marking the field
+ * required there would show a red blocker for something their auditors are
+ * never given.
+ */
+export function requiresRiskGrade(
+  grade: GradeAwarded | null, mode?: ConformanceMode | null,
+): boolean {
+  if (mode === "TRISTATE") return false;
+  return carriesRiskGrade(grade);
+}
+
+// ──────────────────────────────────────────────────────────────────────
+// Department-segregated management-system audits (PAGE_IMS)
+//
+// Page conduct ONE audit per department — HR, Admin, OHC — and assess each
+// against both source sheets: the IMS one (ISO 9001/14001/45001) and the EnMS
+// one (ISO 50001). A "discipline" in that library IS a department, and the two
+// sheets are two report STREAMS.
+//
+// Everything here is null / absent on every other library, which is how a
+// screen tells a department audit from a discipline one without being told
+// which library it happens to be showing.
+// ──────────────────────────────────────────────────────────────────────
+
+/** Which of the two documents a checkpoint belongs to. */
+export type StreamCode = "IMS" | "ENMS";
+
+/**
+ * Which conformance control a checkpoint offers.
+ *
+ * FULL is the internal audit's five grades + seven statuses. TRISTATE is the
+ * three parameters the customer's IMS/EnMS sheet actually carries, written
+ * through to the same two columns underneath — a narrower face on one verdict,
+ * not a second state machine.
+ */
+export type ConformanceMode = "FULL" | "TRISTATE";
+
+/** The three parameters, verbatim from column E of both sheets. */
+export type Conformance = "CONFORMANCE" | "NON_CONFORMANCE" | "OBSERVATION";
+
+export const STREAM_META: Record<StreamCode, {
+  label: string; longLabel: string; standards: string;
+  chip: string; ring: string; dot: string;
+}> = {
+  IMS: {
+    label: "IMS", longLabel: "Integrated Management System",
+    standards: "ISO 9001:2015, ISO 14001:2015 & ISO 45001:2018",
+    chip: "bg-violet-100 text-violet-800",
+    ring: "border-violet-500 bg-violet-50 text-violet-700",
+    dot: "bg-violet-500",
+  },
+  ENMS: {
+    label: "EnMS", longLabel: "Energy Management System",
+    standards: "ISO 50001:2018",
+    chip: "bg-amber-100 text-amber-800",
+    ring: "border-amber-500 bg-amber-50 text-amber-800",
+    dot: "bg-amber-500",
+  },
+};
+
+export const STREAM_ORDER: StreamCode[] = ["IMS", "ENMS"];
+
+/**
+ * Column E of both sheets, and what each parameter resolves to underneath.
+ *
+ * The `grade` and `status` are here so the conduct screen can update its own
+ * row optimistically without a round-trip — the SERVER still derives them from
+ * the `conformance` token it is sent, and the server's answer wins.
+ */
+export const CONFORMANCE_META: Record<Conformance, {
+  label: string; short: string; grade: GradeAwarded; status: ComplianceStatus;
+  score: number; chip: string; ring: string; dot: string;
+}> = {
+  CONFORMANCE: {
+    label: "Conformance", short: "Conform", grade: "EFFECTIVE", status: "COMPLIED", score: 3,
+    chip: "bg-emerald-100 text-emerald-800", dot: "bg-emerald-500",
+    ring: "border-emerald-500 bg-emerald-50 text-emerald-700 hover:bg-emerald-50",
+  },
+  NON_CONFORMANCE: {
+    label: "Non-Conformance", short: "Non-Conform", grade: "MAJOR_IMPROVEMENT_NEEDED",
+    status: "NON_COMPLIANCE", score: 1,
+    chip: "bg-rose-100 text-rose-700", dot: "bg-rose-500",
+    ring: "border-rose-500 bg-rose-50 text-rose-700 hover:bg-rose-50",
+  },
+  OBSERVATION: {
+    label: "Observation", short: "Observation", grade: "SOME_IMPROVEMENT_NEEDED",
+    status: "NEW_OBSERVATION", score: 2,
+    chip: "bg-sky-100 text-sky-800", dot: "bg-sky-500",
+    ring: "border-sky-500 bg-sky-50 text-sky-800 hover:bg-sky-50",
+  },
+};
+
+export const CONFORMANCE_ORDER: Conformance[] = [
+  "CONFORMANCE", "NON_CONFORMANCE", "OBSERVATION",
+];
+
+/**
+ * Which of the three parameters a stored status displays as.
+ *
+ * Mirrors `page_grading.tristate_for_status`. Tolerant on purpose: a row graded
+ * before this vocabulary existed, or one bulk-marked through the "mark
+ * department compliant" fast path, still renders as the parameter it means.
+ * Anything with no tristate equivalent (N/A, MAS) renders as unanswered rather
+ * than as a wrong parameter.
+ */
+export function conformanceOf(status: ComplianceStatus | null | undefined): Conformance | null {
+  switch (status) {
+    case "COMPLIED": return "CONFORMANCE";
+    case "NON_COMPLIANCE":
+    case "REPEATED_NON_COMPLIANCE": return "NON_CONFORMANCE";
+    case "NEW_OBSERVATION":
+    case "REPEATED_OBSERVATION": return "OBSERVATION";
+    default: return null;
+  }
+}
+
+/**
+ * Group a page of checkpoints into CARDS.
+ *
+ * Ten requirements appear on both sheets — "Previous Audit and NC Closure
+ * Status" is asked once against ISO 9001/14001/45001 and again against ISO
+ * 50001. They materialise as two rows (the score, the routing and the two
+ * reports are all per-stream), but the auditor should see one card with an
+ * IMS / EnMS toggle rather than the same question twice, forty rows apart.
+ *
+ * Pairing is on `pairKey` AND `categoryId`: the key identifies the requirement,
+ * the department says whose copy of it this is. Pairing on the key alone would
+ * fold HR's row together with Admin's.
+ *
+ * A row with no pair key is its own card, which is every checkpoint of every
+ * other library — so this is safe to run over any page.
+ */
+export function pairCheckpoints(items: CheckpointResponse[]): CheckpointResponse[][] {
+  const cards: CheckpointResponse[][] = [];
+  const index = new Map<string, CheckpointResponse[]>();
+  for (const item of items) {
+    if (!item.pairKey) {
+      cards.push([item]);
+      continue;
+    }
+    const key = `${item.categoryId}::${item.pairKey}`;
+    const existing = index.get(key);
+    if (existing) {
+      // Stream order, not arrival order: the toggle must read "IMS | EnMS" the
+      // same way on every card whichever half the server returned first.
+      existing.push(item);
+      existing.sort(
+        (a, b) => STREAM_ORDER.indexOf(a.streamCode as StreamCode)
+          - STREAM_ORDER.indexOf(b.streamCode as StreamCode),
+      );
+      continue;
+    }
+    const card = [item];
+    index.set(key, card);
+    cards.push(card);
+  }
+  return cards;
 }
 
 /** Score band label, mirroring page_grading.band. */

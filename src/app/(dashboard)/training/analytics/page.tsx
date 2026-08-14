@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,188 +16,66 @@ import {
 
 export const dynamic = "force-dynamic";
 
+// The dashboard's whole view model, from /api/training/analytics. Every figure
+// is computed against ONE server-side instant, so the 30/60/90 buckets and the
+// 12-month pipeline can't disagree about where "today" is — they could when the
+// page issued fourteen separate queries.
+type TrainingAnalytics = {
+  statusCounts: Record<string, number>;
+  totalCerts: number;
+  activePct: number;
+  statutoryActive: number;
+  expiring30: number;
+  expiring60: number;
+  expiring90: number;
+  plants: { id: string; name: string; code: string; active: number; total: number }[];
+  topPrograms: {
+    id: string; name: string; code: string; isStatutory: boolean;
+    gates: string[]; count: number;
+  }[];
+  effectiveness: { reviewedCount: number; avgRating: number };
+  expiryPipeline: { month: string; count: number }[];
+  triggeredIncidents: {
+    id: string; number: string; date: string;
+    triggeredTrainingFor: string[]; triggeredTrainingKeywords: string[];
+  }[];
+  contractorCoverage: { company: string; total: number; covered: number; expiring: number }[];
+  contractorPct: number;
+};
+
+const EMPTY_ANALYTICS: TrainingAnalytics = {
+  statusCounts: {}, totalCerts: 0, activePct: 0, statutoryActive: 0,
+  expiring30: 0, expiring60: 0, expiring90: 0, plants: [], topPrograms: [],
+  effectiveness: { reviewedCount: 0, avgRating: 0 }, expiryPipeline: [],
+  triggeredIncidents: [], contractorCoverage: [], contractorPct: 0
+};
+
 export default async function TrainingAnalyticsPage() {
-  const now = new Date();
-  const in30 = new Date(now.getTime() + 30 * 86400000);
-  const in60 = new Date(now.getTime() + 60 * 86400000);
-  const in90 = new Date(now.getTime() + 90 * 86400000);
+  const a = await backendFetch<TrainingAnalytics>("/api/training/analytics").catch(
+    () => EMPTY_ANALYTICS
+  );
 
-  // ─── Pull everything in parallel ───
-  const [
-    statusCounts,
-    statutoryActive,
-    expiringSoon30,
-    expiringSoon60,
-    expiringSoon90,
-    perPlant,
-    topProgramsRaw,
-    plants,
-    programs,
-    effectiveness,
-    expiryPipelineRaw,
-    triggeredFromIncidents,
-  ] = await Promise.all([
-    prisma.trainingCertificate.groupBy({ by: ["status"], _count: true }),
-    prisma.trainingCertificate.count({
-      where: { status: "ACTIVE", program: { isStatutory: true } },
-    }),
-    prisma.trainingCertificate.count({
-      where: { validTo: { gte: now, lt: in30 }, status: { in: ["ACTIVE", "EXPIRING_SOON"] } },
-    }),
-    prisma.trainingCertificate.count({
-      where: {
-        validTo: { gte: in30, lt: in60 },
-        status: { in: ["ACTIVE", "EXPIRING_SOON"] },
-      },
-    }),
-    prisma.trainingCertificate.count({
-      where: {
-        validTo: { gte: in60, lt: in90 },
-        status: { in: ["ACTIVE", "EXPIRING_SOON"] },
-      },
-    }),
-    prisma.trainingCertificate.groupBy({
-      by: ["status"],
-      _count: true,
-      where: { user: { plant: { isNot: null } } },
-    }),
-    prisma.trainingCertificate.groupBy({
-      by: ["programId"],
-      _count: true,
-      orderBy: { _count: { programId: "desc" } },
-      take: 8,
-    }),
-    prisma.plant.findMany({ select: { id: true, name: true, code: true } }),
-    // Single programs lookup with all fields the analytics rendering needs
-    prisma.trainingProgram.findMany({
-      where: { approvalStatus: "APPROVED", isActive: true },
-      select: {
-        id: true,
-        programName: true,
-        name: true,
-        programCode: true,
-        code: true,
-        isStatutory: true,
-        blocksPtwIfMissing: true,
-        blocksRoleAssignmentIfMissing: true,
-        blocksContractorOnboardingIfMissing: true,
-      },
-    }),
-    prisma.trainingCertificate.findMany({
-      where: { effectivenessReviewedAt: { not: null } },
-      select: { id: true, effectivenessRating: true },
-    }),
-    // Expiry pipeline — group by month for next 12 months
-    prisma.trainingCertificate.findMany({
-      where: {
-        validTo: { gte: now, lt: new Date(now.getTime() + 365 * 86400000) },
-        status: { in: ["ACTIVE", "EXPIRING_SOON"] },
-      },
-      select: { validTo: true, programId: true },
-    }),
-    prisma.incident.findMany({
-      where: { triggeredTrainingFor: { isEmpty: false } },
-      select: {
-        id: true,
-        number: true,
-        date: true,
-        triggeredTrainingFor: true,
-        triggeredTrainingKeywords: true,
-      },
-      orderBy: { date: "desc" },
-      take: 5,
-    }),
-  ]);
-
-  const cnt = (s: string) => statusCounts.find((c) => c.status === s)?._count ?? 0;
-  const totalCerts = statusCounts.reduce((acc, c) => acc + c._count, 0);
-  const activePct = totalCerts > 0 ? Math.round((cnt("ACTIVE") / totalCerts) * 100) : 0;
-
-  // Per-plant compliance: cert counts by plant (need to join via user)
-  const certsWithPlant = await prisma.trainingCertificate.findMany({
-    select: {
-      status: true,
-      user: { select: { plantId: true } },
-    },
-  });
-  const plantStats = new Map<string, { active: number; total: number }>();
-  for (const p of plants) plantStats.set(p.id, { active: 0, total: 0 });
-  for (const c of certsWithPlant) {
-    const pid = c.user.plantId;
-    if (!pid) continue;
-    const s = plantStats.get(pid);
-    if (!s) continue;
-    s.total++;
-    if (c.status === "ACTIVE") s.active++;
-  }
-
-  // ─── Contractor training coverage ───────────────────────────────────
-  // Contractors are NOT modelled as Users, so their training lives in the
-  // EPC ContractorWorker.trainingCertificates JSON (not TrainingCertificate).
-  // Read it and roll up coverage per contractor company so the analytics span
-  // employees AND contractors (Raychem TRS §2.3.h coverage requirement).
-  const contractorWorkers = await prisma.contractorWorker.findMany({
-    select: {
-      overallStatus: true,
-      trainingCertificates: true,
-      contractorCompany: { select: { name: true } },
-    },
-  });
-  type CertJson = { validUntil?: string | null; status?: string };
-  const contractorHorizon30 = new Date(now.getTime() + 30 * 86_400_000);
-  const contractorCov = new Map<string, { company: string; total: number; covered: number; expiring: number }>();
-  for (const w of contractorWorkers) {
-    const company = w.contractorCompany?.name ?? "Unknown";
-    const slot = contractorCov.get(company) ?? { company, total: 0, covered: 0, expiring: 0 };
-    slot.total++;
-    const certs = (Array.isArray(w.trainingCertificates) ? w.trainingCertificates : []) as CertJson[];
-    const valid = certs.filter((c) => {
-      if (!c) return false;
-      const st = (c.status ?? "").toUpperCase();
-      if (st === "EXPIRED" || st === "REVOKED" || st === "LAPSED") return false;
-      if (!c.validUntil) return true;
-      return new Date(c.validUntil) >= now;
-    });
-    if (valid.length > 0) slot.covered++;
-    if (valid.some((c) => c.validUntil && new Date(c.validUntil) <= contractorHorizon30)) slot.expiring++;
-    contractorCov.set(company, slot);
-  }
-  const contractorCoverage = Array.from(contractorCov.values()).sort((a, b) => b.total - a.total);
+  const cnt = (s: string) => a.statusCounts[s] ?? 0;
+  const totalCerts = a.totalCerts;
+  const activePct = a.activePct;
+  const statutoryActive = a.statutoryActive;
+  const expiringSoon30 = a.expiring30;
+  const expiringSoon60 = a.expiring60;
+  const expiringSoon90 = a.expiring90;
+  const plants = a.plants;
+  const plantStats = new Map(plants.map((p) => [p.id, { active: p.active, total: p.total }]));
+  const topPrograms = a.topPrograms;
+  const contractorCoverage = a.contractorCoverage;
+  const contractorPct = a.contractorPct;
   const contractorTotals = contractorCoverage.reduce(
     (acc, c) => ({ total: acc.total + c.total, covered: acc.covered + c.covered }),
-    { total: 0, covered: 0 },
+    { total: 0, covered: 0 }
   );
-  const contractorPct = contractorTotals.total > 0
-    ? Math.round((contractorTotals.covered / contractorTotals.total) * 100)
-    : 0;
-
-  // Top programs by issuance
-  const programLookup = new Map(programs.map((p) => [p.id, p]));
-  const topPrograms = topProgramsRaw.map((tp) => ({
-    program: programLookup.get(tp.programId),
-    count: tp._count,
-  })).filter((tp) => tp.program);
-
-  // Effectiveness rollup
-  const reviewedCerts = effectiveness.filter((e) => e.effectivenessRating !== null);
-  const avgRating =
-    reviewedCerts.length > 0
-      ? reviewedCerts.reduce((acc, e) => acc + (e.effectivenessRating ?? 0), 0) / reviewedCerts.length
-      : 0;
-
-  // Expiry pipeline by month
-  const monthBuckets = new Map<string, number>();
-  for (let i = 0; i < 12; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-    monthBuckets.set(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`, 0);
-  }
-  for (const c of expiryPipelineRaw) {
-    if (!c.validTo) continue;
-    const d = new Date(c.validTo);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    monthBuckets.set(key, (monthBuckets.get(key) ?? 0) + 1);
-  }
-  const maxMonth = Math.max(1, ...Array.from(monthBuckets.values()));
+  const reviewedCerts = { length: a.effectiveness.reviewedCount };
+  const avgRating = a.effectiveness.avgRating;
+  const triggeredFromIncidents = a.triggeredIncidents;
+  const monthBuckets = new Map(a.expiryPipeline.map((b) => [b.month, b.count]));
+  const maxMonth = Math.max(1, ...a.expiryPipeline.map((b) => b.count));
 
   return (
     <div>
@@ -369,11 +247,10 @@ export default async function TrainingAnalyticsPage() {
               <div className="text-xs text-slate-500">No certificates issued yet.</div>
             ) : (
               topPrograms.map((tp) => {
-                const program = tp.program!;
-                const gates: string[] = [];
-                if (program.blocksPtwIfMissing) gates.push("PTW");
-                if (program.blocksRoleAssignmentIfMissing) gates.push("Role");
-                if (program.blocksContractorOnboardingIfMissing) gates.push("Contractor");
+                // The backend already resolved the programme and which gates it
+                // blocks, so the row renders straight from the payload.
+                const program = tp;
+                const gates = tp.gates;
                 return (
                   <div
                     key={program.id}
@@ -388,11 +265,11 @@ export default async function TrainingAnalyticsPage() {
                           href={`/training/programs/${program.id}`}
                           className="hover:text-primary-700"
                         >
-                          {program.programName ?? program.name}
+                          {program.name}
                         </Link>
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        {program.programCode ?? program.code}
+                        {program.code}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">

@@ -9,7 +9,7 @@
 // user's roles — if any matching grant satisfies the scope, the action is
 // allowed.
 
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 
 export type PermissionScope = "ALL_PLANTS" | "OWN_PLANT" | "OWN_DEPARTMENT" | "OWN_RECORDS";
 
@@ -33,8 +33,11 @@ type CachedPermissionRow = {
   conditions: any;
   roleId: string;
 };
-type CacheEntry = { rows: CachedPermissionRow[]; expiresAt: number };
-const PERMISSION_CACHE = new Map<string, CacheEntry>();
+type CacheEntry = { snapshot: AccessSnapshot; expiresAt: number };
+const SNAPSHOT_CACHE = new Map<string, CacheEntry>();
+// 30s. Deliberately shorter than the backend's own 5-minute snapshot cache:
+// this layer only holds a copy, so it should expire first and re-read rather
+// than out-live the source it mirrors.
 const TTL_MS = 30_000;
 
 function cacheKey(userId: string) {
@@ -42,65 +45,82 @@ function cacheKey(userId: string) {
 }
 
 export function invalidateUserPermissions(userId?: string) {
-  if (userId) PERMISSION_CACHE.delete(cacheKey(userId));
-  else PERMISSION_CACHE.clear();
+  if (userId) SNAPSHOT_CACHE.delete(cacheKey(userId));
+  else SNAPSHOT_CACHE.clear();
 }
 
-async function loadUserPermissions(userId: string): Promise<CachedPermissionRow[]> {
-  const cached = PERMISSION_CACHE.get(cacheKey(userId));
-  if (cached && cached.expiresAt > Date.now()) return cached.rows;
+// The caller's grants + profile, as FastAPI computes them. Both used to be
+// rebuilt here from the UserRole → Role → RolePermission → Permission tables;
+// they now arrive from /api/auth/access-snapshot, so the grant model is read
+// from exactly one place and cannot drift between the two services.
+type AccessSnapshot = {
+  rows: CachedPermissionRow[];
+  profile: UserProfileLite | null;
+  roleCodes: string[];
+};
 
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      OR: [
-        { validTo: null },
-        { validTo: { gt: new Date() } }
-      ]
-    },
-    include: {
-      role: {
-        include: {
-          permissions: { include: { permission: true } }
-        }
-      }
-    }
-  });
-
-  const rows: CachedPermissionRow[] = [];
-  for (const ur of userRoles) {
-    if (!ur.role.isActive) continue;
-    for (const rp of ur.role.permissions) {
-      rows.push({
-        permissionCode: rp.permission.code,
-        scope: rp.scope as PermissionScope,
-        conditions: rp.conditions ?? null,
-        roleId: ur.roleId
-      });
-    }
-  }
-
-  // Don't cache empty results. If a user has no permissions right now (e.g.,
-  // mid-reseed, or their role was just deactivated), we want the next call to
-  // re-check rather than locking them out for a full TTL window.
-  if (rows.length > 0) {
-    PERMISSION_CACHE.set(cacheKey(userId), { rows, expiresAt: Date.now() + TTL_MS });
-  }
-  return rows;
-}
-
-// User profile fields needed for scope checks (plant, department, etc).
 type UserProfileLite = {
   id: string;
   plantId: string | null;
   department: string | null;
+  /** Primary plant plus every PLANT-scoped role assignment, so a multi-plant
+   *  user isn't flattened to their primary plant. */
+  plantIds: string[];
 };
+
+const EMPTY_SNAPSHOT: AccessSnapshot = { rows: [], profile: null, roleCodes: [] };
+
+async function loadSnapshot(userId: string): Promise<AccessSnapshot> {
+  const cached = SNAPSHOT_CACHE.get(cacheKey(userId));
+  if (cached && cached.expiresAt > Date.now()) return cached.snapshot;
+
+  let snapshot: AccessSnapshot;
+  try {
+    const res = await backendFetch<{
+      userId: string;
+      grants: { permissionCode: string; scope: PermissionScope; roleId: string }[];
+      roleCodes: string[];
+      plantId: string | null;
+      plantIds: string[];
+      department: string | null;
+    }>("/api/auth/access-snapshot", { userId });
+
+    snapshot = {
+      rows: res.grants.map((g) => ({
+        permissionCode: g.permissionCode,
+        scope: g.scope,
+        conditions: null,
+        roleId: g.roleId
+      })),
+      profile: {
+        id: res.userId,
+        plantId: res.plantId,
+        department: res.department,
+        plantIds: res.plantIds ?? []
+      },
+      roleCodes: res.roleCodes ?? []
+    };
+  } catch {
+    // Fail CLOSED. A backend hiccup must deny, never silently grant — every
+    // caller treats an empty grant list as "no permission".
+    return EMPTY_SNAPSHOT;
+  }
+
+  // Don't cache empty results. If a user has no permissions right now (e.g.
+  // mid-reseed, or their role was just deactivated), the next call should
+  // re-check rather than locking them out for a full TTL window.
+  if (snapshot.rows.length > 0) {
+    SNAPSHOT_CACHE.set(cacheKey(userId), { snapshot, expiresAt: Date.now() + TTL_MS });
+  }
+  return snapshot;
+}
+
+async function loadUserPermissions(userId: string): Promise<CachedPermissionRow[]> {
+  return (await loadSnapshot(userId)).rows;
+}
+
 async function loadUserProfile(userId: string): Promise<UserProfileLite | null> {
-  const u = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, plantId: true, department: true }
-  });
-  return u;
+  return (await loadSnapshot(userId)).profile;
 }
 
 // The single function every layer calls.
@@ -244,26 +264,31 @@ export async function getAccessiblePlants(userId: string): Promise<string[] | nu
   if (rows.some((r) => r.scope === "ALL_PLANTS")) return null;
   const profile = await loadUserProfile(userId);
   if (!profile) return [];
-  // OWN_PLANT or OWN_DEPARTMENT roles narrow to user's plant
-  if (rows.some((r) => r.scope === "OWN_PLANT" || r.scope === "OWN_DEPARTMENT")) {
-    return profile.plantId ? [profile.plantId] : [];
-  }
+  // Every non-ALL_PLANTS scope narrows to the user's plant set. Note this is
+  // `plantIds`, not the single `plantId`: a user assigned to two plants through
+  // PLANT-scoped roles (an HSE Manager covering NW and SW) must see both, and
+  // collapsing to the primary plant used to hide the second one's records.
+  // Matches get_accessible_plants() in app/services/permissions.py exactly.
+  //
   // OWN_RECORDS-only users can technically be at any plant — list endpoints
   // should layer an OR-clause on owner fields rather than relying on plant.
-  return profile.plantId ? [profile.plantId] : [];
+  return profile.plantIds.length ? [...profile.plantIds] : profile.plantId ? [profile.plantId] : [];
 }
 
 // Returns the user's role codes — used by workflow engine to validate that
 // a step's required role is held by the actor.
 export async function getUserRoleCodes(userId: string): Promise<string[]> {
-  const userRoles = await prisma.userRole.findMany({
-    where: {
-      userId,
-      OR: [{ validTo: null }, { validTo: { gt: new Date() } }]
-    },
-    include: { role: { select: { code: true, isActive: true } } }
-  });
-  return userRoles.filter((ur) => ur.role.isActive).map((ur) => ur.role.code);
+  // From the same snapshot as everything else — the backend already filters to
+  // active roles inside their validity window, and includes roles that carry no
+  // permissions (which the workflow engine's role-match check needs).
+  return (await loadSnapshot(userId)).roleCodes;
+}
+
+// The plant/department facts scope checks compare against. Exposed so list
+// filters can build their WHERE clause from the same snapshot `can()` uses,
+// instead of re-reading the User row for themselves.
+export async function getUserScopeProfile(userId: string): Promise<UserProfileLite | null> {
+  return loadUserProfile(userId);
 }
 
 // True if the user holds the given role code (any scope).

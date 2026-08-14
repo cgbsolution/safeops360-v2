@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import {
   Card,
@@ -54,35 +54,11 @@ export default async function TrainingScheduleDetailPage(props: {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role ?? "";
 
-  const schedule = await prisma.trainingSchedule.findUnique({
-    where: { id: params.id },
-    include: {
-      program: {
-        select: {
-          id: true,
-          programCode: true,
-          code: true,
-          programName: true,
-          name: true,
-          category: true,
-          isStatutory: true,
-          hasAssessment: true,
-          passingScorePercent: true,
-          passingScore: true,
-        },
-      },
-      plant: { select: { name: true } },
-      trainer: { select: { name: true } },
-      createdBy: { select: { name: true } },
-      sessions: { orderBy: { sequence: "asc" } },
-      registrations: {
-        include: {
-          user: { select: { id: true, name: true, designation: true } },
-        },
-        orderBy: { registeredAt: "asc" },
-      },
-    },
-  });
+  // Programme, plant, trainer, creator, ordered sessions and the nominee
+  // roster all arrive nested — one request instead of four.
+  const schedule = await backendFetch<any>(
+    `/api/training/schedules/${params.id}`
+  ).catch(() => null);
   if (!schedule) return notFound();
 
   // Opening the record clears its Inbox unread state, however the viewer got
@@ -96,11 +72,11 @@ export default async function TrainingScheduleDetailPage(props: {
 
   const presentRegIds = new Set(
     schedule.registrations
-      .filter((r) => ["ATTENDED", "COMPLETED"].includes(r.status))
-      .map((r) => r.id)
+      .filter((r: any) => ["ATTENDED", "COMPLETED"].includes(r.status))
+      .map((r: any) => r.id)
   );
-  const passedCount = schedule.registrations.filter((r) => r.passed === true).length;
-  const failedCount = schedule.registrations.filter((r) => r.passed === false).length;
+  const passedCount = schedule.registrations.filter((r: any) => r.passed === true).length;
+  const failedCount = schedule.registrations.filter((r: any) => r.passed === false).length;
 
   return (
     <div className="max-w-5xl">
@@ -136,7 +112,7 @@ export default async function TrainingScheduleDetailPage(props: {
 
           <ScheduleSessionsBlock
             scheduleId={schedule.id}
-            sessions={schedule.sessions.map((s) => ({
+            sessions={schedule.sessions.map((s: any) => ({
               id: s.id,
               sequence: s.sequence,
               title: s.title,
@@ -145,8 +121,8 @@ export default async function TrainingScheduleDetailPage(props: {
               conductedAt: s.conductedAt ? s.conductedAt.toISOString() : null,
             }))}
             roster={schedule.registrations
-              .filter((r) => r.approvalStatus === "APPROVED" && r.status !== "CANCELLED")
-              .map((r) => ({
+              .filter((r: any) => r.approvalStatus === "APPROVED" && r.status !== "CANCELLED")
+              .map((r: any) => ({
                 registrationId: r.id,
                 userId: r.userId,
                 userName: r.user.name,
@@ -163,7 +139,7 @@ export default async function TrainingScheduleDetailPage(props: {
                 <UserIcon size={16} /> Registrations ({schedule.registrations.length})
               </CardTitle>
               <CardDescription className="text-xs">
-                {schedule.registrations.filter((r) => r.approvalStatus === "PENDING").length} pending
+                {schedule.registrations.filter((r: any) => r.approvalStatus === "PENDING").length} pending
                 approval · {presentRegIds.size} attended · {passedCount} passed · {failedCount} failed
               </CardDescription>
             </CardHeader>
@@ -171,7 +147,7 @@ export default async function TrainingScheduleDetailPage(props: {
               {schedule.registrations.length === 0 ? (
                 <div className="text-xs text-slate-500">No registrations yet.</div>
               ) : (
-                schedule.registrations.map((r) => (
+                schedule.registrations.map((r: any) => (
                   <div
                     key={r.id}
                     className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs"

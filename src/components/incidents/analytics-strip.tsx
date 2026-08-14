@@ -1,129 +1,67 @@
-import { prisma } from "@/lib/prisma";
-import { incidentReadScopeWhere } from "@/lib/auth/incident-access";
 import {
   AnalyticsStrip,
   AnalyticsStripError,
   type AnalyticsStripData,
 } from "@/components/dashboard/analytics-strip";
-import {
-  last12Months,
-  bucketCounts,
-  monthBounds,
-  netDelta,
-  percentDelta,
-  avgDaysBetween,
-} from "@/lib/dashboard/strip";
+import { fetchStrip, sparkPoints, type StripBase } from "@/lib/dashboard/strip-data";
+import { netDelta, percentDelta } from "@/lib/dashboard/strip";
 
-// Incident Investigation analytics strip — Prisma-direct module.
+// Incident Investigation analytics strip.
 //
-// Reuses incidentReadScopeWhere (the same RBAC gate the list uses); when a
-// user can read no incidents it returns `false` and we render a zeroed
-// strip rather than querying. Self-fetching + Suspense-isolated like the
-// observation strip.
+// Scope is resolved backend-side through INCIDENT.READ — the same gate the
+// list uses — so the strip can never show a count the list would hide. A
+// caller with no grant gets a zeroed strip (denied: true) rather than an
+// error, since the page itself was reached legally.
+
+interface IncidentStrip extends StripBase {
+  open: number;
+  /** Open with an occurrence date older than 30 days. */
+  stalled: number;
+  /** Open LTI/FATALITY older than 10 days. */
+  ltiOpen: number;
+  openedThisMonth: number;
+  closedMTD: number;
+  closedPrevCount: number;
+  avgDays: number | null;
+  /** Share of the trailing 12 months' closures that have a CAPA attached. */
+  linkagePct: number | null;
+}
 
 export async function IncidentAnalyticsStrip({ userId }: { userId: string }) {
+  void userId; // scope is resolved backend-side from the bearer token
   try {
-    const scope = await incidentReadScopeWhere(userId);
-    const { now, startOfMonth, startOfLastMonth } = monthBounds();
-    const buckets = last12Months(now);
-    const twelveMonthsAgo = buckets[0].start;
-    const stalledBefore = new Date(now.getTime() - 30 * 86_400_000);
-    const ltiOpenBefore = new Date(now.getTime() - 10 * 86_400_000);
+    const m = await fetchStrip<IncidentStrip>("incidents");
 
-    let data: AnalyticsStripData;
-
-    if (scope === false) {
-      // No read access → honest empty strip, no DB hit.
-      data = {
-        tiles: [
-          { label: "Open Investigations", value: 0, emphasis: true },
-          { label: "Closed MTD", value: 0 },
-          { label: "CAPA Linkage", value: "—" },
-        ],
-        sparkline: null,
-        alerts: [
-          { label: "Stalled", count: 0, tone: "bad", href: "/incidents" },
-          { label: "LTI open", count: 0, tone: "bad", href: "/incidents?type=LTI" },
-        ],
-      };
-      return <AnalyticsStrip data={data} />;
-    }
-
-    const [openRows, trendRows, closedThisMonth, closedPrevCount, closedTotal, closedWithCapa] =
-      await Promise.all([
-        prisma.incident.findMany({
-          where: { AND: [scope, { status: { not: "CLOSED" } }] },
-          select: { date: true, type: true },
-          take: 5000,
-        }),
-        prisma.incident.findMany({
-          where: { AND: [scope, { date: { gte: twelveMonthsAgo } }] },
-          select: { date: true },
-          take: 5000,
-        }),
-        prisma.incident.findMany({
-          where: { AND: [scope, { status: "CLOSED", closedAt: { gte: startOfMonth } }] },
-          select: { date: true, closedAt: true },
-          take: 5000,
-        }),
-        prisma.incident.count({
-          where: { AND: [scope, { status: "CLOSED", closedAt: { gte: startOfLastMonth, lt: startOfMonth } }] },
-        }),
-        // CAPA-linkage rate over the trailing 12 months of closures.
-        prisma.incident.count({
-          where: { AND: [scope, { status: "CLOSED", closedAt: { gte: twelveMonthsAgo } }] },
-        }),
-        prisma.incident.count({
-          where: { AND: [scope, { status: "CLOSED", closedAt: { gte: twelveMonthsAgo }, capas: { some: {} } }] },
-        }),
-      ]);
-
-    const open = openRows.length;
-    const stalled = openRows.filter((r) => r.date < stalledBefore).length;
-    const ltiOpen = openRows.filter(
-      (r) => (r.type === "LTI" || r.type === "FATALITY") && r.date < ltiOpenBefore
-    ).length;
-
-    const trendCounts = bucketCounts(trendRows.map((r) => r.date), buckets);
-    const openedThisMonth = trendCounts[11];
-
-    const closedMTD = closedThisMonth.length;
-    const avgDays = avgDaysBetween(
-      closedThisMonth.filter((r) => r.closedAt).map((r) => ({ from: r.date, to: r.closedAt as Date }))
-    );
-
-    const linkagePct = closedTotal ? Math.round((closedWithCapa / closedTotal) * 100) : null;
-
-    data = {
+    const data: AnalyticsStripData = {
       tiles: [
         {
           label: "Open Investigations",
-          value: open,
+          value: m.open,
           emphasis: true,
           href: "/incidents",
-          delta: netDelta(openedThisMonth - closedMTD, false),
+          delta: netDelta(m.openedThisMonth - m.closedMTD, false),
         },
         {
           label: "Closed MTD",
-          value: closedMTD,
+          value: m.closedMTD,
           href: "/incidents?status=CLOSED",
-          delta: percentDelta(closedMTD, closedPrevCount, true),
-          badge: avgDays !== null ? { text: `~${avgDays}d to close`, tone: "neutral" } : null,
+          delta: percentDelta(m.closedMTD, m.closedPrevCount, true),
+          badge: m.avgDays !== null ? { text: `~${m.avgDays}d to close`, tone: "neutral" } : null,
         },
         {
           label: "CAPA Linkage",
-          value: linkagePct === null ? "—" : `${linkagePct}%`,
+          value: m.linkagePct === null ? "—" : `${m.linkagePct}%`,
           href: "/incidents?status=CLOSED",
         },
       ],
       sparkline: {
-        points: buckets.map((b, i) => ({ label: b.label, value: trendCounts[i] })),
+        points: sparkPoints(m.bucketStarts, m.trendCounts),
         color: "#ea580c",
         label: "Incidents · 12 mo",
       },
       alerts: [
-        { label: "Stalled >30d", count: stalled, tone: "bad", href: "/incidents" },
-        { label: "LTI open >10d", count: ltiOpen, tone: "bad", href: "/incidents?type=LTI" },
+        { label: "Stalled >30d", count: m.stalled, tone: "bad", href: "/incidents" },
+        { label: "LTI open >10d", count: m.ltiOpen, tone: "bad", href: "/incidents?type=LTI" },
       ],
     };
 

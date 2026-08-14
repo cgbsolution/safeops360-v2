@@ -1,18 +1,15 @@
 import Link from "next/link";
-import type { Prisma } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Bell, CheckCircle2, AlertTriangle, Eye, FileCheck, Hourglass, Inbox as InboxIcon, Send } from "lucide-react";
 import { formatDateTime, humanize, cn } from "@/lib/utils";
-import { WorkflowEngine } from "@/lib/workflow/engine";
-import { PARTY_INCLUDE, toParty } from "@/lib/workflow/party";
+import { toParty } from "@/lib/workflow/party";
 import { unreadInboxCounts } from "@/lib/workflow/read-state";
-import { backendFetch } from "@/lib/backend";
 import { MarkAllReadButton } from "./mark-all-read";
 import { NotificationList, type InboxNotification } from "./notification-list";
 import { formatPartyMeta, formatPartyName } from "@/lib/users/user-ref";
@@ -22,29 +19,10 @@ export const dynamic = "force-dynamic";
 // Queue ordering. The work tabs are a *feed*: whatever just landed in your
 // inbox is what you're most likely looking for, so newest-assigned wins and
 // lateness is communicated by the SLA chip rather than by re-ranking the list.
-// Only the Overdue / Escalated tab ranks by lateness — there, "how long has
-// this been sitting past due" IS the sort key, so the oldest due date leads.
-const NEWEST_TASK_FIRST: Prisma.WorkflowTaskOrderByWithRelationInput[] = [
-  { assignedAt: "desc" },
-  { id: "desc" }
-];
-const MOST_OVERDUE_FIRST: Prisma.WorkflowTaskOrderByWithRelationInput[] = [
-  { dueAt: "asc" },
-  { assignedAt: "asc" }
-];
-
-// Throttle the SLA sweeps. Without this the three sweeps run on every
-// inbox navigation — costing ~500-1000ms per click even when nothing is
-// overdue. Module-level state survives across requests in the same Node
-// process; resets on dev-server restart.
-const SWEEP_INTERVAL_MS = 5 * 60_000;
-let _lastSweepAt = 0;
-function shouldRunSweeps(): boolean {
-  const now = Date.now();
-  if (now - _lastSweepAt < SWEEP_INTERVAL_MS) return false;
-  _lastSweepAt = now;
-  return true;
-}
+// Row ordering lives server-side now (see _tab_order_by in
+// app/routers/workflow.py): every tab is newest-assigned first EXCEPT Overdue /
+// Escalated, where "how long has this been sitting past due" IS the sort key,
+// so the oldest due date leads.
 
 const TABS = [
   { key: "approvals", label: "Pending Approvals", icon: FileCheck },
@@ -66,7 +44,8 @@ const TABS = [
 async function loadNotifications(): Promise<InboxNotification[]> {
   try {
     const res = await backendFetch<{ notifications: InboxNotification[] }>(
-      "/api/notifications?limit=100"
+      "/api/notifications",
+      { query: { limit: 100 } }
     );
     return res?.notifications ?? [];
   } catch (e) {
@@ -125,45 +104,44 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
   const userId = (session.user as any).id;
   const tab = (searchParams.tab ?? "approvals") as (typeof TABS)[number]["key"];
 
-  // Lazy SLA sweep: flip PENDING → OVERDUE and OVERDUE → ESCALATED before showing
-  // counts. Idempotent — but expensive enough that running it on every inbox
-  // navigation hurts perceived latency. Throttle to once per 5 minutes per
-  // process so users get fast page loads while overdue detection still
-  // happens often enough for the demo timeline.
-  try {
-    if (shouldRunSweeps()) {
-      await Promise.all([
-        WorkflowEngine.sweepOverdue(),
-        WorkflowEngine.sweepExpiredPermits(),
-        WorkflowEngine.sweepInspectionStatus()
-      ]);
-    }
-  } catch (e) {
-    console.error("Inbox sweeps failed:", e);
-  }
+  // The SLA sweeps (task overdue/escalation, permit expiry, inspection status)
+  // used to run here, throttled, as a side effect of somebody opening the
+  // Inbox — so on a quiet day an approval could sit past its SLA and a permit
+  // past its validTo indefinitely. They are scheduler jobs on the backend now
+  // (workflow_overdue_sweep / ptw_expiry_scan / inspection_status_sweep), which
+  // means the clock runs whether or not anyone is looking.
 
   // Fetch badge counts. Overdue is a SEPARATE count restricted to
   // OVERDUE/ESCALATED status — the previous code summed all PENDING
   // tasks too, which made the badge show "2" even when nothing was
   // actually overdue.
-  const [taskCounts, submittedCount, overdueRealCount, unread, unreadNotifications] = await Promise.all([
-    prisma.workflowTask.groupBy({
-      by: ["taskType"],
-      where: { assignedToId: userId, status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-      _count: { _all: true }
-    }),
-    prisma.workflowInstance.count({ where: { initiatedById: userId } }),
-    prisma.workflowTask.count({
-      where: { assignedToId: userId, status: { in: ["OVERDUE", "ESCALATED"] } }
-    }),
+  const [myCount, unread, unreadNotifications] = await Promise.all([
+    // One call covers every tab total. `overdueStrict` is deliberately the
+    // narrow definition — tasks whose status IS OVERDUE/ESCALATED — because the
+    // broad one (anything past dueAt, or flagged URGENT) made this badge read
+    // "overdue" while nothing had actually breached.
+    backendFetch<{
+      tabPendingApprovals: number;
+      tabMyTasks: number;
+      tabPendingVerification: number;
+      overdueStrict: number;
+      submittedInstances: number;
+    }>("/api/workflow/my-count", { userId }).catch(() => ({
+      tabPendingApprovals: 0,
+      tabMyTasks: 0,
+      tabPendingVerification: 0,
+      overdueStrict: 0,
+      submittedInstances: 0
+    })),
     unreadInboxCounts(userId),
     loadUnreadNotificationCount()
   ]);
 
-  const approvalCount = taskCounts.find((r) => r.taskType === "APPROVAL")?._count._all ?? 0;
-  const taskCount = taskCounts.find((r) => r.taskType === "EXECUTION")?._count._all ?? 0;
-  const verificationCount = taskCounts.find((r) => r.taskType === "VERIFICATION")?._count._all ?? 0;
-  const overdueCount = overdueRealCount;
+  const approvalCount = myCount.tabPendingApprovals;
+  const taskCount = myCount.tabMyTasks;
+  const verificationCount = myCount.tabPendingVerification;
+  const overdueCount = myCount.overdueStrict;
+  const submittedCount = myCount.submittedInstances;
 
   const counts = {
     approvals: approvalCount,
@@ -198,38 +176,35 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
   let overdue: any[] = [];
   let notifications: InboxNotification[] = [];
 
+  // Only the active tab's rows are fetched. Each maps to a server-side tab
+  // filter, so "open" means the same thing here as it does in the badge above.
+  const loadTab = (t: string) =>
+    backendFetch<{ items: any[] }>("/api/workflow/tasks", {
+      userId,
+      query: { tab: t, limit: 50 }
+    })
+      .then((r) => r.items)
+      .catch(() => [] as any[]);
+
   if (tab === "notifications") {
     notifications = await loadNotifications();
   } else if (tab === "approvals") {
-    pendingApprovals = await prisma.workflowTask.findMany({
-      where: { assignedToId: userId, taskType: "APPROVAL", status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
-      orderBy: NEWEST_TASK_FIRST
-    });
+    pendingApprovals = await loadTab("pending_approvals");
   } else if (tab === "tasks") {
-    executionTasks = await prisma.workflowTask.findMany({
-      where: { assignedToId: userId, taskType: "EXECUTION", status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
-      orderBy: NEWEST_TASK_FIRST
-    });
+    executionTasks = await loadTab("my_tasks");
   } else if (tab === "verifications") {
-    verifications = await prisma.workflowTask.findMany({
-      where: { assignedToId: userId, taskType: "VERIFICATION", status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
-      orderBy: NEWEST_TASK_FIRST
-    });
+    verifications = await loadTab("pending_verification");
   } else if (tab === "submitted") {
-    submitted = await prisma.workflowInstance.findMany({
-      where: { initiatedById: userId },
-      orderBy: { initiatedAt: "desc" },
-      take: 50
-    });
+    // Instances, not tasks: one submission with three approvers is ONE row
+    // here. /tasks?tab=submitted_by_me would return three.
+    submitted = await backendFetch<{ items: any[] }>("/api/workflow/submitted", {
+      userId,
+      query: { limit: 50 }
+    })
+      .then((r) => r.items)
+      .catch(() => [] as any[]);
   } else if (tab === "overdue") {
-    overdue = await prisma.workflowTask.findMany({
-      where: { assignedToId: userId, status: { in: ["OVERDUE", "ESCALATED"] } },
-      include: { instance: { include: { initiatedBy: { include: PARTY_INCLUDE } } } },
-      orderBy: MOST_OVERDUE_FIRST
-    });
+    overdue = await loadTab("overdue_escalated");
   }
 
   return (
@@ -364,7 +339,21 @@ function TaskList({ tasks, actionLabel, emptyText, overdueMode }: { tasks: any[]
                   // Same identity contract as the "Awaiting Action" callout:
                   // full name plus designation / role / department / plant, so
                   // a task from "Process Operator" is attributable to a person.
-                  const initiator = toParty(task.instance?.initiatedBy);
+                  // /api/workflow/tasks returns the initiator flattened onto the task
+                  // rather than nested under instance.initiatedBy.
+                  const initiator = toParty(
+                    task.initiatedByName
+                      ? {
+                          name: task.initiatedByName,
+                          designation: task.initiatedByDesignation,
+                          role: task.initiatedByRole,
+                          department: task.initiatedByDepartment,
+                          plant: task.initiatedByPlantName
+                            ? { name: task.initiatedByPlantName }
+                            : null
+                        }
+                      : null
+                  );
                   const meta = formatPartyMeta(initiator);
                   return (
                     <div className="text-xs text-slate-500 mt-1">

@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { AssessmentTake } from "@/components/training/assessment-take";
 
@@ -15,22 +15,11 @@ export default async function AssessmentPage(props: {
   if (!session) redirect("/login");
   const userId = (session.user as any)?.id ?? "";
 
-  const reg = await prisma.trainingRegistration.findUnique({
-    where: { id: params.id },
-    include: {
-      user: { select: { id: true, name: true } },
-      schedule: {
-        include: {
-          program: {
-            include: {
-              questions: { orderBy: { sequence: "asc" } },
-            },
-          },
-        },
-      },
-      assessments: { orderBy: { attemptNumber: "asc" } },
-    },
-  });
+  // The endpoint enforces learner-or-assessor access itself and nests the
+  // learner, the programme's ordered question bank, and every attempt.
+  const reg = await backendFetch<any>(
+    `/api/training/registrations/${params.id}`
+  ).catch(() => null);
   if (!reg) return notFound();
 
   // Auth: only the learner can take their own assessment, or a privileged
@@ -76,7 +65,7 @@ export default async function AssessmentPage(props: {
         passingScorePercent={
           reg.schedule.program.passingScorePercent ?? reg.schedule.program.passingScore
         }
-        questions={reg.schedule.program.questions.map((q) => ({
+        questions={reg.schedule.program.questions.map((q: any) => ({
           id: q.id,
           sequence: q.sequence,
           questionText: q.questionText,
@@ -85,7 +74,7 @@ export default async function AssessmentPage(props: {
           marks: q.marks,
           isCritical: q.isCritical,
         }))}
-        existingAssessments={reg.assessments.map((a) => ({
+        existingAssessments={reg.assessments.map((a: any) => ({
           id: a.id,
           attemptNumber: a.attemptNumber,
           submittedAt: a.submittedAt ? a.submittedAt.toISOString() : null,

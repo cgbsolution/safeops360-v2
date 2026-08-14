@@ -11,7 +11,8 @@
 // Falls back to the optional `defaults` array when the type has no rows
 // in MasterItem yet — useful for forms migrating off hardcoded enums.
 
-import { prisma } from "@/lib/prisma";
+import { cache } from "react";
+import { backendFetch } from "@/lib/backend/fetch";
 
 export type MasterOption = {
   code: string;
@@ -20,18 +21,28 @@ export type MasterOption = {
   metadata: any;
 };
 
+// React.cache'd per (type, includeInactive): a form that renders the same
+// dropdown twice in one request makes one call, not two.
+const fetchOptions = cache(
+  async (type: string, includeInactive: boolean): Promise<MasterOption[]> =>
+    backendFetch<MasterOption[]>("/api/masters/items", {
+      query: { type, includeInactive },
+    })
+);
+
 export async function getMasterOptions(
   type: string,
   opts?: { includeInactive?: boolean; defaults?: MasterOption[] }
 ): Promise<MasterOption[]> {
-  const rows = await prisma.masterItem.findMany({
-    where: {
-      type,
-      ...(opts?.includeInactive ? {} : { active: true })
-    },
-    orderBy: [{ sortOrder: "asc" }, { label: "asc" }],
-    select: { code: true, label: true, sortOrder: true, metadata: true }
-  });
+  let rows: MasterOption[];
+  try {
+    rows = await fetchOptions(type, opts?.includeInactive ?? false);
+  } catch {
+    // A dropdown that can't reach the backend falls back to its defaults where
+    // the caller supplied them, and to empty otherwise — same as an unseeded
+    // type. Throwing here would take down the whole form for a lookup list.
+    return opts?.defaults ?? [];
+  }
   if (rows.length === 0 && opts?.defaults) return opts.defaults;
   return rows;
 }

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import { PanelBoundary } from "@/components/ui/panel-boundary";
 import { getPtwActivationGate } from "@/lib/ptw/activation-gate";
 import { formatDateTime, statusColor, humanize } from "@/lib/utils";
 import { CheckCircle2, XCircle, Clock, FileText, Hammer, AlertTriangle, PlayCircle, RefreshCcw } from "lucide-react";
+import { getWorkflowState } from "@/lib/workflow/state";
 
 export const dynamic = "force-dynamic";
 
@@ -52,50 +53,9 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
   const userId = (session?.user as any)?.id ?? "";
   const role = (session?.user as any)?.role ?? "";
 
-  const p = await prisma.permit.findUnique({
-    where: { id: params.id },
-    include: {
-      plant: true,
-      area: true,
-      originator: true,
-      issuer: true,
-      receiver: true,
-      flras: { include: { crewSignatures: true } },
-      workCrew: { include: { user: { select: { id: true, name: true, designation: true } } } },
-      extensions: {
-        orderBy: { requestedAt: "desc" },
-        include: {
-          requestedBy: { select: { name: true } },
-          approvedBy: { select: { name: true } }
-        }
-      },
-      isolations: true,
-      approvalsLog: {
-        orderBy: { decidedAt: "asc" },
-        include: { approver: { select: { name: true, designation: true } } }
-      },
-      suspensions: {
-        orderBy: { suspendedAt: "asc" },
-        include: {
-          suspendedBy: { select: { name: true } },
-          resumedBy: { select: { name: true } }
-        }
-      },
-      gasTestReadings: {
-        orderBy: { recordedAt: "asc" },
-        take: 50,
-        include: { recordedBy: { select: { name: true } } }
-      },
-      // Closed-loop field evidence (GPS + photo + signature per action)
-      actionEvidence: {
-        orderBy: { capturedAt: "asc" },
-        include: {
-          actor: { select: { name: true } },
-          photos: { select: { id: true } }
-        }
-      }
-    }
-  });
+  // Parties, crew, FLRAs with their signatures, extensions, isolations,
+  // approvals, suspensions, gas readings and field evidence — one call.
+  const p = await backendFetch<any>(`/api/ptw/${params.id}`).catch(() => null);
   // Soft-deleted permits (governed-entity delete) are treated as gone — a
   // deep-link/bookmark to one 404s rather than rendering a removed record.
   if (!p || p.isDeleted) return notFound();
@@ -105,21 +65,14 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
   await markRecordTasksRead({ module: "PTW", recordId: p.id, userId });
 
   const activationGate = await getPtwActivationGate(p.id);
-  const liveFlra = p.flras.find((f) => f.status === "IN_PROGRESS" || f.status === "COMPLETED") ?? null;
-  const supersededFlras = p.flras.filter((f) => f.status === "SUPERSEDED");
+  const liveFlra = p.flras.find((f: any) => f.status === "IN_PROGRESS" || f.status === "COMPLETED") ?? null;
+  const supersededFlras = p.flras.filter((f: any) => f.status === "SUPERSEDED");
 
   // B9 — defensive JSON parse
   const ppe = safeParseJson<Record<string, boolean>>(p.ppeChecklist, {});
 
   // Workflow context — same pattern as Observation / Near Miss
-  const instance = await prisma.workflowInstance.findUnique({
-    where: { module_recordId: { module: "PTW", recordId: p.id } },
-    include: {
-      definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
-      pendingTasks: { include: { assignedTo: { include: PARTY_INCLUDE } } }
-    }
-  });
+  const instance = await getWorkflowState("PTW", p.id);
 
   // Include OVERDUE/ESCALATED so an assignee can still act once a task
   // slips past its due date (mirrors the near-miss page).
@@ -287,7 +240,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
             status={p.status}
             validTo={p.validTo}
             type={p.type}
-            workCrew={p.workCrew.map((c) => ({
+            workCrew={p.workCrew.map((c: any) => ({
               id: c.id,
               userId: c.userId,
               role: c.role,
@@ -298,7 +251,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                 ? { id: c.user.id, name: c.user.name, designation: c.user.designation }
                 : { id: c.userId, name: "(deleted user)", designation: null }
             }))}
-            extensions={p.extensions.map((e) => ({
+            extensions={p.extensions.map((e: any) => ({
               id: e.id,
               newValidTo: e.newValidTo,
               reason: e.reason,
@@ -310,7 +263,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
 
           {/* Approvals + Isolations summary cards */}
           <ApprovalsCard
-            approvals={p.approvalsLog.map((a) => ({
+            approvals={p.approvalsLog.map((a: any) => ({
               id: a.id,
               step: a.step,
               decision: a.decision,
@@ -323,7 +276,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
             }))}
           />
           <IsolationsCard
-            isolations={p.isolations.map((i) => ({
+            isolations={p.isolations.map((i: any) => ({
               id: i.id,
               isolationType: i.isolationType,
               description: i.description,
@@ -340,7 +293,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
           {["APPROVED", "ISSUED", "SUBMITTED", "ACTIVE", "SUSPENDED"].includes(p.status) && (
             <IsolationVerifyPanel
               permitId={p.id}
-              isolations={p.isolations.map((i) => ({
+              isolations={p.isolations.map((i: any) => ({
                 id: i.id,
                 isolationType: i.isolationType,
                 description: i.description,
@@ -355,7 +308,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
 
           {/* Audit trail — unified timeline of approvals/suspensions/extensions/gas readings */}
           <AuditTrailPanel
-            approvals={p.approvalsLog.map((a) => ({
+            approvals={p.approvalsLog.map((a: any) => ({
               id: a.id,
               step: a.step,
               decision: a.decision,
@@ -366,7 +319,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                 ? { name: a.approver.name, designation: a.approver.designation }
                 : null
             }))}
-            suspensions={p.suspensions.map((s) => ({
+            suspensions={p.suspensions.map((s: any) => ({
               id: s.id,
               reason: s.reason,
               reasonDetail: s.reasonDetail,
@@ -377,7 +330,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
               suspendedBy: s.suspendedBy ? { name: s.suspendedBy.name } : null,
               resumedBy: s.resumedBy ? { name: s.resumedBy.name } : null
             }))}
-            extensions={p.extensions.map((e) => ({
+            extensions={p.extensions.map((e: any) => ({
               id: e.id,
               newValidTo: e.newValidTo,
               reason: e.reason,
@@ -388,7 +341,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
               requestedBy: e.requestedBy ? { name: e.requestedBy.name } : null,
               approvedBy: e.approvedBy ? { name: e.approvedBy.name } : null
             }))}
-            gasReadings={p.gasTestReadings.map((g) => ({
+            gasReadings={p.gasTestReadings.map((g: any) => ({
               id: g.id,
               recordedAt: g.recordedAt,
               isExceedance: g.isExceedance,
@@ -654,7 +607,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                     </div>
                     <div className="text-sm text-slate-700">{liveFlra.jobDescription.slice(0, 90)}</div>
                     <div className="text-xs text-slate-500">
-                      Crew sign-off: {liveFlra.crewSignatures.filter((s) => s.signed).length} of {liveFlra.crewSignatures.length} complete
+                      Crew sign-off: {liveFlra.crewSignatures.filter((s: any) => s.signed).length} of {liveFlra.crewSignatures.length} complete
                     </div>
                   </div>
                   <FileText size={16} className="text-slate-400" />
@@ -689,7 +642,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                     {supersededFlras.length} superseded FLRA{supersededFlras.length === 1 ? "" : "s"} (re-do history)
                   </summary>
                   <div className="mt-2 space-y-1.5">
-                    {supersededFlras.map((f) => (
+                    {supersededFlras.map((f: any) => (
                       <Link
                         key={f.id}
                         href={`/flra/${f.id}`}
@@ -768,7 +721,7 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                 <CardDescription className="text-xs">{p.workCrew.length} crew member{p.workCrew.length === 1 ? "" : "s"} named on this permit</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2 text-sm">
-                {p.workCrew.map((c) => (
+                {p.workCrew.map((c: any) => (
                   <div key={c.id} className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-slate-900">{c.user?.name ?? "(deleted user)"}</div>

@@ -1,7 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
+import { getPlantAreas } from "@/lib/masters/plants";
 import { can } from "@/lib/auth/permissions";
 import { PageHeader } from "@/components/page-header";
 import { ObservationEditForm } from "../../observation-edit-form";
@@ -13,11 +14,12 @@ export default async function EditObservationPage(props: { params: Promise<{ id:
   const session = await getServerSession(authOptions);
   const userId = (session?.user as any)?.id ?? "";
 
-  const o = await prisma.observation.findUnique({
-    where: { id: params.id },
-    include: { plant: { include: { areas: { orderBy: { name: "asc" } } } } }
-  });
+  // The GET already enforces OBSERVATION.READ for this record, so a caller who
+  // cannot see it gets null here and lands on not-found.
+  const o = await backendFetch<any>(`/api/observations/${params.id}`).catch(() => null);
   if (!o) notFound();
+  // The area picker is scoped to the observation's own plant.
+  const areas = await getPlantAreas(o.plantId).catch(() => []);
 
   // Gate: must hold OBSERVATION.UPDATE for this record. Pass plantId so the
   // OWN_PLANT scope can resolve (canUpdate() omits it). Backend re-checks.
@@ -51,7 +53,7 @@ export default async function EditObservationPage(props: { params: Promise<{ id:
           areaId: o.areaId,
           targetDate: o.targetDate ? o.targetDate.toISOString() : null
         }}
-        areas={o.plant?.areas ?? []}
+        areas={areas}
       />
     </div>
   );

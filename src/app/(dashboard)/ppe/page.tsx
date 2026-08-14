@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import { prisma } from "@/lib/prisma";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { PlantSwitcher } from "@/components/plant-switcher";
@@ -103,6 +102,13 @@ export type Recipient = {
   role: string;
   department: string;
 };
+/** A row as /api/users returns it, before it's mapped to a Recipient. */
+type PlantUser = {
+  id: string;
+  name: string;
+  role: string;
+  department: string | null;
+};
 export type CatalogType = {
   id: string;
   code: string;
@@ -141,13 +147,14 @@ export default async function PpePage(props: { searchParams: Promise<{ plantId?:
     backendFetch<InspectionsDue>("/api/ppe/inspections/due", q).catch(empty<InspectionsDue | null>(null)),
     backendFetch<PeopleCompliance>("/api/ppe/people-compliance", q).catch(empty<PeopleCompliance | null>(null)),
     backendFetch<{ types: CatalogType[] }>("/api/ppe/catalog", q).catch(empty({ types: [] as CatalogType[] })),
-    prisma.user.findMany({
-      where: { plantId },
-      select: { id: true, name: true, role: true, department: true },
-      orderBy: { name: "asc" },
-    }).catch(empty([] as { id: string; name: string; role: string; department: string | null }[])),
+    // Issuance recipients — every user at this plant. `take: 100` is the
+    // endpoint's ceiling; the picker is searchable, so a plant above that
+    // count still reaches anyone by typing.
+    backendFetch<{ users: PlantUser[] }>("/api/users", {
+      query: { plantId, take: 100 },
+    }).catch(empty({ users: [] as PlantUser[] })),
   ]);
-  const recipients: Recipient[] = plantUsers.map((u) => ({
+  const recipients: Recipient[] = plantUsers.users.map((u) => ({
     userId: u.id,
     name: u.name,
     role: u.role,

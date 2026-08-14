@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import {
   Card,
@@ -44,21 +44,11 @@ export default async function CertificateDetailPage(props: {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role ?? "";
 
-  const cert = await prisma.trainingCertificate.findUnique({
-    where: { id: params.id },
-    include: {
-      program: true,
-      user: { select: { id: true, name: true, designation: true, plantId: true } },
-      issuedBy: { select: { name: true } },
-      revokedBy: { select: { name: true } },
-      effectivenessReviewedBy: { select: { name: true } },
-      registration: {
-        include: {
-          schedule: { select: { id: true, scheduleNumber: true } },
-        },
-      },
-    },
-  });
+  // The endpoint applies the own-vs-privileged read rule itself, then nests
+  // the programme, holder, and the people behind each state change.
+  const cert = await backendFetch<any>(`/api/training/certificates/${params.id}`).catch(
+    () => null
+  );
   if (!cert) return notFound();
 
   const isRevoked = cert.status === "REVOKED";

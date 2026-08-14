@@ -14,8 +14,7 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { can } from "@/lib/auth/permissions";
+import { can, getUserRoleCodes } from "@/lib/auth/permissions";
 
 export const SUPER_ADMIN_ROLE_CODE = "SUPER_ADMIN";
 export const SUPER_ADMIN_PERMISSION = "ORGANISATION.MODULES";
@@ -39,17 +38,12 @@ export async function isSuperAdmin(): Promise<boolean> {
   const email = (user.email ?? "").trim().toLowerCase();
   if (email && email === superAdminAnchorEmail()) return true;
 
-  // Role rows, in case the denormalised User.role column is stale.
+  // Role rows, in case the denormalised User.role column is stale. The backend
+  // snapshot already returns only active roles inside their validity window,
+  // so this is the same test the old findFirst made.
   if (user.id) {
-    const assigned = await prisma.userRole.findFirst({
-      where: {
-        userId: user.id,
-        role: { code: SUPER_ADMIN_ROLE_CODE, isActive: true },
-        OR: [{ validTo: null }, { validTo: { gt: new Date() } }]
-      },
-      select: { id: true }
-    });
-    if (assigned) return true;
+    const codes = await getUserRoleCodes(user.id);
+    if (codes.includes(SUPER_ADMIN_ROLE_CODE)) return true;
   }
   return false;
 }

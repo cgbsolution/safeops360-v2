@@ -16,7 +16,7 @@ import { useToast } from "@/components/ui/toast";
 import {
   AuditCategory, AuditCategoryCode, AuditLibrary, AuditTemplate, PlantUser,
   AUDIT_CATEGORY_FALLBACK, AUDIT_CATEGORY_ICON, SCOPE_PRESETS,
-  presetDisciplineCodes, resolveAuditCategories, scopedSelectableLibs,
+  presetDisciplineCodes, resolveAuditCategories, scopedSelectableLibs, scopeAxisWords,
 } from "./lib";
 
 /** A row from /api/cams-completion/suppliers/vendors (the vendor boundary DTO). */
@@ -523,7 +523,7 @@ export function ScheduleModal({
           <DialogTitle className="flex items-center gap-2 text-base">
             <ClipboardList size={18} className="text-primary-700" /> {dialogTitle ?? "Schedule Audit"}
           </DialogTitle>
-          <DialogDescription className="sr-only">Schedule an audit: choose disciplines in scope, lead auditor and auditees.</DialogDescription>
+          <DialogDescription className="sr-only">Schedule an audit: choose the disciplines or departments in scope, lead auditor and auditees.</DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[68vh] space-y-3 overflow-y-auto px-5 py-1">
@@ -591,7 +591,7 @@ export function ScheduleModal({
                       key={c.code} type="button" variant="ghost"
                       onClick={() => setAuditCategory(c.code)}
                       aria-pressed={on}
-                      title={`${c.description} · ${c.library.checkpointCount} checkpoints across ${c.library.categories.length} disciplines`}
+                      title={`${c.description} · ${c.library.checkpointCount} checkpoints across ${c.library.categories.length} ${scopeAxisWords(c.library).many}`}
                       className={cn(
                         "h-auto flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left transition",
                         on
@@ -604,7 +604,7 @@ export function ScheduleModal({
                         {c.label}
                       </span>
                       <span className={cn("text-[10px] tabular-nums", on ? "text-primary-700" : "text-slate-400")}>
-                        {c.library.categories.length} disciplines · {c.library.checkpointCount} checkpoints
+                        {c.library.categories.length} {scopeAxisWords(c.library).many} · {c.library.checkpointCount} checkpoints
                       </span>
                     </Button>
                   );
@@ -619,10 +619,38 @@ export function ScheduleModal({
                       up into the same score, so a scheduler picking QMS or
                       Social Compliance knows they are not opting into a
                       different kind of report. */}
-                  {activeCategory.code !== "INTERNAL" && (
+                  {activeCategory.code !== "INTERNAL" && activeCategory.library.segregation !== "DEPARTMENT" && (
                     <> Conducted, graded and reported in the internal-audit format.</>
                   )}
                 </p>
+              )}
+              {/* A department library is the one category that IS answered and
+                  reported differently, so the two things a scheduler cannot
+                  discover from the chips below are said here: three parameters
+                  instead of the grade ladder, and two documents out of one
+                  audit. Both are read from the payload, never from the
+                  category code. */}
+              {activeCategory?.library.segregation === "DEPARTMENT" && (
+                <div className="mt-1.5 space-y-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-600">
+                  <div>
+                    Each <span className="font-medium text-slate-700">department</span> is audited
+                    against both source sheets, and each checkpoint is answered{" "}
+                    {activeCategory.library.conformanceMode === "TRISTATE"
+                      ? "Conformance / Non-Conformance / Observation."
+                      : "on the standard grading vocabulary."}
+                  </div>
+                  {(activeCategory.library.streams?.length ?? 0) > 1 && (
+                    <div>
+                      <span className="font-medium text-slate-700">
+                        {activeCategory.library.streams!.length} separate reports
+                      </span>{" "}
+                      are issued —{" "}
+                      {activeCategory.library.streams!
+                        .map((s) => `${s.label} (${s.standards})`)
+                        .join(" and ")}.
+                    </div>
+                  )}
+                </div>
               )}
             </Field>
           )}
@@ -758,9 +786,12 @@ export function ScheduleModal({
             </div>
           )}
 
-          {/* Discipline scope — selectable chips + preset shortcuts */}
+          {/* Scope — selectable chips + preset shortcuts.
+              The axis is the LIBRARY's: "Disciplines in scope" over a list
+              reading HR / Admin / OHC is a false statement in the one place a
+              scheduler decides what the audit covers. */}
           {library && (
-            <Field label={`Disciplines in scope — ${selectedDisc.length}/${library.categories.length} selected`} required error={touched ? disciplineError : null}>
+            <Field label={`${scopeAxisWords(library).Title} in scope — ${selectedDisc.length}/${library.categories.length} selected`} required error={touched ? disciplineError : null}>
               <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-3">
                 {/* Preset shortcuts */}
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
@@ -769,7 +800,7 @@ export function ScheduleModal({
                     const codes = presetDisciplineCodes(p, library.categories);
                     if (codes.length === 0) return null;
                     return (
-                      <Button key={p.key} type="button" size="sm" variant={scopePreset === p.key ? "default" : "outline"} onClick={() => applyPreset(p.key)} className="h-6 rounded-full px-2 text-[11px]" title={`${p.desc} · ${codes.length} disciplines`}>
+                      <Button key={p.key} type="button" size="sm" variant={scopePreset === p.key ? "default" : "outline"} onClick={() => applyPreset(p.key)} className="h-6 rounded-full px-2 text-[11px]" title={`${p.desc} · ${codes.length} ${scopeAxisWords(library).many}`}>
                         {p.label}
                       </Button>
                     );
@@ -810,7 +841,7 @@ export function ScheduleModal({
           {industryTemplates.length > 0 && (
             <Field label="Template (optional)">
               <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-                <option value="">No template — full discipline scope above</option>
+                <option value="">No template — full {scopeAxisWords(library).one} scope above</option>
                 {industryTemplates.map((t) => (
                   <option key={t.id} value={t.id}>{t.name}</option>
                 ))}
@@ -869,7 +900,7 @@ export function ScheduleModal({
             <>
               <EmailPartyField
                 label="External co-auditors"
-                hint="Each auditor gets their own link and conducts the disciplines you scope them to. Leave empty if the audit is conducted only by our own team."
+                hint={`Each auditor gets their own link and conducts the ${scopeAxisWords(library).many} you scope them to. Leave empty if the audit is conducted only by our own team.`}
                 parties={extCoAuditors}
                 onChange={setExtCoAuditors}
                 disciplines={selectedDisc.map((c) => ({ code: c, name: discName(c) }))}
@@ -877,7 +908,7 @@ export function ScheduleModal({
               />
               <EmailPartyField
                 label="Factory auditees"
-                hint="Findings in their disciplines route to them, and they respond through their own link."
+                hint={`Findings in their ${scopeAxisWords(library).many} route to them, and they respond through their own link.`}
                 parties={extAuditees}
                 onChange={setExtAuditees}
                 disciplines={selectedDisc.map((c) => ({ code: c, name: discName(c) }))}
@@ -889,7 +920,7 @@ export function ScheduleModal({
           {/* Co-auditors by discipline — the lead conducts any discipline not
               assigned to a co-auditor. */}
           {!isVendor && (
-          <Field label={`Co-auditors by discipline — ${coAuditorIds.length} selected`}>
+          <Field label={`Co-auditors by ${scopeAxisWords(library).one} — ${coAuditorIds.length} selected`}>
             <SlotHint
               loading={assignableLoading}
               count={coAuditorUsers.length}
@@ -921,7 +952,7 @@ export function ScheduleModal({
             {coAuditorIds.length > 0 && library && (
               <div className="mt-2 space-y-2 rounded-xl border border-primary-200 bg-primary-50/50 p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-primary-500">Assign disciplines to each auditor</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-primary-500">Assign {scopeAxisWords(library).many} to each auditor</span>
                   <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]" onClick={autoDistribute}>Distribute evenly</Button>
                 </div>
                 {coAuditorIds.map((uid) => {
@@ -929,7 +960,7 @@ export function ScheduleModal({
                   const mine = auditorDisc[uid] ?? [];
                   return (
                     <div key={uid} className="rounded-lg bg-white p-2">
-                      <div className="mb-1 text-[12px] font-medium text-slate-700">{u?.name ?? uid} <span className="text-slate-400">· {mine.length} discipline(s)</span></div>
+                      <div className="mb-1 text-[12px] font-medium text-slate-700">{u?.name ?? uid} <span className="text-slate-400">· {mine.length} {mine.length === 1 ? scopeAxisWords(library).one : scopeAxisWords(library).many}</span></div>
                       <div className="flex flex-wrap gap-1">
                         {selectedDisc.map((code) => {
                           const on = mine.includes(code);

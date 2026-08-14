@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPlants } from "@/lib/masters/plants";
 import { PageHeader } from "@/components/page-header";
 import { ProgramForm } from "../program-form";
 import { requirePermission } from "@/lib/auth/server";
@@ -7,10 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function NewTrainingProgramPage() {
   await requirePermission("TRAINING.CREATE");
-  const plants = await prisma.plant.findMany({
-    select: { id: true, name: true },
-    orderBy: { name: "asc" }
-  });
+  const plants = await getPlants();
 
   return (
     <div className="max-w-5xl">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus, ShieldAlert } from "lucide-react";
@@ -11,6 +11,28 @@ export const dynamic = "force-dynamic";
 
 type Filter = "all" | "approved" | "draft" | "review" | "retired";
 
+// A programme as /api/training/programs returns it. The endpoint owns the
+// filtering (approval state, category, free-text search) so the register and
+// its chips are computed from the same query.
+type ProgramListItem = {
+  id: string;
+  code: string;
+  programCode: string | null;
+  name: string;
+  programName: string | null;
+  isStatutory: boolean;
+  statutoryReference: string | null;
+  category: string | null;
+  validityMonths: number | null;
+  certificateValidityMonths: number | null;
+  isMandatoryForRoles: string[] | null;
+  isMandatoryForPermitTypes: string[] | null;
+  blocksPtwIfMissing: boolean;
+  blocksRoleAssignmentIfMissing: boolean;
+  blocksContractorOnboardingIfMissing: boolean;
+  approvalStatus: string;
+};
+
 export default async function TrainingProgramsPage(props: {
   searchParams: Promise<{ filter?: Filter; q?: string; category?: string }>;
 }) {
@@ -19,30 +41,37 @@ export default async function TrainingProgramsPage(props: {
   const q = (searchParams.q ?? "").trim();
   const categoryFilter = searchParams.category ?? "";
 
-  const where: any = {};
-  if (filter === "approved") where.approvalStatus = "APPROVED";
-  else if (filter === "draft") where.approvalStatus = "DRAFT";
-  else if (filter === "review") where.approvalStatus = "UNDER_REVIEW";
-  else if (filter === "retired") where.approvalStatus = "RETIRED";
-  if (categoryFilter) where.category = categoryFilter;
-  if (q) {
-    where.OR = [
-      { name: { contains: q, mode: "insensitive" } },
-      { programName: { contains: q, mode: "insensitive" } },
-      { code: { contains: q, mode: "insensitive" } },
-      { programCode: { contains: q, mode: "insensitive" } }
-    ];
-  }
+  const APPROVAL_BY_FILTER: Record<Filter, string | undefined> = {
+    all: undefined,
+    approved: "APPROVED",
+    draft: "DRAFT",
+    review: "UNDER_REVIEW",
+    retired: "RETIRED"
+  };
 
-  const [programs, counts, statutoryCount] = await Promise.all([
-    prisma.trainingProgram.findMany({
-      where,
-      orderBy: [{ isStatutory: "desc" }, { name: "asc" }]
-    }),
-    prisma.trainingProgram.groupBy({ by: ["approvalStatus"], _count: true }),
-    prisma.trainingProgram.count({ where: { isStatutory: true, approvalStatus: "APPROVED" } })
-  ]);
-  const cnt = (s: string) => counts.find((c) => c.approvalStatus === s)?._count ?? 0;
+  const register = await backendFetch<{
+    items: ProgramListItem[];
+    approvalCounts: Record<string, number>;
+    statutoryApproved: number;
+  }>("/api/training/programs", {
+    query: {
+      // The register must show drafts and retired programmes too — the chips
+      // are how you reach them — so the endpoint's default "workable set only"
+      // narrowing is switched off here.
+      active_only: false,
+      approval_status: APPROVAL_BY_FILTER[filter],
+      category: categoryFilter || undefined,
+      q: q || undefined
+    }
+  }).catch(() => ({
+    items: [] as ProgramListItem[],
+    approvalCounts: {} as Record<string, number>,
+    statutoryApproved: 0
+  }));
+
+  const programs = register.items;
+  const cnt = (s: string) => register.approvalCounts[s] ?? 0;
+  const statutoryCount = register.statutoryApproved;
 
   const rows: ProgramRow[] = programs.map((p) => ({
     id: p.id,

@@ -37,6 +37,14 @@ export function ReportView({
   // Server-computed (scoring_rules.grade_visibility). Absent on snapshots frozen
   // before this shipped — those keep the old rendering rather than crashing.
   const grade = s.grade;
+  // What `categoryScores` are broken down by on THIS report. Frozen into the
+  // snapshot rather than looked up live: the report is an immutable document,
+  // and it has to keep naming the axis it was issued under even if the library
+  // is later restructured. Absent reads as DISCIPLINE — every report issued
+  // before departments existed.
+  const axis = s.scopeAxis === "DEPARTMENT"
+    ? { one: "department", many: "departments", Title: "Departments" }
+    : { one: "discipline", many: "disciplines", Title: "Disciplines" };
 
   return (
     <div className="bg-slate-100 pb-16">
@@ -82,8 +90,19 @@ export function ReportView({
         <div className="border-b-2 border-primary-700 pb-4">
           <div className="flex items-start justify-between">
             <div>
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-primary-700">SafeOps360 · Audit {isFinal ? "Final" : "Interim"} Report</div>
+              <div className="text-[11px] font-semibold uppercase tracking-widest text-primary-700">
+                SafeOps360 · {s.reportStreamTitle ?? "Audit"} · {isFinal ? "Final" : "Interim"} Report
+              </div>
               <h1 className="mt-1 text-2xl font-extrabold text-slate-900">{s.title}</h1>
+              {/* A department audit issues two documents from one conduct, and
+                  every number on this one is scoped to its own stream. Saying
+                  which management system this is — and against which standards
+                  — is what stops the IMS report being read as the whole audit. */}
+              {s.reportStreamStandards && (
+                <div className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-2.5 py-0.5 text-[11px] font-medium text-primary-800">
+                  {s.reportStreamLabel} · {s.reportStreamStandards}
+                </div>
+              )}
               <div className="mt-1 font-mono text-xs text-slate-500">{s.auditCode} · {report.reportCode}</div>
             </div>
             {/* Headline verdict — or an honest refusal to give one.
@@ -128,7 +147,7 @@ export function ReportView({
             <Meta label="Lead auditor" value={name(s.leadAuditorId)} />
             <Meta label="Plant manager" value={name(s.plantManagerId)} />
             <Meta label="Planned date" value={fmtDate(s.plannedDate)} />
-            <Meta label="Disciplines in scope" value={s.disciplinesInScopeLabel ?? `${s.disciplinesInScope.length}`} />
+            <Meta label={`${axis.Title} in scope`} value={s.disciplinesInScopeLabel ?? `${s.disciplinesInScope.length}`} />
             <Meta label="Generated" value={fmtDateTime(s.generatedAt)} />
             {s.scopePresetUsed && <Meta label="Scope preset" value={s.scopePresetUsed} />}
           </div>
@@ -151,14 +170,15 @@ export function ReportView({
           </div>
           <p className="mt-3 text-[13px] leading-relaxed text-slate-600">
             {isFinal
-              ? `The audit assessed ${s.checkpointsAssessed} of ${s.checkpointsTotal} checkpoints across ${s.disciplinesInScopeLabel ?? `${s.disciplinesInScope.length} discipline(s)`}, with an overall conformance of ${pctLabel} (${result.label}). ${s.criticalFailures} critical and ${s.majorFailures} major non-conformities were identified${s.adHocCount ? `, including ${s.adHocCount} ad-hoc checkpoint(s) added during the audit` : ""}.`
+              ? `The audit assessed ${s.checkpointsAssessed} of ${s.checkpointsTotal} checkpoints across ${s.disciplinesInScopeLabel ?? `${s.disciplinesInScope.length} ${axis.one}(s)`}, with an overall conformance of ${pctLabel} (${result.label}). ${s.criticalFailures} critical and ${s.majorFailures} major non-conformities were identified${s.adHocCount ? `, including ${s.adHocCount} ad-hoc checkpoint(s) added during the audit` : ""}.`
               : `Provisional snapshot: ${s.checkpointsAssessed} of ${s.checkpointsTotal} checkpoints assessed. ${s.openIterationsCount} finding(s) awaiting response${s.notAssessedCount ? `, ${s.notAssessedCount} checkpoint(s) not yet assessed` : ""}. Figures are subject to change until the audit is finalized.`}
           </p>
         </Section>
 
-        {/* Per-discipline RAG bars. Ten "Not assessed" rows is a zero-state
-            chart (Appendix D bans them) — one sentence until there is data. */}
-        <Section title="Discipline compliance">
+        {/* Per-discipline (or per-department) RAG bars. Ten "Not assessed"
+            rows is a zero-state chart (Appendix D bans them) — one sentence
+            until there is data. */}
+        <Section title={`${axis.Title.slice(0, -1)} compliance`}>
           {s.categoryScores.every((c) => c.passed + c.partial + c.failed === 0) ? (
             <p className="text-[13px] italic text-slate-500">
               Category-level compliance will appear once assessment begins.
@@ -199,7 +219,7 @@ export function ReportView({
                 <table className="w-full text-[11px]">
                   <thead className="text-left text-slate-500">
                     <tr className="border-b border-slate-200">
-                      <th className="py-1 pr-2 font-medium">Discipline</th>
+                      <th className="py-1 pr-2 font-medium">{axis.Title.slice(0, -1)}</th>
                       <th className="px-1 text-center font-medium">Pass</th>
                       <th className="px-1 text-center font-medium">Partial</th>
                       <th className="px-1 text-center font-medium">Fail</th>
@@ -548,7 +568,7 @@ export function ReportView({
                 discipline(s)" on a full-scope audit. The backend now supplies a
                 label derived from the materialised rows; the length fallback is
                 only for reports generated before that change. */}
-            Scope: {s.disciplinesInScopeLabel ?? `${s.disciplinesInScope.length} discipline(s)`}
+            Scope: {s.disciplinesInScopeLabel ?? `${s.disciplinesInScope.length} ${axis.one}(s)`}
             {s.templateId ? " · template-based" : ""}{s.adHocCount ? ` · ${s.adHocCount} ad-hoc checkpoint(s)` : ""}.
             {s.samplingApproach && s.samplingApproach !== "FULL" && (
               <> {" "}Sampling basis: {s.samplingApproach.replace(/_/g, " ").toLowerCase()}

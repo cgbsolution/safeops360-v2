@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,22 +25,17 @@ export default async function TrainingPage(props: {
   const now = new Date();
 
   // Both reads are independent — run in parallel.
-  const [allRecords, programs] = await Promise.all([
-    prisma.trainingRecord.findMany({
-      select: {
-        id: true,
-        employeeId: true,
-        programId: true,
-        date: true,
-        passed: true,
-        score: true,
-        validUntil: true,
-        employee: { select: { id: true, name: true, department: true } },
-        program: { select: { id: true, name: true, code: true, mandatory: true, validityMonths: true, passingScore: true } }
-      }
-    }),
-    prisma.trainingProgram.findMany({ orderBy: [{ mandatory: "desc" }, { name: "asc" }] })
+  // Both reads are independent — run in parallel. Records arrive with the
+  // employee and programme nested, and scoped to what the caller may read.
+  const [recordsRes, programsRes] = await Promise.all([
+    backendFetch<{ items: any[] }>("/api/training").catch(() => ({ items: [] as any[] })),
+    backendFetch<{ items: any[] }>("/api/training/programs", {
+      // The register lists every programme, not only the workable set.
+      query: { active_only: false }
+    }).catch(() => ({ items: [] as any[] }))
   ]);
+  const allRecords = recordsRes.items;
+  const programs = programsRes.items;
 
   // Latest record per (employee, program) — basis for compliance counts
   const latestByPair = new Map<string, typeof allRecords[number]>();

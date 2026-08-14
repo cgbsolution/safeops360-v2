@@ -31,6 +31,7 @@ import Link from "next/link";
 import {
   Check, Camera, AlertTriangle, Link2, Loader2, X, ArrowLeft,
   Trash2, UserRound, Sparkles, Plus, Search, ListChecks, ChevronDown, Paperclip,
+  CopyPlus, Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -42,12 +43,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import {
-  AuditDetail, CheckpointResponse, DisciplineRollup,
+  AuditDetail, CheckpointResponse, DisciplineRollup, StreamRollup,
   CRITICALITY_CHIP, CRITICALITY_FALLBACK, PlantUser, apiErrorMessage,
   GradeAwarded, ComplianceStatus, RiskGrade,
   GRADE_META, GRADE_ORDER, GRADE_TO_VALUE, STATUS_META, STATUS_ORDER,
   RISK_META, RISK_ORDER, REQUIREMENT_TYPE_META,
-  SCORE_CHOICES, FULL_SCORE, suggestScore, suggestStatus, requiresRiskGrade,
+  SCORE_CHOICES, FULL_SCORE, suggestScore, suggestStatus,
+  requiresRiskGrade, carriesRiskGrade,
+  Conformance, StreamCode, CONFORMANCE_META, CONFORMANCE_ORDER, conformanceOf,
+  STREAM_META, STREAM_ORDER, pairCheckpoints,
 } from "../../lib";
 import {
   uploadAuditAttachment, deleteAuditAttachment, IMAGE_ACCEPT, DOCUMENT_ACCEPT,
@@ -62,9 +66,41 @@ type Resp = CheckpointResponse;
 /** "ungraded" filters on the absence of a grade; the rest are grade codes. */
 type GradeFilter = "all" | "ungraded" | GradeAwarded;
 type Bucket = "passed" | "partial" | "failed" | "na";
+/** Which report's checkpoints the worklist is showing. Department audits only. */
+type StreamFilter = "all" | StreamCode;
+
+/**
+ * One department that holds the same workbook line, and what state it is in.
+ * `wouldOverwrite` is what the confirm dialog counts before it asks; `locked`
+ * is a finding already in flight with its auditee, which replication never
+ * touches at all.
+ */
+type ReplicationTarget = {
+  checkpointCode: string;
+  departmentId: string;
+  departmentName: string;
+  assessmentStatus: string;
+  conformance: Conformance | null;
+  gradeAwarded: GradeAwarded | null;
+  locked: boolean;
+  wouldOverwrite: boolean;
+};
 
 const SEVERITIES = ["critical", "major", "minor", "observation"] as const;
 const PAGE = 40;
+
+/**
+ * A paired checkpoint materialises as TWO rows spanning ~40 positions in the
+ * sequence — the IMS sheet's row 1 and the EnMS sheet's row 1. The worklist
+ * pages on sequence, so a page of 40 would routinely hold one half of a pair
+ * and not the other, and the card would render a toggle whose other side does
+ * not exist. Paging in pairs keeps both halves in the same page for every
+ * department this library ships.
+ *
+ * Bounded by the endpoint's own 200 cap, and only paid for on an audit that
+ * actually has streams — a discipline audit keeps the original page size.
+ */
+const PAGE_PAIRED = 200;
 
 const GRADE_TABS: { key: GradeFilter; label: string }[] = [
   { key: "all", label: "All" },
@@ -125,6 +161,16 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   });
   const [gradeFilter, setGradeFilter] = useState<GradeFilter>("all");
   const [q, setQ] = useState("");
+
+  // ── Department audits: two reports out of one conduct ─────────────────
+  //
+  // Present only when the audit's checkpoints carry a stream, which is the
+  // PAGE_IMS department library and nothing else. Every branch below reads the
+  // data rather than a flag about which library this is.
+  const streams: StreamRollup[] = audit.streamRollup ?? [];
+  const isDeptAudit = streams.length > 0;
+  const [streamFilter, setStreamFilter] = useState<StreamFilter>("all");
+  const pageSize = isDeptAudit ? PAGE_PAIRED : PAGE;
   // WP-44: a captured photo held for markup before it is attached. The
   // ORIGINAL is always uploaded; the annotated copy is uploaded alongside it.
   const [pendingPhoto, setPendingPhoto] = useState<{ item: Resp; file: File; url: string } | null>(null);
@@ -164,7 +210,8 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
       else if (gradeFilter !== "all") params.set("grade", gradeFilter);
       if (qDebounced) params.set("q", qDebounced);
       if (mineOnly) params.set("mine", "true");
-      params.set("limit", String(PAGE));
+      if (streamFilter !== "all") params.set("stream", streamFilter);
+      params.set("limit", String(pageSize));
       if (!reset && cur) params.set("cursor", cur);
       if (reset) setLoading(true); else setLoadingMore(true);
       try {
@@ -183,14 +230,28 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         setLoadingMore(false);
       }
     },
-    [audit.id, disciplineId, gradeFilter, qDebounced, mineOnly, toast],
+    [audit.id, disciplineId, gradeFilter, qDebounced, mineOnly, streamFilter, pageSize, toast],
   );
 
   // Refetch when scope/filter/search changes.
   useEffect(() => {
     fetchPage(true, null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disciplineId, gradeFilter, qDebounced, mineOnly]);
+  }, [disciplineId, gradeFilter, qDebounced, mineOnly, streamFilter]);
+
+  /**
+   * The worklist as CARDS. Ten requirements are asked on both sheets and
+   * materialise as two rows; the auditor sees one card with an IMS / EnMS
+   * toggle rather than the same question twice, forty rows apart.
+   *
+   * Not applied while a stream filter is on: "show me the EnMS checkpoints"
+   * has to show EnMS rows, and folding each into a card that opens on its IMS
+   * half would answer a different question.
+   */
+  const cards = useMemo(
+    () => (streamFilter === "all" ? pairCheckpoints(items) : items.map((i) => [i])),
+    [items, streamFilter],
+  );
 
   function patchItem(id: string, fn: (r: Resp) => Resp) {
     setItems((prev) => prev.map((r) => (r.id === id ? fn(r) : r)));
@@ -264,7 +325,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     const status = next === null ? null : (item.complianceStatus ?? suggestStatus(next));
     const score = suggestScore(next, status);
     const allotted = next === null || next === "NA" ? null : FULL_SCORE;
-    const risk = requiresRiskGrade(next) ? item.riskGrade : null;
+    const risk = carriesRiskGrade(next) ? item.riskGrade : null;
 
     const ok = await saveField(
       item,
@@ -273,6 +334,49 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         ...r, gradeAwarded: next, complianceStatus: status, riskGrade: risk,
         scoreObtained: score, scoreAllotted: allotted,
         auditorResponse: { ...(r.auditorResponse ?? { value: null }), value: next ? GRADE_TO_VALUE[next] : null },
+      }),
+    );
+    if (ok) {
+      applyDelta(
+        item.categoryId, oldB, newB, item.criticality === "critical",
+        (score ?? 0) - (item.scoreObtained ?? 0),
+        (allotted ?? 0) - (item.scoreAllotted ?? 0),
+      );
+    }
+  }
+
+  /**
+   * The three-parameter control — Conformance / Non-Conformance / Observation,
+   * the header of column E on both of the customer's sheets.
+   *
+   * ONE field is sent. The server rewrites it into the grade and status
+   * underneath, so this is a narrower face on the same verdict rather than a
+   * second thing to keep in step; the optimistic patch below mirrors that
+   * mapping only so the card settles before the round-trip returns.
+   *
+   * Tapping the current parameter again clears it, matching the grade buttons.
+   */
+  async function setConformance(item: Resp, c: Conformance) {
+    const cur = item.conformance ?? conformanceOf(item.complianceStatus);
+    const next = cur === c ? null : c;
+    const meta = next ? CONFORMANCE_META[next] : null;
+    const oldB = bucketOfGrade(item.gradeAwarded ?? null);
+    const newB = bucketOfGrade(meta?.grade ?? null);
+    const allotted = meta ? FULL_SCORE : null;
+    const score = meta ? meta.score : null;
+
+    const ok = await saveField(
+      item,
+      { conformance: next },
+      (r) => ({
+        ...r, conformance: next,
+        gradeAwarded: meta?.grade ?? null, complianceStatus: meta?.status ?? null,
+        scoreObtained: score, scoreAllotted: allotted,
+        riskGrade: meta && carriesRiskGrade(meta.grade) ? r.riskGrade : null,
+        auditorResponse: {
+          ...(r.auditorResponse ?? { value: null }),
+          value: meta ? GRADE_TO_VALUE[meta.grade] : null,
+        },
       }),
     );
     if (ok) {
@@ -385,6 +489,93 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     void deleteAuditAttachment(removed?.originalStoragePath);
   }
 
+  // ── Replicate a verdict across departments ────────────────────────────
+  //
+  // 40 of the 60 IMS lines and all 22 EnMS lines are common to HR, Admin and
+  // OHC, so the audit asks the same question three times. Answering it three
+  // times by hand is the rework the customer asked us to remove — and the way
+  // three copies of one shared record end up disagreeing.
+  //
+  // Two steps, not one: the targets are read first so the dialog can NAME what
+  // it is about to overwrite rather than reporting the damage afterwards.
+  const [replicating, setReplicating] = useState<{
+    item: Resp;
+    targets: ReplicationTarget[];
+  } | null>(null);
+  const [replicateBusy, setReplicateBusy] = useState<string | null>(null);
+
+  async function openReplicate(item: Resp) {
+    setReplicateBusy(item.id);
+    const res = await fetch(
+      `/api/audit-compliance/${audit.id}/responses/replication-targets?checkpointCode=${encodeURIComponent(item.checkpointCode)}`,
+    );
+    setReplicateBusy(null);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      toast({ variant: "error", title: "Couldn't check the other departments", description: apiErrorMessage(j, res.status) });
+      return;
+    }
+    const j = await res.json();
+    const targets: ReplicationTarget[] = j.targets ?? [];
+    if (targets.length === 0) {
+      toast({
+        title: "Nothing to replicate to",
+        description: `${item.checkpointCode} is specific to ${item.categoryName} — no other department is audited on it.`,
+      });
+      return;
+    }
+    setReplicating({ item, targets });
+  }
+
+  async function doReplicate(
+    item: Resp, departments: string[], includeFindings: boolean, overwrite: boolean,
+  ) {
+    setReplicateBusy(item.id);
+    const res = await fetch(`/api/audit-compliance/${audit.id}/responses/replicate`, {
+      method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        checkpointCode: item.checkpointCode, targetDepartments: departments,
+        includeFindings, overwrite,
+      }),
+    });
+    setReplicateBusy(null);
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      toast({ variant: "error", title: "Couldn't replicate", description: apiErrorMessage(j, res.status) });
+      return;
+    }
+    const j = await res.json();
+    setReplicating(null);
+    const n = j.updated ?? 0;
+    const skipped = (j.skipped ?? []).length;
+    toast({
+      variant: n ? "success" : "error",
+      title: n ? `Copied to ${n} department${n === 1 ? "" : "s"}` : "Nothing was copied",
+      description: skipped
+        ? `${skipped} already graded and left as they were — tick "replace" to overwrite.`
+        : undefined,
+    });
+    // Replication moved rows in departments this page may not even be showing,
+    // so the rollup is re-read from the server rather than nudged. Replaying a
+    // delta across three departments is exactly where the live navigator and
+    // the server's numbers would drift apart, and the navigator is what the
+    // auditor trusts to tell them what is left.
+    await refreshRollup();
+    fetchPage(true, null);
+  }
+
+  const refreshRollup = useCallback(async () => {
+    const res = await fetch(`/api/audit-compliance/${audit.id}`);
+    if (!res.ok) return;
+    const j = await res.json();
+    if (Array.isArray(j.disciplineRollup)) {
+      setRollup(
+        [...j.disciplineRollup].sort((a: DisciplineRollup, b: DisciplineRollup) =>
+          a.categoryName.localeCompare(b.categoryName)),
+      );
+    }
+  }, [audit.id]);
+
   async function bulkMark(value: "pass" | "na") {
     if (disciplineId === "ALL" || !selectedDisc) { toast({ variant: "error", title: "Pick a discipline", description: "Bulk actions apply to one discipline at a time." }); return; }
     setBulkBusy(value);
@@ -472,13 +663,50 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[230px_1fr]">
-        {/* Discipline navigator */}
+        {/* Department / discipline navigator. The label follows the data: on a
+            department audit "All disciplines" over HR / Admin / OHC is simply
+            a false statement on screen. */}
         <aside className="space-y-1 lg:sticky lg:top-20 lg:max-h-[calc(100vh-6rem)] lg:self-start lg:overflow-y-auto">
-          <DiscButton label="All disciplines" active={disciplineId === "ALL"} answered={answeredTotal} total={grandTotal} failed={rollup.reduce((s, c) => s + c.failed, 0)} onClick={() => setDisciplineId("ALL")} />
+          {isDeptAudit && (
+            <div className="mb-1 flex items-center gap-1.5 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+              <Building2 size={11} /> Departments
+            </div>
+          )}
+          <DiscButton label={isDeptAudit ? "All departments" : "All disciplines"} active={disciplineId === "ALL"} answered={answeredTotal} total={grandTotal} failed={rollup.reduce((s, c) => s + c.failed, 0)} onClick={() => setDisciplineId("ALL")} />
           {rollup.map((c) => (
             <DiscButton key={c.categoryId} label={c.categoryName} color={c.categoryColor} active={disciplineId === c.categoryId}
               answered={c.answered} total={c.total} failed={c.failed} onClick={() => setDisciplineId(c.categoryId)} />
           ))}
+
+          {/* Per-report progress. Two documents come out of this one conduct,
+              and each is issued against its own standards — so the auditor
+              needs to see where each of them stands, not only the total. */}
+          {isDeptAudit && (
+            <div className="!mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+              <div className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                Reports
+              </div>
+              <div className="space-y-1">
+                {streams.map((s) => {
+                  const spct = s.total ? Math.round((s.answered / s.total) * 100) : 0;
+                  return (
+                    <div key={s.code} className="rounded-md bg-white px-2 py-1.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn("size-2 shrink-0 rounded-full", STREAM_META[s.code].dot)} />
+                        <span className="flex-1 truncate text-[12px] font-medium text-slate-700">{s.label}</span>
+                        <span className="text-[10px] tabular-nums text-slate-400">{s.answered}/{s.total}</span>
+                      </div>
+                      <div className="mt-1 h-1 overflow-hidden rounded-full bg-slate-100">
+                        <div className={cn("h-full rounded-full", STREAM_META[s.code].dot)} style={{ width: `${spct}%` }} />
+                      </div>
+                      <div className="mt-0.5 truncate text-[10px] text-slate-400" title={s.standards}>{s.standards}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <Button type="button" variant="outline" onClick={() => setShowAdd(true)}
             className="mt-1 h-auto w-full justify-start gap-1.5 rounded-lg border-dashed border-violet-300 px-3 py-2 text-[12px] font-medium text-violet-600 hover:bg-violet-50">
             <Plus size={13} /> Add custom checkpoint
@@ -489,6 +717,34 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         <main className="min-w-0">
           {/* Toolbar */}
           <div className="mb-3 space-y-2">
+            {/* Which report's checkpoints to work through. "Both" is the
+                default because the two sheets share ten requirements and the
+                paired card answers them together — filtering to one stream
+                splits those pairs, which is why the cards un-pair below. */}
+            {isDeptAudit && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Report</span>
+                <Button type="button" variant="ghost" onClick={() => setStreamFilter("all")}
+                  className={cn("h-auto rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
+                    streamFilter === "all" ? "border-slate-800 bg-slate-800 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
+                  Both
+                </Button>
+                {STREAM_ORDER.filter((s) => streams.some((r) => r.code === s)).map((s) => (
+                  <Button key={s} type="button" variant="ghost" onClick={() => setStreamFilter(s)}
+                    title={STREAM_META[s].standards}
+                    className={cn("h-auto rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
+                      streamFilter === s ? cn(STREAM_META[s].ring, "border-2") : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
+                    <span className={cn("mr-1 inline-block size-1.5 rounded-full align-middle", STREAM_META[s].dot)} />
+                    {STREAM_META[s].label}
+                  </Button>
+                ))}
+                {streamFilter !== "all" && (
+                  <span className="text-[11px] text-slate-400">
+                    Paired checkpoints show one side only while a report is selected.
+                  </span>
+                )}
+              </div>
+            )}
             <div className="flex flex-wrap items-center gap-1.5">
               {GRADE_TABS.map((t) => (
                 <Button key={t.key} type="button" variant="ghost" onClick={() => setGradeFilter(t.key)}
@@ -501,7 +757,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
                 <Button type="button" variant="ghost" onClick={() => setMineOnly((v) => !v)}
                   className={cn("ml-auto h-auto rounded-full border px-2.5 py-1 text-[11px] font-medium transition",
                     mineOnly ? "border-violet-600 bg-violet-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50")}>
-                  <UserRound size={11} className="mr-1 inline" /> My disciplines
+                  <UserRound size={11} className="mr-1 inline" /> {isDeptAudit ? "My departments" : "My disciplines"}
                 </Button>
               )}
               <div className={cn("flex items-center gap-2", isCoAuditor ? "" : "ml-auto")}>
@@ -541,11 +797,17 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
                 <div className="ml-auto flex items-center gap-1.5">
                   <span className="text-[11px] text-slate-400">Mark remaining:</span>
                   <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!!bulkBusy || selectedDisc.answered >= selectedDisc.total} onClick={() => bulkMark("pass")}>
-                    {bulkBusy === "pass" ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />} Effective
+                    {bulkBusy === "pass" ? <Loader2 size={11} className="animate-spin" /> : <Check size={11} />}
+                    {isDeptAudit ? "Conformance" : "Effective"}
                   </Button>
-                  <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!!bulkBusy || selectedDisc.answered >= selectedDisc.total} onClick={() => bulkMark("na")}>
-                    N/A
-                  </Button>
+                  {/* N/A is not offered on a department audit: its checklist has
+                      three parameters and no N/A, so a bulk path that wrote one
+                      would produce rows the card cannot render or change back. */}
+                  {!isDeptAudit && (
+                    <Button type="button" variant="outline" size="sm" className="h-6 px-2 text-[11px]" disabled={!!bulkBusy || selectedDisc.answered >= selectedDisc.total} onClick={() => bulkMark("na")}>
+                      N/A
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
@@ -563,14 +825,18 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
             <div className="space-y-3">
               <div className="text-[11px] text-slate-400">
                 {total} checkpoint{total === 1 ? "" : "s"}
+                {cards.length !== items.length && ` · ${cards.length} card${cards.length === 1 ? "" : "s"}`}
                 {gradeFilter !== "all" && ` · ${GRADE_TABS.find((t) => t.key === gradeFilter)?.label ?? gradeFilter}`}
               </div>
-              {items.map((item) => (
-                <CheckpointCard key={item.id} item={item} saving={savingIds.has(item.id)} ownerName={userName(item.assignedOwnerId)}
-                  onGrade={(g) => setGrade(item, g)} onStatus={(s) => setStatus(item, s)}
-                  onRiskGrade={(r) => setRiskGrade(item, r)} onScore={(n) => setScore(item, n)}
-                  onObservation={(t) => setObservation(item, t)}
-                  onAddPhoto={(f) => addPhoto(item, f)} onRemovePhoto={(i) => removePhoto(item, i)} />
+              {cards.map((card) => (
+                <CheckpointCard key={card[0].id} card={card}
+                  savingIds={savingIds} ownerName={userName}
+                  replicateBusy={replicateBusy}
+                  onGrade={setGrade} onStatus={setStatus} onConformance={setConformance}
+                  onRiskGrade={setRiskGrade} onScore={setScore}
+                  onObservation={setObservation}
+                  onAddPhoto={addPhoto} onRemovePhoto={removePhoto}
+                  onReplicate={openReplicate} />
               ))}
               {cursor && (
                 <Button type="button" variant="outline" className="w-full" onClick={() => fetchPage(false, cursor)} disabled={loadingMore}>
@@ -601,8 +867,33 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
           <p className="text-sm text-slate-600">
             {answeredTotal === grandTotal ? "All checkpoints graded." : `${grandTotal - answeredTotal} checkpoint(s) are ungraded and will be marked not assessed.`}
             {scorePct !== null && <> Score stands at <span className="font-semibold text-slate-800">{scoreObtained}/{scoreAllotted} ({scorePct}%)</span>.</>}
-            {" "}Every checkpoint below Effective routes to its auditee; critical ones auto-spawn CAPA. Each needs audit findings and a risk grade — the server will flag any that don&apos;t.
+            {isDeptAudit ? (
+              <>
+                {" "}Every Non-Conformance and Observation routes to its auditee; critical ones
+                auto-spawn CAPA. Each needs audit findings — the server will flag any that don&apos;t.
+              </>
+            ) : (
+              <>
+                {" "}Every checkpoint below Effective routes to its auditee; critical ones auto-spawn
+                CAPA. Each needs audit findings and a risk grade — the server will flag any that don&apos;t.
+              </>
+            )}
           </p>
+          {/* Two documents come out of this, and each is issued separately
+              after submission. Saying so here is what stops "I submitted it,
+              where is the EnMS report?" */}
+          {isDeptAudit && (
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px] text-slate-600">
+              <div className="mb-1 font-medium text-slate-700">Two reports will be issued from this audit</div>
+              {streams.map((s) => (
+                <div key={s.code} className="flex items-center gap-1.5">
+                  <span className={cn("size-1.5 rounded-full", STREAM_META[s.code].dot)} />
+                  <span className="font-medium">{s.label}</span>
+                  <span className="text-slate-400">· {s.answered}/{s.total} answered · {s.standards}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={() => setShowSubmit(false)}>Cancel</Button>
             <Button type="button" size="sm" onClick={doSubmit} disabled={submitting}>
@@ -612,11 +903,24 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         </DialogContent>
       </Dialog>
 
+      {replicating && (
+        <ReplicateDialog
+          item={replicating.item}
+          targets={replicating.targets}
+          busy={replicateBusy === replicating.item.id}
+          onClose={() => setReplicating(null)}
+          onConfirm={(depts, includeFindings, overwrite) =>
+            doReplicate(replicating.item, depts, includeFindings, overwrite)}
+        />
+      )}
+
       {showAdd && (
         <AddCheckpointDialog
           auditId={audit.id}
           disciplines={rollup.map((c) => ({ code: c.categoryId, name: c.categoryName }))}
           defaultDiscipline={disciplineId !== "ALL" ? disciplineId : rollup[0]?.categoryId ?? ""}
+          axisLabel={isDeptAudit ? "Department" : "Discipline"}
+          streams={isDeptAudit ? streams.map((s) => ({ code: s.code, label: s.label })) : []}
           canPromote={!!audit.templateId}
           onClose={() => setShowAdd(false)}
           onAdded={(cp) => {
@@ -676,41 +980,125 @@ function DiscButton({ label, color, active, answered, total, failed, onClick }: 
   );
 }
 
-function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrade, onScore, onObservation, onAddPhoto, onRemovePhoto }: {
-  item: Resp; saving: boolean; ownerName: string | null;
-  onGrade: (g: GradeAwarded) => void;
-  onStatus: (s: ComplianceStatus) => void;
-  onRiskGrade: (r: RiskGrade) => void;
-  onScore: (n: number) => void;
-  onObservation: (t: string) => void;
-  onAddPhoto: (f: File) => void; onRemovePhoto: (i: number) => void;
+/**
+ * One card. Usually one checkpoint; on a department audit, sometimes TWO — the
+ * same requirement asked once against ISO 9001/14001/45001 and again against
+ * ISO 50001, which the two sheets both carry.
+ *
+ * The pair is two ROWS (the score, the routing and the two reports are all
+ * per-stream) rendered as one card with an IMS / EnMS toggle, so the auditor
+ * answers "Previous Audit and NC Closure Status" once in each management
+ * system rather than meeting the same sentence twice, forty rows apart.
+ *
+ * The handlers take the ACTIVE row rather than being bound to a fixed one:
+ * with two rows behind one card, a closed-over `item` would send every EnMS
+ * verdict to the IMS row.
+ */
+function CheckpointCard({
+  card, savingIds, ownerName, replicateBusy,
+  onGrade, onStatus, onConformance, onRiskGrade, onScore, onObservation,
+  onAddPhoto, onRemovePhoto, onReplicate,
+}: {
+  card: Resp[];
+  savingIds: Set<string>;
+  ownerName: (id: string | null | undefined) => string | null;
+  replicateBusy: string | null;
+  onGrade: (item: Resp, g: GradeAwarded) => void;
+  onStatus: (item: Resp, s: ComplianceStatus) => void;
+  onConformance: (item: Resp, c: Conformance) => void;
+  onRiskGrade: (item: Resp, r: RiskGrade) => void;
+  onScore: (item: Resp, n: number) => void;
+  onObservation: (item: Resp, t: string) => void;
+  onAddPhoto: (item: Resp, f: File) => void;
+  onRemovePhoto: (item: Resp, i: number) => void;
+  onReplicate: (item: Resp) => void;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const docRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+
+  // Which half of a pair is showing. Opens on the first stream the card holds
+  // — IMS on a full pair — and is keyed by checkpoint code rather than index so
+  // a refetch that reorders the page cannot silently swap which one is active.
+  const [activeCode, setActiveCode] = useState(card[0].checkpointCode);
+  const item = card.find((c) => c.checkpointCode === activeCode) ?? card[0];
+  const isPaired = card.length > 1;
+  const saving = savingIds.has(item.id);
+
+  // Which conformance control this row offers. Read per ROW, not per audit: one
+  // register can legitimately hold both (an internal audit and an IMS audit at
+  // the same site), and a card must render the control its own checkpoint was
+  // materialised with.
+  const isTristate = item.conformanceMode === "TRISTATE";
+  const conformance = item.conformance ?? conformanceOf(item.complianceStatus);
+
   const grade = item.gradeAwarded ?? null;
   const photos = item.auditorResponse?.photos ?? [];
   // "Adverse" = anything below Effective that is not N/A: the grades that
-  // produce a finding, and therefore the ones that owe findings text and a
-  // risk grade before the audit can be submitted.
-  const isAdverse = requiresRiskGrade(grade);
+  // produce a finding, and therefore the ones that owe findings text before the
+  // audit can be submitted. A risk grade is owed too — except in TRISTATE,
+  // whose source form has no risk column.
+  const isAdverse = carriesRiskGrade(grade);
   const findingsMissing = isAdverse && !(item.auditorResponse?.text_observation ?? "").trim();
-  const riskMissing = isAdverse && !item.riskGrade;
+  const riskMissing = requiresRiskGrade(grade, item.conformanceMode) && !item.riskGrade;
   const needsPhoto = item.requiresPhotoOnFail && isAdverse && photos.length === 0;
   const reqType = item.requirementType ? REQUIREMENT_TYPE_META[item.requirementType] : null;
   const scoreOverridden =
     item.scoreObtained !== null && item.scoreObtained !== suggestScore(grade, item.complianceStatus ?? null);
+  const canReplicate = !!item.replicationKey;
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; e.target.value = "";
     if (!file) return;
-    setUploading(true); await onAddPhoto(file); setUploading(false);
+    setUploading(true); await onAddPhoto(item, file); setUploading(false);
   }
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
+      {/* The IMS / EnMS toggle. Each side shows its own answered state, so the
+          auditor can see at a glance that they have done one and not the other
+          — the failure this card exists to prevent. */}
+      {isPaired && (
+        <div className="mb-3 flex items-center gap-1 rounded-lg bg-slate-100 p-1">
+          {card.map((r) => {
+            const code = (r.streamCode ?? "IMS") as StreamCode;
+            const meta = STREAM_META[code];
+            const on = r.checkpointCode === activeCode;
+            const answered = r.assessmentStatus !== "NOT_ASSESSED";
+            const rc = r.conformance ?? conformanceOf(r.complianceStatus);
+            return (
+              <Button key={r.checkpointCode} type="button" variant="ghost"
+                onClick={() => setActiveCode(r.checkpointCode)}
+                title={meta.standards}
+                className={cn("h-auto flex-1 justify-center gap-1.5 rounded-md px-2 py-1.5 text-[12px] font-medium transition",
+                  on ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700")}>
+                <span className={cn("size-1.5 rounded-full", meta.dot)} />
+                {meta.label}
+                {answered && rc ? (
+                  <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", CONFORMANCE_META[rc].chip)}>
+                    {CONFORMANCE_META[rc].short}
+                  </span>
+                ) : answered ? (
+                  <Check size={12} className="text-emerald-600" />
+                ) : (
+                  <span className="text-[10px] text-slate-400">not answered</span>
+                )}
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">{item.checkpointCode}</span>
+        {/* On an unpaired row the stream is still worth naming — it decides
+            which of the two reports this finding will be printed in. */}
+        {item.streamCode && !isPaired && (
+          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", STREAM_META[item.streamCode].chip)}
+            title={STREAM_META[item.streamCode].standards}>
+            {STREAM_META[item.streamCode].label}
+          </span>
+        )}
         {/* Column I — master data, so it is a label and not a control. */}
         {reqType && (
           <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase", reqType.chip)} title={reqType.label}>
@@ -735,37 +1123,86 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
         {item.requirementReference && <span>📋 {item.requirementReference}</span>}
         {item.standard && <span>· {item.standard}</span>}
         {item.linkedSafeopsModule && <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sky-700"><Link2 size={11} /> {item.linkedSafeopsModule}</span>}
-        {ownerName && <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-slate-500"><UserRound size={11} /> {ownerName}</span>}
+        {ownerName(item.assignedOwnerId) && <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-slate-500"><UserRound size={11} /> {ownerName(item.assignedOwnerId)}</span>}
       </div>
 
-      {/* Column C — Grade Awarded. The one control that drives the rest. */}
-      <div className="mt-3">
-        <label className="mb-1 block text-xs font-medium text-slate-600">Grade Awarded <span className="text-rose-500">*</span></label>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-          {GRADE_ORDER.map((g) => {
-            const meta = GRADE_META[g]; const on = grade === g;
-            return (
-              <Button key={g} type="button" variant="outline" onClick={() => onGrade(g)} title={meta.label}
-                className={cn("h-auto flex-col gap-1 rounded-xl border-2 py-2 text-[11px] font-semibold leading-tight",
-                  on ? meta.ring : "border-slate-200 text-slate-500")}>
-                <span className={cn("flex size-5 items-center justify-center rounded-full text-[11px] font-bold text-white", on ? meta.dot : "bg-slate-200")}>
-                  {meta.score === null ? "–" : meta.score}
-                </span>
-                {meta.short}
-              </Button>
-            );
-          })}
+      {isTristate ? (
+        /* The three parameters the customer's IMS/EnMS sheet carries, verbatim
+           from column E of both tabs. One control, writing the grade and status
+           underneath — the score, the routing and both reports read those and
+           need no branch of their own. */
+        <div className="mt-3">
+          <label className="mb-1 block text-xs font-medium text-slate-600">
+            Conformance <span className="text-rose-500">*</span>
+          </label>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {CONFORMANCE_ORDER.map((c) => {
+              const meta = CONFORMANCE_META[c]; const on = conformance === c;
+              return (
+                <Button key={c} type="button" variant="outline" onClick={() => onConformance(item, c)}
+                  className={cn("h-auto justify-center gap-2 rounded-xl border-2 py-2.5 text-[12px] font-semibold leading-tight",
+                    on ? meta.ring : "border-slate-200 text-slate-500")}>
+                  <span className={cn("flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white", on ? meta.dot : "bg-slate-200")}>
+                    {meta.score}
+                  </span>
+                  {meta.label}
+                </Button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      ) : (
+        /* Column C — Grade Awarded. The one control that drives the rest. */
+        <div className="mt-3">
+          <label className="mb-1 block text-xs font-medium text-slate-600">Grade Awarded <span className="text-rose-500">*</span></label>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {GRADE_ORDER.map((g) => {
+              const meta = GRADE_META[g]; const on = grade === g;
+              return (
+                <Button key={g} type="button" variant="outline" onClick={() => onGrade(item, g)} title={meta.label}
+                  className={cn("h-auto flex-col gap-1 rounded-xl border-2 py-2 text-[11px] font-semibold leading-tight",
+                    on ? meta.ring : "border-slate-200 text-slate-500")}>
+                  <span className={cn("flex size-5 items-center justify-center rounded-full text-[11px] font-bold text-white", on ? meta.dot : "bg-slate-200")}>
+                    {meta.score === null ? "–" : meta.score}
+                  </span>
+                  {meta.short}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Replicate across departments. Offered as soon as the verdict exists —
+          40 of the 60 IMS lines and all 22 EnMS ones are asked identically in
+          HR, Admin and OHC, and re-typing the same answer three times is both
+          the rework this removes and how the three copies come to disagree. */}
+      {canReplicate && item.assessmentStatus !== "NOT_ASSESSED" && (
+        <div className="mt-2">
+          <Button type="button" variant="outline" size="sm"
+            onClick={() => onReplicate(item)} disabled={replicateBusy === item.id}
+            className="h-7 gap-1.5 border-dashed border-violet-300 text-[11px] font-medium text-violet-700 hover:bg-violet-50">
+            {replicateBusy === item.id
+              ? <Loader2 size={12} className="animate-spin" />
+              : <CopyPlus size={12} />}
+            Apply to the other departments
+          </Button>
+        </div>
+      )}
 
       {/* Columns D–F, H. Only unfold once a grade exists — an ungraded
-          checkpoint has nothing to say about status, score or risk. */}
-      {grade && (
+          checkpoint has nothing to say about status, score or risk.
+
+          Hidden entirely in TRISTATE: status and score are settled by the three
+          parameters above, and N/A + the repeat variants are unreachable there,
+          so a dropdown offering seven statuses would let an auditor write a row
+          the card cannot render back. */}
+      {grade && !isTristate && (
         <div className="mt-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2">
           {/* Column F — Status */}
           <div className="space-y-1">
             <Label className="text-[11px] font-medium text-slate-600">Status</Label>
-            <Select value={item.complianceStatus ?? ""} onChange={(e) => onStatus(e.target.value as ComplianceStatus)} className="h-8 text-xs">
+            <Select value={item.complianceStatus ?? ""} onChange={(e) => onStatus(item, e.target.value as ComplianceStatus)} className="h-8 text-xs">
               <option value="">— select —</option>
               {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
             </Select>
@@ -782,7 +1219,7 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
             {item.scoreAllotted === null ? (
               <div className="flex h-8 items-center rounded-md border border-slate-200 bg-slate-100 px-2 text-xs text-slate-500">NA</div>
             ) : (
-              <Select value={String(item.scoreObtained ?? "")} onChange={(e) => onScore(Number(e.target.value))} className="h-8 text-xs">
+              <Select value={String(item.scoreObtained ?? "")} onChange={(e) => onScore(item, Number(e.target.value))} className="h-8 text-xs">
                 {SCORE_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
               </Select>
             )}
@@ -799,7 +1236,7 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
                 {RISK_ORDER.map((r) => {
                   const meta = RISK_META[r]; const on = item.riskGrade === r;
                   return (
-                    <Button key={r} type="button" variant="outline" size="sm" onClick={() => onRiskGrade(r)}
+                    <Button key={r} type="button" variant="outline" size="sm" onClick={() => onRiskGrade(item, r)}
                       className={cn("h-7 rounded-lg border-2 text-[11px] font-semibold",
                         on ? meta.ring : riskMissing ? "border-rose-200 text-slate-500" : "border-slate-200 text-slate-500")}>
                       {meta.label}
@@ -813,14 +1250,31 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
         </div>
       )}
 
-      {/* Column G — Audit Findings (the auditor's comment) */}
+      {/* Column G — Audit Findings (the auditor's comment).
+          Keyed by checkpoint code so flipping the IMS / EnMS toggle swaps the
+          textarea's content: it is uncontrolled (`defaultValue`, so typing is
+          not debounced through React state), and without the key React would
+          reuse the same DOM node and show the IMS comment against the EnMS
+          verdict. */}
       {(isAdverse || (item.auditorResponse?.text_observation ?? "").length > 0) && (
         <div className="mt-3">
           <label className="mb-1 block text-xs font-medium text-slate-600">Audit Findings {isAdverse && <span className="text-rose-500">*</span>}</label>
-          <Textarea defaultValue={item.auditorResponse?.text_observation ?? ""} onChange={(e) => onObservation(e.target.value)} rows={2}
-            placeholder={isAdverse ? `Required for a ${GRADE_META[grade!].label.toLowerCase()} grade — what did you observe?` : "What did you observe?"}
+          <Textarea key={item.checkpointCode}
+            defaultValue={item.auditorResponse?.text_observation ?? ""} onChange={(e) => onObservation(item, e.target.value)} rows={2}
+            placeholder={isAdverse
+              ? isTristate
+                ? `Required for a ${(CONFORMANCE_META[conformance!] ?? CONFORMANCE_META.OBSERVATION).label} — what did you observe?`
+                : `Required for a ${GRADE_META[grade!].label.toLowerCase()} grade — what did you observe?`
+              : "What did you observe?"}
             className={cn("min-h-[54px]", findingsMissing && "border-rose-300 focus-visible:ring-rose-300")} />
-          {findingsMissing && <p className="mt-1 text-[11px] text-rose-600">Audit findings are required for a {GRADE_META[grade!].label} grade.</p>}
+          {findingsMissing && (
+            <p className="mt-1 text-[11px] text-rose-600">
+              Audit findings are required for a {isTristate && conformance
+                ? CONFORMANCE_META[conformance].label
+                : GRADE_META[grade!].label}
+              {isTristate ? "." : " grade."}
+            </p>
+          )}
         </div>
       )}
 
@@ -832,7 +1286,7 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
           upload start with a camera viewfinder — and dropping `capture` to allow
           both would cost the auditor a tap on every single photograph. */}
       <div className="mt-2.5">
-        <AttachmentStrip attachments={photos} onRemove={onRemovePhoto} className="mb-2" />
+        <AttachmentStrip attachments={photos} onRemove={(i) => onRemovePhoto(item, i)} className="mb-2" />
         <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} capture="environment" className="hidden" onChange={onPhoto} />
         <input ref={docRef} type="file" accept={DOCUMENT_ACCEPT} className="hidden" onChange={onPhoto} />
         <div className="flex flex-wrap items-center gap-2">
@@ -854,12 +1308,145 @@ function CheckpointCard({ item, saving, ownerName, onGrade, onStatus, onRiskGrad
   );
 }
 
-function AddCheckpointDialog({ auditId, disciplines, defaultDiscipline, canPromote, onClose, onAdded }: {
+/**
+ * Copy one checkpoint's verdict onto the same workbook line in the other
+ * departments of this audit.
+ *
+ * Reads the targets BEFORE asking, so it can name what it is about to
+ * overwrite. A dialog that reported "3 departments updated" and then revealed
+ * it had replaced two deliberate findings would be worse than no feature: the
+ * auditor may have found Admin genuinely different from HR, and that judgement
+ * is the whole value of auditing three departments separately.
+ */
+function ReplicateDialog({ item, targets, busy, onClose, onConfirm }: {
+  item: Resp;
+  targets: ReplicationTarget[];
+  busy: boolean;
+  onClose: () => void;
+  onConfirm: (departments: string[], includeFindings: boolean, overwrite: boolean) => void;
+}) {
+  const open = targets.filter((t) => !t.locked);
+  const locked = targets.filter((t) => t.locked);
+  const [selected, setSelected] = useState<string[]>(() => open.map((t) => t.departmentId));
+  const [includeFindings, setIncludeFindings] = useState(true);
+  const [overwrite, setOverwrite] = useState(false);
+
+  const chosen = open.filter((t) => selected.includes(t.departmentId));
+  const clashes = chosen.filter((t) => t.wouldOverwrite);
+  const willWrite = overwrite ? chosen.length : chosen.length - clashes.length;
+  const conformance = item.conformance ?? conformanceOf(item.complianceStatus);
+  const verdictLabel = conformance
+    ? CONFORMANCE_META[conformance].label
+    : item.gradeAwarded ? GRADE_META[item.gradeAwarded].label : "this verdict";
+
+  function toggle(id: string) {
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
+      <DialogContent className="max-w-md gap-3">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <CopyPlus size={16} className="text-violet-600" /> Apply to the other departments
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Copy this checkpoint&apos;s verdict onto the same checkpoint in other departments.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px]">
+          <div className="font-mono text-[11px] text-slate-500">{item.checkpointCode}</div>
+          <div className="mt-0.5 font-medium leading-snug text-slate-800">{item.checkpointQuestion}</div>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            {conformance && (
+              <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", CONFORMANCE_META[conformance].chip)}>
+                {CONFORMANCE_META[conformance].label}
+              </span>
+            )}
+            <span className="text-slate-400">from {item.categoryName}</span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          {open.map((t) => (
+            <label key={t.departmentId}
+              className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-2 text-[13px] hover:bg-slate-50">
+              <Checkbox checked={selected.includes(t.departmentId)} onChange={() => toggle(t.departmentId)} />
+              <span className="flex-1 font-medium text-slate-700">{t.departmentName}</span>
+              {t.wouldOverwrite ? (
+                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                  already {t.conformance ? CONFORMANCE_META[t.conformance].short : "graded"}
+                </span>
+              ) : (
+                <span className="text-[11px] text-slate-400">not answered</span>
+              )}
+            </label>
+          ))}
+          {/* A finding already with its auditee is not replaceable at all —
+              re-grading underneath a live iteration would rewrite the question
+              they are currently answering. Listed rather than hidden, so the
+              auditor knows why a department is absent from the list. */}
+          {locked.map((t) => (
+            <div key={t.departmentId}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-slate-200 px-2.5 py-2 text-[13px] text-slate-400">
+              <span className="flex-1">{t.departmentName}</span>
+              <span className="text-[11px]">with its auditee — can&apos;t be changed</span>
+            </div>
+          ))}
+        </div>
+
+        <label className="flex items-center gap-2 text-[13px] text-slate-600">
+          <Checkbox checked={includeFindings} onChange={(e) => setIncludeFindings(e.target.checked)} />
+          Copy the audit findings text too
+        </label>
+        {includeFindings && (
+          <p className="-mt-2 pl-6 text-[11px] text-slate-400">
+            A Non-Conformance copied without the sentence explaining it is a finding nobody can act
+            on — and the audit will not submit until each one has some.
+          </p>
+        )}
+
+        {clashes.length > 0 && (
+          <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-[13px] text-amber-900">
+            <Checkbox checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} className="mt-0.5" />
+            <span>
+              Replace the {clashes.length} department{clashes.length === 1 ? "" : "s"} already answered
+              <span className="block text-[11px] text-amber-700">
+                {clashes.map((t) => t.departmentName).join(", ")} — their current verdict will be
+                overwritten.
+              </span>
+            </span>
+          </label>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+          <Button type="button" size="sm" disabled={busy || willWrite <= 0}
+            onClick={() => onConfirm(selected, includeFindings, overwrite)}>
+            {busy && <Loader2 size={14} className="animate-spin" />}
+            {willWrite > 0
+              ? `Apply ${verdictLabel} to ${willWrite} department${willWrite === 1 ? "" : "s"}`
+              : "Nothing to apply"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function AddCheckpointDialog({ auditId, disciplines, defaultDiscipline, axisLabel, streams, canPromote, onClose, onAdded }: {
   auditId: string; disciplines: { code: string; name: string }[]; defaultDiscipline: string;
+  /** "Department" on a department audit, "Discipline" everywhere else. */
+  axisLabel: string;
+  /** The reports this audit issues. Empty when it issues one, in which case the
+   *  stream selector is not rendered at all. */
+  streams: { code: StreamCode; label: string }[];
   canPromote: boolean; onClose: () => void; onAdded: (cp: Resp) => void;
 }) {
   const { toast } = useToast();
   const [disciplineId, setDisciplineId] = useState(defaultDiscipline);
+  const [streamCode, setStreamCode] = useState<StreamCode | "">(streams[0]?.code ?? "");
   const [question, setQuestion] = useState("");
   const [severity, setSeverity] = useState<(typeof SEVERITIES)[number]>("major");
   const [guidance, setGuidance] = useState("");
@@ -874,7 +1461,11 @@ function AddCheckpointDialog({ auditId, disciplines, defaultDiscipline, canPromo
     setBusy(true);
     const res = await fetch(`/api/audit-compliance/${auditId}/checkpoints`, {
       method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify({ disciplineId, question, severity, guidance, standardClauseRef, evidenceRequiredOnFail, promoteToTemplate: canPromote && promoteToTemplate }),
+      body: JSON.stringify({
+        disciplineId, question, severity, guidance, standardClauseRef, evidenceRequiredOnFail,
+        promoteToTemplate: canPromote && promoteToTemplate,
+        ...(streamCode ? { streamCode } : {}),
+      }),
     });
     setBusy(false);
     if (!res.ok) { const j = await res.json().catch(() => ({})); toast({ variant: "error", title: "Couldn't add checkpoint", description: apiErrorMessage(j, res.status) }); return; }
@@ -890,13 +1481,25 @@ function AddCheckpointDialog({ auditId, disciplines, defaultDiscipline, canPromo
           <DialogDescription className="sr-only">Add an ad-hoc custom checkpoint to this audit.</DialogDescription>
         </DialogHeader>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className={cn("grid gap-3", streams.length ? "grid-cols-3" : "grid-cols-2")}>
             <div className="space-y-1">
-              <Label className="text-xs">Discipline</Label>
+              <Label className="text-xs">{axisLabel}</Label>
               <Select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)}>
                 {disciplines.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
               </Select>
             </div>
+            {/* Which report this line joins. Asked rather than inferred: on a
+                department audit "add a checkpoint" is genuinely ambiguous, and
+                one that landed in neither report would be present in the
+                register and absent from both documents. */}
+            {streams.length > 0 && (
+              <div className="space-y-1">
+                <Label className="text-xs">Report</Label>
+                <Select value={streamCode} onChange={(e) => setStreamCode(e.target.value as StreamCode)}>
+                  {streams.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
+                </Select>
+              </div>
+            )}
             <div className="space-y-1">
               <Label className="text-xs">Severity</Label>
               <Select value={severity} onChange={(e) => setSeverity(e.target.value as (typeof SEVERITIES)[number])}>

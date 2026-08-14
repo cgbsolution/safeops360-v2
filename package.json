@@ -54,6 +54,7 @@
     "db:apply-observation-category-groups": "tsx prisma/apply-observation-category-group-ddl.ts",
     "db:seed-observation-category-groups": "tsx prisma/seed-observation-category-groups.ts",
     "db:apply-observation-severity": "tsx prisma/apply-observation-severity-ddl.ts",
+    "db:apply-department-audit": "tsx prisma/apply-department-audit-ddl.ts",
     "db:seed-severity-matrix": "tsx prisma/seed-severity-matrix.ts",
     "db:seed-area-hazard-tiers": "tsx prisma/seed-area-hazard-tiers.ts",
     "seed:demo-brief": "tsx prisma/seed-demo-brief.ts",

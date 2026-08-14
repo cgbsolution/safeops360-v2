@@ -1,27 +1,31 @@
-import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { FLRAForm } from "../flra-form";
 import { HiraSuggestionsPanel } from "@/components/hira/hira-suggestions-panel";
 import { PanelBoundary } from "@/components/ui/panel-boundary";
 import { requirePermission } from "@/lib/auth/server";
+import { getPlants } from "@/lib/masters/plants";
+import { backendFetch } from "@/lib/backend/fetch";
 
 export const dynamic = "force-dynamic";
 
 export default async function NewFLRAPage(props: { searchParams: Promise<{ permitId?: string }> }) {
   const searchParams = await props.searchParams;
   await requirePermission("FLRA.CREATE");
-  const plants = await prisma.plant.findMany({ orderBy: { name: "asc" } });
-  const permit = searchParams.permitId
-    ? await prisma.permit.findUnique({
-        where: { id: searchParams.permitId },
-        include: {
-          plant: true,
-          receiver: { select: { id: true, name: true } },
-          workCrew: { select: { userId: true, user: { select: { id: true, name: true } } } },
-          flras: { where: { status: { in: ["IN_PROGRESS", "COMPLETED"] } }, select: { id: true, status: true } }
-        }
-      })
-    : null;
+
+  // The permit lookup goes through the same endpoint the form's picker uses,
+  // so a pre-selected permit and a picked one arrive in identical shape —
+  // nested plant / receiver / workCrew / flras included. The backend enforces
+  // that the caller is on the permit (receiver, originator, issuer or crew)
+  // unless they hold a privileged role.
+  const [plants, permitResult] = await Promise.all([
+    getPlants(),
+    searchParams.permitId
+      ? backendFetch<{ items: any[] }>("/api/ptw/eligible-for-flra/list", {
+          query: { permitId: searchParams.permitId },
+        }).catch(() => ({ items: [] }))
+      : Promise.resolve({ items: [] }),
+  ]);
+  const permit = permitResult.items[0] ?? null;
 
   return (
     <div>

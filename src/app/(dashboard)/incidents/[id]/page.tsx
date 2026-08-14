@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { can } from "@/lib/auth/permissions";
 import { canReadIncident } from "@/lib/auth/incident-access";
 import { PageHeader } from "@/components/page-header";
@@ -37,6 +37,7 @@ import {
 } from "@/components/incidents/incident-detail-sections";
 import { humanize } from "@/lib/utils";
 import { ArrowUpRight, Camera } from "lucide-react";
+import { getWorkflowState, openTasks } from "@/lib/workflow/state";
 
 export const dynamic = "force-dynamic";
 
@@ -62,31 +63,9 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
   // ONE Prisma findUnique. The 8 child collections are run in a single
   // round-trip via include — cheaper than parallel queries on Vercel
   // with Supabase's connection pool.
-  const i = await prisma.incident.findUnique({
-    where: { id: params.id },
-    include: {
-      plant: true,
-      area: true,
-      reporter: true,
-      department: true,
-      investigationTeam: { include: { user: true } },
-      fromNearMiss: { select: { id: true, number: true } },
-      personsInvolved: {
-        include: {
-          user: { select: { name: true, designation: true } },
-          contractorCompany: { select: { name: true } }
-        }
-      },
-      witnessStatements: { orderBy: { takenAt: "asc" } },
-      timelineEvents: { orderBy: { sequence: "asc" } },
-      evidenceItems: { orderBy: { collectedAt: "desc" } },
-      equipmentInvolved: { include: { equipment: { select: { code: true, name: true } } } },
-      capas: { include: { owner: { select: { name: true } } }, orderBy: { createdAt: "asc" } },
-      reclassifications: { include: { reclassifiedBy: { select: { name: true } } }, orderBy: { reclassifiedAt: "asc" } },
-      documentsReviewed: true,
-      comments: { include: { author: { select: { name: true, designation: true } } }, orderBy: { createdAt: "asc" } }
-    }
-  });
+  // One call for the whole audit-grade view: header identities plus the
+  // eight child collections, and the initial-photo count alongside them.
+  const i = await backendFetch<any>(`/api/incidents/${params.id}`).catch(() => null);
   if (!i) return notFound();
 
   // Opening the record clears its Inbox unread state, however the viewer got
@@ -137,27 +116,17 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
     ["HSE_MANAGER", "PLANT_HEAD", "CORPORATE_HSE", "ADMIN"].includes(role) ||
     i.investigationTeamLead === userId;
 
-  const initialPhotoCount = await prisma.incidentAttachment.count({
-    where: { incidentId: i.id, category: "INITIAL_PHOTO", deletedAt: null }
-  });
+  const initialPhotoCount = i.initialPhotoCount ?? 0;
   const isMTCorAbove = ["MTC", "RWC", "LTI", "FATALITY"].includes(i.type);
 
-  const instance = await prisma.workflowInstance.findUnique({
-    where: { module_recordId: { module: "INCIDENT", recordId: i.id } },
-    include: {
-      definition: { include: { steps: { orderBy: { sequence: "asc" } } } },
-      history: { include: { performedBy: { include: PARTY_INCLUDE } }, orderBy: { performedAt: "asc" } },
-      // Filter to ACTIVE statuses only. The relation is named
-      // `pendingTasks` in the schema but is actually `WorkflowTask[]`
-      // unfiltered — without this `where` it returns COMPLETED /
-      // REJECTED tasks too, which then render as ghost "Awaiting Action"
-      // entries on the workflow tracker panel.
-      pendingTasks: {
-        where: { status: { in: ["PENDING", "OVERDUE", "ESCALATED"] } },
-        include: { assignedTo: { include: PARTY_INCLUDE } }
-      }
-    }
-  });
+  // /api/workflow/state returns EVERY task on the instance, so the
+  // PENDING/OVERDUE/ESCALATED narrowing the old query did in SQL happens here
+  // instead. Without it, COMPLETED / REJECTED tasks render as ghost "Awaiting
+  // Action" entries on the tracker panel.
+  const rawInstance = await getWorkflowState("INCIDENT", i.id);
+  const instance = rawInstance
+    ? { ...rawInstance, pendingTasks: openTasks(rawInstance) }
+    : null;
 
   // Mirror the near-miss page: an assignee must still be able to act on
   // their task once it slips past its due date. Without OVERDUE/ESCALATED

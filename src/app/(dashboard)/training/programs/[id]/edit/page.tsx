@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
+import { getPlants } from "@/lib/masters/plants";
 import { PageHeader } from "@/components/page-header";
 import { ProgramForm } from "../../program-form";
 import { requirePermission } from "@/lib/auth/server";
@@ -13,11 +14,8 @@ export default async function EditTrainingProgramPage(props: {
   const params = await props.params;
 
   const [program, plants] = await Promise.all([
-    prisma.trainingProgram.findUnique({ where: { id: params.id } }),
-    prisma.plant.findMany({
-      select: { id: true, name: true },
-      orderBy: { name: "asc" }
-    })
+    backendFetch<any>(`/api/training/programs/${params.id}`).catch(() => null),
+    getPlants()
   ]);
   if (!program) return notFound();
 

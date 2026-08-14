@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { WorkflowEngine } from "@/lib/workflow/engine";
 import { Can } from "@/components/auth/can";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { InspectionAnalyticsStrip } from "@/components/inspections/analytics-strip";
@@ -15,11 +14,8 @@ export const dynamic = "force-dynamic";
 export default async function InspectionsPage(props: { searchParams: Promise<{ status?: string }> }) {
   const searchParams = await props.searchParams;
 
-  try {
-    await WorkflowEngine.sweepInspectionStatus();
-  } catch (e) {
-    console.error("Inspection sweep failed:", e);
-  }
+  // Status recompute (SCHEDULED/DUE → OVERDUE, SCHEDULED → DUE inside 3 days)
+  // is the inspection_status_sweep scheduler job on the backend now.
 
   const where: any = {};
   if (searchParams.status) where.status = searchParams.status;

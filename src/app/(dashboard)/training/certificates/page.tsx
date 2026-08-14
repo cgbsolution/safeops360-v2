@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { CertificatesTable, type CertificateRow } from "./certificates-table";
 
@@ -7,47 +7,60 @@ export const dynamic = "force-dynamic";
 
 type Filter = "all" | "active" | "expiring" | "expired" | "lapsed" | "revoked";
 
+// A row of /api/training/certificates. The backend enforces the OWN-vs-plant
+// scope (workers see only their own), then joins the holder and programme
+// names.
+type CertificateListItem = {
+  id: string;
+  certificateNumber: string;
+  /** ISO strings over the wire, not Dates. */
+  issuedAt: string;
+  validTo: string | null;
+  status: string;
+  holderName: string | null;
+  holderDesignation: string | null;
+  programName: string | null;
+  programCode: string | null;
+  programIsStatutory: boolean;
+};
+
 export default async function CertificatesPage(props: { searchParams: Promise<{ filter?: Filter }> }) {
   const searchParams = await props.searchParams;
   const filter = (searchParams.filter ?? "all") as Filter;
 
-  const where: any = {};
-  if (filter === "active") where.status = "ACTIVE";
-  else if (filter === "expiring") where.status = "EXPIRING_SOON";
-  else if (filter === "expired") where.status = "EXPIRED";
-  else if (filter === "lapsed") where.status = "LAPSED";
-  else if (filter === "revoked") where.status = "REVOKED";
+  const STATUS_BY_FILTER: Record<Filter, string | undefined> = {
+    all: undefined,
+    active: "ACTIVE",
+    expiring: "EXPIRING_SOON",
+    expired: "EXPIRED",
+    lapsed: "LAPSED",
+    revoked: "REVOKED"
+  };
 
-  const [certs, counts] = await Promise.all([
-    prisma.trainingCertificate.findMany({
-      where,
-      select: {
-        id: true,
-        certificateNumber: true,
-        issuedAt: true,
-        validTo: true,
-        status: true,
-        program: { select: { programName: true, name: true, programCode: true, code: true, isStatutory: true } },
-        user: { select: { name: true, designation: true } }
-      },
-      orderBy: [{ validTo: "asc" }, { issuedAt: "desc" }],
-      take: 200
-    }),
-    prisma.trainingCertificate.groupBy({ by: ["status"], _count: true })
-  ]);
+  const register = await backendFetch<{
+    items: CertificateListItem[];
+    statusCounts: Record<string, number>;
+  }>("/api/training/certificates", {
+    query: { status_filter: STATUS_BY_FILTER[filter] }
+  }).catch(() => ({
+    items: [] as CertificateListItem[],
+    statusCounts: {} as Record<string, number>
+  }));
 
-  const cnt = (s: string) => counts.find((c) => c.status === s)?._count ?? 0;
+  const certs = register.items;
+  // Counts describe the caller's whole visible set, not the filtered slice.
+  const cnt = (s: string) => register.statusCounts[s] ?? 0;
 
   const rows: CertificateRow[] = certs.map((c) => ({
     id: c.id,
     certificateNumber: c.certificateNumber,
-    holderName: c.user.name,
-    holderDesignation: c.user.designation ?? null,
-    programName: c.program.programName ?? c.program.name,
-    programCode: c.program.programCode ?? c.program.code,
-    isStatutory: c.program.isStatutory,
-    issuedAt: c.issuedAt.toISOString(),
-    validTo: c.validTo ? c.validTo.toISOString() : null,
+    holderName: c.holderName ?? "—",
+    holderDesignation: c.holderDesignation,
+    programName: c.programName ?? "—",
+    programCode: c.programCode ?? "—",
+    isStatutory: c.programIsStatutory,
+    issuedAt: c.issuedAt,
+    validTo: c.validTo,
     status: c.status
   }));
 

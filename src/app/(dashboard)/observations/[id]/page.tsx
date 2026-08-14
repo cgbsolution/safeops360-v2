@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
+import { getWorkflowState } from "@/lib/workflow/state";
 import { PageHeader } from "@/components/page-header";
 import { EditRecordIconButton } from "@/components/common/edit-icon-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,148 +65,13 @@ export default async function ObservationDetailPage(
 
   // Both reads are independent — run them in parallel so the slowest one
   // (network RTT to Postgres) doesn't stack on top of the other.
+  // Both reads are independent — run them in parallel so the slowest one
+  // doesn't stack on top of the other. The detail endpoint nests the named
+  // workers, the STOP taxonomy row, the target-date trail and the Related
+  // Items links; the workflow state comes from the shared loader.
   const [o, instance] = await Promise.all([
-    prisma.observation.findUnique({
-      where: { id: params.id },
-      select: {
-        id: true,
-        number: true,
-        type: true,
-        category: true,
-        subCategoryCode: true,
-        stopTaxonomy: { select: { subCategoryLabel: true, categoryLabel: true, stopReferenceCode: true } },
-        description: true,
-        severity: true,
-        status: true,
-        date: true,
-        targetDate: true,
-        closedAt: true,
-        closingRemark: true,
-        immediateAction: true,
-        plantId: true,
-        observerId: true,
-        responsiblePersonId: true,
-        isRepeat: true,
-        similarObservationIds: true,
-        activePermitId: true,
-        permitReviewFlagged: true,
-        triggeredInspectionId: true,
-        triggeredTbtId: true,
-        contributedToIncidentId: true,
-        closureTriggers: true,
-        // ─── SLA closure-date provenance + trail (spec §2.7: "not just
-        //     stored, surfaced") ───
-        targetDateSource: true,
-        targetDateSlaConfig: true,
-        targetDateOverrideReason: true,
-        targetDateHistory: {
-          orderBy: { changedAt: "asc" },
-          select: {
-            id: true,
-            targetDate: true,
-            source: true,
-            reason: true,
-            slaConfigApplied: true,
-            changedById: true,
-            changedAt: true
-          }
-        },
-        // ─── Named workers + their safety reviews ───
-        workersInvolved: {
-          orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            partyType: true,
-            nameSnapshot: true,
-            roleSnapshot: true,
-            employerSnapshot: true,
-            userId: true,
-            contractorWorkerId: true,
-            user: { select: { rosterStatus: true } },
-            contractorWorker: { select: { rosterStatus: true } },
-            deroster: {
-              select: {
-                id: true,
-                status: true,
-                flaggedAt: true,
-                flaggedReason: true,
-                reviewSlaHours: true,
-                reviewDueAt: true,
-                reviewedById: true,
-                reviewedAt: true,
-                reviewDecisionReason: true,
-                correctiveActionTrainingId: true,
-                correctiveActionCompetencyId: true,
-                escalatedAt: true,
-                reinstatedAt: true,
-                reinstatementNote: true
-              }
-            }
-          }
-        },
-        plant: { select: { name: true } },
-        area: { select: { name: true } },
-        observer: { select: { name: true } },
-        contractorCompany: { select: { name: true } },
-        responsiblePerson: { select: { name: true, designation: true } },
-        activePermit: { select: { id: true, number: true } },
-        triggeredInspection: { select: { id: true, number: true } },
-        contributedToIncident: { select: { id: true, number: true } },
-        coachingTasks: { select: { id: true, number: true, type: true, status: true } }
-      }
-    }),
-    prisma.workflowInstance.findUnique({
-      where: { module_recordId: { module: "OBSERVATION", recordId: params.id } },
-      select: {
-        id: true,
-        status: true,
-        currentStepId: true,
-        initiatedById: true,
-        completedAt: true,
-        definition: {
-          select: {
-            steps: {
-              orderBy: { sequence: "asc" },
-              select: {
-                id: true,
-                sequence: true,
-                stepType: true,
-                name: true,
-                approverRole: true,
-                approverField: true,
-                slaHours: true
-              }
-            }
-          }
-        },
-        history: {
-          orderBy: { performedAt: "asc" },
-          select: {
-            id: true,
-            stepId: true,
-            stepName: true,
-            action: true,
-            performedAt: true,
-            comments: true,
-            attachments: true,
-            performedBy: { select: PARTY_SELECT }
-          }
-        },
-        pendingTasks: {
-          select: {
-            id: true,
-            stepId: true,
-            stepName: true,
-            status: true,
-            dueAt: true,
-            assignedAt: true,
-            assignedToId: true,
-            taskType: true,
-            assignedTo: { select: PARTY_SELECT }
-          }
-        }
-      }
-    })
+    backendFetch<any>(`/api/observations/${params.id}`).catch(() => null),
+    getWorkflowState("OBSERVATION", params.id)
   ]);
   if (!o) return notFound();
 
@@ -216,7 +82,7 @@ export default async function ObservationDetailPage(
 
   // Whether to show the Confirm / Overrule / Reinstate controls. Presentation
   // only — the endpoints enforce the same role set server-side.
-  const canDecideDeroster = o.workersInvolved.some((w) => w.deroster)
+  const canDecideDeroster = o.workersInvolved.some((w: any) => w.deroster)
     ? (await getUserRoleCodes(userId)).some((c) => DEROSTER_DECISION_ROLES.includes(c))
     : false;
 
@@ -523,7 +389,7 @@ export default async function ObservationDetailPage(
           <DerosterPanel
             observationId={o.id}
             canDecide={canDecideDeroster}
-            workers={o.workersInvolved.map((w) => ({
+            workers={o.workersInvolved.map((w: any) => ({
               id: w.id,
               partyType: w.partyType as "USER" | "CONTRACTOR_WORKER",
               name: w.nameSnapshot,

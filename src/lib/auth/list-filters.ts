@@ -10,7 +10,7 @@
 // `originatorId` + `issuerId` + `receiverId`).
 
 import { cache } from "react";
-import { prisma } from "@/lib/prisma";
+import { getScopesFor, getUserScopeProfile } from "@/lib/auth/permissions";
 import { getAccessiblePlantIds } from "@/lib/dashboard/scope";
 
 type Scope = "ALL_PLANTS" | "OWN_PLANT" | "OWN_DEPARTMENT" | "OWN_RECORDS";
@@ -22,44 +22,24 @@ const SCOPE_RANK: Record<Scope, number> = {
 };
 
 // Wrapped in React.cache so two callers in the same request (e.g.
-// buildObservationListWhere + getReadScope on the observations page)
-// only trigger one round-trip to Postgres instead of two.
+// buildObservationListWhere + getReadScope on the observations page) only do
+// the work once.
 //
-// Inside the helper we ALSO parallelise the two queries — they are
-// independent — saving another RTT.
+// All three inputs now come from the /api/auth/access-snapshot cache rather
+// than from Prisma, so a list filter and the `can()` check guarding the matching
+// detail page are computed from the exact same grant data — they cannot
+// disagree about what the user may see.
 const loadReadScopeAndProfile = cache(async (userId: string, permissionCode: string) => {
-  const [grants, profile, plantIds] = await Promise.all([
-    prisma.userRole.findMany({
-      where: {
-        userId,
-        OR: [{ validTo: null }, { validTo: { gt: new Date() } }]
-      },
-      select: {
-        role: {
-          select: {
-            isActive: true,
-            permissions: {
-              where: { permission: { code: permissionCode } },
-              select: { scope: true }
-            }
-          }
-        }
-      }
-    }),
-    prisma.user.findUnique({
-      where: { id: userId },
-      select: { plantId: true, department: true }
-    }),
+  const [scopes, profile, plantIds] = await Promise.all([
+    getScopesFor(userId, permissionCode),
+    getUserScopeProfile(userId),
     getAccessiblePlantIds()
   ]);
 
+  // The broadest applicable scope wins.
   let best: Scope | null = null;
-  for (const ur of grants) {
-    if (!ur.role.isActive) continue;
-    for (const rp of ur.role.permissions) {
-      const s = rp.scope as Scope;
-      if (!best || SCOPE_RANK[s] > SCOPE_RANK[best]) best = s;
-    }
+  for (const s of scopes as Scope[]) {
+    if (!best || SCOPE_RANK[s] > SCOPE_RANK[best]) best = s;
   }
 
   return { scope: best, profile, plantIds };

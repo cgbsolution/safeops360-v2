@@ -1,4 +1,5 @@
-import { prisma } from "@/lib/prisma";
+import { getPlantsWithAreas } from "@/lib/masters/plants";
+import { getUserScopeProfile } from "@/lib/auth/permissions";
 import { PageHeader } from "@/components/page-header";
 import { PermitForm, type HiraPrefill } from "../permit-form";
 import { requirePermission } from "@/lib/auth/server";
@@ -11,17 +12,16 @@ export default async function NewPermitPage(
 ) {
   const user = await requirePermission("PTW.CREATE");
   const searchParams = await props.searchParams;
-  const plants = await prisma.plant.findMany({ include: { areas: true }, orderBy: { name: "asc" } });
+  const plants = await getPlantsWithAreas();
 
   // Default the wizard to the originator's home plant. The session carries it,
   // but fall back to a DB lookup if it's missing so the wizard never opens on
   // an unrelated (and often empty) plant.
   let defaultPlantId = ((user as any)?.plantId as string | undefined) ?? null;
   if (!defaultPlantId && (user as any)?.id) {
-    const me = await prisma.user.findUnique({
-      where: { id: (user as any).id as string },
-      select: { plantId: true },
-    });
+    // The access snapshot already carries the caller's home plant, so this
+    // fallback costs nothing extra — it shares the cached RBAC lookup.
+    const me = await getUserScopeProfile((user as any).id as string);
     defaultPlantId = me?.plantId ?? null;
   }
 

@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,16 +26,11 @@ export default async function TrainingProgramDetailPage(props: {
   const session = await getServerSession(authOptions);
   const role = (session?.user as any)?.role ?? "";
 
-  const program = await prisma.trainingProgram.findUnique({
-    where: { id: params.id },
-    include: {
-      plant: { select: { id: true, name: true } },
-      owner: { select: { id: true, name: true } },
-      approvedBy: { select: { id: true, name: true } },
-      questions: { orderBy: { sequence: "asc" } },
-      materials: { orderBy: { sequence: "asc" } }
-    }
-  });
+  // Plant / owner / approver and the ordered question + material lists all
+  // arrive nested, so the page is one request instead of three.
+  const program = await backendFetch<any>(`/api/training/programs/${params.id}`).catch(
+    () => null
+  );
   if (!program) return notFound();
 
   const validity =
@@ -174,7 +169,7 @@ export default async function TrainingProgramDetailPage(props: {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 text-xs">
-                {program.questions.map((q) => (
+                {program.questions.map((q: any) => (
                   <div key={q.id} className="rounded-md border border-slate-200 bg-white p-2">
                     <div className="flex items-start justify-between gap-2">
                       <div className="font-medium text-slate-800">
@@ -207,7 +202,7 @@ export default async function TrainingProgramDetailPage(props: {
               </CardHeader>
               <CardContent>
                 <ul className="text-xs space-y-1">
-                  {program.materials.map((m) => (
+                  {program.materials.map((m: any) => (
                     <li key={m.id} className="flex items-center gap-2">
                       <Badge className="bg-slate-100 text-slate-600 border-slate-200 text-[10px]">
                         {m.type}
