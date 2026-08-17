@@ -84,9 +84,14 @@ export default async function ObservationsPage(props: {
   // Scope is applied backend-side from the bearer token. getReadScope stays
   // because the page shows the user WHICH scope narrowed their view.
   const [register, scope, insights, weeklyView] = await Promise.all([
-    backendFetch<ObservationRegister>("/api/observations", {
+    // Merged onto EMPTY_REGISTER rather than trusted as-is: a register payload
+    // missing a key (backend shape drift) must degrade to an empty panel, not
+    // take the whole screen down on `Object.values(undefined)`.
+    backendFetch<Partial<ObservationRegister>>("/api/observations", {
       query: { register: true, status_filter: searchParams.status }
-    }).catch(() => EMPTY_REGISTER),
+    })
+      .then((r) => ({ ...EMPTY_REGISTER, ...r }))
+      .catch(() => EMPTY_REGISTER),
     getReadScope(userId, "OBSERVATION.READ"),
     fetchInsights("observation"),
     // Weekly Insight Engine view (hero + secondary row lifecycle). Tolerant —
