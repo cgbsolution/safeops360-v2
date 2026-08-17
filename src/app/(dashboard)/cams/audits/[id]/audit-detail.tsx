@@ -11,6 +11,7 @@ import { AttachmentStrip } from "../attachment-tile";
 import { EvidenceStrip } from "../evidence-strip";
 import { TeamEditor } from "./team-editor";
 import { AllocationWorkspace } from "./allocation-workspace";
+import { NcRegisterPanel } from "./nc-register-panel";
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import {
   PlayCircle, CheckCircle2, XCircle, AlertTriangle, Lock,
@@ -356,6 +357,21 @@ export function AuditDetailView({
         />
         <CompetenceSnapshotPanel rows={competence} />
       </div>
+
+      {/* PIL/MR/F04-R1 — one numbered NC report per non-conformity, each with a
+          Why-Why root cause analysis gating its Correction and Preventive
+          Action. Only from submit onwards: before the auditor has submitted,
+          the verdicts are still moving and an NC report raised against one that
+          is about to change is a form somebody has to withdraw. */}
+      {!["scheduled", "in_progress"].includes(audit.status) && (
+        <NcRegisterPanel
+          auditId={audit.id}
+          userMap={userMap}
+          canTrigger={canUpdate}
+          canVerify={canExecute}
+          canSign={canClose}
+        />
+      )}
 
       {/* WP-41 — sign-off gates closure. Shown once the audit is under way, so
           it is not noise on a freshly scheduled engagement. */}

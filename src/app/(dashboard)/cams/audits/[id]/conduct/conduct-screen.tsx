@@ -41,6 +41,7 @@ import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useSidebar } from "@/components/ui/sidebar";
 import { useToast } from "@/components/ui/toast";
 import {
   AuditDetail, CheckpointResponse, DisciplineRollup, StreamRollup,
@@ -214,6 +215,18 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   const [loadingMore, setLoadingMore] = useState(false);
 
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+
+  // Where the content column starts, so the fixed action bar can stop at the
+  // sidebar instead of covering it. Both widths are the shell's own CSS
+  // variables rather than copied numbers, so a change to `SIDEBAR_WIDTH` moves
+  // this with it; on mobile the sidebar is an off-canvas sheet over the
+  // content, so there is nothing to clear.
+  const { state: sidebarState, isMobile: sidebarIsMobile } = useSidebar();
+  const sidebarInset = sidebarIsMobile
+    ? 0
+    : sidebarState === "collapsed"
+      ? "var(--sidebar-width-icon)"
+      : "var(--sidebar-width)";
 
   // ── What is actually on the server, and what is not ───────────────────
   //
@@ -803,6 +816,8 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   const scorePct = scoreAllotted ? Math.round((scoreObtained / scoreAllotted) * 1000) / 10 : null;
 
   return (
+    // `pb-28` reserves room for the fixed action bar, which floats over the
+    // content rather than occupying flow space.
     <div className="mx-auto max-w-6xl pb-28">
       {/* Header + overall progress */}
       <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-t-xl">
@@ -1004,7 +1019,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
               {cards.map((card) => (
                 <CheckpointCard key={card[0].id} card={card}
                   savingIds={savingIds} failedIds={failedIds} ownerName={userName}
-                  replicateBusy={replicateBusy}
+                  replicateBusy={replicateBusy} replicationCounts={audit.replicationCounts ?? {}}
                   onGrade={setGrade} onStatus={setStatus} onConformance={setConformance}
                   onRiskGrade={setRiskGrade} onScore={setScore}
                   onObservation={setObservation}
@@ -1021,14 +1036,31 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         </main>
       </div>
 
-      {/* Sticky bar — progress, save state, submit.
+      {/* Action bar — progress, save state, submit.
           Grading autosaves, but "it saves as you go" is only believable if the
           screen says so out loud and offers a way to force it. This is the one
-          place an auditor can answer "is my work safe?" without guessing. */}
-      <div className={cn(
-        "fixed inset-x-0 bottom-0 z-20 border-t p-3 backdrop-blur transition-colors",
-        unsavedCount > 0 ? "border-amber-300 bg-amber-50/95" : "border-slate-200 bg-white/95",
-      )}>
+          place an auditor can answer "is my work safe?" without guessing.
+
+          It has to stay pinned to the viewport while a 200-card worklist
+          scrolls, so `fixed` it is — `sticky` does not work in this shell,
+          because `SidebarInset` is `overflow-hidden` and therefore a scroll
+          container that never scrolls, and a sticky child would have nothing to
+          stick against.
+
+          But a bar fixed to the VIEWPORT spans the whole window and covers the
+          navigation, which is what it was doing. The left edge is therefore
+          offset by the sidebar's own width, read live from `useSidebar()` so it
+          tracks the icon-collapse and drops to zero on mobile (where the
+          sidebar is an off-canvas sheet, not a column). Three other screens
+          hardcode `sm:left-64` for this; that is the expanded width only, and
+          leaves a 13rem hole the moment the sidebar is collapsed. */}
+      <div
+        style={{ left: sidebarInset }}
+        className={cn(
+          "fixed inset-x-0 bottom-0 z-20 border-t p-3 backdrop-blur transition-[background-color,border-color,left]",
+          unsavedCount > 0 ? "border-amber-300 bg-amber-50/95" : "border-slate-200 bg-white/95",
+        )}
+      >
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-3">
           <div className="flex-1 text-xs text-slate-500">
             <span className="font-semibold text-slate-700">{answeredTotal}</span>/{grandTotal} answered · {grandTotal - answeredTotal} remaining
@@ -1208,7 +1240,7 @@ function DiscButton({ label, color, active, answered, total, failed, onClick }: 
  * verdict to the IMS row.
  */
 function CheckpointCard({
-  card, savingIds, failedIds, ownerName, replicateBusy,
+  card, savingIds, failedIds, ownerName, replicateBusy, replicationCounts,
   onGrade, onStatus, onConformance, onRiskGrade, onScore, onObservation,
   onAddPhoto, onRemovePhoto, onReplicate,
 }: {
@@ -1216,6 +1248,8 @@ function CheckpointCard({
   savingIds: Set<string>;
   /** Rows whose last write did not reach the server. Sticky until one does. */
   failedIds: Set<string>;
+  /** replicationKey → departments holding it, audit-wide. Absent key = none. */
+  replicationCounts: Record<string, number>;
   ownerName: (id: string | null | undefined) => string | null;
   replicateBusy: string | null;
   onGrade: (item: Resp, g: GradeAwarded) => void;
@@ -1263,6 +1297,12 @@ function CheckpointCard({
   const scoreOverridden =
     item.scoreObtained !== null && item.scoreObtained !== suggestScore(grade, item.complianceStatus ?? null);
   const canReplicate = !!item.replicationKey;
+  // How many OTHER departments hold this same workbook line. The map counts
+  // every department holding the key including this one, so subtract our own;
+  // a key absent from the map reaches nobody else.
+  const replicationSiblings = Math.max(
+    0, (replicationCounts[item.replicationKey ?? ""] ?? 0) - 1,
+  );
 
   async function onPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]; e.target.value = "";
@@ -1424,19 +1464,38 @@ function CheckpointCard({
         </div>
       )}
 
-      {/* Replicate across departments. Offered as soon as the verdict exists —
+      {/* Replicate across departments.
           40 of the 60 IMS lines and all 22 EnMS ones are asked identically in
           HR, Admin and OHC, and re-typing the same answer three times is both
-          the rework this removes and how the three copies come to disagree. */}
-      {canReplicate && item.assessmentStatus !== "NOT_ASSESSED" && (
+          the rework this removes and how the three copies come to disagree.
+
+          Shown on every checkpoint that HAS a counterpart, and disabled until
+          there is a verdict to copy — not hidden. Hiding it until the card was
+          answered made the feature look like it existed in one department only:
+          whichever one happened to have been graded first. An affordance an
+          auditor has to discover by accident is one most of them never find.
+
+          Conversely it is not rendered at all on the 20 STP/ETP lines that are
+          Admin's alone, where its only possible outcome is "nothing to
+          replicate to". A control that cannot act is worse than an absent one. */}
+      {canReplicate && replicationSiblings > 0 && (
         <div className="mt-2">
           <Button type="button" variant="outline" size="sm"
-            onClick={() => onReplicate(item)} disabled={replicateBusy === item.id}
-            className="h-7 gap-1.5 border-dashed border-violet-300 text-[11px] font-medium text-violet-700 hover:bg-violet-50">
+            onClick={() => onReplicate(item)}
+            disabled={replicateBusy === item.id || !answered}
+            title={answered
+              ? `Copy this verdict to the same checkpoint in the other ${replicationSiblings === 1 ? "department" : `${replicationSiblings} departments`}`
+              : "Answer this checkpoint first — there is nothing to copy yet"}
+            className={cn(
+              "h-7 gap-1.5 border-dashed text-[11px] font-medium",
+              answered
+                ? "border-violet-300 text-violet-700 hover:bg-violet-50"
+                : "border-slate-200 text-slate-400",
+            )}>
             {replicateBusy === item.id
               ? <Loader2 size={12} className="animate-spin" />
               : <CopyPlus size={12} />}
-            Apply to the other departments
+            Apply to the other {replicationSiblings === 1 ? "department" : "departments"}
           </Button>
         </div>
       )}

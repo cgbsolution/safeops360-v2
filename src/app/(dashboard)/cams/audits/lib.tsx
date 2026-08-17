@@ -368,6 +368,17 @@ export type AuditDetail = AuditRow & {
    * offer a vocabulary every card can be found by. Absent reads as FULL.
    */
   conformanceMode?: ConformanceMode;
+  /**
+   * `replicationKey` → how many DEPARTMENTS of this audit hold that workbook
+   * line. Only keys reaching more than one are present, so a lookup that misses
+   * means "this checkpoint has no counterpart anywhere" and the replicate
+   * action is not offered on it at all.
+   *
+   * Shipped once with the audit rather than per row: it is one grouped query
+   * over ~82 keys, and the alternative is a subquery the worklist would pay 200
+   * times a page.
+   */
+  replicationCounts?: Record<string, number>;
   allocationSummary?: { assigned: number; unassigned: number; total: number };
   progress: {
     total: number;
