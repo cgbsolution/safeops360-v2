@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { backendFetch } from "@/lib/backend/fetch";
+import { backendFetch, BackendError } from "@/lib/backend/fetch";
+import { AccessRestricted } from "@/components/access-restricted";
 import { PageHeader } from "@/components/page-header";
 import { AuditDetailView } from "./audit-detail";
 import type { AuditDetail, AuditDashboard, PlantUser, AuditReport } from "../lib";
@@ -14,8 +15,37 @@ const f = <T,>(v: T) => () => v;
 
 export default async function AuditDetailPage(props: { params: Promise<{ id: string }> }) {
   const { id } = await props.params;
-  const audit = await backendFetch<AuditDetail>(`/api/audit-compliance/${id}`).catch(() => null);
-  if (!audit) notFound();
+
+  // Every other detail page in the app discriminates on the backend's status
+  // here; this one used `.catch(() => null)` and rendered notFound() for ALL of
+  // them. A row-level scope denial, a 500 and an unreachable backend all came
+  // back as "404 This page could not be found", which is the one message that
+  // is definitely wrong — the audit exists — and it sent people looking for a
+  // broken link instead of at their permissions or the backend.
+  let audit: AuditDetail;
+  try {
+    audit = await backendFetch<AuditDetail>(`/api/audit-compliance/${id}`);
+  } catch (e) {
+    if (e instanceof BackendError && e.status === 404) notFound();
+    // Scope denial — the audit is on a plant outside this viewer's scope, or
+    // their role lacks AUDIT_COMPLIANCE.READ. The list is already
+    // scope-filtered, so this only fires on a direct URL or a stale link.
+    if (e instanceof BackendError && e.status === 403) {
+      return (
+        <AccessRestricted
+          description="This audit is outside your access scope"
+          message="It belongs to a plant or scope your role isn’t permitted to view, or your role does not hold AUDIT_COMPLIANCE.READ. Ask an administrator to review your permissions."
+          backHref="/cams/audits"
+          backLabel="← Back to audits"
+          breadcrumbs={[{ label: "Audit & Compliance", href: "/cams/audits" }]}
+        />
+      );
+    }
+    // Anything else (500, timeout, bad JWT) is a real fault: let it reach the
+    // error boundary and the server logs rather than being disguised as a
+    // missing page.
+    throw e;
+  }
 
   const [dash, usersR, reportsR, meetings, competence, signoff, bookings] = await Promise.all([
     backendFetch<AuditDashboard>(`/api/audit-compliance/${id}/dashboard`).catch(f<AuditDashboard | null>(null)),
