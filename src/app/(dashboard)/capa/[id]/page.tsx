@@ -770,10 +770,18 @@ function ActionsTab({ capa, users }: { capa: CapaOut; users: { id: string; name:
   const containment = capa.actions.filter((a) => a.actionType === "IMMEDIATE_CONTAINMENT");
   const corrective = capa.actions.filter((a) => a.actionType === "CORRECTIVE");
   const preventive = capa.actions.filter((a) => a.actionType === "PREVENTIVE");
+
+  // A CAPA bound to a governed RootCauseAnalysis is a PIL/MR/F04-R1 non-
+  // conformity. Its actions were written on that form, in that form's words,
+  // by an auditee working under its custody rules — so the tab uses the form's
+  // vocabulary and does not invite edits that would bypass them.
+  const isNcReport = !!capa.rcaRecordId;
+  const locked = isNcReport || TERMINAL_STATES.has(capa.state);
   return (
     <div className="space-y-4">
       <ActionGroup
-        title="Immediate Containment"
+        title={isNcReport ? "Correction — what is done to solve this problem" : "Immediate Containment"}
+        readOnly={locked}
         actions={containment}
         capaId={capa.id}
         defaultActionType="IMMEDIATE_CONTAINMENT"
@@ -782,6 +790,8 @@ function ActionsTab({ capa, users }: { capa: CapaOut; users: { id: string; name:
       />
       <ActionGroup
         title="Corrective Actions"
+        readOnly={locked}
+        hidden={isNcReport && corrective.length === 0}
         actions={corrective}
         capaId={capa.id}
         defaultActionType="CORRECTIVE"
@@ -789,7 +799,8 @@ function ActionsTab({ capa, users }: { capa: CapaOut; users: { id: string; name:
         dir={capa.userDirectory}
       />
       <ActionGroup
-        title="Preventive Actions"
+        title={isNcReport ? "Preventive Action — what is done to prevent reoccurrence" : "Preventive Actions"}
+        readOnly={locked}
         actions={preventive}
         capaId={capa.id}
         defaultActionType="PREVENTIVE"
@@ -806,7 +817,9 @@ function ActionGroup({
   capaId,
   defaultActionType,
   users,
-  dir
+  dir,
+  readOnly,
+  hidden
 }: {
   title: string;
   actions: CapaOut["actions"];
@@ -814,7 +827,13 @@ function ActionGroup({
   defaultActionType: string;
   users: { id: string; name: string }[];
   dir: UserDirectory;
+  readOnly?: boolean;
+  hidden?: boolean;
 }) {
+  // The form has no corrective-action box; an empty section carrying an
+  // "+ Add action" button is an invitation to record something the issued
+  // report cannot show.
+  if (hidden) return null;
   return (
     <Card title={`${title} (${actions.length})`}>
       {actions.length === 0 ? (
@@ -849,12 +868,21 @@ function ActionGroup({
                   {a.evidenceOfCompletion}
                 </div>
               )}
-              <ActionStatusControls capaId={capaId} actionId={a.id} currentStatus={a.status} />
+              {!readOnly && (
+                <ActionStatusControls capaId={capaId} actionId={a.id} currentStatus={a.status} />
+              )}
             </li>
           ))}
         </ul>
       )}
-      <AddActionForm capaId={capaId} defaultActionType={defaultActionType} users={users} />
+      {readOnly ? (
+        <p className="text-[11px] text-slate-500">
+          Recorded on the NC report, which enforces who may write each section
+          and when. Edit it there rather than here.
+        </p>
+      ) : (
+        <AddActionForm capaId={capaId} defaultActionType={defaultActionType} users={users} />
+      )}
     </Card>
   );
 }
