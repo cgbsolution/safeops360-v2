@@ -81,6 +81,13 @@ export type NcReport = {
     closedOn: string | null; mrSignature: string | null; mrSignedAt: string | null;
   };
   capa: { capaId: string | null; capaNumber: string | null; state: string | null };
+  // Server's verdict on what THIS caller may edit. Rendering from the stage
+  // alone offered the auditee's section to the auditor.
+  viewer: {
+    isAuditor: boolean; isAuditee: boolean;
+    canEditAuditorHalf: boolean; canEditAuditeeHalf: boolean;
+    auditeeLockReason: string | null; auditorLockReason: string | null;
+  } | null;
 };
 
 export type NcAction = {
@@ -288,7 +295,9 @@ function AuditorSection({
   onReload: () => void;
 }) {
   const a = rep.auditorHalf;
-  const editable = a.editable;
+  // Server-decided, for the same reason as the auditee half: an auditee
+  // must never be offered the yellow section as editable.
+  const editable = rep.viewer?.canEditAuditorHalf ?? false;
   const [draft, setDraft] = useState({
     requirementText: a.requirements ?? "",
     observedNonconformity: a.observedNonconformity ?? "",
@@ -465,8 +474,12 @@ function AuditeeSection({
 }) {
   const h = rep.auditeeHalf;
   const rca = h.rootCauseAnalysis;
-  const mine = rep.stage === "WITH_AUDITEE";
+  // Both tests, and the server did them: is this half open, AND is this
+  // caller the party it belongs to. `stage === "WITH_AUDITEE"` alone showed
+  // the auditee's analysis to the auditor as an editable form.
+  const mine = rep.viewer?.canEditAuditeeHalf ?? false;
   const notYet = rep.stage === "WITH_AUDITOR_DRAFT";
+  const lockReason = rep.viewer?.auditeeLockReason ?? null;
 
   // The ladder is edited HERE, not on /erm/rca/<id>. RCA.CREATE and RCA.READ are
   // held by HSE_MANAGER, CRO, RISK_OWNER and the admin roles — and by no
@@ -499,9 +512,9 @@ function AuditeeSection({
         }
       />
 
-      {notYet && (
-        <p className="flex items-center gap-2 rounded border border-dashed bg-white/60 px-3 py-6 text-sm text-slate-500 justify-center">
-          <Lock size={14} /> Awaiting issue by the auditor.
+      {!mine && lockReason && (
+        <p className="flex items-center gap-2 rounded border border-dashed bg-white/60 px-3 py-4 text-sm text-slate-600">
+          <Lock size={14} className="shrink-0" /> {lockReason}
         </p>
       )}
 
