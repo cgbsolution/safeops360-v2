@@ -57,14 +57,17 @@ type ExternalParty = { email: string; name: string; disciplineIds: string[] };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export function ScheduleModal({
-  plantId, plant, templates, libraries, users, auditCategories, onClose, defaultTitle, dialogTitle,
+  plantId: initialPlantId, plant, plants = [], templates, libraries, users, auditCategories,
+  onClose, defaultTitle, dialogTitle,
 }: {
   plantId: string | null;
-  // The owning site, for display. Chosen with the PlantSwitcher in the page
-  // header rather than here — but the dialog has to SAY which plant it is
-  // about, or a 206-checkpoint audit can be committed to the wrong site with
-  // nothing on screen to catch it.
+  // The owning site. `plant` is the one the page opened on; `plants` is every
+  // site this caller may audit (AUDIT_COMPLIANCE.READ scope). When there is
+  // more than one, the choice is made HERE rather than in the page header the
+  // dialog covers — asking someone to cancel, scroll up, switch and reopen is
+  // not a plant picker.
   plant?: { id: string; code: string; name: string } | null;
+  plants?: { id: string; code: string; name: string }[];
   templates: AuditTemplate[];
   libraries: AuditLibrary[];
   users: PlantUser[];
@@ -176,6 +179,11 @@ export function ScheduleModal({
   );
   const [scopePreset, setScopePreset] = useState<string>("FULL");
   const [scheduledDate, setScheduledDate] = useState(() => new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10));
+  // The owning plant, selectable in-dialog when the caller has more than one.
+  const [plantId, setPlantId] = useState<string | null>(initialPlantId);
+  useEffect(() => { setPlantId(initialPlantId); }, [initialPlantId]);
+  const activePlant = plants.find((x) => x.id === plantId) ?? plant ?? null;
+
   // No default lead: pre-selecting the alphabetically-first plant user was how
   // an unauthorised person got seated by simply not touching the field. The
   // scheduler now picks from the authorised list explicitly.
@@ -556,15 +564,33 @@ export function ScheduleModal({
                 );
               })}
             </div>
-            {plant && (
+            {plants.length > 1 ? (
+              <label className="mt-2 block">
+                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-1">
+                  Owning site
+                </span>
+                <select
+                  className="w-full rounded border px-2 py-1.5 text-sm"
+                  value={plantId ?? ""}
+                  onChange={(e) => setPlantId(e.target.value || null)}
+                >
+                  {plants.map((x) => (
+                    <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                  ))}
+                </select>
+                <span className="mt-1 block text-[11px] text-slate-500">
+                  The audit, its numbering and its checkpoints are created against this site.
+                </span>
+              </label>
+            ) : activePlant ? (
               <p className="mt-1 text-[11px] text-slate-500">
-                Owning site: <span className="font-medium text-slate-700">{plant.code} — {plant.name}</span>
-                {" "}· change it with the plant switcher above the audit list.
+                Owning site: <span className="font-medium text-slate-700">{activePlant.code} — {activePlant.name}</span>
+                {" "}· the only site your role may audit.
               </p>
-            )}
+            ) : null}
             {subjectType === "VENDOR" && (
               <p className="mt-1 text-[11px] text-slate-500">
-                The owning site named above stays the owner for numbering, permissions
+                The owning site selected above stays the owner for numbering, permissions
                 and programme coverage — it is not the audited premises.
               </p>
             )}
