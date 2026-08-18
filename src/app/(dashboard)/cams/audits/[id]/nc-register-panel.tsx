@@ -16,6 +16,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   AlertTriangle, CheckCircle2, ClipboardList, Loader2, PenLine, PlayCircle, RefreshCw,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
+import { usePermission } from "@/components/auth/can";
 import { Chip, fmtDate, apiErrorMessage, STREAM_META, type StreamCode } from "../lib";
 import { NcReportForm } from "./nc-report-form";
 
@@ -88,6 +90,9 @@ export function NcRegisterPanel({
   canVerify: boolean;
   canSign: boolean;
 }) {
+  // Auditees hold no CAPA.READ, so the number is a link for the audit team
+  // and plain text for them — a link into a 403 is worse than no link.
+  const canOpenCapa = usePermission("CAPA.READ");
   const { toast } = useToast();
   const [reg, setReg] = useState<NcRegister | null>(null);
   const [loading, setLoading] = useState(true);
@@ -294,11 +299,20 @@ export function NcRegisterPanel({
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         {r.capaId ? (
                           <>
-                            {/* Same: CAPA.UPDATE excludes SUPERVISOR, SAFETY_OFFICER
-                                and WORKER, so this is a reference, not a link. */}
-                            <span className="font-medium text-sky-700">
-                              {r.capaNumber}
-                            </span>
+                            {/* Linked only for people who can actually open it.
+                                CAPA.READ excludes SUPERVISOR, SAFETY_OFFICER and
+                                WORKER, so for an auditee this stays a plain
+                                reference rather than a link into a 403. */}
+                            {canOpenCapa ? (
+                              <Link
+                                href={`/capa/${r.capaId}`}
+                                className="font-medium text-sky-700 hover:underline"
+                              >
+                                {r.capaNumber}
+                              </Link>
+                            ) : (
+                              <span className="font-medium text-sky-700">{r.capaNumber}</span>
+                            )}
                             <div className="mt-0.5 text-[10px] text-slate-500 tabular-nums">
                               {r.correctionCount} correction · {r.preventiveCount} preventive
                               {r.openActionCount > 0 && (

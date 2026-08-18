@@ -11,6 +11,9 @@ import {
   RecurrenceCheckForm
 } from "@/components/capa/lifecycle-actions";
 import { CapaAssistantCard } from "@/components/capa/capa-assistant-card";
+
+// Past these, the analysis is part of the record rather than work in hand.
+const TERMINAL_STATES = new Set(["VERIFIED", "CLOSED", "CLOSED_RECURRED", "CANCELLED", "REJECTED"]);
 import { PanelBoundary } from "@/components/ui/panel-boundary";
 import { UserRefLabel, type UserDirectory } from "@/lib/users/user-ref";
 import { markRecordTasksReadForViewer } from "@/lib/workflow/read-state";
@@ -62,6 +65,11 @@ type CapaOut = {
   rcaMethodologyRationale: string | null;
   rcaCompleted: boolean;
   rcaSummary: string | null;
+  rcaRecordId: string | null;
+  // Every Why except the last. The last one IS the root cause and is stored
+  // as a CapaRootCause row, so rendering both together reconstructs the
+  // ladder the auditee actually filled in.
+  contributingFactors: string[] | null;
   rcaCompletedAt: string | null;
   rcaCompletedByUserId: string | null;
   verificationSuccessCriteria: string | null;
@@ -209,10 +217,29 @@ export default async function CapaDetailPage(
       {tab === "rca" && (
         <div className="space-y-4">
           <RcaTab capa={capa} />
-          <PanelBoundary label="CAPA Assistant">
-            <CapaAssistantCard capaId={capa.id} />
-          </PanelBoundary>
-          <RcaSubmitForm capaId={capa.id} currentState={capa.state} />
+          {/* The assistant DRAFTS root-cause candidates. Once the analysis is
+              complete it has nothing to offer, and on a closed record it is an
+              invitation to overwrite a signed-off conclusion. */}
+          {!capa.rcaCompleted && !TERMINAL_STATES.has(capa.state) && (
+            <PanelBoundary label="CAPA Assistant">
+              <CapaAssistantCard capaId={capa.id} />
+            </PanelBoundary>
+          )}
+          {/* Free-text RCA entry. Hidden for a CAPA whose analysis is owned by a
+              governed RootCauseAnalysis — that endpoint returns 409 for these,
+              so the form could only ever fail. Those are edited on the NC
+              report, which enforces the form's own rules. */}
+          {!capa.rcaRecordId && !TERMINAL_STATES.has(capa.state) && (
+            <RcaSubmitForm capaId={capa.id} currentState={capa.state} />
+          )}
+          {capa.rcaRecordId && (
+            <p className="rounded-lg border border-violet-200 bg-violet-50 px-3 py-2 text-xs text-violet-900">
+              This analysis is governed by {capa.rcaMethodology === "FIVE_WHY"
+                ? "PIL/MR/F04-R1" : "a root cause analysis record"} and is edited
+              on the NC report, not here — which is what keeps the minimum Why
+              depth and the auditor/auditee split enforceable.
+            </p>
+          )}
         </div>
       )}
       {tab === "actions" && <ActionsTab capa={capa} users={users} />}
@@ -646,13 +673,29 @@ function RcaTab({ capa }: { capa: CapaOut }) {
   return (
     <div className="space-y-4">
       <Card title="Methodology">
-        <DefList
-          items={[
-            ["Methodology", capa.rcaMethodology ?? "Not selected"],
-            ["Completed", capa.rcaCompleted ? "Yes" : "No"],
-            ["Completed at", capa.rcaCompletedAt ? new Date(capa.rcaCompletedAt).toLocaleString() : "—"]
-          ]}
-        />
+        {/* Three chips rather than a definition list. The list rendered each
+            label hard left and its value hard right across the full card, so
+            "Methodology ......... FIVE_WHY" read as two unrelated columns. */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800">
+            {(capa.rcaMethodology ?? "Not selected").replace(/_/g, "-")}
+          </span>
+          <span
+            className={
+              "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium " +
+              (capa.rcaCompleted
+                ? "bg-emerald-100 text-emerald-800"
+                : "bg-amber-100 text-amber-800")
+            }
+          >
+            {capa.rcaCompleted ? "Analysis complete" : "Analysis outstanding"}
+          </span>
+          {capa.rcaCompletedAt && (
+            <span className="text-xs text-slate-500">
+              {new Date(capa.rcaCompletedAt).toLocaleString()}
+            </span>
+          )}
+        </div>
         {capa.rcaMethodologyRationale && (
           <div className="mt-3 pt-3 border-t">
             <div className="text-xs uppercase text-slate-500 mb-1">Rationale</div>
@@ -663,6 +706,41 @@ function RcaTab({ capa }: { capa: CapaOut }) {
       {capa.rcaSummary && (
         <Card title="RCA Summary">
           <p className="text-sm text-slate-800 whitespace-pre-wrap">{capa.rcaSummary}</p>
+        </Card>
+      )}
+      {(capa.contributingFactors?.length ?? 0) > 0 && (
+        <Card title={`Why-Why Analysis (${(capa.contributingFactors?.length ?? 0) + capa.rootCauses.length} levels)`}>
+          {/* The chain, in order, ending on the root cause. Showing only the
+              conclusion — as this page used to — presents an answer with no
+              reasoning behind it, on a record whose entire revision was
+              "preventive action is replaced with Root Cause Analysis". */}
+          <ol className="space-y-2">
+            {(capa.contributingFactors ?? []).map((f, i) => (
+              <li key={i} className="flex gap-3 text-sm">
+                <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-medium text-slate-600">
+                  {i + 1}
+                </span>
+                <span className="text-slate-800">{f}</span>
+              </li>
+            ))}
+            {capa.rootCauses.map((rc, i) => (
+              <li key={rc.id} className="flex gap-3 text-sm">
+                <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-violet-600 text-[11px] font-medium text-white">
+                  {(capa.contributingFactors?.length ?? 0) + i + 1}
+                </span>
+                <span className="font-medium text-slate-900">
+                  {rc.description}
+                  <span className="ml-2 rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-800">
+                    root cause
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-3 border-t pt-2 text-[11px] text-slate-500">
+            Each level answers Why of the one above it. The final level is the
+            system failure the NC report asks for.
+          </p>
         </Card>
       )}
       <Card title={`Identified Root Causes (${capa.rootCauses.length})`}>
