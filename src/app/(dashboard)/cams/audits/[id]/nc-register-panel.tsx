@@ -29,17 +29,22 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { Chip, fmtDate, apiErrorMessage, STREAM_META, type StreamCode } from "../lib";
+import { NcReportForm } from "./nc-report-form";
 
 // Mirrors services/nc_rca_capa.NC_STAGES. Ordered as the work flows, so the
 // summary strip reads left-to-right as a pipeline rather than as a legend.
+//
+// The label answers "who is holding this form", not "which child record
+// exists". PIL/MR/F04-R1 is a document that changes hands twice, and at a
+// closure review the only question asked of each row is whose desk it is on —
+// a stage called "Actions pending" reads the same whether the auditee has never
+// seen the report or has had it for three weeks.
 const STAGE_META: Record<string, { label: string; chip: string; who: string }> = {
-  NOT_TRIGGERED: { label: "Not triggered", chip: "bg-slate-100 text-slate-600", who: "No NC report raised yet" },
-  RCA_PENDING: { label: "RCA pending", chip: "bg-amber-100 text-amber-800", who: "With the auditee" },
-  RCA_IN_REVIEW: { label: "RCA in review", chip: "bg-sky-100 text-sky-800", who: "Awaiting approval" },
-  ACTIONS_PENDING: { label: "Actions pending", chip: "bg-orange-100 text-orange-800", who: "With the auditee" },
-  ACTIONS_IN_PROGRESS: { label: "Actions in progress", chip: "bg-indigo-100 text-indigo-800", who: "With the auditee" },
-  AWAITING_VERIFICATION: { label: "Awaiting verification", chip: "bg-violet-100 text-violet-800", who: "With the auditor" },
-  AWAITING_MR_SIGNOFF: { label: "Awaiting M.R.", chip: "bg-teal-100 text-teal-800", who: "With the M.R." },
+  NOT_RAISED: { label: "Not raised", chip: "bg-slate-100 text-slate-600", who: "No NC report raised yet" },
+  WITH_AUDITOR_DRAFT: { label: "Drafting", chip: "bg-amber-100 text-amber-800", who: "With the auditor — not yet issued" },
+  WITH_AUDITEE: { label: "With auditee", chip: "bg-orange-100 text-orange-800", who: "Auditee: root cause, correction, preventive action" },
+  WITH_AUDITOR_VERIFY: { label: "To verify", chip: "bg-violet-100 text-violet-800", who: "Auditor: verify effective closure" },
+  WITH_MR: { label: "With M.R.", chip: "bg-teal-100 text-teal-800", who: "Management Representative to sign" },
   CLOSED: { label: "Closed", chip: "bg-emerald-100 text-emerald-800", who: "Closed" },
 };
 const STAGE_CHIPS = Object.fromEntries(
@@ -89,6 +94,7 @@ export function NcRegisterPanel({
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [verifying, setVerifying] = useState<NcRow | null>(null);
+  const [openReport, setOpenReport] = useState<NcRow | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -301,27 +307,18 @@ export function NcRegisterPanel({
                         )}
                       </td>
                       <td className="px-3 py-2.5 text-right whitespace-nowrap">
-                        {r.stage === "AWAITING_VERIFICATION" && canVerify && (
-                          <Button size="sm" variant="outline" onClick={() => setVerifying(r)}>Verify closure</Button>
-                        )}
-                        {r.stage === "AWAITING_MR_SIGNOFF" && canSign && (
-                          <Button size="sm" onClick={() => void mrSign(r)} disabled={busy === r.findingId}>
-                            {busy === r.findingId
-                              ? <Loader2 className="mr-1.5 size-3.5 animate-spin" />
-                              : <PenLine className="mr-1.5 size-3.5" />}
-                            M.R. sign
+                        {/* One door. Every stage of PIL/MR/F04-R1 is worked on
+                            the form itself, which shows both halves and enables
+                            only the one whose turn it is — so the register does
+                            not have to grow a different button per stage, and a
+                            reader is never asked to know that "Verify closure"
+                            and "Open analysis" are two ends of one document. */}
+                        {r.ncrNumber ? (
+                          <Button size="sm" variant="outline" onClick={() => setOpenReport(r)}>
+                            Open NC report
                           </Button>
-                        )}
-                        {/* The auditee fills the Why-Why ladder on the RCA
-                            record itself — there is no separate NC form page,
-                            and linking to one that does not exist would 404. */}
-                        {r.rcaId && ["RCA_PENDING", "RCA_IN_REVIEW"].includes(r.stage) && (
-                          <Link
-                            href={`/erm/rca/${r.rcaId}`}
-                            className="ml-2 text-[11px] font-medium text-violet-600 hover:text-violet-800 hover:underline"
-                          >
-                            Open analysis
-                          </Link>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">Raise the NC report first</span>
                         )}
                       </td>
                     </tr>
@@ -331,6 +328,15 @@ export function NcRegisterPanel({
             </table>
           </div>
         </>
+      )}
+
+      {openReport && (
+        <NcReportForm
+          findingId={openReport.findingId}
+          userMap={userMap}
+          onClose={() => setOpenReport(null)}
+          onChanged={() => void load()}
+        />
       )}
 
       {verifying && (
