@@ -179,7 +179,7 @@ export function NcRegisterPanel({
               {busy === "trigger"
                 ? <Loader2 className="mr-1.5 size-3.5 animate-spin" />
                 : <PlayCircle className="mr-1.5 size-3.5" />}
-              Trigger RCA + CAPA for {untriggered} NC{untriggered === 1 ? "" : "s"}
+              Raise {untriggered} NC report{untriggered === 1 ? "" : "s"}
             </Button>
           )}
         </div>
@@ -192,7 +192,10 @@ export function NcRegisterPanel({
       ) : !reg || reg.total === 0 ? (
         <div className="px-4 py-8 text-center text-sm text-slate-500">
           <CheckCircle2 className="mx-auto mb-2 size-6 text-emerald-500" />
-          No non-conformities were raised in this audit.
+          {/* Only ever shown when the audit genuinely has no failed checkpoint.
+              It used to show whenever no NC REPORT existed yet, which on an
+              audit full of non-conformities was simply false. */}
+          No checkpoint was answered Non-Conformance in this audit.
         </div>
       ) : (
         <>
