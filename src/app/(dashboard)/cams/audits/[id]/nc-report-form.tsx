@@ -85,9 +85,11 @@ export type NcReport = {
   // Server's verdict on what THIS caller may edit. Rendering from the stage
   // alone offered the auditee's section to the auditor.
   viewer: {
-    isAuditor: boolean; isAuditee: boolean;
+    isAuditor: boolean; isAuditee: boolean; isMr: boolean;
     canEditAuditorHalf: boolean; canEditAuditeeHalf: boolean;
+    canVerify: boolean; canSign: boolean;
     auditeeLockReason: string | null; auditorLockReason: string | null;
+    closureWaitingReason: string | null;
   } | null;
 };
 
@@ -836,8 +838,17 @@ function ClosureSection({
   act: (p: string, b?: unknown, m?: "POST" | "PATCH") => Promise<boolean>;
 }) {
   const c = rep.closure;
-  const toVerify = rep.stage === "WITH_AUDITOR_VERIFY";
-  const toSign = rep.stage === "WITH_MR";
+  // Stage AND permission. The stage says the step is due; the permission
+  // says this person is the one who performs it. An auditee holds neither
+  // EXECUTE nor CLOSE, so showing them these controls only produced a
+  // refusal they could not act on.
+  // Decided server-side, alongside the two halves. Threading a client-held
+  // permission through props was a weaker guarantee: it depended on every
+  // caller passing it, and the auditee's own analysis is what is being
+  // verified, so they can never be the verifier whatever a prop says.
+  const toVerify = rep.viewer?.canVerify ?? false;
+  const toSign = rep.viewer?.canSign ?? false;
+  const waiting = !toVerify && !toSign ? (rep.viewer?.closureWaitingReason ?? null) : null;
   const [details, setDetails] = useState("");
   const [result, setResult] = useState("EFFECTIVE");
 
@@ -848,6 +859,12 @@ function ClosureSection({
         title="Verification Details for effective closure"
         subtitle="The auditor re-checks, then signs. The M.R. signature closes the NC."
       />
+
+      {waiting && (
+        <p className="mb-2 flex items-center gap-2 text-xs text-slate-500">
+          <Lock size={12} /> {waiting}
+        </p>
+      )}
 
       {toVerify ? (
         <div className="space-y-2">
