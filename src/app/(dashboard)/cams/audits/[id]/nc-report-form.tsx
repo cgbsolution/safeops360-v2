@@ -32,6 +32,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -726,15 +727,14 @@ function ActionBlock({
               </Field>
               <div className="grid gap-2 sm:grid-cols-3">
                 <Field label="Responsibility">
-                  <select
-                    className="w-full rounded border px-2 py-1.5 text-sm"
+                  <Select
                     value={draft.ownerUserId}
                     onChange={(e) => setDraft({ ...draft, ownerUserId: e.target.value })}
                   >
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>{u.name}</option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
                 <Field label="Target date">
                   <Input
@@ -801,15 +801,15 @@ function ClosureSection({
             onChange={(e) => setDetails(e.target.value)}
           />
           <div className="flex items-center gap-2 flex-wrap">
-            <select
-              className="rounded border px-2 py-1.5 text-sm"
+            <Select
+              className="w-auto"
               value={result} onChange={(e) => setResult(e.target.value)}
             >
               <option value="EFFECTIVE">Effective</option>
               <option value="PARTIALLY_EFFECTIVE">Partially effective</option>
               <option value="INEFFECTIVE">Ineffective — send back to the auditee</option>
               <option value="INCONCLUSIVE">Inconclusive</option>
-            </select>
+            </Select>
             <Button
               size="sm" disabled={details.trim().length < 10 || !!busy}
               onClick={() => void act("verify", { verificationDetails: details, result })}

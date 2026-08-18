@@ -565,23 +565,25 @@ export function ScheduleModal({
               })}
             </div>
             {plants.length > 1 ? (
-              <label className="mt-2 block">
-                <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-1">
-                  Owning site
-                </span>
-                <select
-                  className="w-full rounded border px-2 py-1.5 text-sm"
-                  value={plantId ?? ""}
-                  onChange={(e) => setPlantId(e.target.value || null)}
-                >
-                  {plants.map((x) => (
-                    <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
-                  ))}
-                </select>
-                <span className="mt-1 block text-[11px] text-slate-500">
-                  The audit, its numbering and its checkpoints are created against this site.
-                </span>
-              </label>
+              // Same Field + Select pair as Lead auditor and Plant manager
+              // below. A hand-rolled <select> here rendered as a bare native
+              // dropdown in the middle of a styled form — the one control on
+              // the dialog that did not look like the others.
+              <div className="mt-2">
+                <Field label="Owning site" required>
+                  <Select
+                    value={plantId ?? ""}
+                    onChange={(e) => setPlantId(e.target.value || null)}
+                  >
+                    {plants.map((x) => (
+                      <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
+                    ))}
+                  </Select>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    The audit, its numbering and its checkpoints are created against this site.
+                  </p>
+                </Field>
+              </div>
             ) : activePlant ? (
               <p className="mt-1 text-[11px] text-slate-500">
                 Owning site: <span className="font-medium text-slate-700">{activePlant.code} — {activePlant.name}</span>
