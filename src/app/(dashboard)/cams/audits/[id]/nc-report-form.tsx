@@ -74,6 +74,7 @@ export type NcReport = {
     correction: { prompt: string; items: NcAction[] };
     preventiveAction: { prompt: string; items: NcAction[] };
     actionsLocked: boolean; actionsLockedReason: string | null;
+    defaultResponsibility: string | null; defaultTargetDate: string | null;
   };
   closure: {
     verificationDetails: string | null; verificationResult: string | null;
@@ -626,6 +627,8 @@ function AuditeeSection({
             act={act}
             busy={busy}
             onReload={onReload}
+            defaultOwnerId={h.defaultResponsibility}
+            defaultDueDate={h.defaultTargetDate}
           />
           <ActionBlock
             title="Preventive Action"
@@ -641,6 +644,8 @@ function AuditeeSection({
             act={act}
             busy={busy}
             onReload={onReload}
+            defaultOwnerId={h.defaultResponsibility}
+            defaultDueDate={h.defaultTargetDate}
           />
 
           {mine && (
@@ -662,7 +667,7 @@ function AuditeeSection({
 
 function ActionBlock({
   title, kind, prompt, items, name, users, locked, lockedReason,
-  editable, findingId, act, busy, onReload,
+  editable, findingId, act, busy, onReload, defaultOwnerId, defaultDueDate,
 }: {
   title: string;
   kind: "CORRECTION" | "PREVENTIVE";
@@ -677,11 +682,20 @@ function ActionBlock({
   act: (p: string, b?: unknown, m?: "POST" | "PATCH") => Promise<boolean>;
   busy: string | null;
   onReload: () => void;
+  defaultOwnerId: string | null;
+  defaultDueDate: string | null;
 }) {
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState({
-    description: "", ownerUserId: users[0]?.id ?? "", dueDate: "", completedOn: "",
+  // Defaults that mean something: the person the NC is routed to, and the
+  // auditor's own "To be completed before" date. `users[0]` put an unrelated
+  // name in the Responsibility box of a governed form.
+  const blank = () => ({
+    description: "",
+    ownerUserId: defaultOwnerId ?? users[0]?.id ?? "",
+    dueDate: (defaultDueDate ?? "").slice(0, 10),
+    completedOn: "",
   });
+  const [draft, setDraft] = useState(blank);
 
   async function save() {
     const ok = await act("actions", {
@@ -693,7 +707,7 @@ function ActionBlock({
     });
     if (ok) {
       setAdding(false);
-      setDraft({ description: "", ownerUserId: users[0]?.id ?? "", dueDate: "", completedOn: "" });
+      setDraft(blank());
       onReload();
     }
   }
