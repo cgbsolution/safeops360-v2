@@ -58,7 +58,8 @@ export type NcReport = {
     managementSystem: string | null; standardClauses: { standard?: string; clause?: string }[];
     ncrNumber: string | null; clauseNo: string | null; requirements: string | null;
     observedNonconformity: string | null; evidenceNote: string | null; evidence: string[];
-    grade: string | null; severity: string; leadAuditor: string | null; auditor: string | null;
+    grade: string | null; gradeOptions: { value: string; label: string }[];
+    severity: string; leadAuditor: string | null; auditor: string | null;
     organizationRepresentative: string | null; toBeCompletedBefore: string | null;
     editable: boolean;
   };
@@ -238,6 +239,24 @@ function ZoneHeader({ title, subtitle, tone }: { title: string; subtitle: string
   );
 }
 
+function gradeLabel(
+  code: string | null,
+  options: { value: string; label: string }[] | undefined,
+): string {
+  if (!code) return "";
+  const hit = (options ?? []).find((o) => o.value === code);
+  // Fall back to title-casing the code so a legacy or unknown grade still
+  // reads as words rather than as an enum. No regex: this expression has
+  // already lost its escapes twice in transit.
+  return (
+    hit?.label ??
+    code
+      .split("_")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ")
+  );
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
@@ -342,12 +361,22 @@ function AuditorSection({
 
       <div className="grid gap-3 sm:grid-cols-3 mt-3">
         <Field label="Grade">
+          {/* A controlled vocabulary, not free text. This was an open input
+              showing the raw enum, which invited a typed value that no report,
+              score or export could read back. */}
           {editable ? (
-            <Input
+            <Select
               value={draft.gradeText}
               onChange={(e) => setDraft({ ...draft, gradeText: e.target.value })}
-            />
-          ) : <ReadOnly value={a.grade} />}
+            >
+              <option value="">— select —</option>
+              {(a.gradeOptions ?? []).map((g) => (
+                <option key={g.value} value={g.value}>{g.label}</option>
+              ))}
+            </Select>
+          ) : (
+            <ReadOnly value={gradeLabel(a.grade, a.gradeOptions)} />
+          )}
         </Field>
         <Field label="Lead Auditor"><ReadOnly value={name(a.leadAuditor)} /></Field>
         <Field label="Organization Representative"><ReadOnly value={name(a.organizationRepresentative)} /></Field>
