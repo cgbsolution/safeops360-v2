@@ -16,7 +16,6 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import {
   AlertTriangle, CheckCircle2, ClipboardList, Loader2, PenLine, PlayCircle, RefreshCw,
 } from "lucide-react";
@@ -131,7 +130,7 @@ export function NcRegisterPanel({
         // non-conformity that never got its CAPA is the failure this reports.
         description: j.failed
           ? (j.failures ?? []).map((f: { findingCode: string; reason: string }) => `${f.findingCode}: ${f.reason}`).join(" · ")
-          : "Each non-conformity now has a Why-Why analysis and a CAPA. Actions unlock once the RCA is approved.",
+          : "Each non-conformity now has a Why-Why analysis and a CAPA. Complete the auditor section, then issue each report to its auditee.",
         variant: j.failed ? "error" : undefined,
       });
       await load();
@@ -276,9 +275,13 @@ export function NcRegisterPanel({
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         {r.rcaId ? (
                           <>
-                            <Link href={`/erm/rca/${r.rcaId}`} className="font-medium text-violet-700 hover:underline">
+                            {/* Deliberately NOT a link. RCA.READ is held by no
+                                auditee-class role, so linking here offered half
+                                the register's readers a 403. The NC report is
+                                the one door into this record. */}
+                            <span className="font-medium text-violet-700">
                               {r.rcaStatus?.replace(/_/g, " ").toLowerCase() ?? "draft"}
-                            </Link>
+                            </span>
                             <div className={cn("mt-0.5 text-[10px]", r.rcaOverdue ? "font-semibold text-rose-600" : "text-slate-400")}>
                               due {fmtDate(r.rcaDueDate)}
                             </div>
@@ -288,9 +291,11 @@ export function NcRegisterPanel({
                       <td className="px-3 py-2.5 whitespace-nowrap">
                         {r.capaId ? (
                           <>
-                            <Link href={`/capa/${r.capaId}`} className="font-medium text-sky-700 hover:underline">
+                            {/* Same: CAPA.UPDATE excludes SUPERVISOR, SAFETY_OFFICER
+                                and WORKER, so this is a reference, not a link. */}
+                            <span className="font-medium text-sky-700">
                               {r.capaNumber}
-                            </Link>
+                            </span>
                             <div className="mt-0.5 text-[10px] text-slate-500 tabular-nums">
                               {r.correctionCount} correction · {r.preventiveCount} preventive
                               {r.openActionCount > 0 && (

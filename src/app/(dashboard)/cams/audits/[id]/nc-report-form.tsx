@@ -146,6 +146,7 @@ export function NcReportForm({
   }
 
   const name = (id: string | null) => (id ? userMap[id] ?? id : "—");
+  const users = Object.entries(userMap).map(([id, n]) => ({ id, name: n }));
 
   return (
     <Dialog open onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -172,7 +173,8 @@ export function NcReportForm({
           <div className="space-y-4">
             <CustodyStrip stage={rep.stage} />
             <AuditorSection rep={rep} name={name} busy={busy} act={act} onReload={load} />
-            <AuditeeSection rep={rep} name={name} busy={busy} act={act} />
+            <AuditeeSection rep={rep} name={name} busy={busy} act={act}
+                            findingId={findingId} users={users} onReload={load} />
             <ClosureSection rep={rep} name={name} busy={busy} act={act} />
           </div>
         )}
@@ -421,17 +423,37 @@ function AuditorSection({
 /* ── the auditee's half (accented on the workbook) ────────────────── */
 
 function AuditeeSection({
-  rep, name, busy, act,
+  rep, name, busy, act, findingId, users, onReload,
 }: {
   rep: NcReport;
   name: (id: string | null) => string;
   busy: string | null;
   act: (p: string, b?: unknown, m?: "POST" | "PATCH") => Promise<boolean>;
+  findingId: string;
+  users: { id: string; name: string }[];
+  onReload: () => void;
 }) {
   const h = rep.auditeeHalf;
   const rca = h.rootCauseAnalysis;
   const mine = rep.stage === "WITH_AUDITEE";
   const notYet = rep.stage === "WITH_AUDITOR_DRAFT";
+
+  // The ladder is edited HERE, not on /erm/rca/<id>. RCA.CREATE and RCA.READ are
+  // held by HSE_MANAGER, CRO, RISK_OWNER and the admin roles — and by no
+  // auditee-class role at all. Linking out sent the auditee to a screen they
+  // cannot open, on the one section of the form that is theirs to fill.
+  const [whys, setWhys] = useState<WhyRow[]>(
+    rca.whys.length
+      ? rca.whys
+      : Array.from({ length: rca.minLevels }, () => ({ question: "", answer: "" })),
+  );
+  const [rootCause, setRootCause] = useState(rca.rootCause ?? "");
+  const answered = whys.filter((w) => w.answer.trim()).length;
+
+  async function saveAnalysis() {
+    await act("analysis", { problemStatement: rca.problemStatement, whys, rootCause }, "PATCH");
+    onReload();
+  }
 
   return (
     <section className={cn("rounded-xl border p-4", AUDITEE_ZONE)}>
@@ -464,22 +486,68 @@ function AuditeeSection({
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              {rca.prompt} · at least {rca.minLevels} levels
-              {rca.dueDate && <> · due {fmtDate(rca.dueDate)}</>}
+              {rca.prompt} · at least {rca.minLevels} levels · {answered} answered
+              {rca.dueDate ? ` · due ${fmtDate(rca.dueDate)}` : ""}
             </p>
 
             <div className="mt-3 space-y-2">
               <Field label="Nonconformity being analysed">
                 <ReadOnly value={rca.problemStatement} />
               </Field>
-              {rca.whys.map((w, i) => (
+
+              {whys.map((w, i) => (
                 <div key={i} className="grid gap-2 sm:grid-cols-[1fr_1.4fr] items-start">
-                  <ReadOnly value={w.question || <span className="text-slate-400">Why {i + 1}?</span>} />
-                  <ReadOnly value={w.answer} />
+                  {mine ? (
+                    <>
+                      <Input
+                        placeholder={i === 0 ? (rca.suggestedFirstWhy ?? "Why ...?") : `Why ${i + 1}?`}
+                        value={w.question}
+                        onChange={(e) => {
+                          const n = [...whys];
+                          n[i] = { ...n[i], question: e.target.value };
+                          setWhys(n);
+                        }}
+                      />
+                      <Input
+                        placeholder="Because ..."
+                        value={w.answer}
+                        onChange={(e) => {
+                          const n = [...whys];
+                          n[i] = { ...n[i], answer: e.target.value };
+                          setWhys(n);
+                        }}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <ReadOnly value={w.question || `Why ${i + 1}?`} />
+                      <ReadOnly value={w.answer} />
+                    </>
+                  )}
                 </div>
               ))}
+
+              {mine && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setWhys([...whys, { question: "", answer: "" }])}
+                >
+                  + Add another Why
+                </Button>
+              )}
+
               <Field label="Root cause (what failed in the system)">
-                <ReadOnly value={rca.rootCause} />
+                {mine ? (
+                  <Textarea
+                    rows={2}
+                    value={rootCause}
+                    placeholder="Name the system that allowed this — a procedure, a control, or a review that does not exist."
+                    onChange={(e) => setRootCause(e.target.value)}
+                  />
+                ) : (
+                  <ReadOnly value={rca.rootCause} />
+                )}
               </Field>
             </div>
 
@@ -493,28 +561,47 @@ function AuditeeSection({
               </ul>
             )}
 
-            {rca.rcaId && mine && (
-              <Button asChild variant="outline" size="sm" className="mt-3">
-                <a href={`/erm/rca/${rca.rcaId}`}>Open the Why-Why ladder to edit</a>
+            {mine && (
+              <Button size="sm" className="mt-3" onClick={() => void saveAnalysis()} disabled={!!busy}>
+                {busy ? <Loader2 size={14} className="animate-spin mr-1" /> : null}
+                Save analysis
               </Button>
             )}
           </div>
 
           <ActionBlock
-            title="Correction" prompt={h.correction.prompt}
-            items={h.correction.items} name={name}
-            locked={h.actionsLocked} lockedReason={h.actionsLockedReason}
-            capaId={rep.capa.capaId} editable={mine}
+            title="Correction"
+            kind="CORRECTION"
+            prompt={h.correction.prompt}
+            items={h.correction.items}
+            name={name}
+            users={users}
+            locked={h.actionsLocked}
+            lockedReason={h.actionsLockedReason}
+            editable={mine}
+            findingId={findingId}
+            act={act}
+            busy={busy}
+            onReload={onReload}
           />
           <ActionBlock
-            title="Preventive Action" prompt={h.preventiveAction.prompt}
-            items={h.preventiveAction.items} name={name}
-            locked={h.actionsLocked} lockedReason={h.actionsLockedReason}
-            capaId={rep.capa.capaId} editable={mine}
+            title="Preventive Action"
+            kind="PREVENTIVE"
+            prompt={h.preventiveAction.prompt}
+            items={h.preventiveAction.items}
+            name={name}
+            users={users}
+            locked={h.actionsLocked}
+            lockedReason={h.actionsLockedReason}
+            editable={mine}
+            findingId={findingId}
+            act={act}
+            busy={busy}
+            onReload={onReload}
           />
 
           {mine && (
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4 flex items-center gap-2 flex-wrap">
               <Button size="sm" onClick={() => void act("submit")} disabled={!!busy}>
                 {busy ? <Loader2 size={14} className="animate-spin mr-1" /> : <Send size={14} className="mr-1" />}
                 Return the completed report to the auditor
@@ -531,12 +618,43 @@ function AuditeeSection({
 }
 
 function ActionBlock({
-  title, prompt, items, name, locked, lockedReason, capaId, editable,
+  title, kind, prompt, items, name, users, locked, lockedReason,
+  editable, findingId, act, busy, onReload,
 }: {
-  title: string; prompt: string; items: NcAction[];
+  title: string;
+  kind: "CORRECTION" | "PREVENTIVE";
+  prompt: string;
+  items: NcAction[];
   name: (id: string | null) => string;
-  locked: boolean; lockedReason: string | null; capaId: string | null; editable: boolean;
+  users: { id: string; name: string }[];
+  locked: boolean;
+  lockedReason: string | null;
+  editable: boolean;
+  findingId: string;
+  act: (p: string, b?: unknown, m?: "POST" | "PATCH") => Promise<boolean>;
+  busy: string | null;
+  onReload: () => void;
 }) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState({
+    description: "", ownerUserId: users[0]?.id ?? "", dueDate: "", completedOn: "",
+  });
+
+  async function save() {
+    const ok = await act("actions", {
+      actionType: kind,
+      description: draft.description,
+      ownerUserId: draft.ownerUserId,
+      dueDate: draft.dueDate,
+      completedOn: draft.completedOn ? draft.completedOn + "T00:00:00Z" : null,
+    });
+    if (ok) {
+      setAdding(false);
+      setDraft({ description: "", ownerUserId: users[0]?.id ?? "", dueDate: "", completedOn: "" });
+      onReload();
+    }
+  }
+
   return (
     <div className="rounded-lg border bg-white/70 p-3 mt-3">
       <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
@@ -546,37 +664,106 @@ function ActionBlock({
         <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-800">
           <Lock size={12} /> {lockedReason}
         </p>
-      ) : items.length === 0 ? (
-        <p className="mt-2 text-xs text-slate-400">Nothing recorded yet.</p>
       ) : (
-        <table className="mt-2 w-full text-xs">
-          <thead className="text-slate-500">
-            <tr className="text-left">
-              <th className="py-1 font-medium">Action</th>
-              <th className="py-1 font-medium">Responsibility</th>
-              <th className="py-1 font-medium">Target date</th>
-              <th className="py-1 font-medium">Completed on</th>
-              <th className="py-1 font-medium">HOD signature</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <tr key={it.id} className="border-t align-top">
-                <td className="py-1.5 pr-2 text-slate-800">{it.description}</td>
-                <td className="py-1.5 pr-2">{name(it.responsibility)}</td>
-                <td className="py-1.5 pr-2">{fmtDate(it.targetDate)}</td>
-                <td className="py-1.5 pr-2">{fmtDate(it.completedOn)}</td>
-                <td className="py-1.5">{name(it.hodSignature)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+        <>
+          {items.length === 0 ? (
+            <p className="mt-2 text-xs text-slate-400">Nothing recorded yet.</p>
+          ) : (
+            <table className="mt-2 w-full text-xs">
+              <thead className="text-slate-500">
+                <tr className="text-left">
+                  <th className="py-1 font-medium">Action</th>
+                  <th className="py-1 font-medium">Responsibility</th>
+                  <th className="py-1 font-medium">Target date</th>
+                  <th className="py-1 font-medium">Completed on</th>
+                  {editable ? <th className="py-1" /> : null}
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it) => (
+                  <tr key={it.id} className="border-t align-top">
+                    <td className="py-1.5 pr-2 text-slate-800">{it.description}</td>
+                    <td className="py-1.5 pr-2">{name(it.responsibility)}</td>
+                    <td className="py-1.5 pr-2">{fmtDate(it.targetDate)}</td>
+                    <td className="py-1.5 pr-2">{fmtDate(it.completedOn)}</td>
+                    {editable ? (
+                      <td className="py-1.5 text-right">
+                        <button
+                          className="text-[11px] text-rose-600 hover:underline"
+                          disabled={!!busy}
+                          onClick={async () => {
+                            await fetch(
+                              `/api/audit-compliance/nc-reports/${findingId}/actions/${it.id}`,
+                              { method: "DELETE" },
+                            );
+                            onReload();
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </td>
+                    ) : null}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
-      {editable && !locked && capaId && (
-        <Button asChild variant="outline" size="sm" className="mt-2">
-          <a href={`/capa/${capaId}`}>Add / edit {title.toLowerCase()}</a>
-        </Button>
+          {editable && !adding && (
+            <Button variant="outline" size="sm" className="mt-2" onClick={() => setAdding(true)}>
+              + Add {title.toLowerCase()}
+            </Button>
+          )}
+
+          {editable && adding && (
+            <div className="mt-2 space-y-2 rounded border bg-slate-50 p-2">
+              <Field label={title + " — " + prompt}>
+                <Textarea
+                  rows={2}
+                  value={draft.description}
+                  onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+                />
+              </Field>
+              <div className="grid gap-2 sm:grid-cols-3">
+                <Field label="Responsibility">
+                  <select
+                    className="w-full rounded border px-2 py-1.5 text-sm"
+                    value={draft.ownerUserId}
+                    onChange={(e) => setDraft({ ...draft, ownerUserId: e.target.value })}
+                  >
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name}</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="Target date">
+                  <Input
+                    type="date"
+                    value={draft.dueDate}
+                    onChange={(e) => setDraft({ ...draft, dueDate: e.target.value })}
+                  />
+                </Field>
+                <Field label="Completed on">
+                  <Input
+                    type="date"
+                    value={draft.completedOn}
+                    onChange={(e) => setDraft({ ...draft, completedOn: e.target.value })}
+                  />
+                </Field>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  disabled={!!busy || draft.description.trim().length < 5 || !draft.dueDate}
+                  onClick={() => void save()}
+                >
+                  Save
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

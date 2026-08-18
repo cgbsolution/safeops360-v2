@@ -36,6 +36,7 @@ export default async function AuditCompliancePage(props: { searchParams: Promise
       />
       <AuditRegisterView
         plantId={plantId ?? null}
+        plant={plants.find((x) => x.id === plantId) ?? null}
         audits={list.audits}
         dashboard={dash}
         templates={templates.templates}

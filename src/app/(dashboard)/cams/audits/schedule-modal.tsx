@@ -57,9 +57,14 @@ type ExternalParty = { email: string; name: string; disciplineIds: string[] };
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export function ScheduleModal({
-  plantId, templates, libraries, users, auditCategories, onClose, defaultTitle, dialogTitle,
+  plantId, plant, templates, libraries, users, auditCategories, onClose, defaultTitle, dialogTitle,
 }: {
   plantId: string | null;
+  // The owning site, for display. Chosen with the PlantSwitcher in the page
+  // header rather than here — but the dialog has to SAY which plant it is
+  // about, or a 206-checkpoint audit can be committed to the wrong site with
+  // nothing on screen to catch it.
+  plant?: { id: string; code: string; name: string } | null;
   templates: AuditTemplate[];
   libraries: AuditLibrary[];
   users: PlantUser[];
@@ -551,10 +556,16 @@ export function ScheduleModal({
                 );
               })}
             </div>
+            {plant && (
+              <p className="mt-1 text-[11px] text-slate-500">
+                Owning site: <span className="font-medium text-slate-700">{plant.code} — {plant.name}</span>
+                {" "}· change it with the plant switcher above the audit list.
+              </p>
+            )}
             {subjectType === "VENDOR" && (
               <p className="mt-1 text-[11px] text-slate-500">
-                The plant above stays the owning site for numbering, permissions and
-                programme coverage — it is not the audited premises.
+                The owning site named above stays the owner for numbering, permissions
+                and programme coverage — it is not the audited premises.
               </p>
             )}
           </Field>

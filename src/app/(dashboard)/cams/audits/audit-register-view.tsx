@@ -29,9 +29,10 @@ import {
 import { ScheduleModal } from "./schedule-modal";
 
 export function AuditRegisterView({
-  plantId, audits, dashboard, templates, libraries, users, auditCategories,
+  plantId, plant, audits, dashboard, templates, libraries, users, auditCategories,
 }: {
   plantId: string | null;
+  plant?: { id: string; code: string; name: string } | null;
   audits: AuditRow[];
   dashboard: ProgrammeDashboard | null;
   templates: AuditTemplate[];
@@ -261,7 +262,7 @@ export function AuditRegisterView({
       </div>
 
       {showSchedule && (
-        <ScheduleModal plantId={plantId} templates={templates} libraries={libraries} users={users} auditCategories={auditCategories} onClose={() => setShowSchedule(false)} />
+        <ScheduleModal plantId={plantId} plant={plant ?? null} templates={templates} libraries={libraries} users={users} auditCategories={auditCategories} onClose={() => setShowSchedule(false)} />
       )}
     </div>
   );
