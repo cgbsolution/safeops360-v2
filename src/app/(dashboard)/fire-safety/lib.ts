@@ -81,6 +81,20 @@ export type ChecklistAsset = {
   status: string;
 };
 
+export type CapturedSignature = {
+  role: "PREPARED_BY" | "REVIEWED_BY" | "APPROVED_BY";
+  roleLabel?: string;
+  userId: string;
+  name: string;
+  designation?: string | null;
+  signatureKind: "DRAWN" | "TYPED";
+  /** base64 PNG data URI for DRAWN; null for TYPED. */
+  signatureImage?: string | null;
+  typedName?: string | null;
+  statement?: string | null;
+  signedAt: string;
+};
+
 export type SignOff = {
   preparedBy: string | null;
   preparedByName?: string | null;
@@ -92,6 +106,20 @@ export type SignOff = {
   approvedByName?: string | null;
   approvedAt: string | null;
   roles?: string[];
+  /** The captured marks. Present on a single-record view; stripped from grids,
+   *  where 31 records x 3 signatures would be megabytes of base64. */
+  signatures?: CapturedSignature[];
+  signatureRequired?: boolean | null;
+};
+
+/** What a stage transition created — defects raised and CAPAs opened. */
+export type SignOffOutcome = {
+  findingsCreated?: { findingId: string; findingCode: string; item: string; severity: string; capaId?: string; capaNumber?: string; isRepeat?: boolean }[];
+  findingsRecurring?: { findingId: string; findingCode: string; item: string; severity: string; capaId?: string; capaNumber?: string; isRepeat?: boolean }[];
+  findingsUpdated?: { findingId: string; findingCode: string; item: string; occurrences: number; capaId?: string | null }[];
+  capasRaised?: string[];
+  totalFailures?: number;
+  signature?: { role: string; kind: string };
 };
 
 export type RunItem = {
@@ -127,6 +155,8 @@ export type ChecklistRun = {
   overallResult: string | null;
   signOff: SignOff;
   sections: RunSection[];
+  outcome?: SignOffOutcome;
+  outcomeMessage?: string | null;
 };
 
 export type GridColumn = {

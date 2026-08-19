@@ -23,9 +23,10 @@ import {
 } from "@/components/ui/dialog";
 import { Can } from "@/components/auth/can";
 
-// Mirrors the backend router's _WRITE constant. The FIRE module borrows the HSE
-// codes until dedicated FIRE.* grants are seeded.
-const WRITE_PERMISSION = "INCIDENT.UPDATE";
+// Adding an asset to the fire register is FIRE.CREATE — not the INCIDENT.UPDATE
+// this borrowed before the dedicated grants existed. Same code the backend route
+// enforces.
+const WRITE_PERMISSION = "FIRE.CREATE";
 
 type Plant = { id: string; code: string; name: string };
 type Zone = { id: string; zoneCode: string; name: string; plantId: string };
@@ -64,7 +65,23 @@ const FIELD =
   "mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 " +
   "focus:border-slate-400 focus:outline-none disabled:bg-slate-50 disabled:text-slate-400";
 
-export function NewEquipmentDialog({ plants }: { plants: Plant[] }) {
+/** `allowed` when the backend has told us; otherwise the static permission check. */
+function Gate({ allowed, children }: { allowed?: boolean; children: React.ReactNode }) {
+  if (allowed === undefined) return <Can permission={WRITE_PERMISSION}>{children}</Can>;
+  return allowed ? <>{children}</> : null;
+}
+
+export function NewEquipmentDialog({
+  plants,
+  // Resolved server-side from /api/fire/checklists/capabilities, which accounts
+  // for the un-seeded-RBAC fallback. `Can` alone would hide the button on a
+  // deployment where the backend would in fact allow the write, so an explicit
+  // answer from the backend wins over the static code check when we have one.
+  allowed,
+}: {
+  plants: Plant[];
+  allowed?: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [pending, startTransition] = React.useTransition();
@@ -172,7 +189,7 @@ export function NewEquipmentDialog({ plants }: { plants: Plant[] }) {
   return (
     // Gated on the same code the backend enforces, so a read-only viewer is not
     // offered a button that 403s once the form is filled in.
-    <Can permission={WRITE_PERMISSION}>
+    <Gate allowed={allowed}>
     <Dialog
       open={open}
       onOpenChange={(o) => {
@@ -320,6 +337,6 @@ export function NewEquipmentDialog({ plants }: { plants: Plant[] }) {
         </form>
       </DialogContent>
     </Dialog>
-    </Can>
+    </Gate>
   );
 }

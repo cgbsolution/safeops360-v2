@@ -31,7 +31,24 @@
 
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// DDL goes down the DIRECT connection, not the pooled one.
+//
+// `DATABASE_URL` points at Supabase's transaction-mode pooler (port 6543). In
+// that mode pgbouncer multiplexes one server connection across clients and does
+// not reset named prepared statements between them, so Prisma's `$executeRawUnsafe`
+// — which prepares as `s0`, `s1`, … — fails on the SECOND run of this script with
+// `42P05: prepared statement "s0" already exists`. The first run succeeds, which
+// is what makes it a nasty one: the script looks fine until someone re-runs it.
+//
+// `DATABASE_URL_SYNC` (port 5432) is the session-mode/direct URL the Prisma
+// schema already declares as `directUrl` for exactly this reason. Migrations and
+// DDL belong on it; only the application's request traffic wants the pooler.
+const DDL_URL =
+  process.env.DIRECT_DATABASE_URL ?? process.env.DATABASE_URL_SYNC ?? process.env.DATABASE_URL;
+
+const prisma = new PrismaClient(
+  DDL_URL ? { datasources: { db: { url: DDL_URL } } } : undefined,
+);
 
 const STATEMENTS: string[] = [
   // ── CamsTemplate: controlled-document provenance ───────────────────────────
@@ -103,9 +120,79 @@ const STATEMENTS: string[] = [
    )`,
   `CREATE UNIQUE INDEX IF NOT EXISTS "ix_PlantNonWorkingDay_plant_day"
      ON "PlantNonWorkingDay" ("plantId","day")`,
+
+  // ── Captured signatures on the sign-off chain ─────────────────────────────
+  // A userId and a timestamp record who the SYSTEM believes acted; they do not
+  // record a person putting their name to a statement, and the sheet being
+  // reproduced prints a "Sign. & Date:" box under each of its three roles.
+  //
+  // Shape is copied exactly from ComplianceAudit.signOffs (WP-41) — same
+  // DRAWN/TYPED vocabulary, same keys, same SignatureModal canvas on the front
+  // end, same services/signoff.validate_signature guard. One signature
+  // mechanism on this platform; this is a second consumer of it, not a new one.
+  `ALTER TABLE "CamsEngagement" ADD COLUMN IF NOT EXISTS "signOffs" JSONB`,
+
+  // ── Re-observation of an OPEN finding ─────────────────────────────────────
+  // `isRepeatFinding` means "came back after being closed". These mean "never
+  // went away": the same check failing on the same asset day after day while the
+  // CAPA is still open. That distinction is what lets a DAILY checklist raise
+  // CAPAs at all — without it a lamp dead for three weeks is either 21 CAPAs or
+  // none.
+  //
+  // Typed columns rather than a JSON blob: "which defects recur most" deserves an
+  // ORDER BY, and the first cut of this wrote into a `sourceMetadata` attribute
+  // that does not exist on CamsFinding, so every write silently no-op'd and the
+  // count stuck at 2. A column fails loudly.
+  `ALTER TABLE "CamsFinding" ADD COLUMN IF NOT EXISTS "occurrenceCount" INTEGER NOT NULL DEFAULT 1`,
+  `ALTER TABLE "CamsFinding" ADD COLUMN IF NOT EXISTS "lastObservedAt" TIMESTAMP(3)`,
+  `ALTER TABLE "CamsFinding" ADD COLUMN IF NOT EXISTS "observedPeriods" JSONB NOT NULL DEFAULT '[]'::jsonb`,
+  // The dedupe lookup: "is there an open finding for this asset and this item?",
+  // asked once per failed check on every submit.
+  `CREATE INDEX IF NOT EXISTS "ix_CamsFinding_asset_question"
+     ON "CamsFinding" ("areaOrAssetRef","sourceQuestionId","status")`,
+
+  // ── Branded register skins ────────────────────────────────────────────────
+  // "Register of Fire Extinguishers" is a controlled document with its own
+  // number, revision, column order and print layout. So is a Register of Fire
+  // Alarm Panels. What they are NOT is separate asset registers — each is
+  // FireEquipment filtered by type, and treating them as separate stores is how
+  // this module previously ended up with two add/edit paths onto one table.
+  //
+  // So a branded register is a config row: filter, columns, branding, PDF
+  // layout. The next one is a seed entry, not a screen.
+  `CREATE TABLE IF NOT EXISTS "FireRegisterViewConfig" (
+     "id" TEXT PRIMARY KEY,
+     "tenantId" TEXT,
+     "assetType" TEXT NOT NULL,
+     "brandName" TEXT NOT NULL,
+     "routeSlug" TEXT NOT NULL,
+     "documentNo" TEXT NOT NULL,
+     "supersedesNo" TEXT,
+     "revision" TEXT NOT NULL DEFAULT 'R1',
+     "effectiveDate" TIMESTAMP(3),
+     "reviewDate" TIMESTAMP(3),
+     "department" TEXT NOT NULL DEFAULT 'EHS',
+     "columns" JSONB NOT NULL DEFAULT '[]'::jsonb,
+     "pdfTemplateKey" TEXT NOT NULL DEFAULT 'GENERIC_REGISTER',
+     "isActive" BOOLEAN NOT NULL DEFAULT true,
+     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     "createdBy" TEXT,
+     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+     "updatedBy" TEXT
+   )`,
+  `CREATE INDEX IF NOT EXISTS "ix_FireRegisterViewConfig_type"
+     ON "FireRegisterViewConfig" ("assetType","isActive")`,
+  `CREATE INDEX IF NOT EXISTS "ix_FireRegisterViewConfig_slug"
+     ON "FireRegisterViewConfig" ("routeSlug")`,
+  // One ACTIVE config per asset type. Two would make "which register IS the
+  // register for extinguishers" a question the UI answers arbitrarily. Partial,
+  // so retired configs can be kept for their document history.
+  `CREATE UNIQUE INDEX IF NOT EXISTS "uq_FireRegisterViewConfig_active"
+     ON "FireRegisterViewConfig" ("assetType")
+     WHERE "isActive" = true AND "tenantId" IS NULL`,
 ];
 
-const NEW_TABLES = ["PlantNonWorkingDay"];
+const NEW_TABLES = ["PlantNonWorkingDay", "FireRegisterViewConfig"];
 
 async function main() {
   console.log("Applying Fire checklist (PIL/EHS/CL 025-028) DDL...");

@@ -32,10 +32,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Can } from "@/components/auth/can";
 
-// The FIRE module borrows the HSE permission codes until dedicated FIRE.* grants
-// are seeded — same constant the backend router enforces (_WRITE). Named here so
-// the swap is one edit on each side rather than a search for string literals.
-const WRITE_PERMISSION = "INCIDENT.UPDATE";
+// Editing a register row is FIRE.UPDATE — not the INCIDENT.UPDATE this borrowed
+// before the dedicated grants existed. Same code the backend route enforces.
+const WRITE_PERMISSION = "FIRE.UPDATE";
 
 export type EquipmentRow = {
   id: string;

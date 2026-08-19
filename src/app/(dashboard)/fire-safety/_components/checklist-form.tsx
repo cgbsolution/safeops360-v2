@@ -18,7 +18,7 @@
 // next unit's panel would need a code change instead of a template.
 
 import * as React from "react";
-import { FileDown, Loader2, Lock, Save } from "lucide-react";
+import { AlertTriangle, FileDown, Loader2, Lock, Save } from "lucide-react";
 import {
   ANSWERS,
   ANSWER_STYLE,
@@ -29,7 +29,7 @@ import {
   fireFetch,
 } from "../lib";
 import { Footnotes } from "./document-header";
-import { SignOffPanel } from "./sign-off-panel";
+import { SignOffPanel, SignaturePayload } from "./sign-off-panel";
 
 export function ChecklistFormRunner({
   initial,
@@ -45,6 +45,10 @@ export function ChecklistFormRunner({
   const [busy, setBusy] = React.useState<"save" | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
+  // What the last transition raised. Held separately from `notice` because it is
+  // not a transient toast: an operator who just opened four CAPAs needs the list
+  // to stay on screen with links, not a message that fades.
+  const [outcome, setOutcome] = React.useState<ChecklistRun["outcome"] | null>(null);
 
   React.useEffect(() => {
     setRun(initial);
@@ -113,7 +117,7 @@ export function ChecklistFormRunner({
     }
   }
 
-  async function advance(to: Stage) {
+  async function advance(to: Stage, signature?: SignaturePayload) {
     // Unsaved edits must land before a stage moves, or the submit gate would
     // check the stored answers and reject on items the operator can see filled
     // in on screen.
@@ -121,9 +125,22 @@ export function ChecklistFormRunner({
     const path = to === "SUBMITTED" ? "submit" : to === "REVIEWED" ? "review" : "approve";
     const next = await fireFetch<ChecklistRun>(`/api/fire/checklists/run/${run.runId}/${path}`, {
       method: "POST",
+      // The signature travels with the transition rather than as a separate call:
+      // two calls means a window where the stage has moved and nothing is signed.
+      body: JSON.stringify(
+        signature
+          ? {
+              signatureKind: signature.signatureKind,
+              signaturePayload: signature.signaturePayload ?? null,
+              typedName: signature.typedName ?? null,
+            }
+          : {},
+      ),
     });
     setRun(next);
     setDraft(new Map());
+    setOutcome(next.outcome ?? null);
+    if (next.outcomeMessage) setNotice(next.outcomeMessage);
     onChanged?.(next);
   }
 
@@ -286,11 +303,62 @@ export function ChecklistFormRunner({
 
       <Footnotes lines={run.document.footnotes} />
 
+      {/* What the submit raised. A failed check that leads nowhere visible is a
+          failed check nobody acts on, so the CAPAs appear here with their numbers
+          rather than only in the CAPA register. */}
+      {outcome && (outcome.totalFailures ?? 0) > 0 && (
+        <div
+          className="mt-3 rounded-xl border p-3"
+          style={{ borderColor: MX.amber, background: MX.amberSoft }}
+        >
+          <div className="flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: MX.amber }}>
+            <AlertTriangle size={13} />
+            {outcome.totalFailures} failed check{outcome.totalFailures === 1 ? "" : "s"} on this record
+          </div>
+          <ul className="mt-1.5 space-y-1">
+            {[...(outcome.findingsCreated ?? []), ...(outcome.findingsRecurring ?? [])].map((f) => (
+              <li key={f.findingId} className="text-[11.5px]" style={{ color: MX.ink }}>
+                <span className="font-mono text-[10.5px]" style={{ color: MX.muted }}>
+                  {f.findingCode}
+                </span>{" "}
+                {f.item}
+                {f.severity === "MAJOR_NC" && (
+                  <span className="ml-1 rounded px-1 text-[9.5px] font-bold" style={{ background: MX.redSoft, color: MX.red }}>
+                    MAJOR
+                  </span>
+                )}
+                {f.isRepeat && (
+                  <span className="ml-1 rounded px-1 text-[9.5px] font-semibold" style={{ background: MX.ice, color: MX.muted }}>
+                    repeat
+                  </span>
+                )}
+                {"capaNumber" in f && (f as any).capaNumber && (
+                  <a
+                    href={`/capa?q=${encodeURIComponent((f as any).capaNumber)}`}
+                    className="ml-1.5 font-semibold underline"
+                    style={{ color: MX.navy }}
+                  >
+                    {(f as any).capaNumber}
+                  </a>
+                )}
+              </li>
+            ))}
+            {(outcome.findingsUpdated ?? []).map((f) => (
+              <li key={f.findingId} className="text-[11.5px]" style={{ color: MX.muted }}>
+                <span className="font-mono text-[10.5px]">{f.findingCode}</span> {f.item} — already open,
+                now {f.occurrences} occurrence{f.occurrences === 1 ? "" : "s"} (no duplicate CAPA raised)
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <SignOffPanel
         stage={run.stage}
         signOff={run.signOff}
         roles={run.document.signOffRoles}
         canWrite={canWrite}
+        signatureRequired={run.signOff.signatureRequired !== false}
         disabledReason={
           run.stage === "DRAFT" && missing.length
             ? `${missing.length} required check${missing.length > 1 ? "s" : ""} not answered.`
