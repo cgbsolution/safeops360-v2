@@ -55,6 +55,35 @@ export default async function FireSafetyPage() {
             <Link href="/fire-safety/equipment?dueOnly=1" className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-slate-400">Due / Overdue</Link>
           </div>
 
+          {/* The client's four controlled EHS documents (PIL/EHS/CL 025-028).
+              Grouped apart from the platform's own register links above because
+              they are a different thing: reproductions of specific controlled
+              sheets, each carrying its own document number and revision. Styled
+              in Midnight Executive to match the screens they open. */}
+          <div className="mb-4 rounded-xl border border-[#D3DEEE] bg-white p-3">
+            <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6273]">
+              Controlled checklists — Page Industries EHS
+            </div>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { href: "/fire-safety/extinguisher-register", doc: "PIL/EHSD/CL/028-R1", label: "Register of Fire Extinguishers", hint: "16-column register, due-date badges" },
+                { href: "/fire-safety/fe-inspection", doc: "PIL/EHSD/CL/027-R1", label: "FE Inspection Checklist", hint: "21 checks × Jan–Dec per cylinder" },
+                { href: "/fire-safety/fire-alarm", doc: "PIL/EHS/CL/025-R1", label: "Fire Alarm System", hint: "Daily · Monthly ×2 · Quarterly · Annual · Beam" },
+                { href: "/fire-safety/fire-hydrant", doc: "PIL/EHSD/CL/026", label: "Fire Hydrant & Sprinkler", hint: "Daily · Monthly · Quarterly · Yearly" },
+              ].map((c) => (
+                <Link
+                  key={c.href}
+                  href={c.href}
+                  className="group rounded-lg border border-[#D3DEEE] bg-[#E8EEF7] p-2.5 transition-colors hover:border-[#C9A961]"
+                >
+                  <div className="text-[10px] font-semibold tracking-wide text-[#C9A961]">{c.doc}</div>
+                  <div className="text-[12.5px] font-semibold text-[#0B1F4D]">{c.label}</div>
+                  <div className="text-[10.5px] text-[#5A6273]">{c.hint}</div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className={TILE}>
               <div className="mb-2 text-sm font-semibold text-slate-800">Equipment by status</div>
