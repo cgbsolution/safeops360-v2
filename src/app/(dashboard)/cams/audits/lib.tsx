@@ -681,7 +681,7 @@ export type AuditTemplate = {
   version: string;
 };
 
-export type PlantUser = { id: string; name: string; role: string; department: string };
+export type PlantUser = { id: string; name: string; email?: string; role: string; department: string };
 
 // Co-auditor with per-discipline scope. coAuditors on an audit may be this
 // structured shape or (legacy) a plain user-id string.

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardList, Check, Building2, Factory, Layers } from "lucide-react";
+import { ClipboardList, Check, Building2, Factory, Layers, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { IndependenceCheck, IndependenceDot } from "@/components/assurance/independence-check";
 import { usePickerPreflight } from "@/components/assurance/use-picker-preflight";
@@ -180,6 +180,11 @@ export function ScheduleModal({
   const [scopePreset, setScopePreset] = useState<string>("FULL");
   const [scheduledDate, setScheduledDate] = useState(() => new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10));
   // The owning plant, selectable in-dialog when the caller has more than one.
+  // Free-text filters for the two long people pickers. Held per-picker so
+  // narrowing the auditee list does not also narrow the auditors'.
+  const [coAuditorQuery, setCoAuditorQuery] = useState("");
+  const [auditeeQuery, setAuditeeQuery] = useState("");
+
   const [plantId, setPlantId] = useState<string | null>(initialPlantId);
   useEffect(() => { setPlantId(initialPlantId); }, [initialPlantId]);
   const activePlant = plants.find((x) => x.id === plantId) ?? plant ?? null;
@@ -397,6 +402,15 @@ export function ScheduleModal({
   }
   // Co-auditors need the same EXECUTE permission as the lead, minus whoever is
   // already the lead.
+  // Match on everything the row can show plus the email behind it, so a
+  // search works whether you remember the person, their address or their job.
+  const matchesQuery = (u: PlantUser, q: string) => {
+    const t = q.trim().toLowerCase();
+    if (!t) return true;
+    return [u.name, u.email, u.role, u.department]
+      .some((f) => (f ?? "").toLowerCase().includes(t));
+  };
+
   const coAuditorUsers = (assignable?.coAuditor ?? []).filter((u) => u.id !== leadAuditorUserId);
   const discName = (code: string) => library?.categories.find((c) => c.category_code === code)?.category_name ?? code;
 
@@ -967,11 +981,24 @@ export function ScheduleModal({
               error={assignableError}
             />
             <PickerLegend state={auditorPreflight} noun="auditor" />
+            <PickerSearch
+              value={coAuditorQuery}
+              onChange={setCoAuditorQuery}
+              placeholder="Search auditors by name or email…"
+              shown={coAuditorUsers.filter((u) => matchesQuery(u, coAuditorQuery)).length}
+              total={coAuditorUsers.length}
+            />
             <div className="max-h-28 overflow-y-auto rounded-md border border-slate-200">
               {coAuditorUsers.length === 0 && !assignableLoading && (
                 <div className="p-3 text-xs text-slate-400">No other authorised auditors at this plant.</div>
               )}
-              {coAuditorUsers.map((u) => {
+              {coAuditorUsers.length > 0
+                && coAuditorUsers.filter((u) => matchesQuery(u, coAuditorQuery)).length === 0 && (
+                <div className="p-3 text-xs text-slate-400">
+                  No auditor matches “{coAuditorQuery}”.
+                </div>
+              )}
+              {coAuditorUsers.filter((u) => matchesQuery(u, coAuditorQuery)).map((u) => {
                 const on = coAuditorIds.includes(u.id);
                 const v = auditorPreflight.verdicts[u.id];
                 const blocked = !!v && v.blockingCount > 0 && !v.waived;
@@ -982,8 +1009,13 @@ export function ScheduleModal({
                     {/* Blocked candidates stay clickable: selecting one still
                         opens the full reason panel below, which is how a waiver
                         gets requested. Greying them out would hide the reason. */}
-                    <span className={cn("text-slate-700", blocked && "text-slate-400 line-through decoration-rose-300")}>{u.name}</span>
-                    <span className="ml-auto text-[11px] text-slate-400">{u.role.replace(/_/g, " ")}</span>
+                    <span className={cn("min-w-0 truncate text-slate-700", blocked && "text-slate-400 line-through decoration-rose-300")}>
+                      {u.name}
+                      {/* Two people share a display name in this directory;
+                          without the address the picker cannot be used safely. */}
+                      {u.email && <span className="ml-1.5 text-[11px] text-slate-400">{u.email}</span>}
+                    </span>
+                    <span className="ml-auto flex-shrink-0 text-[11px] text-slate-400">{u.role.replace(/_/g, " ")}</span>
                   </Button>
                 );
               })}
@@ -1028,11 +1060,24 @@ export function ScheduleModal({
               error={assignableError}
             />
             <PickerLegend state={auditeePreflight} noun="auditee" />
+            <PickerSearch
+              value={auditeeQuery}
+              onChange={setAuditeeQuery}
+              placeholder="Search auditees by name or email…"
+              shown={auditeeCandidates.filter((u) => matchesQuery(u, auditeeQuery)).length}
+              total={auditeeCandidates.length}
+            />
             <div className="max-h-28 overflow-y-auto rounded-md border border-slate-200">
               {auditeeCandidates.length === 0 && !assignableLoading && (
                 <div className="p-3 text-xs text-slate-400">No authorised auditees at this plant.</div>
               )}
-              {auditeeCandidates.map((u) => {
+              {auditeeCandidates.length > 0
+                && auditeeCandidates.filter((u) => matchesQuery(u, auditeeQuery)).length === 0 && (
+                <div className="p-3 text-xs text-slate-400">
+                  No auditee matches “{auditeeQuery}”.
+                </div>
+              )}
+              {auditeeCandidates.filter((u) => matchesQuery(u, auditeeQuery)).map((u) => {
                 const on = auditeeIds.includes(u.id);
                 const v = auditeePreflight.verdicts[u.id];
                 const blocked = !!v && v.blockingCount > 0 && !v.waived;
@@ -1040,8 +1085,13 @@ export function ScheduleModal({
                   <Button key={u.id} type="button" variant="ghost" onClick={() => toggleAuditee(u.id)} className={cn("h-auto flex w-full items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-left text-sm last:border-0 hover:bg-slate-50", on && "bg-primary-50/60")}>
                     <span className={cn("flex size-4 items-center justify-center rounded border", on ? "border-primary-600 bg-primary-600 text-white" : "border-slate-300")}>{on && <Check size={11} />}</span>
                     <IndependenceDot verdict={v} pending={auditeePreflight.loading} />
-                    <span className={cn("text-slate-700", blocked && "text-slate-400 line-through decoration-rose-300")}>{u.name}</span>
-                    <span className="ml-auto text-[11px] text-slate-400">{u.role.replace(/_/g, " ")}</span>
+                    <span className={cn("min-w-0 truncate text-slate-700", blocked && "text-slate-400 line-through decoration-rose-300")}>
+                      {u.name}
+                      {/* Two people share a display name in this directory;
+                          without the address the picker cannot be used safely. */}
+                      {u.email && <span className="ml-1.5 text-[11px] text-slate-400">{u.email}</span>}
+                    </span>
+                    <span className="ml-auto flex-shrink-0 text-[11px] text-slate-400">{u.role.replace(/_/g, " ")}</span>
                   </Button>
                 );
               })}
@@ -1180,6 +1230,40 @@ function PickerLegend({
       )}
       {state.loading && <span className="text-slate-400">updating…</span>}
     </p>
+  );
+}
+
+function PickerSearch({
+  value, onChange, placeholder, shown, total,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder: string;
+  shown: number;
+  total: number;
+}) {
+  // Only worth the row it costs once the list is long enough to scroll.
+  if (total <= 6) return null;
+  return (
+    <div className="mb-1.5 flex items-center gap-2">
+      <div className="relative flex-1">
+        <Search size={12} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className="h-7 pl-7 text-xs"
+        />
+      </div>
+      {value.trim() && (
+        <>
+          <span className="text-[11px] tabular-nums text-slate-500">{shown} of {total}</span>
+          <Button type="button" variant="ghost" size="sm" className="h-7 px-2 text-[11px]" onClick={() => onChange("")}>
+            Clear
+          </Button>
+        </>
+      )}
+    </div>
   );
 }
 
