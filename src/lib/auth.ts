@@ -1,7 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { invalidateUserPermissions } from "./auth/permissions";
-import { backendFetch } from "./backend-fetch";
 import { prisma } from "./prisma";
 
 // Python-only auth. NextAuth is now just the Next.js session manager;
@@ -51,19 +50,22 @@ async function authorizeViaBackend(email: string, password: string) {
   // user doesn't exist, or the password is wrong.
   const url = `${BACKEND_URL.replace(/\/$/, "")}/api/auth/login`;
   console.log(`[auth] -> ${url}  (email=${email.toLowerCase()})`);
-  // Routed through backendFetch (not bare global fetch) so login gets the same
-  // 30s abort timeout and INSECURE_BACKEND_TLS handling as every other backend
-  // call. Previously this path had no timeout at all, so a hung backend could
-  // stall the login button for undici's 300s default.
+  // Deliberately the GLOBAL fetch, not backendFetch: this module is reachable
+  // from client components (auth.ts → backend/fetch.ts → user-ref.tsx), and
+  // backend-fetch.ts statically imports undici, which webpack cannot bundle
+  // for the browser ("UnhandledSchemeError: node:assert"). AbortSignal.timeout
+  // gives us the 30s cap without pulling a Node-only dependency into the
+  // client graph. Previously this path had NO timeout at all, so a hung
+  // backend could stall the login button for undici's 300s default.
   let r: Response | undefined;
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
-      r = await backendFetch(url, {
+      r = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email.toLowerCase(), password }),
         cache: "no-store",
-        timeoutMs: 30_000
+        signal: AbortSignal.timeout(30_000)
       });
       break;
     } catch (e: any) {
@@ -72,7 +74,7 @@ async function authorizeViaBackend(email: string, password: string) {
       // A timeout is NOT retryable: Python may well have processed the login
       // and only the response was lost. It also gets its own code so the user
       // is told the server was slow rather than that it was unreachable.
-      if (code === "AbortError" || code === "ABORT_ERR") {
+      if (code === "TimeoutError" || code === "AbortError" || code === "ABORT_ERR") {
         console.error(`[auth] no response within 30s — backend cold-starting or overloaded`);
         throw new Error("BACKEND_TIMEOUT");
       }
