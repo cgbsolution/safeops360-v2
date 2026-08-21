@@ -1423,7 +1423,15 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // (UPDATE), conducts (EXECUTE), closes own engagements (CLOSE), issues
     // reports (EXPORT). No APPROVE — plant-manager review of auditee responses
     // is the segregation-of-duties counterparty, not the lead auditor.
-    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
+    //
+    // ALL_PLANTS, not OWN_PLANT. Audit independence routinely sends a lead
+    // auditor to a unit that is not their home site, and the platform already
+    // expects that: `audit_assignment` offers anyone whose scope reaches the
+    // audited plant. Leaving this at OWN_PLANT meant a lead seated on a
+    // neighbouring unit's audit could be named but not act — the picker
+    // promising what the guard refused. The per-audit record guard
+    // (`_auditor_record`) still limits EXECUTE to audits they are actually on.
+    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT"], scope: "OWN_PLANT" },
     // Facilities — the Lead Auditor is the Compliance Team's final signatory on
     // a factory-profile change (after the Plant Head's Unit approval). READ so
@@ -1437,13 +1445,30 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // unreachable in the UI — the engagement page carrying their own findings
     // 403s before it can render them.
     { module: "CAMS", actions: ["READ"], scope: "OWN_PLANT" },
-    // READ + UPDATE at OWN_RECORDS is exactly the auditee shape. The audit
-    // detail endpoint passes `_reader_record(audit)`, which flattens every party
-    // to the engagement into `teamMembers`, so a seated auditee matches and
-    // nobody else's audit is visible. AUDITEE_RESPOND is gated on UPDATE with
-    // `record={"routedToUserId": user.id}` — a checkpoint routed to them, and
-    // only that one.
-    { module: "AUDIT_COMPLIANCE", actions: ["READ", "UPDATE"], scope: "OWN_RECORDS" },
+    // READ stays at OWN_RECORDS — this is the grant that keeps an auditee
+    // looking only at their own engagements. The audit detail endpoint passes
+    // `_reader_record(audit)`, which flattens every party to the engagement
+    // into `teamMembers`, so a seated auditee matches and nobody else's audit
+    // is visible.
+    { module: "AUDIT_COMPLIANCE", actions: ["READ"], scope: "OWN_RECORDS" },
+    // UPDATE is ALL_PLANTS while READ deliberately is NOT, and the split is the
+    // whole point. Two different things read these two grants:
+    //
+    //   • `_scope_covers_plant` decides whether someone may be SEATED as an
+    //     auditee, and it reads the auditee slot's permission — UPDATE. At
+    //     OWN_RECORDS this required the audited plant to be in the person's own
+    //     plant set, so an auditee could not be allocated checkpoints on another
+    //     unit's audit even after being named on it.
+    //   • `_party_filter_for` narrows the Audits register to a person's own
+    //     engagements ONLY while every READ grant they hold is OWN_RECORDS.
+    //     Widening READ too would silently turn every auditee into a
+    //     company-wide audit reader across all sites.
+    //
+    // So UPDATE opens the assignment, READ keeps the blinkers. Responding is
+    // still gated twice over: `record={"routedToUserId": user.id}` on the
+    // permission check, and the routing guard in `transition_checkpoint`, which
+    // refuses anyone who is not the checkpoint's assigned owner.
+    { module: "AUDIT_COMPLIANCE", actions: ["UPDATE"], scope: "ALL_PLANTS" },
     // Evidence upload needs no more than READ: /upload-url mints a signed
     // Supabase URL and the response carries the storage paths.
     //
@@ -1461,8 +1486,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Executes assigned engagements; records findings; raises CAPAs; own-audit analytics.
     { module: "CAMS", actions: ["READ", "EXECUTE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" },
     // Conducts only — no scheduling, no close. The per-audit record guard
-    // (_auditor_record) still restricts EXECUTE to audits they are on.
-    { module: "AUDIT_COMPLIANCE", actions: ["READ", "EXECUTE", "EXPORT"], scope: "OWN_PLANT" },
+    // (_auditor_record) still restricts EXECUTE to audits they are on, which is
+    // what makes ALL_PLANTS safe here: the scope decides which plants they can
+    // be SEATED on, the record guard decides which audits they can act on.
+    { module: "AUDIT_COMPLIANCE", actions: ["READ", "EXECUTE", "EXPORT"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE"], scope: "OWN_PLANT" }
   ],
   // ════════════════════════════════════════════════════════════════════
