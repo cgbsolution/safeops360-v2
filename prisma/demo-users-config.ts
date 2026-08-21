@@ -164,6 +164,25 @@ export const NAMED_ALL_PLANT_USERS: NamedUser[] = [
     department: "HSE",
     homePlantCode: "NW"
   },
+  // Second HSE Manager on the PoC. Same seat as Mervyn, deliberately: the role
+  // already carries the whole audit lifecycle (AUDIT_COMPLIANCE CREATE→CLOSE +
+  // SCHEDULE) and CAMS READ/TEMPLATE_AUTHOR/SCHEDULE/EXECUTE/CLOSE/
+  // FINDING_MANAGE/ANALYTICS, and the per-plant UserRole rows this file grants
+  // make every OWN_PLANT grant reach every site. CAMS.TYPE_CONFIG and
+  // CAMS.TEMPLATE_APPROVE are NOT included — audit-type configuration and
+  // publishing a template version stay with CAMS_ADMIN / AUDIT_MANAGER, which
+  // is what keeps the author and the approver of a checklist different people.
+  //
+  // Lowercase, like every entry here: sign-in matches `email.lower()` exactly,
+  // so a capitalised address would create an account nobody could log into.
+  {
+    email: "paila.padmanabham@jockeyindia.com",
+    name: "Paila Padmanabham",
+    roleCode: "HSE_MANAGER",
+    designation: "HSE Manager",
+    department: "HSE",
+    homePlantCode: "NW"
+  },
   {
     email: "narasimhan.rajan@jockeyindia.com",
     name: "Narasimhan Rajan",

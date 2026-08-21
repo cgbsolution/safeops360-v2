@@ -214,6 +214,15 @@ export default function LoginPage() {
           title: "Server unreachable",
           description: "Couldn't reach the authentication server. Please try again."
         });
+      } else if (res.error === "BACKEND_TIMEOUT") {
+        // Distinct from BACKEND_UNREACHABLE: the server WAS reachable but did
+        // not answer within 30s. Without this branch it fell through to the
+        // catch-all below and wrongly told the user their password was wrong.
+        toast({
+          variant: "error",
+          title: "Server is slow to respond",
+          description: "The authentication server didn't answer in time. Please try again."
+        });
       } else {
         // INVALID_CREDENTIALS, CredentialsSignin, or anything unexpected.
         toast({

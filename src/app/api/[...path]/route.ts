@@ -23,10 +23,31 @@ import { backendFetch } from "@/lib/backend-fetch";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "";
 
-// Node 18+'s built-in fetch already pools connections to the same host via
-// undici under the hood, so explicit keep-alive is unnecessary for the
-// localhost dev case. In production add an explicit Agent if latency
-// measurements show TCP setup is the bottleneck.
+// Connection pooling is handled by the shared, keep-alive-tuned undici agent
+// in src/lib/backend-fetch.ts. See the comment there for why socket lifetime
+// is deliberately short (frozen-lambda stale-socket race).
+
+// Connection failures where the TCP connection was never established, so the
+// backend provably never saw the request. Safe to replay for ANY method.
+const RETRY_ANY_METHOD = new Set([
+  "ECONNREFUSED",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "ENOTFOUND",
+  "EAI_AGAIN"
+]);
+
+// Socket died mid-flight. Almost always the idle-socket reuse race (the
+// request never went out), but it *could* in principle fire after the backend
+// already processed the call — so these are only replayed for GET/HEAD, where
+// a duplicate is harmless. A retried POST could double-create a record, which
+// in an EHS system is worse than showing an error.
+const RETRY_IDEMPOTENT_ONLY = new Set(["ECONNRESET", "UND_ERR_SOCKET", "EPIPE"]);
+
+function shouldRetry(code: string, method: string): boolean {
+  if (RETRY_ANY_METHOD.has(code)) return true;
+  const idempotent = method === "GET" || method === "HEAD";
+  return idempotent && RETRY_IDEMPOTENT_ONLY.has(code);
+}
 
 // Paths the proxy must NOT swallow — they have their own dedicated handlers
 // in this app and must keep working for the Node-only features.
@@ -103,19 +124,34 @@ async function forward(req: NextRequest, params: { path: string[] }): Promise<Ne
   // skeleton and thought the page was broken; with it, they get a clean
   // 504 + retry button instead.
   const t0 = Date.now();
-  let res: Response;
-  try {
-    // backendFetch honours INSECURE_BACKEND_TLS=true (env-gated, off by
-    // default) so we can keep working when the Python backend is on a
-    // self-signed cert during the Let's Encrypt rollout.
-    res = await backendFetch(url, {
-      method: req.method,
-      headers,
-      body,
-      cache: "no-store",
-      timeoutMs: 30_000
-    });
-  } catch (err: any) {
+  let res: Response | undefined;
+  let lastErr: any;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      // backendFetch honours INSECURE_BACKEND_TLS=true (env-gated, off by
+      // default) so we can keep working when the Python backend is on a
+      // self-signed cert during the Let's Encrypt rollout.
+      res = await backendFetch(url, {
+        method: req.method,
+        headers,
+        body,
+        cache: "no-store",
+        timeoutMs: 30_000
+      });
+      break;
+    } catch (err: any) {
+      lastErr = err;
+      const code = err?.cause?.code ?? err?.code ?? err?.name ?? "unknown";
+      if (attempt < 2 && shouldRetry(code, req.method)) {
+        // eslint-disable-next-line no-console
+        console.warn(`[proxy] ${code} on ${req.method} ${url} — retrying once on a fresh connection`);
+        continue;
+      }
+      break;
+    }
+  }
+  if (!res) {
+    const err: any = lastErr;
     const code = err?.cause?.code ?? err?.code ?? err?.name ?? "unknown";
     // Log full detail to Vercel function logs so you can see it in
     // Vercel → Deployments → Logs without needing to reproduce.

@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { invalidateUserPermissions } from "./auth/permissions";
+import { backendFetch } from "./backend-fetch";
 import { prisma } from "./prisma";
 
 // Python-only auth. NextAuth is now just the Next.js session manager;
@@ -16,6 +17,33 @@ if (!BACKEND_URL) {
   console.error("[auth] BACKEND_URL is unset. Login will return null for every request.");
 }
 
+// Transport-level failures that mean the request never reached — or was never
+// processed by — Python, so replaying it is safe. The common one in production
+// is a keep-alive race: undici pools sockets, and if the reverse proxy closes
+// an idle connection at the moment we reuse it, the request dies instantly
+// with ECONNRESET / UND_ERR_SOCKET. curl never reproduces this because it
+// opens a fresh connection every time, which is why the API looks perfectly
+// healthy whenever it is tested by hand.
+const RETRYABLE_FETCH_CODES = new Set([
+  "ECONNRESET",
+  "UND_ERR_SOCKET",
+  "ECONNREFUSED",
+  "UND_ERR_CONNECT_TIMEOUT",
+  "ENOTFOUND",
+  "EAI_AGAIN",
+  "EPIPE"
+]);
+
+// Node's fetch wraps the real error in `.cause`; `e.code` is ALWAYS undefined
+// and `e.message` is always the bare string "fetch failed". This file used to
+// read only `e.code`, so every outage logged an empty code and an unusable
+// message — a socket reset, a dead container and a DNS failure were
+// indistinguishable. Read `.cause.code` first, exactly as the catch-all proxy
+// in src/app/api/[...path]/route.ts already does.
+function failureCode(e: any): string {
+  return e?.cause?.code ?? e?.code ?? e?.name ?? "unknown";
+}
+
 async function authorizeViaBackend(email: string, password: string) {
   // Server-side log lines visible in `npm run dev` terminal — without this,
   // NextAuth's authorize() swallows the failure and the browser only sees a
@@ -23,23 +51,45 @@ async function authorizeViaBackend(email: string, password: string) {
   // user doesn't exist, or the password is wrong.
   const url = `${BACKEND_URL.replace(/\/$/, "")}/api/auth/login`;
   console.log(`[auth] -> ${url}  (email=${email.toLowerCase()})`);
-  let r: Response;
-  try {
-    r = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: email.toLowerCase(), password }),
-      cache: "no-store"
-    });
-  } catch (e: any) {
-    console.error(`[auth] backend fetch FAILED (${e?.code ?? ""}): ${e?.message ?? e}`);
-    console.error(`[auth] is the Python backend running at ${BACKEND_URL}?`);
-    console.error(`[auth] try: curl ${BACKEND_URL.replace(/\/$/, "")}/health`);
-    // Thrown error messages are propagated verbatim into signIn()'s res.error
-    // (NextAuth v4 callback route encodes error.message into ?error=…). The
-    // login page maps these codes to the right toast.
-    throw new Error("BACKEND_UNREACHABLE");
+  // Routed through backendFetch (not bare global fetch) so login gets the same
+  // 30s abort timeout and INSECURE_BACKEND_TLS handling as every other backend
+  // call. Previously this path had no timeout at all, so a hung backend could
+  // stall the login button for undici's 300s default.
+  let r: Response | undefined;
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      r = await backendFetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.toLowerCase(), password }),
+        cache: "no-store",
+        timeoutMs: 30_000
+      });
+      break;
+    } catch (e: any) {
+      const code = failureCode(e);
+      console.error(`[auth] backend fetch FAILED attempt ${attempt}/2 (${code}): ${e?.message ?? e}`);
+      // A timeout is NOT retryable: Python may well have processed the login
+      // and only the response was lost. It also gets its own code so the user
+      // is told the server was slow rather than that it was unreachable.
+      if (code === "AbortError" || code === "ABORT_ERR") {
+        console.error(`[auth] no response within 30s — backend cold-starting or overloaded`);
+        throw new Error("BACKEND_TIMEOUT");
+      }
+      if (attempt < 2 && RETRYABLE_FETCH_CODES.has(code)) {
+        console.warn(`[auth] ${code} — retrying once on a fresh connection`);
+        continue;
+      }
+      console.error(`[auth] is the Python backend running at ${BACKEND_URL}?`);
+      console.error(`[auth] try: curl ${BACKEND_URL.replace(/\/$/, "")}/health`);
+      // Thrown error messages are propagated verbatim into signIn()'s res.error
+      // (NextAuth v4 callback route encodes error.message into ?error=…). The
+      // login page maps these codes to the right toast.
+      throw new Error("BACKEND_UNREACHABLE");
+    }
   }
+  // Unreachable in practice — the loop either breaks with a response or throws.
+  if (!r) throw new Error("BACKEND_UNREACHABLE");
   if (!r.ok) {
     const body = await r.text().catch(() => "");
     console.error(`[auth] backend ${url} returned ${r.status}: ${body.slice(0, 300)}`);

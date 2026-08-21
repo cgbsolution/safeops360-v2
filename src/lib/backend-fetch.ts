@@ -31,21 +31,43 @@ import { Agent, fetch as undiciFetch } from "undici";
 
 const INSECURE = process.env.INSECURE_BACKEND_TLS === "true";
 
-// Lazily build the insecure dispatcher only when the flag is on. Built
-// once per Lambda warm-start so every request reuses the same agent
-// (connection pooling).
-let insecureAgent: Agent | null = null;
-function getInsecureAgent(): Agent {
-  if (!insecureAgent) {
-    insecureAgent = new Agent({ connect: { rejectUnauthorized: false } });
-    // eslint-disable-next-line no-console
-    console.warn(
-      "⚠️  [backend-fetch] INSECURE_BACKEND_TLS=true — Vercel will accept " +
-        "self-signed / invalid certificates from the backend. Remove this " +
-        "env var as soon as the backend cert is fixed."
-    );
+// ── Keep-alive tuning: the fix for random "Backend unreachable" ──────────
+//
+// Vercel freezes a serverless function between invocations, but undici's
+// socket pool survives the freeze and still believes its pooled TCP
+// connections are open. Meanwhile the reverse proxy in front of Python has
+// long since closed them. On the next invocation undici grabs a dead socket,
+// and the request fails instantly with ECONNRESET / UND_ERR_SOCKET — surfaced
+// to the user as "Server unreachable" even though Python is perfectly healthy.
+//
+// This is why the API always looks fine when tested by hand: curl opens a
+// fresh connection every time and structurally cannot hit the race.
+//
+// Holding sockets for only a few seconds means undici discards them as
+// expired rather than reusing a corpse. Override with
+// BACKEND_KEEPALIVE_TIMEOUT_MS if the proxy's idle timeout is known.
+const KEEP_ALIVE_MS = Number(process.env.BACKEND_KEEPALIVE_TIMEOUT_MS ?? 4_000);
+
+// Built once per warm start so connection pooling still works within a burst
+// of requests — we shorten socket lifetime, we don't disable pooling.
+let agent: Agent | null = null;
+function getAgent(): Agent {
+  if (!agent) {
+    agent = new Agent({
+      keepAliveTimeout: KEEP_ALIVE_MS,
+      keepAliveMaxTimeout: KEEP_ALIVE_MS,
+      ...(INSECURE ? { connect: { rejectUnauthorized: false } } : {})
+    });
+    if (INSECURE) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        "⚠️  [backend-fetch] INSECURE_BACKEND_TLS=true — Vercel will accept " +
+          "self-signed / invalid certificates from the backend. Remove this " +
+          "env var as soon as the backend cert is fixed."
+      );
+    }
   }
-  return insecureAgent;
+  return agent;
 }
 
 export type BackendFetchOptions = RequestInit & {
@@ -77,16 +99,17 @@ export async function backendFetch(
       // logs once at first construction.
       // eslint-disable-next-line no-console
       console.warn(`[backend-fetch] insecure-TLS request → ${url}`);
-      // undici.fetch has a slightly different Response type but it's
-      // structurally identical for our consumers.
-      const res = (await undiciFetch(url, {
-        ...rest,
-        signal: ctrl.signal,
-        dispatcher: getInsecureAgent()
-      } as any)) as unknown as Response;
-      return res;
     }
-    return await fetch(url, { ...rest, signal: ctrl.signal });
+    // Always go through the shared keep-alive-tuned dispatcher (not the global
+    // fetch) so the stale-socket protection above applies to every backend
+    // call, not just the insecure-TLS ones. undici.fetch has a slightly
+    // different Response type but it's structurally identical for our
+    // consumers.
+    return (await undiciFetch(url, {
+      ...rest,
+      signal: ctrl.signal,
+      dispatcher: getAgent()
+    } as any)) as unknown as Response;
   } finally {
     if (timer !== null) clearTimeout(timer);
   }
