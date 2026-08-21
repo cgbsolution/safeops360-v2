@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { PERSON_CLEAR, PersonSelect } from "@/components/ui/person-select";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -785,14 +786,14 @@ function ActionBlock({
               </Field>
               <div className="grid gap-2 sm:grid-cols-3">
                 <Field label="Responsibility">
-                  <Select
+                  <PersonSelect
                     value={draft.ownerUserId}
-                    onChange={(e) => setDraft({ ...draft, ownerUserId: e.target.value })}
-                  >
-                    {users.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name}</option>
-                    ))}
-                  </Select>
+                    // This list carries names only — no role/department to show.
+                    groups={users.length ? [{ label: "", members: users }] : []}
+                    placeholder="— select an owner —"
+                    emptyText="No users are available at this site."
+                    onPick={(v) => setDraft({ ...draft, ownerUserId: v === PERSON_CLEAR ? "" : v })}
+                  />
                 </Field>
                 <Field label="Target date">
                   <Input

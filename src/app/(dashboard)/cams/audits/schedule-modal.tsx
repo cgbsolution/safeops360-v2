@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { PERSON_CLEAR, PersonSelect } from "@/components/ui/person-select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -188,6 +189,12 @@ export function ScheduleModal({
   const [plantId, setPlantId] = useState<string | null>(initialPlantId);
   useEffect(() => { setPlantId(initialPlantId); }, [initialPlantId]);
   const activePlant = plants.find((x) => x.id === plantId) ?? plant ?? null;
+
+  /** Candidates as PersonSelect options — one flat, unlabelled group. */
+  const asOptions = (list: { id: string; name: string; role: string; department?: string }[]) =>
+    list.length ? [{ label: "", members: list.map((u) => ({
+      id: u.id, name: u.name, role: u.role.replace(/_/g, " "), department: u.department,
+    })) }] : [];
 
   // No default lead: pre-selecting the alphabetically-first plant user was how
   // an unauthorised person got seated by simply not touching the field. The
@@ -906,10 +913,15 @@ export function ScheduleModal({
           <div className="grid grid-cols-2 gap-3">
             <Field label="Scheduled date" required><Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} /></Field>
             <Field label="Lead auditor" required error={touched ? leadError : null}>
-              <Select value={leadAuditorUserId} onChange={(e) => setLead(e.target.value)} aria-invalid={!!(touched && leadError)} disabled={assignableLoading}>
-                <option value="">{assignableLoading ? "loading…" : "— select —"}</option>
-                {leadCandidates.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.role.replace(/_/g, " ")})</option>)}
-              </Select>
+              <PersonSelect
+                value={leadAuditorUserId}
+                groups={asOptions(leadCandidates)}
+                placeholder={assignableLoading ? "loading…" : "— select —"}
+                emptyText="Nobody at this site holds AUDIT_COMPLIANCE.EXECUTE."
+                invalid={!!(touched && leadError)}
+                disabled={assignableLoading}
+                onPick={(v) => setLead(v === PERSON_CLEAR ? "" : v)}
+              />
               <SlotHint
                 loading={assignableLoading}
                 count={leadCandidates.length}
@@ -927,10 +939,14 @@ export function ScheduleModal({
               offered and left empty. */}
           {!isVendor && (
             <Field label="Plant manager (reviewer)">
-              <Select value={plantManagerUserId} onChange={(e) => setPM(e.target.value)} disabled={assignableLoading}>
-                <option value="">— none —</option>
-                {pmCandidates.map((u) => <option key={u.id} value={u.id}>{u.name} ({u.role.replace(/_/g, " ")})</option>)}
-              </Select>
+              <PersonSelect
+                value={plantManagerUserId}
+                groups={asOptions(pmCandidates)}
+                placeholder="— none —" clearLabel="— none —"
+                emptyText="Nobody at this site holds AUDIT_COMPLIANCE.APPROVE."
+                disabled={assignableLoading}
+                onPick={(v) => setPM(v === PERSON_CLEAR ? "" : v)}
+              />
               <SlotHint
                 loading={assignableLoading}
                 count={pmCandidates.length}
