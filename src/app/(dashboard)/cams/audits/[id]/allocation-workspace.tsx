@@ -209,6 +209,30 @@ function scopedTo(members: AuditTeamMember[], disciplineId: string) {
   );
 }
 
+/** Everyone who may CONDUCT this discipline: the lead auditor, then the
+ *  co-auditors scoped to it.
+ *
+ *  The lead belongs in this list by right, not as a courtesy — the team panel
+ *  states the rule as "conducts every discipline not assigned to a co-auditor",
+ *  so they cover all of them. They were missing because the picker was built
+ *  from `coAuditors` alone, and the lead is a separate seat on the team.
+ *
+ *  This also retires the old "— lead auditor —" pseudo-option. It looked like a
+ *  different kind of thing from picking a person, but the server resolves
+ *  `auditorId: null` as `audit.leadAuditorUserId` and writes exactly the id
+ *  that naming the lead would have written. Two controls, one outcome, and the
+ *  vaguer one hid whose name it meant. */
+function auditorPool(team: AuditTeam | null, disciplineId: string | null): AuditTeamMember[] {
+  const co = team?.coAuditors ?? [];
+  // `null` = no narrowing. The By-checkpoint tab selects rows that deliberately
+  // cut across disciplines, so scoping its picker to any single one would drop
+  // co-auditors who are eligible for part of the selection.
+  const scoped = disciplineId === null ? co : scopedTo(co, disciplineId);
+  const lead = team?.leadAuditor;
+  if (!lead) return scoped;
+  return [lead, ...scoped.filter((m) => m.userId !== lead.userId)];
+}
+
 /** Team-member picker.
  *
  *  A Radix Popover rather than the native `<select>` this replaced. Three
@@ -219,18 +243,21 @@ function scopedTo(members: AuditTeamMember[], disciplineId: string) {
  *  in order to pick correctly — could not be shown; and it ignored the app's
  *  styling entirely. The Popover portals with collision detection, so it flips
  *  and scrolls inside the viewport instead. */
-function MemberPicker({ value, members, placeholder, clearLabel, disabled, onPick, emptyText }: {
+function MemberPicker({ value, members, placeholder, clearLabel, disabled, onPick, emptyText, leadId }: {
   value: string;
   members: AuditTeamMember[];
   placeholder: string;
-  clearLabel: string;
+  /** Omit to hide the clear row entirely — the auditor axis has no use for it
+   *  now that the lead auditor is a named entry in the list itself. */
+  clearLabel?: string;
   disabled?: boolean;
   emptyText: string;
+  leadId?: string | null;
   onPick: (v: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const current = members.find((m) => m.userId === value);
-  const label = value === CLEAR ? clearLabel : current?.name ?? placeholder;
+  const label = value === CLEAR ? (clearLabel ?? placeholder) : current?.name ?? placeholder;
   const chosen = value !== "";
 
   return (
@@ -271,6 +298,11 @@ function MemberPicker({ value, members, placeholder, clearLabel, disabled, onPic
                 <span className="min-w-0 flex-1">
                   <span className="flex items-center gap-1.5">
                     <span className="truncate text-xs font-medium text-slate-800">{m.name}</span>
+                    {m.userId === leadId && (
+                      <span className="shrink-0 rounded bg-primary-100 px-1 py-px text-[9px] font-semibold uppercase tracking-wide text-primary-700">
+                        Lead
+                      </span>
+                    )}
                     {/* An unauthorised seat is exactly why their action would
                         403 later — worth seeing BEFORE handing them 40 rows. */}
                     {!m.authorised && (
@@ -284,15 +316,19 @@ function MemberPicker({ value, members, placeholder, clearLabel, disabled, onPic
               </button>
             ))
           )}
-          <div className="my-1 border-t border-slate-100" />
-          <button
-            type="button"
-            onClick={() => { onPick(CLEAR); setOpen(false); }}
-            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] text-slate-500 hover:bg-slate-100"
-          >
-            <Check size={13} className={cn("shrink-0", value === CLEAR ? "text-primary-600" : "invisible")} />
-            {clearLabel}
-          </button>
+          {clearLabel && (
+            <>
+              <div className="my-1 border-t border-slate-100" />
+              <button
+                type="button"
+                onClick={() => { onPick(CLEAR); setOpen(false); }}
+                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-[11px] text-slate-500 hover:bg-slate-100"
+              >
+                <Check size={13} className={cn("shrink-0", value === CLEAR ? "text-primary-600" : "invisible")} />
+                {clearLabel}
+              </button>
+            </>
+          )}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
@@ -321,7 +357,7 @@ function DisciplineTab({ disciplines, team, busy, setBusy, allocate }: {
     setSel((m) => ({ ...m, [id]: { ...rowOf(id, m), [axis]: value } }));
 
   const labelFor = (axis: Axis, value: string, pool: AuditTeamMember[]) => {
-    if (value === CLEAR) return axis === "owner" ? "Unassigned" : "Lead auditor";
+    if (value === CLEAR) return "Unassigned";  // auditee axis only
     return pool.find((m) => m.userId === value)?.name ?? value;
   };
 
@@ -371,7 +407,7 @@ function DisciplineTab({ disciplines, team, busy, setBusy, allocate }: {
           const working = busy === g.categoryId;
           const pools = {
             owner: scopedTo(team?.auditees ?? [], g.categoryId),
-            auditor: scopedTo(team?.coAuditors ?? [], g.categoryId),
+            auditor: auditorPool(team, g.categoryId),
           };
           return (
             <div key={g.categoryId} className="grid grid-cols-[1fr_11rem_11rem_5.5rem] items-center gap-2 px-5 py-2.5">
@@ -395,8 +431,8 @@ function DisciplineTab({ disciplines, team, busy, setBusy, allocate }: {
 
               <MemberPicker
                 value={row.auditor} members={pools.auditor} disabled={working}
-                placeholder="Assign auditor →" clearLabel="— lead auditor —"
-                emptyText="No co-auditor is scoped to this discipline — the lead auditor conducts it."
+                placeholder="Assign auditor →" leadId={team?.leadAuditor?.userId}
+                emptyText="This audit has no lead auditor or co-auditor. Add one under Edit team."
                 onPick={(v) => pick(g.categoryId, "auditor", v)}
               />
 
@@ -509,10 +545,8 @@ function CheckpointTab({ auditId, disciplines, team, nameOf, allocate }: {
         const v = pend[axis];
         if (v === "") continue;  // untouched — must not be sent at all
         const userId = v === CLEAR ? null : v;
-        const pool = axis === "owner" ? team?.auditees : team?.coAuditors;
-        const name = v === CLEAR
-          ? (axis === "owner" ? "Unassigned" : "Lead auditor")
-          : pool?.find((m) => m.userId === v)?.name ?? v;
+        const pool = axis === "owner" ? (team?.auditees ?? []) : auditorPool(team, null);
+        const name = v === CLEAR ? "Unassigned" : pool.find((m) => m.userId === v)?.name ?? v;
         const ok = await allocate(
           axis === "owner"
             ? { checkpointIds: ids, ownerId: userId, setOwner: true }
@@ -567,9 +601,9 @@ function CheckpointTab({ auditId, disciplines, team, nameOf, allocate }: {
           <Label className="text-[11px] text-slate-500">Auditor</Label>
           <div className="w-44">
             <MemberPicker
-              value={pend.auditor} members={team?.coAuditors ?? []} disabled={applying}
-              placeholder="Assign →" clearLabel="— lead auditor —"
-              emptyText="This audit has no co-auditors — the lead auditor conducts everything."
+              value={pend.auditor} members={auditorPool(team, null)} disabled={applying}
+              placeholder="Assign →" leadId={team?.leadAuditor?.userId}
+              emptyText="This audit has no lead auditor or co-auditor. Add one under Edit team."
               onPick={(v) => setPend((p) => ({ ...p, auditor: v }))}
             />
           </div>
