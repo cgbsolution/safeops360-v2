@@ -472,6 +472,7 @@ export function AuditDetailView({
           plantId={audit.plantId}
           disciplines={audit.disciplineRollup ?? []}
           knownNames={audit.userNames ?? {}}
+          team={audit.team ?? null}
           onClose={() => setShowAllocate(false)}
           onChanged={() => router.refresh()}
         />
