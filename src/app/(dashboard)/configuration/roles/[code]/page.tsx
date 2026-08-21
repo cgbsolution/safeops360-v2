@@ -10,6 +10,8 @@ import { RolePermissionMatrix } from "../role-permission-matrix";
 
 export const dynamic = "force-dynamic";
 
+const USER_LIST_LIMIT = 50;
+
 export default async function RoleDetailPage(props: { params: Promise<{ code: string }> }) {
   await requirePermission("CONFIGURATION.ROLES");
   const params = await props.params;
@@ -17,11 +19,27 @@ export default async function RoleDetailPage(props: { params: Promise<{ code: st
   const role = await prisma.role.findUnique({
     where: { code: params.code },
     include: {
-      permissions: { include: { permission: true } },
-      users: { include: { user: { select: { id: true, name: true, email: true } } }, take: 50 }
+      permissions: { include: { permission: true } }
     }
   });
   if (!role) return notFound();
+
+  // One entry per PERSON, not per UserRole row. A user who holds this role
+  // across the whole group has one PLANT-scoped row per plant (that is what
+  // named-users-sync.ts grants so OWN_PLANT reaches every site), so listing
+  // assignment rows repeated the same few names down the panel, inflated the
+  // count badge, and pushed everyone else past the 50-row cut-off.
+  const userWhere = { userRoles: { some: { roleId: role.id } } };
+  const [users, userCount] = await Promise.all([
+    prisma.user.findMany({
+      where: userWhere,
+      select: { id: true, name: true, email: true },
+      orderBy: [{ name: "asc" }],
+      take: USER_LIST_LIMIT
+    }),
+    prisma.user.count({ where: userWhere })
+  ]);
+  const truncated = userCount > users.length;
 
   const allPermissions = await prisma.permission.findMany({
     orderBy: [{ module: "asc" }, { action: "asc" }]
@@ -59,7 +77,7 @@ export default async function RoleDetailPage(props: { params: Promise<{ code: st
               </Badge>
             )}
             <Badge className="bg-blue-50 text-blue-700">
-              <Users size={10} className="mr-1" /> {role.users.length}+ users
+              <Users size={10} className="mr-1" /> {userCount} {userCount === 1 ? "user" : "users"}
             </Badge>
           </div>
         }
@@ -96,20 +114,22 @@ export default async function RoleDetailPage(props: { params: Promise<{ code: st
         <Card>
           <CardHeader>
             <CardTitle>Users with this role</CardTitle>
-            <CardDescription>{role.users.length}+ assigned (showing first 50).</CardDescription>
+            <CardDescription>
+              {userCount} assigned{truncated ? ` (showing first ${USER_LIST_LIMIT})` : ""}.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            {role.users.length === 0 ? (
+            {users.length === 0 ? (
               <p className="text-sm text-slate-500">No users currently hold this role.</p>
             ) : (
               <div className="space-y-1">
-                {role.users.map((ur) => (
+                {users.map((u) => (
                   <Link
-                    key={ur.id}
-                    href={`/configuration/users/${ur.user.id}`}
+                    key={u.id}
+                    href={`/configuration/users/${u.id}`}
                     className="block text-sm hover:text-primary-700 hover:bg-slate-50 px-2 py-1 rounded"
                   >
-                    {ur.user.name} <span className="text-xs text-slate-500">({ur.user.email})</span>
+                    {u.name} <span className="text-xs text-slate-500">({u.email})</span>
                   </Link>
                 ))}
               </div>

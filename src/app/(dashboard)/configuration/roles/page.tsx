@@ -8,18 +8,32 @@ export const dynamic = "force-dynamic";
 export default async function RolesPage() {
   await requirePermission("CONFIGURATION.ROLES");
 
-  const roles = await prisma.role.findMany({
-    orderBy: [{ isSystem: "desc" }, { sortOrder: "asc" }],
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      description: true,
-      isSystem: true,
-      isActive: true,
-      _count: { select: { users: true, permissions: true } }
-    }
-  });
+  const [roles, assignments] = await Promise.all([
+    prisma.role.findMany({
+      orderBy: [{ isSystem: "desc" }, { sortOrder: "asc" }],
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        description: true,
+        isSystem: true,
+        isActive: true,
+        _count: { select: { permissions: true } }
+      }
+    }),
+    // Counted here rather than via `_count: { users: true }`, which counts
+    // UserRole ROWS: someone holding a role across the group has one
+    // PLANT-scoped row per plant, so the column read several times the real
+    // headcount. Tallied in JS because Prisma's `_count` has no DISTINCT.
+    prisma.userRole.findMany({ select: { roleId: true, userId: true } })
+  ]);
+
+  const usersByRole = new Map<string, Set<string>>();
+  for (const a of assignments) {
+    const seen = usersByRole.get(a.roleId) ?? new Set<string>();
+    seen.add(a.userId);
+    usersByRole.set(a.roleId, seen);
+  }
 
   const rows: RoleRow[] = roles.map((r) => ({
     id: r.id,
@@ -27,7 +41,7 @@ export default async function RolesPage() {
     name: r.name,
     description: r.description ?? null,
     isSystem: r.isSystem,
-    usersCount: r._count.users,
+    usersCount: usersByRole.get(r.id)?.size ?? 0,
     permissionsCount: r._count.permissions,
     isActive: r.isActive
   }));

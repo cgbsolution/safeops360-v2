@@ -53,10 +53,16 @@ export default async function UsersPage(props: {
 
   const rows: UserRow[] = users.map((u) => {
     const isAdminLike = ADMIN_LIKE_ROLES.has(u.role) || u.userRoles.some((r) => ADMIN_LIKE_ROLES.has(r.role.code));
-    const additional = u.userRoles
-      .map((r) => r.role)
-      .filter((r) => r.code !== u.role && r.isActive)
-      .map((r) => r.name);
+    // Deduped: one UserRole row per plant means a group-wide role would
+    // otherwise render the same badge once per plant.
+    const additional = [
+      ...new Set(
+        u.userRoles
+          .map((r) => r.role)
+          .filter((r) => r.code !== u.role && r.isActive)
+          .map((r) => r.name)
+      )
+    ];
     return {
       id: u.id,
       name: u.name,
