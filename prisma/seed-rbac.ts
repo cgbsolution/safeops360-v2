@@ -788,7 +788,12 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "MOC",          actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "DELETE", "EXPORT"],              scope: "OWN_PLANT" },
     // ── Audit & Compliance ──────────────────────────────────────────
     // SCHEDULE is currently held ONLY by HSE Manager + ADMIN.
-    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "SCHEDULE"],        scope: "OWN_PLANT" },
+    // ALL_PLANTS, the same reach as LEAD_AUDITOR. An HSE Manager owns the audit
+    // programme across sites, and OWN_PLANT limited them to the plants they
+    // happen to be SEATED at — two of twenty-eight for a manager holding a
+    // NW + SW seat, which is exactly what the Owning-site picker offered.
+    // ALL_PLANTS stores no plant list, so a site added later needs no RBAC edit.
+    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "SCHEDULE"],        scope: "ALL_PLANTS" },
     { module: "AUDIT",        actions: ["VIEW"],                                                                                              scope: "OWN_PLANT" },
     // ── PPE ──────────────────────────────────────────────────────────
     { module: "PPE",          actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "ISSUE", "INSPECT", "CATALOG_MANAGE", "RETIRE_APPROVE", "RECALL_MANAGE"], scope: "OWN_PLANT" },
@@ -1417,12 +1422,24 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // export the PDF that gets handed over. No write authority on the records
     // under audit.
     { module: "FIRE",        actions: ["READ", "EXPORT"],                      scope: "OWN_PLANT" },
-    // Own-site engagements (router/own-plant scope); authors templates; raises CAPAs.
-    { module: "CAMS", actions: ["READ", "TEMPLATE_AUTHOR", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" },
-    // Audit engine: schedules (CREATE), allocates checkpoints + adds disciplines
-    // (UPDATE), conducts (EXECUTE), closes own engagements (CLOSE), issues
-    // reports (EXPORT). No APPROVE — plant-manager review of auditee responses
-    // is the segregation-of-duties counterparty, not the lead auditor.
+    // Cross-site engagements, matching the audit grant below; authors templates;
+    // raises CAPAs. Leaving CAMS narrower than AUDIT_COMPLIANCE is how the same
+    // role ends up able to conduct an audit at a site whose inspection register
+    // it cannot open.
+    { module: "CAMS", actions: ["READ", "TEMPLATE_AUTHOR", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
+    // Audit engine: schedules (SCHEDULE + CREATE), allocates checkpoints + adds
+    // disciplines (UPDATE), conducts (EXECUTE), closes own engagements (CLOSE),
+    // issues reports (EXPORT). No APPROVE — plant-manager review of auditee
+    // responses is the segregation-of-duties counterparty, not the lead auditor.
+    // That is the ONE difference from HSE_MANAGER on this module, and it is
+    // about who signs off on whom rather than about reach.
+    //
+    // SCHEDULE was absent while this comment already said "schedules": the
+    // Audits screen gates its + Schedule Audit button on
+    // AUDIT_COMPLIANCE.SCHEDULE, so a Lead Auditor could not raise the audits
+    // they are the named owner of — the button was never rendered, with no
+    // error to explain it. The CAMS grant above always included SCHEDULE, so
+    // the two engines disagreed about the same role.
     //
     // ALL_PLANTS, not OWN_PLANT. Audit independence routinely sends a lead
     // auditor to a unit that is not their home site, and the platform already
@@ -1431,7 +1448,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // neighbouring unit's audit could be named but not act — the picker
     // promising what the guard refused. The per-audit record guard
     // (`_auditor_record`) still limits EXECUTE to audits they are actually on.
-    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "SCHEDULE"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT"], scope: "OWN_PLANT" },
     // Facilities — the Lead Auditor is the Compliance Team's final signatory on
     // a factory-profile change (after the Plant Head's Unit approval). READ so
