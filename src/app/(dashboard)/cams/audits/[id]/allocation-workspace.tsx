@@ -145,7 +145,7 @@ export function AllocationWorkspace({ auditId, plantId, disciplines, knownNames 
           ))}
           <span className="ml-2 text-[11px] text-slate-400">
             {mode === "discipline"
-              ? "Auditee answers findings · auditor conducts the checkpoints"
+              ? "Auditee answers findings · auditor conducts the checkpoints · nothing is saved until you press Update"
               : "Select any rows — they need not share a discipline"}
           </span>
         </div>
@@ -172,67 +172,137 @@ export function AllocationWorkspace({ auditId, plantId, disciplines, knownNames 
   );
 }
 
+/** Sentinel for the "clear this axis" option.
+ *
+ *  It cannot be `""`: that is the placeholder's value, and a controlled
+ *  `<select>` with two options sharing one value renders whichever comes
+ *  first — so "— unassign —" was indistinguishable from "nothing picked yet".
+ *  That was survivable while every change fired instantly; staging a choice
+ *  makes the two states genuinely different and the collision has to go. */
+const CLEAR = "__clear__";
+
+type Axis = "owner" | "auditor";
+type RowSel = Record<Axis, string>;
+const EMPTY_ROW: RowSel = { owner: "", auditor: "" };
+
 function DisciplineTab({ disciplines, slots, busy, setBusy, allocate }: {
   disciplines: DisciplineRollup[]; slots: Slots;
   busy: string | null; setBusy: (v: string | null) => void;
   allocate: (body: Record<string, unknown>, label: string) => Promise<unknown>;
 }) {
-  async function assign(disciplineId: string, axis: "owner" | "auditor", userId: string, name: string) {
-    setBusy(`${disciplineId}:${axis}`);
-    await allocate(
-      axis === "owner"
-        ? { disciplineId, ownerId: userId || null, setOwner: true }
-        : { disciplineId, auditorId: userId || null, setOwner: false, setAuditor: true },
-      userId ? `${axis === "owner" ? "Auditee" : "Auditor"} → ${name}` : "Unassigned",
-    );
-    setBusy(null);
+  // What the pickers currently show, and what was last written. A row is dirty
+  // when they disagree — which is the whole point of the Update button: picking
+  // a name is now a statement of intent, not the act itself. Allocating a whole
+  // discipline moves 40+ checkpoints, and doing that on the change event meant
+  // a mis-click was already saved before you could read what it said.
+  const [sel, setSel] = useState<Record<string, RowSel>>({});
+  const [saved, setSaved] = useState<Record<string, RowSel>>({});
+
+  const rowOf = (id: string, m: Record<string, RowSel>) => m[id] ?? EMPTY_ROW;
+  const isDirty = (id: string) => {
+    const a = rowOf(id, sel), b = rowOf(id, saved);
+    return a.owner !== b.owner || a.auditor !== b.auditor;
+  };
+
+  const pick = (id: string, axis: Axis, value: string) =>
+    setSel((m) => ({ ...m, [id]: { ...rowOf(id, m), [axis]: value } }));
+
+  const labelFor = (axis: Axis, value: string) => {
+    if (value === CLEAR) return axis === "owner" ? "Unassigned" : "Lead auditor";
+    const list = axis === "owner" ? slots.auditee : slots.coAuditor;
+    return list.find((u) => u.id === value)?.name ?? value;
+  };
+
+  /** Commit one discipline. Each axis is its own call because `setOwner` /
+   *  `setAuditor` are what tell the server which axis this request changes —
+   *  an untouched axis must not be sent at all, or "leave alone" would be
+   *  indistinguishable from "unassign". */
+  async function update(g: DisciplineRollup) {
+    const now = rowOf(g.categoryId, sel);
+    const was = rowOf(g.categoryId, saved);
+    setBusy(g.categoryId);
+    try {
+      const done: RowSel = { ...was };
+      for (const axis of ["owner", "auditor"] as Axis[]) {
+        const v = now[axis];
+        if (v === "" || v === was[axis]) continue;
+        const userId = v === CLEAR ? null : v;
+        const ok = await allocate(
+          axis === "owner"
+            ? { disciplineId: g.categoryId, ownerId: userId, setOwner: true }
+            : { disciplineId: g.categoryId, auditorId: userId, setOwner: false, setAuditor: true },
+          `${g.categoryName} · ${axis === "owner" ? "Auditee" : "Auditor"} → ${labelFor(axis, v)}`,
+        );
+        // A failed axis stays dirty so the button remains available to retry it;
+        // a succeeded one is recorded even if its sibling then fails, because it
+        // really was written.
+        if (ok) done[axis] = v;
+      }
+      setSaved((m) => ({ ...m, [g.categoryId]: done }));
+    } finally {
+      setBusy(null);
+    }
   }
 
   return (
     <div className="max-h-[58vh] overflow-y-auto">
-      <div className="sticky top-0 grid grid-cols-[1fr_11rem_11rem] items-center gap-2 border-b bg-white px-5 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+      <div className="sticky top-0 grid grid-cols-[1fr_11rem_11rem_5.5rem] items-center gap-2 border-b bg-white px-5 py-2 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
         <span>Discipline</span>
         <span className="flex items-center gap-1"><UserRound size={11} /> Auditee</span>
         <span className="flex items-center gap-1"><ClipboardCheck size={11} /> Auditor</span>
+        <span className="text-right">Action</span>
       </div>
       <div className="divide-y divide-slate-100">
-        {disciplines.map((g) => (
-          <div key={g.categoryId} className="grid grid-cols-[1fr_11rem_11rem] items-center gap-2 px-5 py-2.5">
-            <div className="flex min-w-0 items-center gap-2">
-              <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoryColor || "#94a3b8" }} />
-              <span className="min-w-0 truncate text-sm font-medium text-slate-700">{g.categoryName}</span>
-              <span className="shrink-0 text-[11px] text-slate-400">{g.total} cp</span>
+        {disciplines.map((g) => {
+          const row = rowOf(g.categoryId, sel);
+          const dirty = isDirty(g.categoryId);
+          const working = busy === g.categoryId;
+          return (
+            <div key={g.categoryId} className="grid grid-cols-[1fr_11rem_11rem_5.5rem] items-center gap-2 px-5 py-2.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: g.categoryColor || "#94a3b8" }} />
+                <span className="min-w-0 truncate text-sm font-medium text-slate-700">{g.categoryName}</span>
+                <span className="shrink-0 text-[11px] text-slate-400">{g.total} cp</span>
+                {dirty && (
+                  <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                    Not saved
+                  </span>
+                )}
+              </div>
+
+              <Select
+                value={row.owner} className="h-8 text-xs" disabled={working}
+                aria-label={`Auditee for ${g.categoryName}`}
+                onChange={(e) => pick(g.categoryId, "owner", e.target.value)}
+              >
+                <option value="">Assign auditee →</option>
+                {slots.auditee.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                <option value={CLEAR}>— unassign —</option>
+              </Select>
+
+              <Select
+                value={row.auditor} className="h-8 text-xs" disabled={working}
+                aria-label={`Auditor for ${g.categoryName}`}
+                onChange={(e) => pick(g.categoryId, "auditor", e.target.value)}
+              >
+                <option value="">Assign auditor →</option>
+                {slots.coAuditor.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+                <option value={CLEAR}>— lead auditor —</option>
+              </Select>
+
+              <div className="flex justify-end">
+                <Button
+                  type="button" size="sm" className="h-8 px-3 text-xs"
+                  disabled={!dirty || working}
+                  onClick={() => update(g)}
+                  title={dirty ? `Apply to ${g.total} checkpoint(s)` : "Pick an auditee or auditor first"}
+                >
+                  {working ? <Loader2 size={13} className="animate-spin" /> : "Update"}
+                </Button>
+              </div>
             </div>
-            <Select
-              defaultValue="" className="h-8 text-xs"
-              disabled={busy === `${g.categoryId}:owner`}
-              onChange={(e) => {
-                const id = e.target.value;
-                const nm = e.target.options[e.target.selectedIndex].text;
-                e.target.value = "";
-                assign(g.categoryId, "owner", id, nm);
-              }}
-            >
-              <option value="">Assign auditee →</option>
-              {slots.auditee.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-              <option value="">— unassign —</option>
-            </Select>
-            <Select
-              defaultValue="" className="h-8 text-xs"
-              disabled={busy === `${g.categoryId}:auditor`}
-              onChange={(e) => {
-                const id = e.target.value;
-                const nm = e.target.options[e.target.selectedIndex].text;
-                e.target.value = "";
-                assign(g.categoryId, "auditor", id, nm);
-              }}
-            >
-              <option value="">Assign auditor →</option>
-              {slots.coAuditor.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
-              <option value="">— lead auditor —</option>
-            </Select>
-          </div>
-        ))}
+          );
+        })}
         {disciplines.length === 0 && (
           <div className="p-6 text-center text-sm text-slate-400">No disciplines materialized.</div>
         )}
