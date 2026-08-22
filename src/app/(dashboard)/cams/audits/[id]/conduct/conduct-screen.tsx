@@ -274,6 +274,29 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
 
   const answeredTotal = rollup.reduce((s, c) => s + c.answered, 0);
   const grandTotal = rollup.reduce((s, c) => s + c.total, 0);
+  // What is still owed, and by whom. Submit ends fieldwork for the WHOLE audit
+  // — one button, one status flip — so a co-auditor pressing it while two
+  // others are mid-discipline freezes the score over whatever happened to be
+  // graded. The server refuses that now; this is the same answer shown before
+  // the click, naming the person rather than just a count, because "204
+  // ungraded" does not tell anyone whose turn it is.
+  const outstanding = useMemo(
+    () =>
+      rollup
+        .filter((c) => c.total - c.answered > 0)
+        .map((c) => ({
+          id: c.categoryId,
+          name: c.categoryName,
+          remaining: c.total - c.answered,
+          total: c.total,
+          who:
+            users.find((u) => u.id === c.auditorUserId)?.name
+            ?? (c.auditorMixed ? "several auditors" : "unallocated"),
+        }))
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [rollup, users],
+  );
+  const readyToSubmit = outstanding.length === 0 && grandTotal > 0;
   const pct = grandTotal ? Math.round((answeredTotal / grandTotal) * 100) : 0;
   const selectedDisc = rollup.find((c) => c.categoryId === disciplineId);
 
@@ -1126,11 +1149,40 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
       <Dialog open={showSubmit} onOpenChange={setShowSubmit}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-base">Submit audit?</DialogTitle>
+            <DialogTitle className="text-base">
+              {readyToSubmit ? "Submit audit?" : "Not ready to submit"}
+            </DialogTitle>
             <DialogDescription className="sr-only">Review and submit the audit; failed/partial checkpoints route to auditees.</DialogDescription>
           </DialogHeader>
+          {/* The blocking view. Submit ends fieldwork for everyone, so it waits
+              until every discipline is graded — by whoever holds it. Named per
+              discipline so the lead knows who to chase, not just that something
+              is missing. */}
+          {!readyToSubmit && (
+            <div className="space-y-2">
+              <p className="text-sm text-slate-600">
+                Submitting ends fieldwork for the whole audit and freezes the score, so it
+                waits until every discipline is graded. Still outstanding:
+              </p>
+              <ul className="divide-y divide-slate-100 rounded-lg border border-amber-200 bg-amber-50/60">
+                {outstanding.map((o) => (
+                  <li key={o.id} className="flex items-baseline gap-2 px-3 py-2 text-[12px]">
+                    <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{o.name}</span>
+                    <span className="flex-shrink-0 tabular-nums text-amber-700">
+                      {o.remaining} of {o.total} left
+                    </span>
+                    <span className="flex-shrink-0 text-slate-500">{o.who}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-slate-400">
+                A checkpoint that does not apply still needs a grade — mark it Not Applicable.
+              </p>
+            </div>
+          )}
+          {readyToSubmit && (
           <p className="text-sm text-slate-600">
-            {answeredTotal === grandTotal ? "All checkpoints graded." : `${grandTotal - answeredTotal} checkpoint(s) are ungraded and will be marked not assessed.`}
+            All checkpoints graded.
             {scorePct !== null && <> Score stands at <span className="font-semibold text-slate-800">{scoreObtained}/{scoreAllotted} ({scorePct}%)</span>.</>}
             {isDeptAudit ? (
               <>
@@ -1144,6 +1196,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
               </>
             )}
           </p>
+          )}
           {/* Two documents come out of this, and each is issued separately
               after submission. Saying so here is what stops "I submitted it,
               where is the EnMS report?" */}
@@ -1160,8 +1213,11 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
             </div>
           )}
           <DialogFooter>
-            <Button type="button" variant="outline" size="sm" onClick={() => setShowSubmit(false)}>Cancel</Button>
-            <Button type="button" size="sm" onClick={doSubmit} disabled={submitting}>
+            <Button type="button" variant="outline" size="sm" onClick={() => setShowSubmit(false)}>
+              {readyToSubmit ? "Cancel" : "Close"}
+            </Button>
+            <Button type="button" size="sm" onClick={doSubmit} disabled={submitting || !readyToSubmit}
+              title={readyToSubmit ? undefined : "Every discipline must be graded first."}>
               {submitting && <Loader2 size={14} className="animate-spin" />} Submit
             </Button>
           </DialogFooter>
