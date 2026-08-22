@@ -272,8 +272,31 @@ function DisciplineTab({ disciplines, team, busy, setBusy, allocate }: {
   // a name is a statement of intent, not the act itself. Allocating a whole
   // discipline moves 40+ checkpoints, and firing that on the change event meant
   // a mis-click was already saved before you could read what it said.
-  const [sel, setSel] = useState<Record<string, RowSel>>({});
-  const [saved, setSaved] = useState<Record<string, RowSel>>({});
+  //
+  // Both maps START from what is actually allocated, rather than empty. The
+  // rollup now carries the live holder per discipline (read from the checkpoint
+  // rows), so reopening this dialog shows who owns what instead of resetting
+  // every picker to "Assign auditee →" — which read as "nothing is allocated"
+  // on an audit where everything was. `saved` seeding matters as much as `sel`:
+  // it is the baseline `isDirty` compares against, so without it every row
+  // would look dirty the moment the dialog opened and Update would re-post
+  // allocations that were already in place.
+  //
+  // A discipline whose rows disagree (per-checkpoint allocation) seeds blank:
+  // there is no single current holder to show, and pre-filling one name would
+  // invite an Update that silently flattened the split.
+  const initial = useMemo(() => {
+    const m: Record<string, RowSel> = {};
+    for (const d of disciplines) {
+      m[d.categoryId] = {
+        owner: d.auditeeMixed ? "" : (d.auditeeUserId ?? ""),
+        auditor: d.auditorMixed ? "" : (d.auditorUserId ?? ""),
+      };
+    }
+    return m;
+  }, [disciplines]);
+  const [sel, setSel] = useState<Record<string, RowSel>>(initial);
+  const [saved, setSaved] = useState<Record<string, RowSel>>(initial);
 
   const rowOf = (id: string, m: Record<string, RowSel>) => m[id] ?? EMPTY_ROW;
   const isDirty = (id: string) => {

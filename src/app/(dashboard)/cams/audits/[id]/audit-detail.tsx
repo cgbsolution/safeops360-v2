@@ -91,6 +91,35 @@ export function AuditDetailView({
 
   const name = (id: string | null | undefined) => (id ? userMap[id] ?? "—" : "—");
 
+  // The team panel's discipline chips, restated from the checkpoint ROWS.
+  //
+  // `team.coAuditors[].disciplines` comes from `audit.coAuditors[].disciplineIds`
+  // — the SEATING intent recorded when the audit was scheduled or the team last
+  // edited. `allocate_checkpoints` writes `assignedAuditorId` on the rows and
+  // never writes back to that JSON, so allocating a whole discipline to a
+  // co-auditor left the panel still reading "No disciplines assigned" while the
+  // auditee chips (set at scheduling) looked fine — two sources of truth, only
+  // one of them updated by the thing you just did.
+  //
+  // The rows win, because they are what the conduct screen actually routes on.
+  // Falls back to whatever the server sent when the rollup carries no holder
+  // (an older payload, or an audit with no rows yet).
+  const liveTeam = useMemo(() => {
+    const rollup = audit.disciplineRollup ?? [];
+    if (!audit.team || rollup.length === 0) return null;
+    const held = (uid: string, axis: "auditor" | "auditee") =>
+      rollup
+        .filter((d) => (axis === "auditor" ? d.auditorUserId : d.auditeeUserId) === uid)
+        .map((d) => ({ id: d.categoryId, name: d.categoryName }));
+    const known = rollup.some((d) => d.auditorUserId !== undefined);
+    if (!known) return null;
+    return {
+      ...audit.team,
+      coAuditors: audit.team.coAuditors.map((m) => ({ ...m, disciplines: held(m.userId, "auditor") })),
+      auditees: audit.team.auditees.map((m) => ({ ...m, disciplines: held(m.userId, "auditee") })),
+    };
+  }, [audit.team, audit.disciplineRollup]);
+
   const isConductable = ["scheduled", "in_progress"].includes(audit.status);
   const isReviewable = ["submitted_pending_response", "response_in_progress", "under_review"].includes(audit.status);
   const canAllocate = canAllocateGrant && !["closed", "cancelled"].includes(audit.status);
@@ -235,7 +264,7 @@ export function AuditDetailView({
       {/* Who is on this audit, in which seat, over which disciplines. */}
       {audit.team && (
         <TeamPanel
-          team={audit.team}
+          team={liveTeam ?? audit.team}
           // Editable right up until closure. The auditees on a real audit are
           // usually identified at the opening meeting, not a week beforehand.
           onEdit={canAllocate ? () => setShowTeam(true) : undefined}

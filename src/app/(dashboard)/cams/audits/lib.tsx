@@ -403,6 +403,15 @@ export type DisciplineRollup = {
   categoryId: string;
   categoryName: string;
   categoryColor: string;
+  /** Who currently holds this discipline, read from the checkpoint ROWS — the
+   *  truth about allocation. The team's `disciplineIds` / `responsibleCategories`
+   *  are only the SEATING intent captured at scheduling; `allocate_checkpoints`
+   *  never writes back to them. `null` with `*Mixed` true means the rows
+   *  disagree (per-checkpoint allocation), which is a real state, not "none". */
+  auditeeUserId?: string | null;
+  auditeeMixed?: boolean;
+  auditorUserId?: string | null;
+  auditorMixed?: boolean;
   total: number;
   answered: number;
   passed: number;
