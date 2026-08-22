@@ -379,7 +379,15 @@ export type AuditDetail = AuditRow & {
    * times a page.
    */
   replicationCounts?: Record<string, number>;
-  allocationSummary?: { assigned: number; unassigned: number; total: number };
+  /** Both allocation axes. `assigned`/`unassigned` is the AUDITEE axis (who
+   *  answers a failure). The auditor axis is a distribution rather than a
+   *  null count, because `assignedAuditorId` always resolves — it falls back
+   *  to the lead — so a seated co-auditor holding nothing is invisible to a
+   *  null check and only shows up as `idleCoAuditors`. */
+  allocationSummary?: {
+    assigned: number; unassigned: number; total: number;
+    leadConducting: number; coAuditorCount: number; idleCoAuditors: number;
+  };
   progress: {
     total: number;
     answered: number;

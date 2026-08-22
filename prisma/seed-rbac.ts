@@ -380,6 +380,19 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   // library import and template custom-checkpoint authoring; restricting
   // scheduling by revoking CREATE would silently take those away too.
   { code: "AUDIT_COMPLIANCE.SCHEDULE", module: "AUDIT_COMPLIANCE", action: "SCHEDULE", description: "Schedule (raise) an audit — the Schedule Audit action" },
+  // Allocating checkpoints and re-seating a live team, split out of
+  // AUDIT_COMPLIANCE.UPDATE for the same reason SCHEDULE was split out of
+  // CREATE: "who decides who conducts what" is its own admin-managed switch.
+  //
+  // UPDATE could not express it. An AUDITEE holds UPDATE at ALL_PLANTS by
+  // design — `_scope_covers_plant` reads the auditee slot's permission to decide
+  // who may be SEATED, and OWN_RECORDS would stop an auditee being named on
+  // another unit's audit — and an ALL_PLANTS grant satisfies `can()` before it
+  // ever consults the record that /allocate passes. The audited party could
+  // therefore reallocate the very disciplines being audited, and re-seat the
+  // team, on any audit at any site. A scope cannot say "not the people under
+  // audit"; a separate permission can.
+  { code: "AUDIT_COMPLIANCE.ALLOCATE", module: "AUDIT_COMPLIANCE", action: "ALLOCATE", description: "Allocate checkpoints to auditors / auditees and re-seat a live audit team" },
   { code: "CAMS.READ",             module: "CAMS", action: "READ",             description: "View CAMS engagements, templates, findings, command centre" },
   { code: "CAMS.TYPE_CONFIG",      module: "CAMS", action: "TYPE_CONFIG",      description: "Configure audit types + recurrence rules" },
   { code: "CAMS.TEMPLATE_AUTHOR",  module: "CAMS", action: "TEMPLATE_AUTHOR",  description: "Author / edit / clone checklist templates" },
@@ -794,6 +807,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // NW + SW seat, which is exactly what the Owning-site picker offered.
     // ALL_PLANTS stores no plant list, so a site added later needs no RBAC edit.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "SCHEDULE"],        scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["ALLOCATE"], scope: "ALL_PLANTS" },
     { module: "AUDIT",        actions: ["VIEW"],                                                                                              scope: "OWN_PLANT" },
     // ── PPE ──────────────────────────────────────────────────────────
     { module: "PPE",          actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "ISSUE", "INSPECT", "CATALOG_MANAGE", "RETIRE_APPROVE", "RECALL_MANAGE"], scope: "OWN_PLANT" },
@@ -870,6 +884,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Audit & Compliance — Plant Head is the plant-manager reviewer (APPROVE +
     // CLOSE); can also schedule / conduct on own plant.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "APPROVE", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
+    { module: "AUDIT_COMPLIANCE", actions: ["ALLOCATE"], scope: "OWN_PLANT" },
     // ── CAMS — Plant Head: oversight + schedule/close on own plant ──
     { module: "CAMS",        actions: ["READ", "SCHEDULE", "CLOSE", "ANALYTICS"], scope: "OWN_PLANT" },
     // ── Facilities — consolidated estate view + full profile management.
@@ -1076,7 +1091,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "ALL_PLANTS" },
     // AUDIT_COMPLIANCE.SCHEDULE is an EXTRA permission, so the
     // OPERATIONAL_ACTIONS spread above does not cover it — grant it explicitly.
-    { module: "AUDIT_COMPLIANCE", actions: ["SCHEDULE"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["SCHEDULE", "ALLOCATE"], scope: "ALL_PLANTS" },
     // Skill Matrix non-CRUD (CRUD comes from the spread above)
     { module: "SKILL_MATRIX", actions: ["COMPETENCY_CONFIGURE", "ROLE_DEF_CONFIGURE", "ASSESS", "SUSPEND", "APPROVE_OVERRIDE", "RECERT_CYCLE", "CROSS_PERSON_VIEW", "VERSION_VIEW"], scope: "ALL_PLANTS" },
     { module: "INSPECTION",         actions: ["SCHEDULE", "REASSIGN"],                          scope: "ALL_PLANTS" },
@@ -1118,6 +1133,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "CAPA",        actions: ["PATTERN_LINK", "RECURRENCE_CHECK", "REASSIGN"], scope: "OWN_PLANT" },
     // Audit & Compliance — Quality Manager owns the audit programme.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "APPROVE", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
+    { module: "AUDIT_COMPLIANCE", actions: ["ALLOCATE"], scope: "OWN_PLANT" },
     // CAMS — owns the audit programme on the centralised engine too.
     { module: "CAMS",        actions: ["READ", "TEMPLATE_AUTHOR", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" },
     { module: "AGENT",       actions: ["RCA_INVOKE"],                       scope: "OWN_PLANT" }
@@ -1143,6 +1159,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "CAPA",        actions: ["CROSS_SOURCE_VIEW"],                 scope: "OWN_PLANT" },
     // Audit & Compliance — Internal Audit Lead conducts audits end-to-end.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "EXPORT"], scope: "OWN_PLANT" },
+    { module: "AUDIT_COMPLIANCE", actions: ["ALLOCATE"], scope: "OWN_PLANT" },
     // CAMS — conducts audits end-to-end on the centralised engine.
     { module: "CAMS",        actions: ["READ", "TEMPLATE_AUTHOR", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" }
   ],
@@ -1166,7 +1183,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "ALL_PLANTS" },
     // AUDIT_COMPLIANCE.SCHEDULE is an EXTRA permission, so the
     // OPERATIONAL_ACTIONS spread above does not cover it — grant it explicitly.
-    { module: "AUDIT_COMPLIANCE", actions: ["SCHEDULE"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["SCHEDULE", "ALLOCATE"], scope: "ALL_PLANTS" },
     { module: "INSPECTION",         actions: ["SCHEDULE", "REASSIGN"],                          scope: "ALL_PLANTS" },
     { module: "INSPECTION_TYPE",    actions: ["CREATE", "READ", "UPDATE", "DELETE"],            scope: "ALL_PLANTS" },
     { module: "CHECKLIST_TEMPLATE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "DELETE"], scope: "ALL_PLANTS" },
@@ -1406,6 +1423,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   CAMS_ADMIN: [
     { module: "CAMS", actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["ALLOCATE"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT", "CROSS_SOURCE_VIEW"], scope: "ALL_PLANTS" },
     { module: "COMPLIANCE", actions: ["READ"], scope: "ALL_PLANTS" }
   ],
@@ -1413,6 +1431,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Owns the audit programme cross-site; authors + approves templates; benchmarking.
     { module: "CAMS", actions: ["READ", "TYPE_CONFIG", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "SCHEDULE", "EXECUTE", "CLOSE", "FINDING_MANAGE", "ANALYTICS"], scope: "ALL_PLANTS" },
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["ALLOCATE"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT", "CROSS_SOURCE_VIEW"], scope: "ALL_PLANTS" },
     { module: "COMPLIANCE", actions: ["READ"], scope: "ALL_PLANTS" }
   ],
@@ -1449,6 +1468,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // promising what the guard refused. The per-audit record guard
     // (`_auditor_record`) still limits EXECUTE to audits they are actually on.
     { module: "AUDIT_COMPLIANCE", actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "SCHEDULE"], scope: "ALL_PLANTS" },
+    { module: "AUDIT_COMPLIANCE", actions: ["ALLOCATE"], scope: "ALL_PLANTS" },
     { module: "CAPA", actions: ["CREATE", "READ", "UPDATE", "EXPORT"], scope: "OWN_PLANT" },
     // Facilities — the Lead Auditor is the Compliance Team's final signatory on
     // a factory-profile change (after the Plant Head's Unit approval). READ so

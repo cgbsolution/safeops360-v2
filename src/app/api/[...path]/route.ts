@@ -119,10 +119,18 @@ async function forward(req: NextRequest, params: { path: string[] }): Promise<Ne
   // whether the proxy or Python is the bottleneck for any given request.
   // Look for a "Timing" entry on the proxied response in the Network tab.
   //
-  // Hard timeout (30s) so a cold/sleeping Python container can't hang the
-  // browser indefinitely. Without this, the user saw a stuck loading
-  // skeleton and thought the page was broken; with it, they get a clean
-  // 504 + retry button instead.
+  // Hard timeout so a cold/sleeping Python container can't hang the browser
+  // indefinitely. Without this, the user saw a stuck loading skeleton and
+  // thought the page was broken; with it, they get a clean 504 + retry button
+  // instead.
+  //
+  // 25s, deliberately UNDER the 30s `maxDuration` in vercel.json. At 30s the
+  // two ceilings were identical, so Vercel killed the function at the same
+  // instant the abort fired and the platform's own bare 504 won the race — the
+  // caller got an HTML gateway error with no JSON body, and every fetch that
+  // reads `j.detail || j.error` fell through to its generic message. That is
+  // why a timed-out schedule reported only "Please try again". Five seconds of
+  // headroom is enough for this handler to serialise its own answer.
   const t0 = Date.now();
   let res: Response | undefined;
   let lastErr: any;
@@ -136,7 +144,7 @@ async function forward(req: NextRequest, params: { path: string[] }): Promise<Ne
         headers,
         body,
         cache: "no-store",
-        timeoutMs: 30_000
+        timeoutMs: 25_000
       });
       break;
     } catch (err: any) {
@@ -166,7 +174,7 @@ async function forward(req: NextRequest, params: { path: string[] }): Promise<Ne
       return NextResponse.json(
         {
           error: "Backend timed out",
-          reason: "The Python backend did not respond within 30s — it may be cold-starting or overloaded.",
+          reason: "The Python backend did not respond within 25s — it may be cold-starting or overloaded.",
           code,
           hint: "Retry once. If persistent, check Dokploy resource limits and visit /api/diagnostics.",
         },

@@ -78,6 +78,13 @@ export function AuditDetailView({
     && (!audit.plantManagerUserId || me === audit.plantManagerUserId);
   const canClose = usePermission("AUDIT_COMPLIANCE.CLOSE");
   const canUpdate = usePermission("AUDIT_COMPLIANCE.UPDATE");
+  // Allocation and team re-seating are their own permission, NOT UPDATE.
+  // `usePermission` is scope-blind (`get_permissions` returns every code the
+  // user holds at any scope), and AUDITEE holds UPDATE at ALL_PLANTS by design
+  // — so gating on UPDATE showed "Manage allocation" and "Edit team" to the
+  // audited party, and the API let them through. See AUDIT_COMPLIANCE.ALLOCATE
+  // in prisma/seed-rbac.ts.
+  const canAllocateGrant = usePermission("AUDIT_COMPLIANCE.ALLOCATE");
   const canExport = usePermission("AUDIT_COMPLIANCE.EXPORT");
   const [showAllocate, setShowAllocate] = useState(false);
   const [showTeam, setShowTeam] = useState(false);
@@ -86,11 +93,14 @@ export function AuditDetailView({
 
   const isConductable = ["scheduled", "in_progress"].includes(audit.status);
   const isReviewable = ["submitted_pending_response", "response_in_progress", "under_review"].includes(audit.status);
-  const canAllocate = canUpdate && !["closed", "cancelled"].includes(audit.status);
+  const canAllocate = canAllocateGrant && !["closed", "cancelled"].includes(audit.status);
 
   // Allocation rollup — "X assigned · Y unassigned" (from the slim payload's
   // aggregate; never iterates the full response set).
-  const allocation = audit.allocationSummary ?? { assigned: 0, unassigned: 0, total: audit.totalCheckpoints ?? 0 };
+  const allocation = audit.allocationSummary ?? {
+    assigned: 0, unassigned: 0, total: audit.totalCheckpoints ?? 0,
+    leadConducting: 0, coAuditorCount: 0, idleCoAuditors: 0,
+  };
 
   // Overview summary — derived from the discipline rollup (no full row load).
   const summary = useMemo(() => {
@@ -248,8 +258,18 @@ export function AuditDetailView({
         <FinalizeBanner auditId={audit.id} fin={audit.finalizability} />
       )}
 
-      {/* Allocation banner */}
-      {audit.responses.length > 0 && (canAllocate || allocation.unassigned > 0) && (
+      {/* Allocation banner.
+          Gated on the checkpoint COUNT, not on `audit.responses`. That array is
+          the detail payload's bounded REVIEW set — adverse and in-flight rows
+          only (`_review_clause`), empty until something has actually been
+          assessed. Allocation is the opposite end of the audit: you decide who
+          conducts which discipline BEFORE anyone answers anything. Gating it on
+          findings meant a freshly scheduled audit at 0/206 hid the one control
+          that fixes an unallocated team, for the lead auditor as much as for
+          the scheduler. `allocationSummary` is an aggregate the slim payload
+          always carries, so it is true from the moment the rows materialise. */}
+      {allocation.total > 0
+        && (canAllocate || allocation.unassigned > 0 || allocation.idleCoAuditors > 0) && (
         <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm">
           <Users2 size={16} className="text-slate-500" />
           <span className="font-medium text-slate-700">{allocation.assigned} assigned</span>
@@ -257,6 +277,22 @@ export function AuditDetailView({
           <span className={cn("font-medium", allocation.unassigned > 0 ? "text-amber-700" : "text-slate-500")}>
             {allocation.unassigned} unassigned
           </span>
+          {/* The auditor axis, shown only when it has something to report. A
+              seated co-auditor holding nothing is the one allocation gap the
+              counts to the left cannot express: the lead absorbs every
+              unclaimed discipline, so the auditee axis still reads healthy. */}
+          {allocation.idleCoAuditors > 0 && (
+            <>
+              <span className="text-slate-300">·</span>
+              <span
+                className="font-medium text-amber-700"
+                title={`${allocation.leadConducting} of ${allocation.total} checkpoints route to the lead auditor because no co-auditor holds their discipline. Assign disciplines in Manage allocation or Edit team.`}
+              >
+                {allocation.idleCoAuditors} of {allocation.coAuditorCount} co-auditor
+                {allocation.coAuditorCount === 1 ? "" : "s"} idle
+              </span>
+            </>
+          )}
           {canAllocate && (
             <Button type="button" variant="outline" size="sm" className="ml-auto" onClick={() => setShowAllocate(true)}>
               <Users2 size={14} /> Manage allocation

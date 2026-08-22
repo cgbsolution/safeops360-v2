@@ -83,7 +83,11 @@ export function ScheduleModal({
 }) {
   const router = useRouter();
   const { toast } = useToast();
-  const [, startTransition] = useTransition();
+  // `isPending` is true from the moment the post-success transition starts until
+  // the audit page has loaded. That gap used to render as "Schedule audit" again
+  // — the request had returned, so `busy` was already false — which read as if
+  // nothing had happened and invited a second click on an audit that existed.
+  const [isPending, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
 
   // ── Audit subject (WP-45) ────────────────────────────────────────────
@@ -240,7 +244,8 @@ export function ScheduleModal({
   // Fetched on open rather than passed down from the server page so the lists
   // always reflect the CURRENT admin scope assignments — revoke a role in
   // Configuration and the next open of this modal has already dropped them.
-  // `users` (the full plant directory) is still used to render names elsewhere.
+  // `users` (the plant directory) is merged with these into `directory` below,
+  // which is what resolves a name anywhere in this dialog.
   const [assignable, setAssignable] = useState<AssignableSlots | null>(null);
   const [assignableError, setAssignableError] = useState<string | null>(null);
   useEffect(() => {
@@ -419,6 +424,27 @@ export function ScheduleModal({
   };
 
   const coAuditorUsers = (assignable?.coAuditor ?? []).filter((u) => u.id !== leadAuditorUserId);
+
+  // Every person this dialog can NAME, keyed by id.
+  //
+  // `users` is the plant DIRECTORY — people whose home plant is this one. The
+  // assignable slots are scope-based, and an auditor's AUDIT_COMPLIANCE grant is
+  // deliberately ALL_PLANTS so audit independence can send a lead or co-auditor
+  // to a site that is not their own. Those people are offered by the picker and
+  // absent from `users`, so resolving a name against `users` alone rendered a
+  // raw cuid instead of the person — in the per-auditor assignment panel below
+  // and in the independence check's name map.
+  //
+  // Assignable wins on conflict: it is fetched on open and reflects the current
+  // scope, while `users` came down with the page.
+  const directory = useMemo(() => {
+    const m = new Map<string, PlantUser>();
+    for (const u of users) m.set(u.id, u);
+    for (const slot of [assignable?.leadAuditor, assignable?.coAuditor, assignable?.plantManager, assignable?.auditee]) {
+      for (const u of slot ?? []) m.set(u.id, u);
+    }
+    return m;
+  }, [users, assignable]);
   const discName = (code: string) => library?.categories.find((c) => c.category_code === code)?.category_name ?? code;
 
   // Picker-wide pre-flight: every visible candidate gets a verdict as soon as
@@ -1043,11 +1069,24 @@ export function ScheduleModal({
                   <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]" onClick={autoDistribute}>Distribute evenly</Button>
                 </div>
                 {coAuditorIds.map((uid) => {
-                  const u = users.find((x) => x.id === uid);
+                  const u = directory.get(uid);
                   const mine = auditorDisc[uid] ?? [];
                   return (
                     <div key={uid} className="rounded-lg bg-white p-2">
-                      <div className="mb-1 text-[12px] font-medium text-slate-700">{u?.name ?? uid} <span className="text-slate-400">· {mine.length} {mine.length === 1 ? scopeAxisWords(library).one : scopeAxisWords(library).many}</span></div>
+                      {/* Same shape as the picker row above — name, address to
+                          separate the two people who share a display name, role
+                          on the right. `title` keeps the id reachable for
+                          support without putting it on screen. */}
+                      <div className="mb-1 flex items-baseline gap-1.5 text-[12px]">
+                        <span className="min-w-0 flex-shrink-0 truncate font-medium text-slate-700" title={uid}>
+                          {u?.name ?? "Unknown user"}
+                        </span>
+                        {u?.email && <span className="min-w-0 truncate text-[11px] text-slate-400">{u.email}</span>}
+                        <span className="ml-auto flex-shrink-0 text-[11px] text-slate-400">
+                          {u?.role ? `${u.role.replace(/_/g, " ")} · ` : ""}
+                          {mine.length} {mine.length === 1 ? scopeAxisWords(library).one : scopeAxisWords(library).many}
+                        </span>
+                      </div>
                       <div className="flex flex-wrap gap-1">
                         {selectedDisc.map((code) => {
                           const on = mine.includes(code);
@@ -1125,7 +1164,7 @@ export function ScheduleModal({
           <IndependenceCheck
             userIds={[leadAuditorUserId, ...coAuditorIds].filter(Boolean)}
             assigningAs="AUDITOR"
-            names={Object.fromEntries(users.map((u) => [u.id, u.name]))}
+            names={Object.fromEntries([...directory.values()].map((u) => [u.id, u.name]))}
             scope={{
               engagementKind: "AUDIT",
               engagementId: null,
@@ -1157,7 +1196,7 @@ export function ScheduleModal({
             <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
             <Button
               type="button" size="sm" onClick={submit}
-              disabled={busy || independenceBlocked || cannotSchedule}
+              disabled={busy || isPending || independenceBlocked || cannotSchedule}
               title={
                 independenceBlocked
                   ? "Resolve the auditor independence conflict above first."
@@ -1166,7 +1205,7 @@ export function ScheduleModal({
                     : undefined
               }
             >
-              {busy ? "Scheduling…" : "Schedule audit"}
+              {isPending ? "Redirecting…" : busy ? "Scheduling…" : "Schedule audit"}
             </Button>
           </div>
         </DialogFooter>
