@@ -301,7 +301,12 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   { code: "FACILITY.CERT_MANAGE",      module: "FACILITY", action: "CERT_MANAGE",      description: "Manage factory certifications (SA8000, WRAP, ISO, SMETA, …) and expiry tracking" },
   { code: "FACILITY.CONTACT_MANAGE",   module: "FACILITY", action: "CONTACT_MANAGE",   description: "Manage factory contacts (factory manager, safety / compliance / HR officers)" },
   { code: "FACILITY.COMPARE",          module: "FACILITY", action: "COMPARE",          description: "Use factory comparison / benchmarking" },
-  { code: "FACILITY.SITE_LINK",        module: "FACILITY", action: "SITE_LINK",        description: "Configure the 1:1 Site link (incl. provisioning a Site for an in-house factory) and profile review settings" },
+  // Narrowed to the SUPPLIER case only: attaching a factory to a Site that
+  // already exists. Provisioning a Site for a Page-owned factory no longer needs
+  // it — that is ordinary FACILITY.CREATE — so grant this to the supplier lead
+  // auditor rather than to every operational creator. It is what the Site picker
+  // on Add Factory is gated on, in the UI and on the create endpoint alike.
+  { code: "FACILITY.SITE_LINK",        module: "FACILITY", action: "SITE_LINK",        description: "Link a factory to an existing Site (the 1:1 supplier mapping) and configure profile review settings" },
   // Two-step sign-off on an edit to an ACTIVE factory profile: the Unit
   // confirms the change is factually right, Compliance confirms it is
   // admissible. Deliberately separate codes — held by different people is the
