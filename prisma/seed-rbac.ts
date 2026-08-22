@@ -828,7 +828,10 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Facilities — full factory-level data entry + the consolidated estate.
     // ALL_PLANTS because the consolidated dashboard is inherently group-level
     // (factories live on their own Sites/plants, not the user's home plant).
-    { module: "FACILITY",     actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "SITE_LINK"], scope: "ALL_PLANTS" },
+    // No SITE_LINK: attaching a factory to an existing Site is the supplier
+    // onboarding act, reserved for the supplier lead auditor. An HSE Manager
+    // adding a Page-owned factory gets its Site provisioned automatically.
+    { module: "FACILITY",     actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE"], scope: "ALL_PLANTS" },
   ],
   // ════════════════════════════════════════════════════════════════════
   // Plant Head — plant-wide oversight + final approver on high-risk.
@@ -894,7 +897,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "CAMS",        actions: ["READ", "SCHEDULE", "CLOSE", "ANALYTICS"], scope: "OWN_PLANT" },
     // ── Facilities — consolidated estate view + full profile management.
     // ALL_PLANTS so the group dashboard populates (factories sit on their own Sites).
-    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "SITE_LINK"], scope: "ALL_PLANTS" },
+    // SITE_LINK dropped — see HSE_MANAGER above.
+    { module: "FACILITY",    actions: ["READ", "CREATE", "UPDATE", "EXPORT", "COMPARE", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE"], scope: "ALL_PLANTS" },
     // The Unit-level sign-off on a profile edit is the Plant Head's, and it is
     // OWN_PLANT: a Plant Head approves changes to their own factory, not the estate.
     { module: "FACILITY",    actions: ["PROFILE_APPROVE_UNIT"], scope: "OWN_PLANT" }
@@ -1480,7 +1484,18 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // the profile and its proposed diff are actually openable; no UPDATE, which
     // keeps the approver off the requesting side of the same change.
     { module: "FACILITY", actions: ["READ"], scope: "ALL_PLANTS" },
-    { module: "FACILITY", actions: ["PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" }
+    { module: "FACILITY", actions: ["PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" },
+    // Supplier onboarding. CREATE + SITE_LINK together are what "add a supplier
+    // factory" means: the factory is raised AND attached to the Site it is
+    // managed under, and SITE_LINK is held by nobody else, so the Site picker on
+    // Add Factory appears for this role alone.
+    //
+    // Note this is the one place the Lead Auditor sits on the requesting side of
+    // Facilities rather than the approving side. It does not collide with the
+    // PROFILE_APPROVE_COMPLIANCE grant above: that governs change requests
+    // against an EXISTING profile, and creating one raises no change request to
+    // self-approve. UPDATE is still deliberately withheld for that reason.
+    { module: "FACILITY", actions: ["CREATE", "SITE_LINK"], scope: "ALL_PLANTS" }
   ],
   AUDITEE: [
     // Open the audit screens at all. Without this the grants below are
@@ -1542,7 +1557,8 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // ════════════════════════════════════════════════════════════════════
   FACILITIES_MANAGER: [
     // Group view — sees and edits every factory cross-site.
-    { module: "FACILITY",         actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "SITE_LINK", "PROFILE_APPROVE_UNIT", "PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" },
+    // SITE_LINK dropped — see HSE_MANAGER above.
+    { module: "FACILITY",         actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXPORT", "WORKFORCE_UPDATE", "SOCIAL_UPDATE", "CERT_MANAGE", "CONTACT_MANAGE", "COMPARE", "PROFILE_APPROVE_UNIT", "PROFILE_APPROVE_COMPLIANCE"], scope: "ALL_PLANTS" },
     // Live drill-down into the operational engines (read-only).
     { module: "CAMS",             actions: ["READ", "ANALYTICS"], scope: "ALL_PLANTS" },
     { module: "CAPA",             actions: ["READ"], scope: "ALL_PLANTS" },
