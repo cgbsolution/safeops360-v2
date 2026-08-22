@@ -19,6 +19,12 @@ const ACTION_CHIP: Record<string, string> = {
   SOFT_DELETE: "bg-rose-100 text-rose-800 border-rose-200",
   RESTORE: "bg-amber-100 text-amber-800 border-amber-200",
   READ_SENSITIVE: "bg-slate-100 text-slate-700 border-slate-200",
+  // Written explicitly by `allocate_checkpoints`, not by ORM capture:
+  // AuditCheckpointResponse is deliberately unregistered (a hash-chained row per
+  // verdict save is the wrong trade on a 1,500-checkpoint audit), but WHO MAY
+  // CONDUCT a discipline is a governance decision a certification body asks
+  // about. One entry per allocation change, on the audit's own chain.
+  ALLOCATION_CHANGED: "bg-indigo-100 text-indigo-800 border-indigo-200",
 };
 
 export default async function AuditTrailPage(props: {
@@ -36,7 +42,7 @@ export default async function AuditTrailPage(props: {
   }
 
   const ENTITY_TYPES = ["EnterpriseRisk", "Incident", "Capa", "Permit", "ComplianceAudit", "FireEquipment", "FireDrill"];
-  const ACTIONS = ["CREATE", "UPDATE", "STATE_TRANSITION", "SOFT_DELETE", "RESTORE", "READ_SENSITIVE"];
+  const ACTIONS = ["CREATE", "UPDATE", "STATE_TRANSITION", "ALLOCATION_CHANGED", "SOFT_DELETE", "RESTORE", "READ_SENSITIVE"];
   const chip = (key: string, val: string) => {
     const next = new URLSearchParams(sp as Record<string, string>);
     if (next.get(key) === val) next.delete(key); else next.set(key, val);

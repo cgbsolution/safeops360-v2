@@ -27,6 +27,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { usePermission } from "@/components/auth/can";
 import Link from "next/link";
 import {
   Check, Camera, AlertTriangle, Link2, Loader2, X, ArrowLeft,
@@ -152,7 +153,26 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
   // narrows the worklist to the checkpoints assigned to the current auditor.
   const isCoAuditor = !!me && me !== audit.leadAuditorUserId
     && (audit.coAuditors ?? []).some((c) => (typeof c === "string" ? c : c.userId) === me);
+  // Opens ON for anyone held to their allocated disciplines, i.e. anyone
+  // WITHOUT AUDIT_COMPLIANCE.ALLOCATE. A plain co-auditor previously landed on
+  // all 206 checkpoints across every discipline, including the ones allocated
+  // to someone else, with "My disciplines" an opt-in nobody pressed — so the
+  // allocation they were given was invisible in the one screen it governs.
+  // Still a toggle, not a cage: the server is what refuses the write now, and
+  // seeing the rest of the audit is legitimate context.
+  const mayAllocate = usePermission("AUDIT_COMPLIANCE.ALLOCATE");
   const [mineOnly, setMineOnly] = useState(false);
+  // Deferred to an effect rather than seeded into useState: permissions arrive
+  // asynchronously (null until the fetch lands), and seeding from a value that
+  // is null on the server and populated on the client is the hydration mismatch
+  // `usePermissions` documents. `pinned` makes it a one-shot default so a user
+  // who switches it off is not overridden on the next render.
+  const [minePinned, setMinePinned] = useState(false);
+  useEffect(() => {
+    if (minePinned || mayAllocate) return;
+    setMineOnly(true);
+    setMinePinned(true);
+  }, [mayAllocate, minePinned]);
 
   // Names come from the AUDIT first, the plant directory second.
   //
