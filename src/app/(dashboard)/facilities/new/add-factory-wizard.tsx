@@ -60,7 +60,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
+// `canLinkSite` mirrors FACILITY.SITE_LINK, resolved on the server. False hides
+// the Site picker entirely: the creator never chooses a Site, `siteId` stays
+// empty, and the API provisions one from the factory's own name and location.
+export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; canLinkSite: boolean }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -135,7 +138,12 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
   // Site is only a hard requirement where the mapping means something: a
   // supplier factory has to land on the Site it is being managed under. An
   // in-house factory can proceed without one and gets a Site provisioned.
-  const canNext0 = factoryName.trim().length >= 2 && (inHouse || siteId !== "");
+  //
+  // The requirement is dropped entirely when the picker is hidden — otherwise a
+  // creator without SITE_LINK who picks Contract Mfg. / Joint Venture would find
+  // Next dead with no field on screen to explain why.
+  const canNext0 =
+    factoryName.trim().length >= 2 && (!canLinkSite || inHouse || siteId !== "");
 
   async function submit() {
     setSubmitting(true);
@@ -227,6 +235,7 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
         {/* ── Step 1: Identity & Location ── */}
         {step === 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {canLinkSite && (
             <div className="sm:col-span-2">
               <Field label={inHouse ? "Site (optional)" : "Site (1:1 link — required)"}>
                 <Select value={siteId} onChange={(e) => onPickSite(e.target.value)}>
@@ -247,6 +256,7 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
                   : "A supplier factory is managed under a site, so the mapping is required here. One site carries one factory profile."}
               </p>
             </div>
+            )}
             <Field label="Factory name *">
               <Input value={factoryName} onChange={(e) => setFactoryName(e.target.value)} placeholder="Meridian Apparel — Tirupur 1" />
             </Field>
@@ -517,11 +527,14 @@ export function AddFactoryWizard({ sites }: { sites: SiteOption[] }) {
         {step === 5 && (
           <div className="space-y-3 text-sm">
             <div className="grid grid-cols-2 gap-3">
-              <Review label="Site">
-                {selectedSite
-                  ? `${selectedSite.code} — ${selectedSite.name}`
-                  : "New site — created from this factory"}
-              </Review>
+              {/* Nothing to review when the creator was never offered the choice. */}
+              {canLinkSite && (
+                <Review label="Site">
+                  {selectedSite
+                    ? `${selectedSite.code} — ${selectedSite.name}`
+                    : "New site — created from this factory"}
+                </Review>
+              )}
               <Review label="Factory">{factoryName || "—"}</Review>
               <Review label="Code">{factoryCode || "auto"}</Review>
               <Review label="Status">{titleCase(status)}</Review>
