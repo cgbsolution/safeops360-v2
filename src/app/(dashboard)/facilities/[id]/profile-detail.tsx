@@ -4,7 +4,7 @@ import { Fragment, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { ClipboardCheck, MapPin, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, MapPin, Paperclip, Pencil, Plus, Trash2 } from "lucide-react";
 import { Can, usePermission } from "@/components/auth/can";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
@@ -137,6 +137,28 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
   const startTab = (TABS.find((t) => t.toLowerCase() === (initialTab ?? "").toLowerCase()) ?? "Overview") as Tab;
   const [tab, setTab] = useState<Tab>(startTab);
 
+  // Why is this profile still DRAFT?
+  //
+  // Two different "statuses" sit side by side in this header and they measure
+  // different things, which is the whole reason this needed explaining:
+  //
+  //   • the Lifecycle workflow (Initiated → Execution → Validation → Active) is
+  //     the APPROVAL route — who has signed the profile off;
+  //   • `profileStatus` is COMPLETENESS — whether the record holds enough to be
+  //     usable. `compute_profile_status` on the server sets ACTIVE only when the
+  //     name, the Site link, a location AND at least one current workforce
+  //     record with a headcount above zero are all present.
+  //
+  // So a profile can finish its workflow and still read DRAFT, which looks
+  // exactly like a bug unless the screen says which requirement is outstanding.
+  // Mirrors the server rule; the server stays the authority that writes it.
+  const draftGaps = [
+    !profile.factoryName?.trim() && "a factory name",
+    !profile.siteId && "a Site link",
+    !(profile.state?.trim() || profile.city?.trim() || profile.addressLine?.trim()) && "a location",
+    !(profile.totalEmployees > 0) && "a workforce record with a headcount above zero",
+  ].filter(Boolean) as string[];
+
   return (
     <div>
       {/* Header band */}
@@ -144,9 +166,34 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
         <span className={"rounded border px-2 py-0.5 text-[11px] font-medium " + (STATUS_CHIP[profile.status] ?? "")}>
           {titleCase(profile.status)}
         </span>
-        <span className={"rounded border px-2 py-0.5 text-[11px] font-medium " + (PROFILE_STATUS_CHIP[profile.profileStatus] ?? "")}>
+        <span
+          className={"rounded border px-2 py-0.5 text-[11px] font-medium " + (PROFILE_STATUS_CHIP[profile.profileStatus] ?? "")}
+          title={
+            profile.profileStatus === "DRAFT" && draftGaps.length
+              ? `Draft until the profile has ${draftGaps.join(", ")}.`
+              : undefined
+          }
+        >
           {titleCase(profile.profileStatus)}
         </span>
+        {profile.profileStatus === "DRAFT" && draftGaps.length > 0 && (
+          <span className="inline-flex items-center gap-1 text-[11px] text-amber-700">
+            <AlertTriangle size={12} className="shrink-0" />
+            Still draft — needs {draftGaps.join(", ")}.
+            {/* The overwhelmingly common gap, and the tab it is fixed on. A
+                message that names the requirement but not where to satisfy it
+                just moves the hunt one step along. */}
+            {!(profile.totalEmployees > 0) && (
+              <button
+                type="button"
+                onClick={() => setTab("Workforce")}
+                className="font-medium underline underline-offset-2 hover:text-amber-900"
+              >
+                Add workforce
+              </button>
+            )}
+          </span>
+        )}
         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
           <MapPin size={12} /> {[profile.city, profile.state].filter(Boolean).join(", ") || "—"}
         </span>

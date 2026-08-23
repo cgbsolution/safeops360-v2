@@ -180,6 +180,9 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
           : null,
     factoryLicenseNo: factoryLicenseNo.trim() ? null : "Factory licence no. is required.",
     factoryLicenseValidUntil: factoryLicenseValidUntil ? null : "Licence valid-until date is required.",
+    // The gender split is checked separately and only ever warns, so it is the
+    // employment-type total that has to be real here.
+    workforce: wfTotal > 0 ? null : "Enter the headcount — permanent, contract or apprentice must be above zero.",
   };
 
   const inHouse = IN_HOUSE_OWNERSHIP.includes(ownershipType);
@@ -198,10 +201,14 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
     !err.addressLine && !err.state && !err.pincode &&
     (!canLinkSite || inHouse || siteId !== "");
   const canNext1 = !err.factoryLicenseNo && !err.factoryLicenseValidUntil;
-  const stepOk = (i: number) => (i === 0 ? canNext0 : i === 1 ? canNext1 : true);
+  const canNext3 = !err.workforce;
+  const stepOk = (i: number) =>
+    i === 0 ? canNext0 : i === 1 ? canNext1 : i === 3 ? canNext3 : true;
   // Save is gated on EVERY required step, not just the one on screen — the
   // review step must not be a way past a step that was never opened.
-  const canSubmit = canNext0 && canNext1;
+  const canSubmit = canNext0 && canNext1 && canNext3;
+  /** First step still carrying an error — where Save should send you. */
+  const firstBadStep = () => [0, 1, 3].find((i) => !stepOk(i)) ?? 0;
 
   async function submit() {
     setSubmitting(true);
@@ -241,7 +248,9 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
           maxOccupancy: num(b.maxOccupancy),
           assemblyPoint: b.assemblyPoint || null,
         })),
-      workforce: wfProvided ? { ...wf } : undefined,
+      // Always sent: mandatory on both sides now, and the Save button cannot
+      // fire while the headcount is zero.
+      workforce: { ...wf },
       processes: procs
         .filter((p) => p.processName.trim())
         .map((p, i) => ({
@@ -552,14 +561,20 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
         {step === 3 && (
           <div className="space-y-3">
             <p className="text-sm text-slate-500">
-              Initial composition (optional). A profile with ≥1 workforce record activates from DRAFT → ACTIVE; the SA8000 lens
-              uses the permanent/contract split and gender breakdown.
+              Initial composition — <span className="font-medium text-slate-700">required</span>. A profile only leaves DRAFT
+              once it carries a workforce record with a headcount above zero, so this is collected here rather than left to
+              be discovered later. The SA8000 lens uses the permanent/contract split and the gender breakdown.
             </p>
+            {showErr(3) && err.workforce && (
+              <p className="text-[11px] text-red-600">{err.workforce}</p>
+            )}
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {wfNum("permanentCount", "Permanent")}
               {wfNum("contractCount", "Contract")}
               {wfNum("apprenticeTraineeCount", "Apprentice")}
-              <div className="flex items-end pb-2 text-sm text-slate-500">= total {wfTotal}</div>
+              <div className={"flex items-end pb-2 text-sm " + (showErr(3) && err.workforce ? "font-medium text-red-600" : "text-slate-500")}>
+                = total {wfTotal}
+              </div>
               {wfNum("maleCount", "Male")}
               {wfNum("femaleCount", "Female")}
               {wfNum("otherGenderCount", "Other")}
@@ -685,8 +700,8 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
               if (!canSubmit) {
                 // Surface the errors AND go to the step that carries them —
                 // the messages are on a step the reviewer is not looking at.
-                setTouched((t) => ({ ...t, 0: true, 1: true }));
-                setStep(canNext0 ? 1 : 0);
+                setTouched((t) => ({ ...t, 0: true, 1: true, 3: true }));
+                setStep(firstBadStep());
                 setError("Some required details are missing — they are marked in red.");
                 return;
               }
