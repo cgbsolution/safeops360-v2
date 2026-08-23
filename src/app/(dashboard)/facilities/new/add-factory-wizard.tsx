@@ -6,6 +6,8 @@ import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
+import { INDIA_STATE_OPTIONS, canonicalIndiaState } from "@/lib/india-states";
 import {
   BUILDING_TYPES,
   BUILDING_TYPE_LABEL,
@@ -51,11 +53,19 @@ const STEPS = ["Identity & Location", "Statutory", "Buildings", "Workforce", "Pr
 
 const labelCls = "block text-xs font-medium text-slate-600 mb-1";
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, required, error, children }: {
+  label: string; required?: boolean; error?: string | null; children: React.ReactNode;
+}) {
   return (
     <div>
-      <label className={labelCls}>{label}</label>
+      <label className={labelCls}>
+        {label}
+        {required && <span className="ml-0.5 text-red-500">*</span>}
+      </label>
       {children}
+      {/* Rendered only once the step has been touched — see `showErr`. Telling
+          someone a field is wrong before they have reached it is noise. */}
+      {error && <p className="mt-1 text-[11px] text-red-600">{error}</p>}
     </div>
   );
 }
@@ -134,6 +144,44 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
     </Field>
   );
 
+  // ── Required-field validation ────────────────────────────────────────
+  //
+  // A factory profile that is missing its statutory identity is not a lighter
+  // record, it is an unusable one: the licence number and its expiry drive the
+  // compliance register and the renewal alerts, and the state drives the map
+  // and every regional rollup. Collecting them at creation is the only moment
+  // where the person entering the data still has the paperwork in front of
+  // them.
+  //
+  // Each rule returns a message or null; `showErr` decides whether it is on
+  // screen yet, so the form is quiet until the step has been attempted.
+  const [touched, setTouched] = useState<Record<number, boolean>>({});
+  const showErr = (stepIdx: number) => !!touched[stepIdx];
+
+  const YEAR_NOW = new Date().getFullYear();
+  const yearNum = Number(establishedYear);
+  const err = {
+    factoryName: factoryName.trim().length >= 2 ? null : "Enter the factory name (at least 2 characters).",
+    primaryIndustry: primaryIndustry.trim() ? null : "Primary industry is required.",
+    establishedYear:
+      !establishedYear.trim() ? "Established year is required."
+        : !/^\d{4}$/.test(establishedYear.trim()) ? "Enter a 4-digit year."
+          // An upper bound of "this year" would reject a plant commissioning
+          // next quarter, which is a real thing to record; 1800 rules out a
+          // typo'd pincode without arguing about industrial history.
+          : yearNum < 1800 || yearNum > YEAR_NOW + 5 ? `Enter a year between 1800 and ${YEAR_NOW + 5}.`
+            : null,
+    addressLine: addressLine.trim() ? null : "Address is required.",
+    state: state.trim() ? null : "Select the state or union territory.",
+    // Indian PIN codes are exactly six digits and never start with 0.
+    pincode:
+      !pincode.trim() ? "Pincode is required."
+        : !/^[1-9]\d{5}$/.test(pincode.trim()) ? "Enter a valid 6-digit pincode."
+          : null,
+    factoryLicenseNo: factoryLicenseNo.trim() ? null : "Factory licence no. is required.",
+    factoryLicenseValidUntil: factoryLicenseValidUntil ? null : "Licence valid-until date is required.",
+  };
+
   const inHouse = IN_HOUSE_OWNERSHIP.includes(ownershipType);
   // Site is only a hard requirement where the mapping means something: a
   // supplier factory has to land on the Site it is being managed under. An
@@ -142,8 +190,18 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
   // The requirement is dropped entirely when the picker is hidden — otherwise a
   // creator without SITE_LINK who picks Contract Mfg. / Joint Venture would find
   // Next dead with no field on screen to explain why.
+  // Status and Ownership are required too, but they are `<SelectField>`s that
+  // start on a real value and cannot be cleared, so there is nothing for a rule
+  // to catch — they carry the asterisk without a check behind it.
   const canNext0 =
-    factoryName.trim().length >= 2 && (!canLinkSite || inHouse || siteId !== "");
+    !err.factoryName && !err.primaryIndustry && !err.establishedYear &&
+    !err.addressLine && !err.state && !err.pincode &&
+    (!canLinkSite || inHouse || siteId !== "");
+  const canNext1 = !err.factoryLicenseNo && !err.factoryLicenseValidUntil;
+  const stepOk = (i: number) => (i === 0 ? canNext0 : i === 1 ? canNext1 : true);
+  // Save is gated on EVERY required step, not just the one on screen — the
+  // review step must not be a way past a step that was never opened.
+  const canSubmit = canNext0 && canNext1;
 
   async function submit() {
     setSubmitting(true);
@@ -163,8 +221,11 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
       latitude: num(latitude),
       longitude: num(longitude),
       establishedYear: num(establishedYear),
-      factoryLicenseNo: factoryLicenseNo || null,
-      factoryLicenseValidUntil: factoryLicenseValidUntil ? new Date(factoryLicenseValidUntil).toISOString() : null,
+      // No `|| null` fallbacks any more: both are required and the Save button
+      // will not fire without them, so sending null would only ever produce a
+      // 422 that contradicts what the form already said.
+      factoryLicenseNo,
+      factoryLicenseValidUntil: new Date(factoryLicenseValidUntil).toISOString(),
       pollutionControlBoard: pollutionControlBoard || null,
       applicableActs: applicableActsText.split(",").map((a) => a.trim()).filter(Boolean),
       registrationNos: regs.filter((r) => r.type.trim() && r.number.trim()),
@@ -257,45 +318,73 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
               </p>
             </div>
             )}
-            <Field label="Factory name *">
-              <Input value={factoryName} onChange={(e) => setFactoryName(e.target.value)} placeholder="Meridian Apparel — Tirupur 1" />
+            <Field label="Factory name" required error={showErr(0) ? err.factoryName : null}>
+              <Input
+                value={factoryName} onChange={(e) => setFactoryName(e.target.value)}
+                aria-invalid={!!(showErr(0) && err.factoryName)}
+                placeholder="Meridian Apparel — Tirupur 1"
+              />
             </Field>
             <Field label="Factory code (auto if blank)">
               <Input value={factoryCode} onChange={(e) => setFactoryCode(e.target.value)} placeholder="MAG-TN-01" />
             </Field>
-            <Field label="Status">
-              <Select value={status} onChange={(e) => setStatus(e.target.value as FactoryStatus)}>
-                {FACTORY_STATUSES.map((s) => (
-                  <option key={s} value={s}>{titleCase(s)}</option>
-                ))}
-              </Select>
+            <Field label="Status" required>
+              <SelectField
+                value={status} onChange={(v) => setStatus(v as FactoryStatus)} ariaLabel="Status"
+                options={FACTORY_STATUSES.map((s) => ({ value: s, label: titleCase(s) }))}
+              />
             </Field>
-            <Field label="Ownership">
-              <Select value={ownershipType} onChange={(e) => setOwnershipType(e.target.value as OwnershipType)}>
-                {OWNERSHIP_TYPES.map((o) => (
-                  <option key={o} value={o}>{OWNERSHIP_LABEL[o]}</option>
-                ))}
-              </Select>
+            <Field label="Ownership" required>
+              <SelectField
+                value={ownershipType} onChange={(v) => setOwnershipType(v as OwnershipType)} ariaLabel="Ownership"
+                options={OWNERSHIP_TYPES.map((o) => ({ value: o, label: OWNERSHIP_LABEL[o] }))}
+              />
             </Field>
-            <Field label="Primary industry">
-              <Input value={primaryIndustry} onChange={(e) => setPrimaryIndustry(e.target.value)} />
+            <Field label="Primary industry" required error={showErr(0) ? err.primaryIndustry : null}>
+              <Input
+                value={primaryIndustry} onChange={(e) => setPrimaryIndustry(e.target.value)}
+                aria-invalid={!!(showErr(0) && err.primaryIndustry)}
+              />
             </Field>
-            <Field label="Established year">
-              <Input value={establishedYear} onChange={(e) => setEstablishedYear(e.target.value)} placeholder="2009" />
+            <Field label="Established year" required error={showErr(0) ? err.establishedYear : null}>
+              <Input
+                value={establishedYear}
+                onChange={(e) => setEstablishedYear(e.target.value.replace(/[^0-9]/g, "").slice(0, 4))}
+                inputMode="numeric" aria-invalid={!!(showErr(0) && err.establishedYear)}
+                placeholder="2009"
+              />
             </Field>
             <div className="sm:col-span-2">
-              <Field label="Address">
-                <Input value={addressLine} onChange={(e) => setAddressLine(e.target.value)} />
+              <Field label="Address" required error={showErr(0) ? err.addressLine : null}>
+                <Input
+                  value={addressLine} onChange={(e) => setAddressLine(e.target.value)}
+                  aria-invalid={!!(showErr(0) && err.addressLine)}
+                />
               </Field>
             </div>
             <Field label="City">
               <Input value={city} onChange={(e) => setCity(e.target.value)} />
             </Field>
-            <Field label="State">
-              <Input value={state} onChange={(e) => setState(e.target.value)} />
+            <Field label="State" required error={showErr(0) ? err.state : null}>
+              {/* Free text before this: the same state arrived as "delhi",
+                  "Delhi" and "NCT of Delhi", which the India map matches on
+                  exact name and so silently dropped. `canonicalIndiaState`
+                  keeps an already-typed value selectable instead of blanking
+                  it. */}
+              <SelectField
+                value={canonicalIndiaState(state)} onChange={setState}
+                options={INDIA_STATE_OPTIONS} ariaLabel="State or union territory"
+                placeholder="— select state —"
+                invalid={!!(showErr(0) && err.state)}
+              />
             </Field>
-            <Field label="Pincode">
-              <Input value={pincode} onChange={(e) => setPincode(e.target.value)} />
+            <Field label="Pincode" required error={showErr(0) ? err.pincode : null}>
+              <Input
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value.replace(/[^0-9]/g, "").slice(0, 6))}
+                inputMode="numeric" aria-invalid={!!(showErr(0) && err.pincode)}
+                placeholder="641604"
+              />
             </Field>
             <div />
             <Field label="Latitude (for the India map)">
@@ -310,11 +399,19 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
         {/* ── Step 2: Statutory ── */}
         {step === 1 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Factory licence no.">
-              <Input value={factoryLicenseNo} onChange={(e) => setFactoryLicenseNo(e.target.value)} />
+            <Field label="Factory licence no." required error={showErr(1) ? err.factoryLicenseNo : null}>
+              <Input
+                value={factoryLicenseNo} onChange={(e) => setFactoryLicenseNo(e.target.value)}
+                aria-invalid={!!(showErr(1) && err.factoryLicenseNo)}
+                placeholder="TN/FAC/2009/1187"
+              />
             </Field>
-            <Field label="Licence valid until">
-              <Input type="date" value={factoryLicenseValidUntil} onChange={(e) => setFactoryLicenseValidUntil(e.target.value)} />
+            <Field label="Licence valid until" required error={showErr(1) ? err.factoryLicenseValidUntil : null}>
+              <Input
+                type="date" value={factoryLicenseValidUntil}
+                onChange={(e) => setFactoryLicenseValidUntil(e.target.value)}
+                aria-invalid={!!(showErr(1) && err.factoryLicenseValidUntil)}
+              />
             </Field>
             <Field label="Pollution Control Board">
               <Input value={pollutionControlBoard} onChange={(e) => setPollutionControlBoard(e.target.value)} placeholder="TNPCB" />
@@ -569,16 +666,32 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
         {step < STEPS.length - 1 ? (
           <Button
             type="button"
-            disabled={step === 0 && !canNext0}
-            onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
+            // Enabled but blocked: pressing it reveals what is missing. A
+            // disabled Next with no visible reason is the version of this form
+            // people get stuck on.
+            onClick={() => {
+              setTouched((t) => ({ ...t, [step]: true }));
+              if (!stepOk(step)) return;
+              setStep((s) => Math.min(STEPS.length - 1, s + 1));
+            }}
           >
             Next
           </Button>
         ) : (
           <Button
             type="button"
-            disabled={submitting || !canNext0}
-            onClick={submit}
+            disabled={submitting}
+            onClick={() => {
+              if (!canSubmit) {
+                // Surface the errors AND go to the step that carries them —
+                // the messages are on a step the reviewer is not looking at.
+                setTouched((t) => ({ ...t, 0: true, 1: true }));
+                setStep(canNext0 ? 1 : 0);
+                setError("Some required details are missing — they are marked in red.");
+                return;
+              }
+              submit();
+            }}
           >
             {submitting ? "Creating…" : "Create factory profile"}
           </Button>
