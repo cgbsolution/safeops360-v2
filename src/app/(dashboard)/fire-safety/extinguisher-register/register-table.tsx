@@ -19,7 +19,16 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpDown, FileDown, Pencil } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   BADGE_STYLE,
   Badge,
@@ -29,6 +38,7 @@ import {
   RegisterRow,
   fmtDate,
 } from "../lib";
+import { ExportButtons } from "../_components/export-buttons";
 import { RegisterDialog } from "./register-dialog";
 
 function DueCell({ badge, iso }: { badge: Badge; iso: string | null }) {
@@ -71,16 +81,66 @@ export function RegisterTable({
   payload,
   plants,
   canWrite = true,
+  canDelete = false,
+  canExport = true,
 }: {
   payload: RegisterPayload;
   plants: { id: string; code: string; name: string }[];
   canWrite?: boolean;
+  canDelete?: boolean;
+  canExport?: boolean;
 }) {
+  const router = useRouter();
   const [filter, setFilter] = React.useState<BadgeStatus | null>(null);
   const [query, setQuery] = React.useState("");
   const [sort, setSort] = React.useState<SortKey>("location");
   const [editing, setEditing] = React.useState<RegisterRow | null>(null);
   const [open, setOpen] = React.useState(false);
+
+  // Removal is a soft delete behind a reason, exactly as the "All other fire
+  // assets" tab does it — a cylinder is statutory evidence, so the row is
+  // retained with who removed it and why rather than erased. Both tabs hit the
+  // same DELETE /api/fire/equipment/{id}: an extinguisher is a FireEquipment row
+  // like any other, and a second delete path onto one table is the duplication
+  // this consolidated register exists to remove.
+  const [removing, setRemoving] = React.useState<RegisterRow | null>(null);
+  const [reason, setReason] = React.useState("");
+  const [delError, setDelError] = React.useState<string | null>(null);
+  const [pending, startTransition] = React.useTransition();
+
+  React.useEffect(() => {
+    if (removing) {
+      setReason("");
+      setDelError(null);
+    }
+  }, [removing]);
+
+  function remove() {
+    if (!removing) return;
+    setDelError(null);
+    if (reason.trim().length < 10) {
+      setDelError("A deletion reason of at least 10 characters is required for a governed record.");
+      return;
+    }
+    const target = removing;
+    startTransition(async () => {
+      const res = await fetch(`/api/fire/equipment/${target.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason: reason.trim() }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        const raw = d?.detail ?? d?.error;
+        setDelError(
+          typeof raw === "string" ? raw : raw ? JSON.stringify(raw) : `Delete failed (${res.status})`,
+        );
+        return;
+      }
+      setRemoving(null);
+      router.refresh();
+    });
+  }
 
   const rows = React.useMemo(() => {
     let out = payload.rows;
@@ -151,15 +211,11 @@ export function RegisterTable({
         </span>
 
         <div className="ml-auto flex items-center gap-2">
-          <a
-            href="/api/fire/register/extinguishers/export.pdf"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium"
-            style={{ borderColor: MX.iceLine, color: MX.navy }}
-          >
-            <FileDown size={13} /> PDF
-          </a>
+          <ExportButtons
+            pdfHref="/api/fire/register/extinguishers/export.pdf"
+            xlsxHref="/api/fire/register/extinguishers/export.xlsx"
+            allowed={canExport}
+          />
           {canWrite && (
             <button
               type="button"
@@ -266,21 +322,46 @@ export function RegisterTable({
                   <td className="max-w-[180px] truncate border-b px-2 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }} title={r.remarks ?? ""}>
                     {r.remarks ?? "—"}
                   </td>
-                  <td className="border-b px-2 py-1.5 text-right" style={{ borderColor: MX.iceLine }}>
-                    {canWrite && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditing(r);
-                          setOpen(true);
-                        }}
+                  {/* View / Edit / Delete. The register shipped with Edit alone,
+                      so a cylinder could be corrected but never opened for its
+                      inspection history and never removed when it was condemned —
+                      the two things a register is actually maintained for. */}
+                  <td className="whitespace-nowrap border-b px-2 py-1.5 text-right" style={{ borderColor: MX.iceLine }}>
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Link
+                        href={`/fire-safety/equipment/${r.id}`}
                         className="rounded p-1 hover:bg-slate-100"
-                        title="Edit register row"
-                        aria-label={`Edit ${r.allottedSerialNo ?? r.equipmentCode}`}
+                        title="View this cylinder — detail, certificates and inspection history"
+                        aria-label={`View ${r.allottedSerialNo ?? r.equipmentCode}`}
                       >
-                        <Pencil size={13} style={{ color: MX.navy }} />
-                      </button>
-                    )}
+                        <Eye size={13} style={{ color: MX.navy }} />
+                      </Link>
+                      {canWrite && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditing(r);
+                            setOpen(true);
+                          }}
+                          className="rounded p-1 hover:bg-slate-100"
+                          title="Edit register row"
+                          aria-label={`Edit ${r.allottedSerialNo ?? r.equipmentCode}`}
+                        >
+                          <Pencil size={13} style={{ color: MX.navy }} />
+                        </button>
+                      )}
+                      {canDelete && (
+                        <button
+                          type="button"
+                          onClick={() => setRemoving(r)}
+                          className="rounded p-1 hover:bg-rose-50"
+                          title="Remove from the register (soft delete, reason required)"
+                          aria-label={`Remove ${r.allottedSerialNo ?? r.equipmentCode}`}
+                        >
+                          <Trash2 size={13} style={{ color: MX.red }} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -290,6 +371,57 @@ export function RegisterTable({
       </div>
 
       <RegisterDialog open={open} onOpenChange={setOpen} row={editing} plants={plants} />
+
+      {/* ── Remove a cylinder ────────────────────────────────────────────── */}
+      <Dialog open={Boolean(removing)} onOpenChange={(v) => !v && setRemoving(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              Remove {removing?.allottedSerialNo ?? removing?.equipmentCode} from the register
+            </DialogTitle>
+            <DialogDescription>
+              This is a soft delete. A fire extinguisher is statutory evidence, so the record is
+              retained with your name and reason and hidden from the register — it is not erased.
+              The backend refuses while open defects still reference the cylinder.
+            </DialogDescription>
+          </DialogHeader>
+          {delError && (
+            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+              {delError}
+            </div>
+          )}
+          <div>
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+              Reason * (min 10 characters)
+            </label>
+            <textarea
+              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-slate-400 focus:outline-none"
+              rows={3}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Cylinder condemned after hydrostatic test failure; replaced by FE-ACS-0031."
+            />
+            <p className="mt-1 text-[11px] text-slate-400">{reason.trim().length}/10</p>
+          </div>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setRemoving(null)}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:border-slate-400"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={remove}
+              disabled={pending || reason.trim().length < 10}
+              className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700 disabled:opacity-60"
+            >
+              {pending ? "Removing…" : "Remove cylinder"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

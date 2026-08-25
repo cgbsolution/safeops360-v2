@@ -25,7 +25,13 @@ export const dynamic = "force-dynamic";
 
 type Plant = { id: string; code: string; name: string };
 type Zone = { id: string; zoneCode: string; name: string; plantId: string };
-type Caps = { create?: boolean; update?: boolean; rbacSeeded?: boolean };
+type Caps = {
+  create?: boolean;
+  update?: boolean;
+  delete?: boolean;
+  export?: boolean;
+  rbacSeeded?: boolean;
+};
 
 export default async function FireRegisterPage() {
   let register: RegisterPayload | null = null;
@@ -65,6 +71,17 @@ export default async function FireRegisterPage() {
       : [];
   const caps: Caps = capRes.status === "fulfilled" ? capRes.value : {};
   const canWrite = Boolean(caps.create || caps.update);
+  // Both, deliberately. FIRE.DELETE is what the button MEANS, but the route it
+  // calls — DELETE /api/fire/equipment/{id}, shared with the "All other fire
+  // assets" tab — is gated on FIRE.UPDATE. Requiring only one of the pair would
+  // either hide the action from someone allowed to take it or offer a guaranteed
+  // 403, and a control that fails on click is the thing the capabilities call
+  // exists to prevent.
+  const canDelete = Boolean(caps.delete && caps.update);
+  // Default true only when the capabilities call itself failed — hiding the
+  // export because a side-call errored would be a worse lie than offering a
+  // button the backend then refuses.
+  const canExport = caps.export !== false;
 
   return (
     <div>
@@ -119,6 +136,8 @@ export default async function FireRegisterPage() {
         plants={plants}
         zones={zones}
         canWrite={canWrite}
+        canDelete={canDelete}
+        canExport={canExport}
         registerError={registerError}
         assetsError={assetsError}
       />

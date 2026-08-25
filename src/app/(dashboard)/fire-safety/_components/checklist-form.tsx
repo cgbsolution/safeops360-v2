@@ -18,7 +18,7 @@
 // next unit's panel would need a code change instead of a template.
 
 import * as React from "react";
-import { AlertTriangle, FileDown, Loader2, Lock, Save } from "lucide-react";
+import { AlertTriangle, Loader2, Lock, Save } from "lucide-react";
 import {
   ANSWERS,
   ANSWER_STYLE,
@@ -29,6 +29,7 @@ import {
   fireFetch,
 } from "../lib";
 import { Footnotes } from "./document-header";
+import { ExportButtons } from "./export-buttons";
 import { SignOffPanel, SignaturePayload } from "./sign-off-panel";
 
 export function ChecklistFormRunner({
@@ -172,15 +173,10 @@ export function ChecklistFormRunner({
               {error}
             </span>
           )}
-          <a
-            href={`/api/fire/checklists/run/${run.runId}/export.pdf`}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium"
-            style={{ borderColor: MX.iceLine, color: MX.navy }}
-          >
-            <FileDown size={13} /> PDF
-          </a>
+          <ExportButtons
+            pdfHref={`/api/fire/checklists/run/${run.runId}/export.pdf`}
+            xlsxHref={`/api/fire/checklists/run/${run.runId}/export.xlsx`}
+          />
           {!locked && (
             <button
               type="button"

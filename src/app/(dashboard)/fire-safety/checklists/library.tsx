@@ -66,7 +66,12 @@ export function ChecklistLibrary({
   const [busy, setBusy] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
-  const [editing, setEditing] = React.useState<{ id: string | null } | null>(null);
+  // `readOnly` is what separates View from Edit. Both open the same dialog —
+  // "show me exactly what this sheet asks" and "change it" want the same layout,
+  // and a second viewer component would be a second place for them to drift —
+  // but View must not arrive with every field live and a Save button, which is
+  // what it did while the two buttons shared one handler.
+  const [editing, setEditing] = React.useState<{ id: string | null; readOnly: boolean } | null>(null);
 
   React.useEffect(() => setItems(initial), [initial]);
 
@@ -147,7 +152,7 @@ export function ChecklistLibrary({
           {caps.templateAuthor && (
             <button
               type="button"
-              onClick={() => setEditing({ id: null })}
+              onClick={() => setEditing({ id: null, readOnly: false })}
               className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12px] font-semibold text-white"
               style={{ background: MX.navy }}
             >
@@ -256,9 +261,10 @@ export function ChecklistLibrary({
                 <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setEditing({ id: t.id })}
+                    onClick={() => setEditing({ id: t.id, readOnly: true })}
                     className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium"
                     style={{ borderColor: MX.iceLine, color: MX.navy }}
+                    title="Read the sheet as published — every item, in order, unchanged"
                   >
                     <FileText size={11} /> View
                   </button>
@@ -266,9 +272,10 @@ export function ChecklistLibrary({
                   {caps.templateAuthor && !frozen && t.status !== "RETIRED" && (
                     <button
                       type="button"
-                      onClick={() => setEditing({ id: t.id })}
+                      onClick={() => setEditing({ id: t.id, readOnly: false })}
                       className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-medium"
                       style={{ borderColor: MX.iceLine, color: MX.navy }}
+                      title="Change the wording or items of this revision"
                     >
                       <Pencil size={11} /> Edit
                     </button>
@@ -352,7 +359,8 @@ export function ChecklistLibrary({
       {editing && (
         <ChecklistEditor
           templateId={editing.id}
-          readOnly={!caps.templateAuthor}
+          readOnly={editing.readOnly || !caps.templateAuthor}
+          readOnlyReason={editing.readOnly ? "VIEW" : "PERMISSION"}
           onClose={() => setEditing(null)}
           onSaved={async () => {
             setEditing(null);

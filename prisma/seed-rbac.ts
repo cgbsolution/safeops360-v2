@@ -758,11 +758,23 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Fire & Life Safety ──────────────────────────────────────────
     // "Approved by: HOD" — the final stage. Also the document-control authority
     // for the controlled checklists: transcribing a revised client sheet
-    // (TEMPLATE_AUTHOR) and publishing it (TEMPLATE_APPROVE). READ is widened to
-    // ALL_PLANTS so HSE leadership can see any site's fire position; every
-    // authority that changes a record stays OWN_PLANT.
-    { module: "FIRE",        actions: ["READ"],                                scope: "ALL_PLANTS" },
-    { module: "FIRE",        actions: ["CREATE", "UPDATE", "DELETE", "EXECUTE", "VERIFY", "APPROVE", "CLOSE", "EXPORT", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "CALENDAR"], scope: "OWN_PLANT" },
+    // (TEMPLATE_AUTHOR) and publishing it (TEMPLATE_APPROVE).
+    //
+    // ALL_PLANTS on every fire action, not on READ alone. The fire register is a
+    // group-wide asset master: an HSE Manager holds PLANT-scoped role rows for
+    // the units they line-manage, but extinguishers, panels and hydrants are
+    // registered against the units that physically hold them, so OWN_PLANT
+    // matched almost nothing. READ was already ALL_PLANTS, so every sheet and
+    // every register row rendered — and then EXECUTE / EXPORT / UPDATE refused
+    // the very same record with "scope does not include this record". A screen
+    // that shows the work and then declines it teaches the rule by failing at
+    // it. Fire & Life Safety is one HSE authority group-wide, so the whole verb
+    // set moves together and the list and the record stop disagreeing.
+    //
+    // The separation that matters on a fire sheet is untouched: EXECUTE (prepare)
+    // vs VERIFY (review) vs APPROVE (sign off) is enforced per action, not per
+    // plant, and the roles that hold only some of those still hold only those.
+    { module: "FIRE",        actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXECUTE", "VERIFY", "APPROVE", "CLOSE", "EXPORT", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "CALENDAR"], scope: "ALL_PLANTS" },
     // Guided Field Capture triage + Daily Alert Brief
     { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "OWN_PLANT" },
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },

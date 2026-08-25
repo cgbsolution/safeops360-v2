@@ -61,11 +61,18 @@ function blankItem(n: number): ChecklistItemDef {
 export function ChecklistEditor({
   templateId,
   readOnly,
+  readOnlyReason = "PERMISSION",
   onClose,
   onSaved,
 }: {
   templateId: string | null;
   readOnly?: boolean;
+  /** Why the fields are locked. "VIEW" — the caller pressed View and could edit
+   *  if they chose to; "PERMISSION" — they hold no FIRE.TEMPLATE_AUTHOR. The
+   *  distinction has to reach the banner: telling an HSE Manager who opened the
+   *  viewer that they lack a permission they hold is a false explanation, and
+   *  the kind that ends up in a support ticket. */
+  readOnlyReason?: "VIEW" | "PERMISSION";
   onClose: () => void;
   onSaved: () => void | Promise<void>;
 }) {
@@ -248,7 +255,17 @@ export function ChecklistEditor({
                   className="mb-3 rounded-lg border px-3 py-2 text-[11.5px]"
                   style={{ borderColor: MX.iceLine, background: MX.ice, color: MX.muted }}
                 >
-                  Read-only. Changing a controlled checklist needs <code>FIRE.TEMPLATE_AUTHOR</code>.
+                  {readOnlyReason === "VIEW" ? (
+                    <>
+                      Viewing this checklist as published — every item in the sheet&rsquo;s own order,
+                      nothing editable. Close and choose <strong>Edit</strong> to change the wording,
+                      or <strong>Revise</strong> to start a new revision.
+                    </>
+                  ) : (
+                    <>
+                      Read-only. Changing a controlled checklist needs <code>FIRE.TEMPLATE_AUTHOR</code>.
+                    </>
+                  )}
                 </div>
               )}
 

@@ -22,7 +22,7 @@
 // only to have it bounce is worse than not offering the edit.
 
 import * as React from "react";
-import { ChevronLeft, ChevronRight, FileDown, Loader2, Lock, Save } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Lock, Save } from "lucide-react";
 import {
   ANSWER_STYLE,
   Answer,
@@ -33,6 +33,7 @@ import {
   fireFetch,
   fmtWindow,
 } from "../lib";
+import { ExportButtons } from "./export-buttons";
 
 type CellKey = `${string}::${string}`; // periodLabel::itemKey
 const key = (period: string, item: string): CellKey => `${period}::${item}`;
@@ -137,8 +138,10 @@ export function ChecklistGridRunner({
 
   const wide = grid.columns.length > 12;
   const cellW = wide ? 30 : 62;
-  const pdfHref =
-    `/api/fire/checklists/grid/export.pdf?templateCode=${encodeURIComponent(grid.templateCode)}` +
+  // Both formats export the page currently on screen, not today's — someone who
+  // paged back to August and then exported means August.
+  const exportQuery =
+    `?templateCode=${encodeURIComponent(grid.templateCode)}` +
     `&assetId=${encodeURIComponent(grid.assetId)}&window=${encodeURIComponent(grid.window)}`;
 
   let lastSection: string | null = null;
@@ -185,15 +188,10 @@ export function ChecklistGridRunner({
               {error}
             </span>
           )}
-          <a
-            href={pdfHref}
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium"
-            style={{ borderColor: MX.iceLine, color: MX.navy }}
-          >
-            <FileDown size={13} /> PDF
-          </a>
+          <ExportButtons
+            pdfHref={`/api/fire/checklists/grid/export.pdf${exportQuery}`}
+            xlsxHref={`/api/fire/checklists/grid/export.xlsx${exportQuery}`}
+          />
           {canWrite && (
             <button
               type="button"

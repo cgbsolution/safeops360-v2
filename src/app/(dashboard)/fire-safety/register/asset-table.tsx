@@ -19,6 +19,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowUpRight, Search } from "lucide-react";
 import { MX, fmtDate } from "../lib";
+import { ExportButtons } from "../_components/export-buttons";
 import { NewEquipmentDialog } from "../equipment/new-equipment";
 import { RowActions } from "../equipment/row-actions";
 
@@ -64,11 +65,13 @@ export function AssetTable({
   plants = [],
   zones = [],
   canWrite,
+  canExport = true,
 }: {
   assets: FireAsset[];
   plants?: Plant[];
   zones?: Zone[];
   canWrite?: boolean;
+  canExport?: boolean;
 }) {
   const [query, setQuery] = React.useState("");
   const [status, setStatus] = React.useState<string | null>(null);
@@ -147,7 +150,16 @@ export function AssetTable({
           {rows.length} of {assets.length}
         </span>
 
-        <div className="ml-auto">
+        {/* This tab had no export at all — the one view of the fire asset master
+            an engineer could not take off the screen. Exports the full tab, not
+            the current filter: a register handed on is the register, and a
+            silently filtered export is how a partial list gets read as complete. */}
+        <div className="ml-auto flex items-center gap-2">
+          <ExportButtons
+            pdfHref="/api/fire/equipment/export.pdf"
+            xlsxHref="/api/fire/equipment/export.xlsx"
+            allowed={canExport}
+          />
           <NewEquipmentDialog plants={plants} allowed={canWrite} />
         </div>
       </div>

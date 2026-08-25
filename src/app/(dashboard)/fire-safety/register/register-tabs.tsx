@@ -30,6 +30,8 @@ export function RegisterTabs({
   plants,
   zones,
   canWrite,
+  canDelete = false,
+  canExport = true,
   registerError,
   assetsError,
 }: {
@@ -38,6 +40,8 @@ export function RegisterTabs({
   plants: Plant[];
   zones: Zone[];
   canWrite: boolean;
+  canDelete?: boolean;
+  canExport?: boolean;
   registerError: string | null;
   assetsError: string | null;
 }) {
@@ -97,7 +101,13 @@ export function RegisterTabs({
             {registerError ?? "The extinguisher register could not be loaded."}
           </div>
         ) : (
-          <RegisterTable payload={register} plants={plants} canWrite={canWrite} />
+          <RegisterTable
+            payload={register}
+            plants={plants}
+            canWrite={canWrite}
+            canDelete={canDelete}
+            canExport={canExport}
+          />
         )
       ) : assetsError ? (
         <div
@@ -107,7 +117,13 @@ export function RegisterTabs({
           {assetsError}
         </div>
       ) : (
-        <AssetTable assets={assets} plants={plants} zones={zones} canWrite={canWrite} />
+        <AssetTable
+          assets={assets}
+          plants={plants}
+          zones={zones}
+          canWrite={canWrite}
+          canExport={canExport}
+        />
       )}
     </div>
   );
