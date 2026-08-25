@@ -22,7 +22,14 @@ export const dynamic = "force-dynamic";
 
 const ASSET_TYPE = "FIRE_EXTINGUISHER";
 
-export default async function FeInspectionPage() {
+export default async function FeInspectionPage({
+  searchParams,
+}: {
+  // Set when the screen was reached by scanning an asset's QR sticker, so the
+  // inspector opens on the unit they are standing at rather than the first row.
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const sp = (await searchParams) ?? {};
   let templates: TemplateSummary[] = [];
   let assets: ChecklistAsset[] = [];
   let error: string | null = null;
@@ -75,6 +82,8 @@ export default async function FeInspectionPage() {
         </div>
       ) : (
         <ChecklistWorkbench
+        initialAssetId={sp.asset ?? null}
+        initialTemplateCode={sp.template ?? null}
           title="Fire Extinguishers"
           description="A year of monthly inspections per cylinder."
           assetTypeLabel="Extinguishers"

@@ -17,9 +17,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, Search } from "lucide-react";
+import { ArrowUpRight, QrCode, Search } from "lucide-react";
 import { MX, fmtDate } from "../lib";
 import { ExportButtons } from "../_components/export-buttons";
+import { QrStickerDialog, QrTarget } from "../_components/qr-sticker-dialog";
 import { NewEquipmentDialog } from "../equipment/new-equipment";
 import { RowActions } from "../equipment/row-actions";
 
@@ -74,6 +75,7 @@ export function AssetTable({
   canExport?: boolean;
 }) {
   const [query, setQuery] = React.useState("");
+  const [qrFor, setQrFor] = React.useState<QrTarget | null>(null);
   const [status, setStatus] = React.useState<string | null>(null);
   const [type, setType] = React.useState<string | null>(null);
 
@@ -224,6 +226,22 @@ export function AssetTable({
                     </td>
                     <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
                       <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setQrFor({
+                              id: a.id,
+                              equipmentCode: a.equipmentCode,
+                              location: a.location,
+                              type: a.type,
+                            })
+                          }
+                          className="rounded p-1 hover:bg-slate-100"
+                          title="QR sticker — print and apply to this asset"
+                          aria-label={`QR sticker for ${a.equipmentCode}`}
+                        >
+                          <QrCode size={12} style={{ color: MX.navy }} />
+                        </button>
                         <Link
                           href={`/fire-safety/equipment/${a.id}`}
                           className="inline-flex items-center gap-1 text-[11px] font-medium hover:underline"
@@ -259,6 +277,8 @@ export function AssetTable({
           </tbody>
         </table>
       </div>
+
+      <QrStickerDialog target={qrFor} onClose={() => setQrFor(null)} />
 
       <p className="mt-2 text-[11px]" style={{ color: MX.muted }}>
         Status is computed nightly from each asset&rsquo;s inspection due date. Overrides, out-of-service and

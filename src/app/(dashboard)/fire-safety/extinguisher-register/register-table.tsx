@@ -20,7 +20,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, QrCode, Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,7 @@ import {
 } from "../lib";
 import { ExportButtons } from "../_components/export-buttons";
 import { RegisterDialog } from "./register-dialog";
+import { QrStickerDialog, QrTarget } from "../_components/qr-sticker-dialog";
 
 function DueCell({ badge, iso }: { badge: Badge; iso: string | null }) {
   const st = BADGE_STYLE[badge.status];
@@ -96,6 +97,7 @@ export function RegisterTable({
   const [sort, setSort] = React.useState<SortKey>("location");
   const [editing, setEditing] = React.useState<RegisterRow | null>(null);
   const [open, setOpen] = React.useState(false);
+  const [qrFor, setQrFor] = React.useState<QrTarget | null>(null);
 
   // Removal is a soft delete behind a reason, exactly as the "All other fire
   // assets" tab does it — a cylinder is statutory evidence, so the row is
@@ -216,6 +218,21 @@ export function RegisterTable({
             xlsxHref="/api/fire/register/extinguishers/export.xlsx"
             allowed={canExport}
           />
+          {/* The realistic flow is not "print one sticker" — it is registering
+              twenty cylinders and wanting one sheet to cut and apply. 24 labels
+              per A4 page on Avery L7160 pitch. */}
+          {canExport && rows.length > 0 && (
+            <a
+              href="/api/fire/assets/qr-sheet.pdf?assetType=FIRE_EXTINGUISHER"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium"
+              style={{ borderColor: MX.iceLine, color: MX.navy }}
+              title="Printable sheet of QR labels for every extinguisher in this register"
+            >
+              <QrCode size={13} /> QR labels
+            </a>
+          )}
           {canWrite && (
             <button
               type="button"
@@ -336,6 +353,23 @@ export function RegisterTable({
                       >
                         <Eye size={13} style={{ color: MX.navy }} />
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setQrFor({
+                            id: r.id,
+                            equipmentCode: r.equipmentCode,
+                            allottedSerialNo: r.allottedSerialNo,
+                            location: r.location,
+                            type: r.type,
+                          })
+                        }
+                        className="rounded p-1 hover:bg-slate-100"
+                        title="QR sticker — print and apply to this cylinder"
+                        aria-label={`QR sticker for ${r.allottedSerialNo ?? r.equipmentCode}`}
+                      >
+                        <QrCode size={13} style={{ color: MX.navy }} />
+                      </button>
                       {canWrite && (
                         <button
                           type="button"
@@ -371,6 +405,7 @@ export function RegisterTable({
       </div>
 
       <RegisterDialog open={open} onOpenChange={setOpen} row={editing} plants={plants} />
+      <QrStickerDialog target={qrFor} onClose={() => setQrFor(null)} />
 
       {/* ── Remove a cylinder ────────────────────────────────────────────── */}
       <Dialog open={Boolean(removing)} onOpenChange={(v) => !v && setRemoving(null)}>

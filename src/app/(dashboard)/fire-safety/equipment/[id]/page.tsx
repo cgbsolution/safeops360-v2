@@ -12,6 +12,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { AssetQrButton } from "./qr-button";
 import { TriggerInspectionButton } from "./trigger-inspection";
 
 export const dynamic = "force-dynamic";
@@ -263,7 +264,24 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
               )
             }
           />
-          <Row label="QR payload" value={<code className="text-[10px]">{eq.qrCode}</code>} />
+          {/* Was the raw payload as a <code> string, which a human cannot act on
+              and cannot put on a cylinder. The sticker itself is the useful
+              artefact; the payload is shown inside the dialog for anyone
+              debugging a scan. */}
+          <Row
+            label="QR sticker"
+            value={
+              <AssetQrButton
+                target={{
+                  id: eq.id,
+                  equipmentCode: eq.equipmentCode,
+                  allottedSerialNo: eq.allottedSerialNo ?? null,
+                  location: eq.location,
+                  type: eq.type,
+                }}
+              />
+            }
+          />
           {eq.outOfServiceReason && <Row label="Out-of-service reason" value={eq.outOfServiceReason} />}
         </div>
       </div>

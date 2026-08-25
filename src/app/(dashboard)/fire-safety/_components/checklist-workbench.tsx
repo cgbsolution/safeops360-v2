@@ -68,6 +68,12 @@ export function ChecklistWorkbench({
   templates,
   canWrite = true,
   loadError,
+  // Set when the screen was reached by scanning an asset's QR sticker. The
+  // inspector is standing in front of THAT unit, so opening on the first asset
+  // in the list would be actively wrong — they would fill in a sheet for a
+  // different cylinder without noticing.
+  initialAssetId,
+  initialTemplateCode,
 }: {
   title: string;
   description: string;
@@ -76,9 +82,18 @@ export function ChecklistWorkbench({
   templates: TemplateSummary[];
   canWrite?: boolean;
   loadError?: string | null;
+  initialAssetId?: string | null;
+  initialTemplateCode?: string | null;
 }) {
   const [query, setQuery] = React.useState("");
-  const [assetId, setAssetId] = React.useState<string>(assets[0]?.id ?? "");
+  // Fall back to the first asset only when nothing was requested. A requested id
+  // that is not in the list means the sticker points at an asset outside this
+  // user's plant scope — handled below rather than silently swapped.
+  const requested = initialAssetId && assets.some((a) => a.id === initialAssetId)
+    ? initialAssetId
+    : null;
+  const [assetId, setAssetId] = React.useState<string>(requested ?? assets[0]?.id ?? "");
+  const scannedButOutOfScope = Boolean(initialAssetId && !requested);
   const asset = React.useMemo(() => assets.find((a) => a.id === assetId) ?? null, [assets, assetId]);
 
   // Templates this asset can actually run — an asset picker showing a beam
@@ -105,7 +120,7 @@ export function ChecklistWorkbench({
       );
   }, [applicable, asset]);
 
-  const [templateCode, setTemplateCode] = React.useState<string>("");
+  const [templateCode, setTemplateCode] = React.useState<string>(initialTemplateCode ?? "");
   React.useEffect(() => {
     // Re-resolve whenever the asset changes: the selected code may belong to a
     // template that does not apply to the new asset at all.
@@ -176,6 +191,20 @@ export function ChecklistWorkbench({
 
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+      {/* A sticker that resolves to an asset outside this user's plant scope must
+          say so. Silently falling back to the first asset in the list would have
+          them fill in a sheet for a different cylinder and never know. */}
+      {scannedButOutOfScope && (
+        <div
+          className="rounded-xl border px-4 py-2.5 text-[12px] lg:col-span-2"
+          style={{ borderColor: MX.gold, background: MX.amberSoft, color: MX.amber }}
+        >
+          <strong>That sticker is for an asset you cannot access.</strong> It belongs to another
+          plant, or it has been removed from the register. Pick the unit you are standing at from
+          the list — do not record against a different one.
+        </div>
+      )}
+
       {/* ── asset picker ────────────────────────────────────────────────── */}
       <aside className="rounded-xl border bg-white" style={{ borderColor: MX.iceLine }}>
         <div className="px-3 py-2.5" style={{ borderBottom: `1px solid ${MX.iceLine}` }}>

@@ -30,7 +30,14 @@ async function load(assetType: string) {
   return { templates, assets };
 }
 
-export default async function FireAlarmPage() {
+export default async function FireAlarmPage({
+  searchParams,
+}: {
+  // Set when the screen was reached by scanning an asset's QR sticker, so the
+  // inspector opens on the unit they are standing at rather than the first row.
+  searchParams: Promise<Record<string, string | undefined>>;
+}) {
+  const sp = (await searchParams) ?? {};
   let panels: Awaited<ReturnType<typeof load>> = { templates: [], assets: [] };
   let beams: Awaited<ReturnType<typeof load>> = { templates: [], assets: [] };
   let error: string | null = null;
@@ -65,6 +72,8 @@ export default async function FireAlarmPage() {
       ) : (
         <div className="space-y-8">
           <ChecklistWorkbench
+        initialAssetId={sp.asset ?? null}
+        initialTemplateCode={sp.template ?? null}
             title="Fire Alarm Panels"
             description="Daily, monthly, quarterly and annual inspection sheets for each FAS panel."
             assetTypeLabel="Fire alarm panels"
