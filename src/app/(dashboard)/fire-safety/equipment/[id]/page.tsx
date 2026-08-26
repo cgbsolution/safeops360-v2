@@ -42,6 +42,9 @@ type Equipment = {
   serialNo: string | null;
   capacitySpec: string | null;
   qrCode: string | null;
+  allottedSerialNo: string | null;
+  yearOfManufacture: number | null;
+  expiryDate: string | null;
   maintenanceContractor: string | null;
   amcContractId: string | null;
   lastInspectionDate: string | null;
@@ -208,7 +211,21 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
           <Row label="Subtype" value={eq.assetSubtype} />
           <Row label="Make / model" value={[eq.make, eq.model].filter(Boolean).join(" ")} />
           <Row label="Serial no." value={eq.serialNo} />
+          {/* The tag stencilled on the cylinder — the number an inspector reads
+              off it, and the one the client's sheet header asks for. Now that the
+              API returns it, showing it here beats making them open the register. */}
+          <Row label="Allotted serial (tag)" value={eq.allottedSerialNo} />
           <Row label="Capacity / spec" value={eq.capacitySpec} />
+          <Row
+            label="Cylinder life"
+            value={
+              eq.expiryDate
+                ? `${eq.yearOfManufacture ? `${eq.yearOfManufacture} → ` : ""}${new Date(
+                    eq.expiryDate,
+                  ).toLocaleDateString("en-IN")}`
+                : null
+            }
+          />
           <Row label="Location" value={eq.location} />
           <Row
             label="Zone"

@@ -157,6 +157,21 @@ export function AssetTable({
             the current filter: a register handed on is the register, and a
             silently filtered export is how a partial list gets read as complete. */}
         <div className="ml-auto flex items-center gap-2">
+          {/* The realistic flow is not "print one sticker" — it is registering a
+              batch of assets and wanting one sheet to cut and apply. 24 labels
+              per A4 page on Avery L7160 pitch. */}
+          {canExport && assets.length > 0 && (
+            <a
+              href="/api/fire/assets/qr-sheet.pdf"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-medium"
+              style={{ borderColor: MX.iceLine, color: MX.navy }}
+              title="Printable sheet of QR labels for every fire asset in scope"
+            >
+              <QrCode size={13} /> QR labels
+            </a>
+          )}
           <ExportButtons
             pdfHref="/api/fire/equipment/export.pdf"
             xlsxHref="/api/fire/equipment/export.xlsx"
