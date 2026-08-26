@@ -807,7 +807,7 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
           {/* Role + state gated action bar */}
           <CheckpointActions
             auditId={auditId} r={r} me={me} canExecute={canExecute} canApprove={canApprove} canUpdate={canUpdate}
-            canCreateCapa={canCreateCapa} auditOpen={auditOpen} onChanged={onChanged}
+            canCreateCapa={canCreateCapa} auditOpen={auditOpen} onChanged={onChanged} nameOf={name}
           />
         </div>
       )}
@@ -849,21 +849,58 @@ function IterationThread({ interactions, userMap, knownPhotos = [] }: {
 }
 
 // Unified, role + state gated action bar driving the iteration state machine.
-function CheckpointActions({ auditId, r, me, canExecute, canApprove, canUpdate, canCreateCapa, auditOpen, onChanged }: {
+function CheckpointActions({ auditId, r, me, canExecute, canApprove, canUpdate, canCreateCapa, auditOpen, onChanged, nameOf }: {
   auditId: string; r: CheckpointResponse; me: string | undefined;
   canExecute: boolean; canApprove: boolean; canUpdate: boolean; canCreateCapa: boolean;
   auditOpen: boolean; onChanged: () => void;
+  /** Resolves a userId to a display name, so a blocked panel can say WHO it is waiting on. */
+  nameOf?: (id: string | null | undefined) => string;
 }) {
   const ws = r.workflowState;
   const routedToMe = r.routedToUserId === me || r.assignedOwnerId === me;
   if (!auditOpen) return null;
 
   // Auditee respond — when this checkpoint awaits a response.
+  //
+  // Gated on `routedToMe`, NOT on `canUpdate` alone. The permission says this
+  // principal may respond to auditee findings in general; it does not say this
+  // checkpoint is theirs. The backend enforces segregation of duties per record
+  // ("This checkpoint is routed to a different owner"), so rendering the form to
+  // anyone else meant they typed a response, attached evidence, pressed Submit,
+  // and lost the lot to a toast. Reassignment makes that the normal case rather
+  // than an edge one: the original auditee still sees the checkpoint, and the
+  // form used to look exactly as it did when it was theirs.
   if (canUpdate && ["AWAITING_AUDITEE", "MORE_INFO_REQUESTED"].includes(ws)) {
+    if (!routedToMe) {
+      const owner = nameOf?.(r.routedToUserId ?? r.assignedOwnerId);
+      return (
+        <BlockedNotice
+          title="Routed to someone else"
+          detail={
+            owner && owner !== "—"
+              ? `This checkpoint is assigned to ${owner}, so only they can respond to it. You can still read the finding and the iteration thread above.`
+              : "This checkpoint is assigned to a different owner, so only they can respond to it. You can still read the finding and the iteration thread above."
+          }
+        />
+      );
+    }
     return <RespondForm auditId={auditId} r={r} routedToMe={routedToMe} onChanged={onChanged} />;
   }
   // Auditor review — after the auditee responded.
+  //
+  // Same class of guard: the backend refuses to let the person who WROTE the
+  // response review it ("You can't review your own auditee response"). An
+  // auditor who is also the routed owner would otherwise be offered Accept /
+  // Request more info / Raise CAPA and rejected on every one of them.
   if (canExecute && ws === "AUDITEE_RESPONDED") {
+    if (me && r.auditeeResponse?.respondent_user_id === me) {
+      return (
+        <BlockedNotice
+          title="You wrote this response"
+          detail="Someone else has to review it — reviewing your own response would defeat the separation the workflow exists to enforce."
+        />
+      );
+    }
     return <AuditorReview auditId={auditId} r={r} canCreateCapa={canCreateCapa} onChanged={onChanged} />;
   }
   // Plant manager decision — when escalated.
@@ -879,6 +916,25 @@ function CheckpointActions({ auditId, r, me, canExecute, canApprove, canUpdate, 
     return <ReopenAction auditId={auditId} r={r} onChanged={onChanged} />;
   }
   return null;
+}
+
+// Why an action panel is absent.
+//
+// Rendering nothing would be worse than rendering the unusable form: the
+// checkpoint plainly says "Awaiting auditee" and the box where the response used
+// to be has simply vanished, which reads as a broken page rather than a rule.
+function BlockedNotice({ title, detail }: { title: string; detail: string }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+      <div className="flex items-start gap-2">
+        <Lock size={13} className="mt-0.5 shrink-0 text-slate-400" />
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">{title}</div>
+          <p className="mt-0.5 text-[12px] text-slate-500">{detail}</p>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 // Re-assess an OPEN/Not-assessed checkpoint (e.g. after Reopen) — posts a fresh
