@@ -134,9 +134,17 @@ export function WorkflowTracker({
           filtered out so the UI shows only who is actually expected to
           act next, not the full history of orphaned tasks. */}
       {(() => {
+        // `pendingTasks` is every task on the instance, terminal ones included
+        // (see lib/workflow/state.ts) — so filter to the live ones FIRST.
+        // Without this, a completed or rejected instance has no currentStepId,
+        // the step filter below falls through, and the panel listed every
+        // finished step of a closed record under the heading "Awaiting Action".
+        const open = pendingTasks.filter((t) =>
+          ["PENDING", "OVERDUE", "ESCALATED"].includes(t.status)
+        );
         const visiblePendingTasks = currentStepId
-          ? pendingTasks.filter((t) => t.stepId === currentStepId)
-          : pendingTasks;
+          ? open.filter((t) => t.stepId === currentStepId)
+          : open;
         if (visiblePendingTasks.length === 0) return null;
         return (
         <div className="rounded-lg border bg-amber-50 border-amber-200 p-3">

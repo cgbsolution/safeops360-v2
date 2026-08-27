@@ -315,7 +315,11 @@ export default async function NearMissDetail(
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
                     <Lab>Activity</Lab>
-                    <p className="text-sm text-slate-700">{n.activity ?? "—"}</p>
+                    {/* activityBeingPerformed holds a MasterItem id; the API
+                        hydrates its label. `activity` is the free-text extra. */}
+                    <p className="text-sm text-slate-700">
+                      {n.activityBeingPerformedLabel ?? n.activity ?? "—"}
+                    </p>
                   </div>
                   {n.activityIsRoutine !== null && n.activityIsRoutine !== undefined && (
                     <div>
@@ -399,8 +403,8 @@ export default async function NearMissDetail(
                     <Users size={11} className="inline mr-1" /> Multiple worker impact
                   </Badge>
                 )}
-                {n.hazardCategory && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Hazard cat: {n.hazardCategory}</Badge>}
-                {n.energySource && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Energy: {n.energySource}</Badge>}
+                {n.hazardCategory && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Hazard cat: {n.hazardCategoryLabel ?? n.hazardCategory}</Badge>}
+                {n.energySource && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Energy: {n.energySourceLabel ?? n.energySource}</Badge>}
               </div>
               {Array.isArray(n.potentialConsequences) && n.potentialConsequences.length > 0 ? (
                 <ul className="text-sm text-slate-700 space-y-1">

@@ -1019,6 +1019,14 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "OBSERVATION", actions: ["CREATE"],                            scope: "ALL_PLANTS" },
     { module: "OBSERVATION", actions: ["READ", "EXPORT"],                    scope: "OWN_DEPARTMENT" },
     { module: "OBSERVATION", actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
+    // Near Miss mirrors Observation for this role. Without it a Maintenance
+    // Head can be named the owner of a near-miss CAPA — the owner picker
+    // lists them — and then hold a task they structurally cannot open or
+    // complete, because workflow_engine._rbac_triple_check requires the
+    // NEAR_MISS.EXECUTE code and the nav/detail read requires NEAR_MISS.READ.
+    { module: "NEAR_MISS",   actions: ["CREATE"],                            scope: "ALL_PLANTS" },
+    { module: "NEAR_MISS",   actions: ["READ", "EXPORT"],                    scope: "OWN_DEPARTMENT" },
+    { module: "NEAR_MISS",   actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
     // PTW: C/R/AP/EXP=DEPT, U=OWN (Maintenance Head originates work permits
     // on equipment they own).
     { module: "PTW",         actions: ["CREATE", "READ", "APPROVE", "EXPORT"], scope: "OWN_DEPARTMENT" },
