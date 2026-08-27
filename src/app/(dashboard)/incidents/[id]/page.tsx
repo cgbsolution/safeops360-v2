@@ -26,12 +26,13 @@ import { IncidentStatutoryPanel } from "@/components/incidents/incident-statutor
 import { MultiFileUpload } from "@/components/incidents/multi-file-upload";
 import { AttachmentGallery, MissingInitialPhotosBanner } from "@/components/incidents/attachment-gallery";
 import { PrintIncidentButton } from "@/components/incidents/print-incident-button";
+import { LessonsLearnedPanel } from "@/components/incidents/lessons-learned-panel";
 import { DeleteIncidentIconButton } from "@/components/incidents/delete-icon-button";
 import {
   IncidentSummarySection, PersonsInvolvedSection, TimelineSection,
   WitnessStatementsSection, EvidenceSection, EquipmentSection,
   CauseAnalysisSection, CapasSection, CostBreakdownSection,
-  StatutorySection, InvestigationTeamSection, LessonsLearnedSection,
+  StatutorySection, InvestigationTeamSection,
   RelatedItemsSection, IncidentMetadataSidebar,
   DocumentsReviewedSection, EffectivenessReviewSection, CommentsSection
 } from "@/components/incidents/incident-detail-sections";
@@ -40,6 +41,19 @@ import { ArrowUpRight, Camera } from "lucide-react";
 import { getWorkflowState, openTasks } from "@/lib/workflow/state";
 
 export const dynamic = "force-dynamic";
+
+// `backendFetch` returns parsed JSON, so every timestamp on the incident is an
+// ISO *string*, not a Date. Calling .toISOString() on one threw
+// "occurredAt.toISOString is not a function" and took the whole detail page
+// down with a render error — but only on the branch that builds the
+// ClassificationPanel, so the crash hit exactly one person: the HSE Manager
+// holding the classification task, i.e. the only user who could act on it.
+function isoOf(value: unknown): string | null {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString();
+  const parsed = new Date(value as string);
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
 
 const TYPE_COLOR: Record<string, string> = {
   FIRST_AID: "bg-emerald-100 text-emerald-800 border-emerald-200",
@@ -234,7 +248,7 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
                   severity: (i as any).severity ?? null,
                   isReportable: (i as any).isReportable ?? false,
                   reportableUnder: ((i as any).reportableUnder as string[] | null) ?? null,
-                  occurredAt: (i as any).occurredAt ? ((i as any).occurredAt as Date).toISOString() : i.date.toISOString(),
+                  occurredAt: isoOf((i as any).occurredAt) ?? isoOf(i.date) ?? new Date().toISOString(),
                   plantId: i.plantId,
                   costPropertyDamage: (i as any).costPropertyDamage ? Number((i as any).costPropertyDamage) : null,
                   costLostProduction: (i as any).costLostProduction ? Number((i as any).costLostProduction) : null
@@ -262,7 +276,7 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
                   rootCauses: ((i as any).rootCauses as string[] | null) ?? [],
                   contributingFactors: ((i as any).contributingFactors as string[] | null) ?? [],
                   isReportable: (i as any).isReportable ?? false,
-                  statutoryDeadline: (i as any).statutoryDeadline ? ((i as any).statutoryDeadline as Date).toISOString() : null
+                  statutoryDeadline: isoOf((i as any).statutoryDeadline)
                 }}
               />
             )}
@@ -270,7 +284,17 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
               <ExecutionPanel
                 task={{ id: myTask.id, stepName: myTask.stepName, taskType: myTask.taskType, dueAt: myTask.dueAt }}
                 module="INCIDENT"
-                instruction="Execute the step. Add evidence below then submit."
+                recordId={i.id}
+                instruction={
+                  myTask.stepName === "CAPA Execution"
+                    ? "Carry out the CAPA(s) assigned to you, describe what was done and attach the completion evidence, then submit for Safety Officer verification."
+                    : "Execute the step. Add evidence below then submit."
+                }
+                evidenceLabel={
+                  myTask.stepName === "CAPA Execution"
+                    ? "CAPA Completion Evidence (before / after photos, work order, revised SOP)"
+                    : "Evidence Photos (proof of corrective action)"
+                }
               />
             )}
             {myTask && myTask.taskType === "VERIFICATION" && (
@@ -379,7 +403,13 @@ export default async function IncidentDetailPage(props: { params: Promise<{ id: 
           <IncidentStatutoryPanel incidentId={i.id} canManage={canManageIntel} />
 
           {/* ─── 14. Lessons Learned ─── */}
-          <LessonsLearnedSection incident={i} />
+          <LessonsLearnedPanel
+            incidentId={i.id}
+            initial={(i as any).lessonsLearned ?? null}
+            distributedTo={((i as any).lessonsDistributedTo as string[] | null) ?? null}
+            canManage={canManageIntel}
+            isClosed={isClosed}
+          />
 
           {/* ─── 15. 90-Day Effectiveness Review ─── */}
           <EffectivenessReviewSection incident={i} />

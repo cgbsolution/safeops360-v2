@@ -20,9 +20,28 @@ export function cn(...inputs: ClassValue[]) {
 // NEXT_PUBLIC_APP_TIMEZONE. It must be a valid IANA zone name.
 export const APP_TIME_ZONE = process.env.NEXT_PUBLIC_APP_TIMEZONE || "Asia/Kolkata";
 
+// Timestamps come off the API as bare ISO strings with no zone — the database
+// columns are Prisma `timestamp` (no zone) and every writer stores UTC in them,
+// so "2026-08-27T11:25:00" means 11:25 UTC. `new Date()` parses a zone-less
+// datetime as LOCAL time, so on an IST machine that string became 11:25 IST and
+// every timestamp in the app rendered 5h30m earlier than it happened: an
+// incident that occurred at 16:55 showed as 11:25 am, and an evening event
+// crossed back over midnight and showed the previous day.
+//
+// Anything already carrying a zone (a trailing Z or ±hh:mm) is left alone, and
+// a real Date object passes straight through.
+export function parseApiDate(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
+  const hasZone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value.trim());
+  const iso = hasZone || !/^\d{4}-\d{2}-\d{2}T/.test(value.trim()) ? value : `${value.trim()}Z`;
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
 export function formatDate(date: Date | string | null | undefined): string {
-  if (!date) return "—";
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = parseApiDate(date);
+  if (!d) return "—";
   return d.toLocaleDateString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -32,8 +51,8 @@ export function formatDate(date: Date | string | null | undefined): string {
 }
 
 export function formatDateTime(date: Date | string | null | undefined): string {
-  if (!date) return "—";
-  const d = typeof date === "string" ? new Date(date) : date;
+  const d = parseApiDate(date);
+  if (!d) return "—";
   return d.toLocaleString("en-IN", {
     day: "2-digit",
     month: "short",
@@ -45,8 +64,8 @@ export function formatDateTime(date: Date | string | null | undefined): string {
 }
 
 export function daysBetween(a: Date | string, b: Date | string = new Date()): number {
-  const da = typeof a === "string" ? new Date(a) : a;
-  const db = typeof b === "string" ? new Date(b) : b;
+  const da = parseApiDate(a) ?? new Date(a as string);
+  const db = parseApiDate(b) ?? new Date(b as string);
   return Math.floor((db.getTime() - da.getTime()) / (1000 * 60 * 60 * 24));
 }
 

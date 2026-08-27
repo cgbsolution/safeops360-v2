@@ -11,6 +11,7 @@ import { Camera, Send, AlertCircle, Upload, X, Image as ImageIcon, Film, Loader2
 import { formatDateTime, cn } from "@/lib/utils";
 import { uploadObservationAttachment } from "@/components/observations/upload-helper";
 import { uploadNearMissAttachment } from "@/components/near-miss/upload-helper";
+import { uploadIncidentAttachment } from "@/components/incidents/upload-helper";
 
 type Task = {
   id: string;
@@ -111,10 +112,12 @@ export function ExecutionPanel({
   // lands in the record's "Photos & Evidence" gallery under CAPA evidence; was
   // previously filename-only here, so evidence attached on the execution panel
   // never actually uploaded or showed up.
-  const supportsRealUpload = (module === "OBSERVATION" || module === "NEAR_MISS") && !!recordId;
+  const supportsRealUpload =
+    (module === "OBSERVATION" || module === "NEAR_MISS" || module === "INCIDENT") && !!recordId;
 
   async function uploadEvidence(file: File) {
     if (module === "NEAR_MISS") return uploadNearMissAttachment(recordId!, file, "CAPA_EVIDENCE");
+    if (module === "INCIDENT") return uploadIncidentAttachment(recordId!, file, "CAPA_EVIDENCE");
     return uploadObservationAttachment(recordId!, file, "ACTION_EVIDENCE");
   }
 

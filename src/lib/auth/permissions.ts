@@ -185,6 +185,10 @@ export async function can(
         const ownerFields = [
           "originatorId", "ownerId", "reporterId", "observerId",
           "leaderId", "actionOwnerId", "responsiblePersonId",
+          // The incident investigation lead owns the record they were
+          // appointed to investigate — see the Python mirror in
+          // app/services/permissions.py for why this one matters.
+          "investigationTeamLead",
           "issuerId", "receiverId", "inspectorId", "trainerId",
           "employeeId", "uploadedById", "createdById"
         ];

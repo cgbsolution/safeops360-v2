@@ -16,7 +16,7 @@
 // Submitting the report calls /api/workflow/submit-execution which advances
 // to "HSE Manager Reviews Investigation Report".
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -35,7 +35,7 @@ import {
   Wrench, Brain, ClipboardList, IndianRupee, Shield, Send, Trash2,
   type LucideIcon
 } from "lucide-react";
-import { cn, formatDateTime } from "@/lib/utils";
+import { cn, formatDate, formatDateTime } from "@/lib/utils";
 
 type Capa = {
   id: string;
@@ -853,35 +853,52 @@ function WitnessesTab({ incidentId }: { incidentId: string }) {
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Role</Label>
-                  <Input value={draft.witnessRole ?? ""} onChange={(e) => setDraft({ ...draft, witnessRole: e.target.value })} />
+                  <Input value={draft.witnessRole ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, witnessRole: e.target.value }))} />
                 </div>
                 <div>
                   <Label>Language</Label>
-                  <Select value={draft.language ?? "English"} onChange={(e) => setDraft({ ...draft, language: e.target.value })}>
+                  {/* The statement has to be recorded in the language the witness
+                      actually gave it in, so the list has to cover the languages
+                      spoken at the sites in the system. It previously offered
+                      English, Hindi, Bengali and Khasi only — no Kannada or
+                      Tamil, which is what most of the plants in this deployment
+                      run on, so every South-Indian statement was filed under the
+                      wrong language. */}
+                  <Select value={draft.language ?? "English"} onChange={(e) => setDraft((prev) => ({ ...prev, language: e.target.value }))}>
                     <option>English</option>
                     <option>Hindi</option>
+                    <option>Kannada</option>
+                    <option>Tamil</option>
+                    <option>Telugu</option>
+                    <option>Malayalam</option>
+                    <option>Marathi</option>
+                    <option>Gujarati</option>
+                    <option>Punjabi</option>
                     <option>Bengali</option>
+                    <option>Odia</option>
+                    <option>Assamese</option>
                     <option>Khasi</option>
+                    <option>Other</option>
                   </Select>
                 </div>
               </div>
               <div>
                 <Label>Statement Text</Label>
                 <Textarea rows={4} value={draft.statementText ?? ""}
-                  onChange={(e) => setDraft({ ...draft, statementText: e.target.value })}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, statementText: e.target.value }))}
                   placeholder="Verbatim or paraphrased witness account…" />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
                   <Label>Signed Statement File URL</Label>
                   <Input value={draft.statementFileUrl ?? ""}
-                    onChange={(e) => setDraft({ ...draft, statementFileUrl: e.target.value })}
+                    onChange={(e) => setDraft((prev) => ({ ...prev, statementFileUrl: e.target.value }))}
                     placeholder="https://… (signed PDF)" />
                 </div>
                 <div>
                   <Label>Audio Recording URL</Label>
                   <Input value={draft.audioRecordingUrl ?? ""}
-                    onChange={(e) => setDraft({ ...draft, audioRecordingUrl: e.target.value })}
+                    onChange={(e) => setDraft((prev) => ({ ...prev, audioRecordingUrl: e.target.value }))}
                     placeholder="https://… (audio file)" />
                 </div>
               </div>
@@ -1175,15 +1192,15 @@ function PersonsTab({ incidentId }: { incidentId: string }) {
             <div className="mt-3 pt-3 border-t border-slate-200 grid sm:grid-cols-3 gap-3">
               <div>
                 <Label>Body Part</Label>
-                <Input value={draft.bodyPartAffected ?? ""} onChange={(e) => setDraft({ ...draft, bodyPartAffected: e.target.value })} />
+                <Input value={draft.bodyPartAffected ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, bodyPartAffected: e.target.value }))} />
               </div>
               <div>
                 <Label>Nature of Injury</Label>
-                <Input value={draft.natureOfInjury ?? ""} onChange={(e) => setDraft({ ...draft, natureOfInjury: e.target.value })} />
+                <Input value={draft.natureOfInjury ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, natureOfInjury: e.target.value }))} />
               </div>
               <div>
                 <Label>Severity</Label>
-                <Select value={draft.injurySeverity ?? ""} onChange={(e) => setDraft({ ...draft, injurySeverity: e.target.value })}>
+                <Select value={draft.injurySeverity ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, injurySeverity: e.target.value }))}>
                   <option value="">—</option>
                   <option value="MINOR">Minor</option>
                   <option value="MAJOR">Major</option>
@@ -1192,28 +1209,28 @@ function PersonsTab({ incidentId }: { incidentId: string }) {
               </div>
               <div className="sm:col-span-2">
                 <Label>Treatment</Label>
-                <Input value={draft.treatment ?? ""} onChange={(e) => setDraft({ ...draft, treatment: e.target.value })} />
+                <Input value={draft.treatment ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, treatment: e.target.value }))} />
               </div>
               <div>
                 <Label>Hospital</Label>
-                <Input value={draft.hospitalName ?? ""} onChange={(e) => setDraft({ ...draft, hospitalName: e.target.value })} />
+                <Input value={draft.hospitalName ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, hospitalName: e.target.value }))} />
               </div>
               <div>
                 <Label>Days Off (final)</Label>
-                <Input type="number" min={0} value={draft.daysOff ?? ""} onChange={(e) => setDraft({ ...draft, daysOff: e.target.value as any })} />
+                <Input type="number" min={0} value={draft.daysOff ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, daysOff: e.target.value as any }))} />
               </div>
               <div>
                 <Label>Days Restricted</Label>
-                <Input type="number" min={0} value={draft.daysRestricted ?? ""} onChange={(e) => setDraft({ ...draft, daysRestricted: e.target.value as any })} />
+                <Input type="number" min={0} value={draft.daysRestricted ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, daysRestricted: e.target.value as any }))} />
               </div>
               <div>
                 <Label>Return to Work</Label>
                 <Input type="date" value={draft.returnToWorkDate ? draft.returnToWorkDate.slice(0, 10) : ""}
-                  onChange={(e) => setDraft({ ...draft, returnToWorkDate: e.target.value || null })} />
+                  onChange={(e) => setDraft((prev) => ({ ...prev, returnToWorkDate: e.target.value || null }))} />
               </div>
               <div className="sm:col-span-3 flex items-center gap-2">
                 <input type="checkbox" id={`fit-${p.id}`} checked={!!draft.isFitForDuty}
-                  onChange={(e) => setDraft({ ...draft, isFitForDuty: e.target.checked })} />
+                  onChange={(e) => setDraft((prev) => ({ ...prev, isFitForDuty: e.target.checked }))} />
                 <Label htmlFor={`fit-${p.id}`} className="!mb-0">Assessed fit for duty</Label>
               </div>
               <div className="sm:col-span-3 flex justify-end gap-2">
@@ -1306,7 +1323,7 @@ function EquipmentTab({ incidentId }: { incidentId: string }) {
             <div className="mt-3 pt-3 border-t border-slate-200 grid sm:grid-cols-3 gap-3">
               <div>
                 <Label>Involvement</Label>
-                <Select value={draft.involvement ?? ""} onChange={(ev) => setDraft({ ...draft, involvement: ev.target.value })}>
+                <Select value={draft.involvement ?? ""} onChange={(ev) => setDraft((prev) => ({ ...prev, involvement: ev.target.value }))}>
                   <option value="DIRECTLY_INVOLVED">Directly involved</option>
                   <option value="DAMAGED">Damaged</option>
                   <option value="INADEQUATE_GUARDING">Inadequate guarding</option>
@@ -1316,11 +1333,11 @@ function EquipmentTab({ incidentId }: { incidentId: string }) {
               <div>
                 <Label>Damage Estimate (₹)</Label>
                 <Input type="number" min={0} value={draft.damageEstimate ?? ""}
-                  onChange={(ev) => setDraft({ ...draft, damageEstimate: ev.target.value as any })} />
+                  onChange={(ev) => setDraft((prev) => ({ ...prev, damageEstimate: ev.target.value as any }))} />
               </div>
               <div>
                 <Label>Repair Status</Label>
-                <Select value={draft.repairStatus ?? ""} onChange={(ev) => setDraft({ ...draft, repairStatus: ev.target.value })}>
+                <Select value={draft.repairStatus ?? ""} onChange={(ev) => setDraft((prev) => ({ ...prev, repairStatus: ev.target.value }))}>
                   <option value="">—</option>
                   <option value="PENDING">Pending</option>
                   <option value="IN_PROGRESS">In progress</option>
@@ -1614,7 +1631,7 @@ function StatutoryTab({ incidentId }: { incidentId: string }) {
           <Shield size={14} className="mt-0.5 flex-shrink-0" />
           <div>
             <div className="font-semibold">
-              Deadline: {deadline.toLocaleString()}
+              Deadline: {formatDateTime(deadline)}
               {overdue && " — OVERDUE"}
             </div>
             <div className="text-xs">
@@ -1633,7 +1650,7 @@ function StatutoryTab({ incidentId }: { incidentId: string }) {
               <div className="text-sm font-semibold text-slate-800">{r.label}</div>
               {r.submitted ? (
                 <div className="text-xs text-emerald-700 mt-0.5">
-                  ✓ Submitted{r.date && ` on ${new Date(r.date).toLocaleDateString()}`}
+                  ✓ Submitted{r.date && ` on ${formatDate(r.date)}`}
                   {r.ref && <span className="ml-2 font-mono text-slate-500">(ref: {r.ref})</span>}
                 </div>
               ) : (
@@ -1706,21 +1723,30 @@ function CostTab({ incidentId }: { incidentId: string }) {
   const [tonnes, setTonnes] = useState("");
   const [marginPerTonne, setMarginPerTonne] = useState("");
 
+  // True once the user has typed into any cost field. The initial load below is
+  // async, and it used to replace the whole state when it landed — so anything
+  // entered in the second or so between the tab opening and the fetch resolving
+  // was silently wiped, with no error and no visible change other than the
+  // fields emptying. The saved breakdown then only ever held the two figures
+  // the classification step had already put there.
+  const touched = useRef(false);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const r = await fetch(`/api/incidents/${incidentId}`);
       if (!r.ok) return;
       const j = await r.json();
-      if (cancelled) return;
-      setCosts({
-        costMedical: j.costMedical?.toString() ?? "",
-        costPropertyDamage: j.costPropertyDamage?.toString() ?? "",
-        costLostProduction: j.costLostProduction?.toString() ?? "",
-        costInsurance: j.costInsurance?.toString() ?? "",
-        costLegalRegulatory: j.costLegalRegulatory?.toString() ?? "",
-        costOther: j.costOther?.toString() ?? ""
-      });
+      if (cancelled || touched.current) return;
+      setCosts((prev) => ({
+        // Never overwrite a field the user has already put something in.
+        costMedical: prev.costMedical || (j.costMedical?.toString() ?? ""),
+        costPropertyDamage: prev.costPropertyDamage || (j.costPropertyDamage?.toString() ?? ""),
+        costLostProduction: prev.costLostProduction || (j.costLostProduction?.toString() ?? ""),
+        costInsurance: prev.costInsurance || (j.costInsurance?.toString() ?? ""),
+        costLegalRegulatory: prev.costLegalRegulatory || (j.costLegalRegulatory?.toString() ?? ""),
+        costOther: prev.costOther || (j.costOther?.toString() ?? "")
+      }));
     })();
     return () => { cancelled = true; };
   }, [incidentId]);
@@ -1762,7 +1788,15 @@ function CostTab({ incidentId }: { incidentId: string }) {
       <div>
         <Label>{label} (₹)</Label>
         <Input type="number" min={0} value={costs[key]}
-          onChange={(e) => setCosts({ ...costs, [key]: e.target.value })} />
+          // Functional update, not a spread of the captured `costs`. Each of the
+          // six inputs closes over the state from its own render, so entering
+          // values into several of them before React re-renders (fast typing,
+          // pasting, or an autofill) had every handler write its key onto the
+          // same stale object and only the last field survived the save.
+          onChange={(e) => {
+            touched.current = true;
+            setCosts((prev) => ({ ...prev, [key]: e.target.value }));
+          }} />
         {hint && <p className="text-[10px] text-slate-500 mt-0.5">{hint}</p>}
       </div>
     );
@@ -1783,11 +1817,11 @@ function CostTab({ incidentId }: { incidentId: string }) {
         <div className="grid sm:grid-cols-3 gap-3 items-end">
           <div>
             <Label>Tonnes Lost</Label>
-            <Input type="number" min={0} value={tonnes} onChange={(e) => setTonnes(e.target.value)} />
+            <Input type="number" min={0} value={tonnes} onChange={(e) => { touched.current = true; setTonnes(e.target.value); }} />
           </div>
           <div>
             <Label>Margin per Tonne (₹)</Label>
-            <Input type="number" min={0} value={marginPerTonne} onChange={(e) => setMarginPerTonne(e.target.value)} />
+            <Input type="number" min={0} value={marginPerTonne} onChange={(e) => { touched.current = true; setMarginPerTonne(e.target.value); }} />
           </div>
           {input("costLostProduction", "Total Lost Production")}
         </div>

@@ -37,7 +37,7 @@ import {
   Brain,
   Loader2
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 
 import type {
   AgentInvocationOut,
@@ -228,7 +228,7 @@ export function TransparencyDrawer({
                 <dt className="text-slate-500">Decision</dt>
                 <dd className="font-medium">{inv.humanDecision}</dd>
                 <dt className="text-slate-500">At</dt>
-                <dd>{new Date(inv.humanDecisionAt).toLocaleString()}</dd>
+                <dd>{formatDateTime(inv.humanDecisionAt)}</dd>
                 {inv.ratingByHuman != null && (
                   <>
                     <dt className="text-slate-500">Rating</dt>

@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { RcaEditor } from "@/components/incidents/rca-editor";
 import { normaliseRcaMethod } from "@/lib/rca/types";
-import { formatDateTime, formatINR, humanize } from "@/lib/utils";
+import { formatDate, formatDateTime, formatINR, humanize } from "@/lib/utils";
 import {
   Activity, AlertTriangle, ArrowUpRight, Award, Brain, Building2, Calendar,
   CheckCircle2, ClipboardList, Clock, FileText, IndianRupee, ListChecks,
@@ -807,7 +807,7 @@ export function EffectivenessReviewSection({ incident }: { incident: any }) {
             <Clock size={14} className={cn("mt-0.5 flex-shrink-0", overdue ? "text-rose-600" : "text-slate-500")} />
             <div>
               <div className="font-medium">
-                {overdue ? "OVERDUE for review" : "Scheduled for review"}: {due.toLocaleDateString()}
+                {overdue ? "OVERDUE for review" : "Scheduled for review"}: {formatDate(due)}
               </div>
               <div className="text-xs mt-0.5 text-slate-500">
                 HSE Manager confirms each CAPA's continued effectiveness 90 days after closure. Re-opening allowed if any CAPA marked Not Effective.
@@ -942,7 +942,7 @@ export function IncidentMetadataSidebar({ incident, canSeeScore = false }: { inc
         <MetaRow label="Specific Location" value={incident.specificLocation ?? incident.location} />
         <MetaRow label="Reporter" value={incident.reporter.name} />
         {incident.reporterRole && <MetaRow label="Reporter Role" value={incident.reporterRole.replace(/_/g, " ")} />}
-        {incident.shiftId && <MetaRow label="Shift" value={incident.shiftId} />}
+        {(incident.shiftLabel || incident.shiftId) && <MetaRow label="Shift" value={incident.shiftLabel ?? incident.shiftId} />}
         {incident.weatherConditions && <MetaRow label="Weather" value={incident.weatherConditions} />}
         <div className="pt-2 mt-2 border-t border-slate-200">
           <MetaRow label="Type" value={humanize(incident.type)} />

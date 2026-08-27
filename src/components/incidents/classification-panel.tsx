@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
 import { useToast } from "@/components/ui/toast";
 import { AlertCircle, CheckCircle2, Clock, ShieldAlert } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 
 const TYPES = [
   { value: "FIRST_AID", label: "First Aid Case (FAC)" },
@@ -319,7 +319,7 @@ export function ClassificationPanel({
                     <Clock size={14} className="mt-0.5 flex-shrink-0" />
                     <div>
                       <div className="font-medium">
-                        Statutory deadline: {deadlinePreview.deadline.toLocaleString()}
+                        Statutory deadline: {formatDateTime(deadlinePreview.deadline)}
                       </div>
                       <div className="text-xs mt-0.5">
                         {deadlinePreview.overdue

@@ -996,6 +996,14 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Training: C/R/U/AP/EX/VR/EXP=ALL, DL=OWN-draft
     { module: "TRAINING",    actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "VERIFY", "EXPORT"], scope: "ALL_PLANTS" },
     { module: "TRAINING",    actions: ["DELETE"],                            scope: "OWN_RECORDS" },
+    // Incident: a training-system CAPA raised out of an incident investigation
+    // is owned by this role, and the CAPA-execution step fans a task out to
+    // the owner. Without an INCIDENT grant the permission service answers
+    // "Missing permission" before the workflow-assignee fallback can run, so
+    // the owner cannot open the record their task points at. Read plant-wide;
+    // write only on records they own.
+    { module: "INCIDENT",    actions: ["READ", "EXPORT"],                    scope: "OWN_PLANT" },
+    { module: "INCIDENT",    actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
     // L&D Manager owns training masters configuration (training programs).
     // Sub-domain restriction ("Training only") not encoded in scope; UI
     // surfaces only the relevant masters tabs.
@@ -1027,6 +1035,17 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     { module: "NEAR_MISS",   actions: ["CREATE"],                            scope: "ALL_PLANTS" },
     { module: "NEAR_MISS",   actions: ["READ", "EXPORT"],                    scope: "OWN_DEPARTMENT" },
     { module: "NEAR_MISS",   actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
+    // Incident mirrors Near Miss for the same reason, and the reason bites
+    // harder here: the incident CAPA-execution step fans out one task per
+    // CAPA owner, and machine-guarding CAPAs land on this role by default.
+    // With no INCIDENT grant at all the permission service short-circuits on
+    // "Missing permission" before it ever reaches the workflow-assignee
+    // fallback, so the owner could not open the incident, let alone complete
+    // the task the engine had just assigned them. READ is plant-wide (they
+    // own equipment across the plant, not one department); the write actions
+    // stay on records they own.
+    { module: "INCIDENT",    actions: ["READ", "EXPORT"],                    scope: "OWN_PLANT" },
+    { module: "INCIDENT",    actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
     // PTW: C/R/AP/EXP=DEPT, U=OWN (Maintenance Head originates work permits
     // on equipment they own).
     { module: "PTW",         actions: ["CREATE", "READ", "APPROVE", "EXPORT"], scope: "OWN_DEPARTMENT" },

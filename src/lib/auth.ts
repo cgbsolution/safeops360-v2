@@ -10,9 +10,16 @@ import { prisma } from "./prisma";
 // for credentials.
 const BACKEND_URL = process.env.BACKEND_URL ?? process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
-if (!BACKEND_URL) {
+if (!BACKEND_URL && typeof window === "undefined") {
   // Fail loudly at module import time in dev so a misconfigured env is
   // obvious rather than producing mysterious 401s for every user.
+  //
+  // Server-side only. BACKEND_URL is deliberately not a NEXT_PUBLIC_ variable,
+  // so in the browser it is *always* undefined — and this module reaches the
+  // client bundle. Without the guard every page in the app logged
+  // "BACKEND_URL is unset. Login will return null for every request." to the
+  // browser console, which is both false and alarming, and raised the dev
+  // overlay's error badge on screens that were working perfectly.
   console.error("[auth] BACKEND_URL is unset. Login will return null for every request.");
 }
 
