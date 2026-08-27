@@ -35,6 +35,7 @@
     "db:apply-capture": "tsx prisma/apply-capture-ddl.ts",
     "db:apply-list-sort-indexes": "tsx prisma/apply-list-sort-indexes.ts",
     "db:apply-inbox-read-state": "tsx prisma/apply-inbox-read-state-ddl.ts",
+    "db:apply-capa-rca-payload": "tsx prisma/apply-capa-rca-payload-ddl.ts",
     "db:rename-support-users": "tsx prisma/rename-support-users.ts",
     "db:apply-ptw-closed-loop": "tsx prisma/apply-ptw-closed-loop-ddl.ts",
     "db:apply-incident-intel": "tsx prisma/apply-incident-intel-ddl.ts",

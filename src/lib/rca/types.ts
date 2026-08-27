@@ -30,16 +30,50 @@ export const RCA_METHODS_LIST: { code: RcaMethod; label: string }[] = (Object.ke
 }));
 
 // Bridge from any legacy code value (5-Why / Fishbone / etc.) to canonical RcaMethod.
+// The CAPA module shipped its own spelling of three of these — 5_WHY,
+// FAULT_TREE, TAP_ROOT — so the same technique carried two codes depending on
+// which screen recorded it, and the CAPA spelling matched no template and no
+// read view. Both spellings are accepted here; new writes use the canonical one.
 export function normaliseRcaMethod(input: string | null | undefined): RcaMethod | null {
   if (!input) return null;
   const v = input.trim();
-  if (v === "5-Why" || v === "FIVE_WHY") return "FIVE_WHY";
+  if (v === "5-Why" || v === "FIVE_WHY" || v === "5_WHY") return "FIVE_WHY";
   if (v === "Fishbone" || v === "FISHBONE") return "FISHBONE";
-  if (v === "FTA") return "FTA";
+  if (v === "FTA" || v === "FAULT_TREE") return "FTA";
   if (v === "Bowtie" || v === "BOWTIE") return "BOWTIE";
-  if (v === "TapRoot" || v === "TAPROOT") return "TAPROOT";
+  if (v === "TapRoot" || v === "TAPROOT" || v === "TAP_ROOT") return "TAPROOT";
   if (v === "Cause Map" || v === "CAUSE_MAP") return "CAUSE_MAP";
   return null;
+}
+
+// ─── CAPA methodology list ─────────────────────────────────────────────
+// The six above all have a template. CAPA additionally offers three that do
+// not: 8D and Is/Is-Not are recorded as a narrative summary, and "None
+// required" is the explicit decision not to analyse a low-severity obvious
+// cause. Keeping them in one list is what lets the form say honestly which
+// picks open a template and which do not.
+export type CapaRcaMethod = RcaMethod | "EIGHT_D" | "IS_IS_NOT" | "NONE_REQUIRED";
+
+export const CAPA_RCA_METHODS: { code: CapaRcaMethod; label: string; templated: boolean }[] = [
+  ...RCA_METHODS_LIST.map((m) => ({ code: m.code as CapaRcaMethod, label: m.label, templated: true })),
+  { code: "EIGHT_D", label: "8D — narrative only", templated: false },
+  { code: "IS_IS_NOT", label: "Is / Is-Not — narrative only", templated: false },
+  {
+    code: "NONE_REQUIRED",
+    label: "None required (low severity, obvious cause)",
+    templated: false
+  }
+];
+
+// Display label for any methodology code that reaches a CAPA screen, legacy
+// spellings included. Falls back to the raw code de-underscored rather than
+// hiding a value nobody has mapped yet.
+export function capaRcaMethodLabel(input: string | null | undefined): string {
+  if (!input) return "Not selected";
+  const canonical = normaliseRcaMethod(input);
+  if (canonical) return RCA_METHOD_LABELS[canonical];
+  const known = CAPA_RCA_METHODS.find((m) => m.code === input.trim());
+  return known ? known.label : input.replace(/_/g, " ");
 }
 
 // ─── 5-Why ─────────────────────────────────────────────────────────────
@@ -267,6 +301,20 @@ export function isEmptyRcaData(method: RcaMethod, data: unknown): boolean {
 // ─── Auto-summary generator ────────────────────────────────────────────
 // Plain-English summary used on dashboards / list views / statutory exports.
 // Falls back to the method name if the data is empty.
+// One clean sentence body: no wrapping whitespace, no leading punctuation, no
+// trailing full stop. The generator appends its own "." and " Root cause: ", so
+// a problem statement that already ended in a period produced ".." and one
+// pasted with a leading ": " opened the summary on a colon. The Python twin
+// (app/services/rca.py::_sentence) has always done this; the TypeScript side
+// did not, and it is the side that drafts the CAPA summary box.
+function sentence(text: string | null | undefined): string {
+  let t = (text ?? "").trim();
+  while (t.length > 0 && [":", "-", "\u2014", ".", ","].includes(t[0])) {
+    t = t.slice(1).trimStart();
+  }
+  return t.replace(/\s+/g, " ").trimEnd().replace(/\.+$/, "").trimEnd();
+}
+
 export function generateRcaSummary(method: RcaMethod | null, data: unknown): string | null {
   if (!method) return null;
   if (data == null || isEmptyRcaData(method, data)) return null;
@@ -275,14 +323,16 @@ export function generateRcaSummary(method: RcaMethod | null, data: unknown): str
       const d = data as FiveWhyData;
       const root = d.rootCause?.trim();
       const lastAnswer = [...(d.whys ?? [])].reverse().find((w) => w.answer?.trim())?.answer?.trim();
-      const cause = root || lastAnswer || "";
-      return `${d.problemStatement?.trim() || "Incident"}. Root cause: ${cause || "—"}.`.replace(/\s+/g, " ").trim();
+      const cause = sentence(root || lastAnswer);
+      const problem = sentence(d.problemStatement) || "Incident";
+      return `${problem}. Root cause: ${cause || "—"}.`;
     }
     case "FISHBONE": {
       const d = data as FishboneData;
-      const root = (d.rootCauses ?? []).filter(Boolean).slice(0, 2).join("; ");
+      const root = (d.rootCauses ?? []).map(sentence).filter(Boolean).slice(0, 2).join("; ");
       const allCauses = FISHBONE_KEYS.flatMap((k) => (d.categories?.[k] ?? []));
-      return `${d.problemStatement?.trim() || "Incident"}. ${allCauses.length} contributing factor(s) identified across 6M categories.${root ? ` Root cause(s): ${root}.` : ""}`;
+      const problem = sentence(d.problemStatement) || "Incident";
+      return `${problem}. ${allCauses.length} contributing factor(s) identified across 6M categories.${root ? ` Root cause(s): ${root}.` : ""}`;
     }
     case "FTA": {
       const d = data as FtaData;
@@ -313,6 +363,96 @@ export function generateRcaSummary(method: RcaMethod | null, data: unknown): str
       const d = data as CauseMapData;
       const impacts = (d.impacts ?? []).join(", ");
       return `${d.rootEvent || "Event"}. Impacts: ${impacts || "—"}. ${d.causeNodes.length} cause node(s) mapped.`;
+    }
+  }
+}
+
+// ─── CAPA bridge: template → CapaRootCause rows + contributingFactors ───
+// A CAPA does not store the analysis and nothing else. Its register, its
+// pattern detection and its "Why-Why Analysis (N levels)" card are all built
+// on two flat fields: `contributingFactors` (every level except the last) and
+// CapaRootCause rows (the last one). Reading those back out of the template is
+// what stops the same reasoning being typed twice and disagreeing with itself.
+//
+// Only the levels the analyst actually wrote are returned — nothing is
+// invented, and a half-filled template yields a short chain rather than a
+// padded one.
+export function deriveCapaCauses(
+  method: RcaMethod,
+  data: unknown
+): { contributingFactors: string[]; rootCauses: string[] } {
+  const none = { contributingFactors: [], rootCauses: [] };
+  if (data == null || typeof data !== "object") return none;
+  const clean = (arr: (string | undefined | null)[]) =>
+    arr.map((s) => (s ?? "").trim()).filter(Boolean);
+
+  switch (method) {
+    case "FIVE_WHY": {
+      const d = data as FiveWhyData;
+      const answers = clean((d.whys ?? []).map((w) => w.answer));
+      const stated = (d.rootCause ?? "").trim();
+      // The form's own rule: the last Why IS the root cause. If the analyst
+      // also wrote one out explicitly, that wins and every answer stays a
+      // contributing level.
+      if (stated) return { contributingFactors: answers, rootCauses: [stated] };
+      if (answers.length === 0) return none;
+      return { contributingFactors: answers.slice(0, -1), rootCauses: answers.slice(-1) };
+    }
+    case "FISHBONE": {
+      const d = data as FishboneData;
+      const all = clean(FISHBONE_KEYS.flatMap((k) => d.categories?.[k] ?? []));
+      const roots = clean(d.rootCauses ?? []);
+      // The dominant causes are marked separately on a fishbone, so they are
+      // not also listed as contributing.
+      return { contributingFactors: all.filter((c) => !roots.includes(c)), rootCauses: roots };
+    }
+    case "FTA": {
+      const d = data as FtaData;
+      const flat: FtaNode[] = [];
+      (function walk(n: FtaNode | undefined) {
+        if (!n) return;
+        flat.push(n);
+        (n.children ?? []).forEach(walk);
+      })(d.rootNode);
+      // A basic event whose control was NOT active at the time is the branch
+      // that let the top event through — that is the root cause the tree found.
+      const failed = clean(flat.filter((n) => n.controlActiveAtIncident === false).map((n) => n.description));
+      const basic = clean(
+        flat.filter((n) => n.nodeType === "BASIC_EVENT" && n.controlActiveAtIncident !== false).map((n) => n.description)
+      );
+      return { contributingFactors: basic, rootCauses: failed };
+    }
+    case "BOWTIE": {
+      const d = data as BowtieData;
+      const barriers = [
+        ...(d.threats ?? []).flatMap((t) => t.preventiveBarriers ?? []),
+        ...(d.consequences ?? []).flatMap((c) => c.mitigativeBarriers ?? [])
+      ];
+      // A barrier that failed or was absent is the finding; one that worked is
+      // context, not a cause.
+      const broken = clean(
+        barriers.filter((b) => b.status === "FAILED" || b.status === "ABSENT").map((b) => b.description)
+      );
+      const threats = clean((d.threats ?? []).map((t) => t.description));
+      return { contributingFactors: threats, rootCauses: broken };
+    }
+    case "TAPROOT": {
+      const d = data as TapRootData;
+      const cfs = clean((d.causalFactors ?? []).map((c) => c.description));
+      const roots = clean(
+        (d.causalFactors ?? []).flatMap((c) => (c.rootCauseTree ?? []).map((r) => r.rootCause || r.nearRootCause))
+      );
+      return { contributingFactors: cfs, rootCauses: roots };
+    }
+    case "CAUSE_MAP": {
+      const d = data as CauseMapData;
+      const nodes = d.causeNodes ?? [];
+      const hasChild = new Set(nodes.map((n) => n.parentId).filter(Boolean) as string[]);
+      // A cause nothing is caused-by is where the chain stops — the underlying
+      // cause the map was built to reach.
+      const leaves = clean(nodes.filter((n) => !hasChild.has(n.id)).map((n) => n.description));
+      const inner = clean(nodes.filter((n) => hasChild.has(n.id)).map((n) => n.description));
+      return { contributingFactors: inner, rootCauses: leaves };
     }
   }
 }

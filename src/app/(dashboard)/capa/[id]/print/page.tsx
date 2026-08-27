@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/auth/server";
 import { AccessRestricted } from "@/components/access-restricted";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatUserRefText, type UserDirectory } from "@/lib/users/user-ref";
+import { capaRcaMethodLabel } from "@/lib/rca/types";
 
 export const dynamic = "force-dynamic";
 
@@ -135,7 +136,7 @@ export default async function CapaPrintPage(
           <tbody>
             <tr className="border-t">
               <td className="px-2 py-1.5 text-slate-500 w-48">Methodology</td>
-              <td className="px-2 py-1.5">{capa.rcaMethodology ?? "Not selected"}</td>
+              <td className="px-2 py-1.5">{capaRcaMethodLabel(capa.rcaMethodology)}</td>
             </tr>
             <tr className="border-t">
               <td className="px-2 py-1.5 text-slate-500">Completed</td>

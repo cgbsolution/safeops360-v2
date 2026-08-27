@@ -4685,11 +4685,19 @@ model Capa {
   relatedCapaIds  Json?
 
   // ── Root cause analysis ────────────────────────────────────────────
-  rcaMethodology          String? // 5_WHY | FISHBONE | FAULT_TREE | BOWTIE | TAP_ROOT | CAUSE_MAP | EIGHT_D | IS_IS_NOT | NONE_REQUIRED
+  // Canonical codes, shared with Incident.rootCauseMethod and RootCauseAnalysis
+  // .methodology: FIVE_WHY | FISHBONE | FTA | BOWTIE | TAPROOT | CAUSE_MAP, plus
+  // the CAPA-only EIGHT_D | IS_IS_NOT | NONE_REQUIRED which have no template.
+  // Legacy rows still hold 5_WHY / FAULT_TREE / TAP_ROOT; both API and UI
+  // normalise those on read.
+  rcaMethodology          String?
   rcaMethodologyRationale String?   @db.Text
   rcaCompleted            Boolean   @default(false)
   rcaRecordId             String? // FK to RCA workspace if used
   rcaSummary              String?   @db.Text
+  // Methodology-specific analysis — the 5-Why ladder, 6M grid, fault tree,
+  // bowtie, SnapCharT or cause map itself. Shapes in src/lib/rca/types.ts.
+  rcaAnalysisPayload      Json?
   contributingFactors     Json? // string[]
   rcaCompletedAt          DateTime?
   rcaCompletedByUserId    String?

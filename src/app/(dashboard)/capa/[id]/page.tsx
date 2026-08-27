@@ -11,6 +11,8 @@ import {
   RecurrenceCheckForm
 } from "@/components/capa/lifecycle-actions";
 import { CapaAssistantCard } from "@/components/capa/capa-assistant-card";
+import { RcaEditor } from "@/components/incidents/rca-editor";
+import { capaRcaMethodLabel, normaliseRcaMethod } from "@/lib/rca/types";
 
 // Past these, the analysis is part of the record rather than work in hand.
 const TERMINAL_STATES = new Set(["VERIFIED", "CLOSED", "CLOSED_RECURRED", "CANCELLED", "REJECTED"]);
@@ -66,6 +68,10 @@ type CapaOut = {
   rcaCompleted: boolean;
   rcaSummary: string | null;
   rcaRecordId: string | null;
+  // The methodology-specific analysis, in the shape src/lib/rca/types.ts
+  // defines for that method. Null for a narrative-only method and for a CAPA
+  // whose analysis is governed by an RCA record.
+  rcaAnalysisPayload: Record<string, unknown> | null;
   // Every Why except the last. The last one IS the root cause and is stored
   // as a CapaRootCause row, so rendering both together reconstructs the
   // ladder the auditee actually filled in.
@@ -238,6 +244,15 @@ export default async function CapaDetailPage(
                 ? "PIL/MR/F04-R1" : "a root cause analysis record"} and is edited
               on the NC report, not here — which is what keeps the minimum Why
               depth and the auditor/auditee split enforceable.
+              {capa.sourceReferenceUrl && (
+                <>
+                  {" "}
+                  <Link href={capa.sourceReferenceUrl} className="font-medium underline">
+                    Open the NC report
+                  </Link>
+                  .
+                </>
+              )}
             </p>
           )}
         </div>
@@ -670,6 +685,7 @@ function SourceTab({ capa }: { capa: CapaOut }) {
 }
 
 function RcaTab({ capa }: { capa: CapaOut }) {
+  const analysisMethod = normaliseRcaMethod(capa.rcaMethodology);
   return (
     <div className="space-y-4">
       <Card title="Methodology">
@@ -678,7 +694,10 @@ function RcaTab({ capa }: { capa: CapaOut }) {
             "Methodology ......... FIVE_WHY" read as two unrelated columns. */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800">
-            {(capa.rcaMethodology ?? "Not selected").replace(/_/g, "-")}
+            {/* Legacy rows hold 5_WHY / FAULT_TREE / TAP_ROOT, which rendered
+                as "5-WHY" and "FAULT-TREE" — codes, not the name of the
+                technique the analyst actually used. */}
+            {capaRcaMethodLabel(capa.rcaMethodology)}
           </span>
           <span
             className={
@@ -707,6 +726,18 @@ function RcaTab({ capa }: { capa: CapaOut }) {
         <Card title="RCA Summary">
           <p className="text-sm text-slate-800 whitespace-pre-wrap">{capa.rcaSummary}</p>
         </Card>
+      )}
+      {/* The analysis as it was drawn. Read-only: this tab is the record, and
+          the form below is where it gets written. RcaEditor renders every
+          method's own template, so a fishbone reads as a fishbone here rather
+          than as a flattened list of strings. */}
+      {analysisMethod && capa.rcaAnalysisPayload && (
+        <div>
+          <div className="mb-2 text-xs uppercase tracking-wider text-slate-700 font-semibold">
+            {capaRcaMethodLabel(capa.rcaMethodology)} — analysis as recorded
+          </div>
+          <RcaEditor method={analysisMethod} value={capa.rcaAnalysisPayload} readOnly />
+        </div>
       )}
       {(capa.contributingFactors?.length ?? 0) > 0 && (
         <Card title={`Why-Why Analysis (${(capa.contributingFactors?.length ?? 0) + capa.rootCauses.length} levels)`}>

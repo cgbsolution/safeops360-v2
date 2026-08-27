@@ -1,0 +1,13 @@
+import { launch, login, submitLogin, BASE } from "./lib.mjs";
+const { browser, ctx } = await launch();
+const page = await ctx.newPage();
+page.on("pageerror", e => console.log("PAGEERROR:", String(e).slice(0,200)));
+page.on("console", m => { if (m.type()==="error") console.log("CONSOLE-ERR:", m.text().slice(0,200)); });
+await login(page, "worker.hr.nw@safeops360.in");
+await submitLogin(page);
+console.log("after login URL:", page.url());
+await page.goto(`${BASE}/incidents`, { waitUntil: "networkidle" });
+console.log("incidents URL:", page.url(), "| title:", await page.title());
+await page.screenshot({ path: ".tmp-manual/explore-incidents.png" });
+console.log((await page.locator("body").innerText()).slice(0, 1500));
+await browser.close();

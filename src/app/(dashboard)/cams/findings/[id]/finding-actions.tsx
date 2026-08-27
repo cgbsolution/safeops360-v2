@@ -9,8 +9,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { EvidenceAttachment } from "@/components/evidence/EvidenceAttachment";
 import { SEVERITY_CHIP, FINDING_STATUS_CHIP, fmtDate, labelize, type Finding } from "../../lib-cams";
+import { capaRcaMethodLabel, normaliseRcaMethod } from "@/lib/rca/types";
 
-const RCA_METHODS = ["5_WHY", "FISHBONE", "FAULT_TREE", "BOWTIE", "TAP_ROOT", "CAUSE_MAP", "EIGHT_D", "NONE_REQUIRED"];
+// Canonical codes, the same ones the incident RCA editors and the CAPA form
+// write. This picker used to post 5_WHY / FAULT_TREE / TAP_ROOT, a third
+// spelling of techniques the rest of the product already had two names for.
+const RCA_METHODS = ["FIVE_WHY", "FISHBONE", "FTA", "BOWTIE", "TAPROOT", "CAUSE_MAP", "EIGHT_D", "NONE_REQUIRED"];
 const STATUSES = ["OPEN", "CAPA_RAISED", "IN_REMEDIATION", "VERIFICATION", "CLOSED", "ACCEPTED_RISK"];
 
 // Shared evidence-attachment categories for an audit finding (mirror the
@@ -28,7 +32,11 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
   const router = useRouter();
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [rcaMethod, setRcaMethod] = useState(finding.rootCauseMethod ?? "");
+  // Legacy rows hold the old spelling; map it onto the canonical option so the
+  // picker shows what was actually chosen instead of falling back to blank.
+  const [rcaMethod, setRcaMethod] = useState(
+    normaliseRcaMethod(finding.rootCauseMethod) ?? finding.rootCauseMethod ?? ""
+  );
   const [rcaSummary, setRcaSummary] = useState(finding.rootCauseSummary ?? "");
   const [verificationNote, setVerificationNote] = useState(finding.verificationNote ?? "");
 
@@ -70,7 +78,7 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
           <div className="space-y-2">
             <Select disabled={!canManage} value={rcaMethod} onChange={(e) => setRcaMethod(e.target.value)}>
               <option value="">— RCA method —</option>
-              {RCA_METHODS.map((m) => <option key={m} value={m}>{labelize(m)}</option>)}
+              {RCA_METHODS.map((m) => <option key={m} value={m}>{capaRcaMethodLabel(m)}</option>)}
             </Select>
             <Textarea disabled={!canManage} value={rcaSummary} onChange={(e) => setRcaSummary(e.target.value)} rows={3} placeholder="Root cause summary" />
             {canManage && (
