@@ -43,6 +43,11 @@ const RETRY_ANY_METHOD = new Set([
 // in an EHS system is worse than showing an error.
 const RETRY_IDEMPOTENT_ONLY = new Set(["ECONNRESET", "UND_ERR_SOCKET", "EPIPE"]);
 
+// Pause between the two attempts. Deliberately short — this runs inside a
+// serverless request a user is waiting on — but long enough that the retry is
+// a second chance rather than a second simultaneous hit.
+const RETRY_BACKOFF_MS = Number(process.env.BACKEND_RETRY_BACKOFF_MS ?? 250);
+
 function shouldRetry(code: string, method: string): boolean {
   if (RETRY_ANY_METHOD.has(code)) return true;
   const idempotent = method === "GET" || method === "HEAD";
@@ -150,9 +155,17 @@ async function forward(req: NextRequest, params: { path: string[] }): Promise<Ne
     } catch (err: any) {
       lastErr = err;
       const code = err?.cause?.code ?? err?.code ?? err?.name ?? "unknown";
+      // The circuit is already open — the request never left this process, so
+      // retrying it is pure waste and defeats the point of failing fast.
+      if (code === "BACKEND_CIRCUIT_OPEN") break;
       if (attempt < 2 && shouldRetry(code, req.method)) {
         // eslint-disable-next-line no-console
-        console.warn(`[proxy] ${code} on ${req.method} ${url} — retrying once on a fresh connection`);
+        console.warn(`[proxy] ${code} on ${req.method} ${url} — retrying once after a short pause`);
+        // Brief pause before the retry. The immediate re-attempt this replaces
+        // doubled the request rate against a backend that was already failing,
+        // which is what got Vercel's IPs banned on 2026-08-28. A connection
+        // that just timed out will not succeed 0ms later.
+        await new Promise((r) => setTimeout(r, RETRY_BACKOFF_MS));
         continue;
       }
       break;

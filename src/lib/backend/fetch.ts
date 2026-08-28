@@ -33,6 +33,13 @@
 import { SignJWT } from "jose";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import {
+  circuitOpenError,
+  isConnectionError,
+  recordFailure,
+  recordSuccess,
+  shouldAttempt,
+} from "@/lib/backend-circuit";
 
 const BASE_URL = process.env.BACKEND_BASE_URL ?? process.env.BACKEND_URL ?? "http://localhost:8000";
 // Secret lookup order:
@@ -193,7 +200,21 @@ export async function backendFetch<T = unknown>(
     init.body = JSON.stringify(opts.body);
   }
 
-  const res = await fetch(url, init);
+  // Server components hit this on every render, so it is the highest-volume
+  // path to the backend and the biggest contributor to a retry storm when the
+  // backend is down. Fail fast while the circuit is open — see
+  // lib/backend-circuit.ts for the outage this prevents.
+  if (!shouldAttempt()) throw circuitOpenError();
+
+  let res: Response;
+  try {
+    res = await fetch(url, init);
+    // Answered, whatever the status. The circuit tracks reachability only.
+    recordSuccess();
+  } catch (err) {
+    if (isConnectionError(err)) recordFailure(err);
+    throw err;
+  }
 
   if (!res.ok) {
     let detail: unknown = undefined;

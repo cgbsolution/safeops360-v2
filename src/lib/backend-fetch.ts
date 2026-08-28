@@ -28,6 +28,13 @@
 // ════════════════════════════════════════════════════════════════════════
 
 import { Agent, fetch as undiciFetch } from "undici";
+import {
+  circuitOpenError,
+  isConnectionError,
+  recordFailure,
+  recordSuccess,
+  shouldAttempt,
+} from "./backend-circuit";
 
 const INSECURE = process.env.INSECURE_BACKEND_TLS === "true";
 
@@ -92,6 +99,14 @@ export async function backendFetch(
       ? null
       : setTimeout(() => ctrl.abort(), timeoutMs);
 
+  // Fail fast while the circuit is open. On 2026-08-28 a backend outage turned
+  // into a total one because every page kept retrying until the host's
+  // intrusion-prevention layer banned Vercel's IPs — see backend-circuit.ts.
+  if (!shouldAttempt()) {
+    if (timer !== null) clearTimeout(timer);
+    throw circuitOpenError();
+  }
+
   try {
     if (INSECURE) {
       // Per-request log so it's obvious in Vercel function logs which
@@ -105,11 +120,20 @@ export async function backendFetch(
     // call, not just the insecure-TLS ones. undici.fetch has a slightly
     // different Response type but it's structurally identical for our
     // consumers.
-    return (await undiciFetch(url, {
+    const res = (await undiciFetch(url, {
       ...rest,
       signal: ctrl.signal,
       dispatcher: getAgent()
     } as any)) as unknown as Response;
+    // The backend ANSWERED. Any status code — 401, 403, 500 — counts as
+    // success here: the circuit protects against an unreachable host, not an
+    // unhappy endpoint. Tripping on status would take the app down because one
+    // route is failing.
+    recordSuccess();
+    return res;
+  } catch (err) {
+    if (isConnectionError(err)) recordFailure(err);
+    throw err;
   } finally {
     if (timer !== null) clearTimeout(timer);
   }
