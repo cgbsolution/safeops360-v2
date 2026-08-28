@@ -10,7 +10,16 @@ import { useSession } from "next-auth/react";
 import { CaptureWizard } from "./wizard";
 import { MyReports } from "./my-reports";
 
-export function CaptureGate({ view }: { view: "wizard" | "mine" }) {
+export function CaptureGate({
+  view,
+  // Carried from `/capture?fireAsset=<id>` — the "log a finding" door off a
+  // fire asset's QR sticker, as opposed to scanning one inside the wizard.
+  // Both paths end in the same wizard state.
+  fireAssetId = null,
+}: {
+  view: "wizard" | "mine";
+  fireAssetId?: string | null;
+}) {
   const { status } = useSession();
   const router = useRouter();
 
@@ -26,5 +35,5 @@ export function CaptureGate({ view }: { view: "wizard" | "mine" }) {
     );
   }
 
-  return view === "wizard" ? <CaptureWizard /> : <MyReports />;
+  return view === "wizard" ? <CaptureWizard initialFireAssetId={fireAssetId} /> : <MyReports />;
 }

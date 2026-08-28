@@ -6,6 +6,19 @@
 // they have one hand free, and they want the checklist for THIS cylinder — not a
 // register, not a picker with two hundred rows.
 //
+// WHAT THE URL SEGMENT IS
+// -----------------------
+// An OPAQUE TOKEN, not the asset id. The id used to be printed on every label,
+// which made one photographed sticker a map to every other and made "reissue
+// this label" impossible — you cannot revoke a value derived from a primary key.
+// The segment is now `FireEquipment.qrToken`, random and revocable.
+//
+// Stickers printed before that change carry the bare asset id, and the backend
+// still resolves those while FIRE_QR_LEGACY_SCAN is on, reporting `resolvedVia:
+// "legacy"`. This page says so — a stale label that still works today is worth
+// mentioning while the person is standing at the cylinder, rather than letting
+// them find out at cutover when it abruptly stops.
+//
 // WHY IT REDIRECTS INSTEAD OF RENDERING
 // -------------------------------------
 // An extinguisher has exactly one checklist (PIL/EHSD/CL/027-R1), so there is
@@ -56,6 +69,9 @@ type ScanTarget = {
   };
   options: Option[];
   primaryTemplateCode: string | null;
+  // "token" = the current opaque sticker. "legacy" = a pre-reprint label that
+  // still resolves only because legacy scanning has not been switched off yet.
+  resolvedVia?: "token" | "legacy";
 };
 
 // Asset type -> the screen that renders its checklists. Held here rather than
@@ -104,14 +120,16 @@ function Shell({ tone, title, children }: { tone: "error" | "plain"; title: stri
 export default async function FireAssetScanPage({
   params,
 }: {
-  params: Promise<{ assetId: string }>;
+  params: Promise<{ token: string }>;
 }) {
-  const { assetId } = await params;
+  const { token } = await params;
 
   let target: ScanTarget | null = null;
   let error: string | null = null;
   try {
-    target = await backendFetch<ScanTarget>(`/api/fire/assets/${assetId}/scan-target`);
+    target = await backendFetch<ScanTarget>(
+      `/api/fire/scan/${encodeURIComponent(token)}/target`,
+    );
   } catch (e: any) {
     error = e?.message ?? "That sticker could not be resolved.";
   }
@@ -123,9 +141,10 @@ export default async function FireAssetScanPage({
           {error}
         </p>
         <p className="mt-2 text-[12px]" style={{ color: MX.muted }}>
-          The asset may have been decommissioned or removed from the register, or it may belong to a
-          plant you do not have access to. The sticker itself is fine — nothing needs re-printing
-          unless the asset has been re-registered under a new code.
+          Most likely this label was replaced during the QR reprint and the old one is no
+          longer valid — check the cylinder for a newer sticker. Otherwise the asset may have
+          been decommissioned, removed from the register, or belong to a plant you cannot
+          access.
         </p>
         <Link
           href="/fire-safety/register"
@@ -171,7 +190,12 @@ export default async function FireAssetScanPage({
 
   // The common case — one checklist, so no decision to make. Straight through
   // with the asset pre-selected. `redirect` throws, so nothing below runs.
-  if (options.length === 1 && primaryTemplateCode) {
+  //
+  // A legacy sticker is NOT allowed to short-circuit: it still works today, but
+  // it is about to stop, and the one moment that fact is useful is while someone
+  // is standing at the cylinder holding it. Redirecting them silently would mean
+  // nobody ever learns which labels still need replacing until they all fail.
+  if (options.length === 1 && primaryTemplateCode && target.resolvedVia !== "legacy") {
     redirect(
       `${screen}?asset=${encodeURIComponent(asset.id)}&template=${encodeURIComponent(primaryTemplateCode)}`,
     );
@@ -185,8 +209,25 @@ export default async function FireAssetScanPage({
         {asset.allottedSerialNo ? ` · Tag ${asset.allottedSerialNo}` : ""}
         {asset.assetSubtype ? ` · ${asset.assetSubtype}` : ""}
       </p>
+      {target.resolvedVia === "legacy" && (
+        <div
+          className="mt-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-[12px]"
+          style={{ borderColor: MX.gold, background: MX.amberSoft, color: MX.amber }}
+          role="status"
+        >
+          <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+          <span>
+            <strong>This label is out of date.</strong> It still works for now, but it will stop
+            once the QR reprint is complete. Ask your supervisor for a replacement sticker for
+            this unit.
+          </span>
+        </div>
+      )}
+
       <p className="mt-3 text-[12px]" style={{ color: MX.ink }}>
-        This unit has {options.length} checklists. Which are you filling in?
+        {options.length === 1
+          ? "Open the checklist for this unit:"
+          : `This unit has ${options.length} checklists. Which are you filling in?`}
       </p>
 
       <div className="mt-2 space-y-1.5">

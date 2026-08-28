@@ -41,6 +41,10 @@ import {
 import { ExportButtons } from "../_components/export-buttons";
 import { RegisterDialog } from "./register-dialog";
 import { QrStickerDialog, QrTarget } from "../_components/qr-sticker-dialog";
+import {
+  ConfigRegisterTable,
+  RegisterRow as SharedRegisterRow,
+} from "../_components/config-register-table";
 
 function DueCell({ badge, iso }: { badge: Badge; iso: string | null }) {
   const st = BADGE_STYLE[badge.status];
@@ -249,160 +253,104 @@ export function RegisterTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-white" style={{ borderColor: MX.iceLine }}>
-        <table className="w-full min-w-[1320px] border-collapse text-[12px]">
-          <thead>
-            <tr style={{ background: MX.ice }}>
-              {[
-                "Sl.",
-                "Mfr Serial No.",
-                "Type",
-                "Capacity",
-                "Yr Mfg",
-                "Expiry Date",
-                "Make",
-                "Alloted Serial No.",
-                "Location",
-                "HP tested on",
-                "HP Test due",
-                "Discharged",
-                "Refilled on",
-                "Due for refilling",
-                "Wt (kg)",
-                "Remarks",
-                "",
-              ].map((h) => (
-                <th
-                  key={h}
-                  className="whitespace-nowrap border-b px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider"
-                  style={{ borderColor: MX.iceLine, color: MX.navy }}
+      {/* RETROFIT: this register used to hand-render seventeen <td>s in sheet
+          order, which is why adding the alarm-panel and hydrant registers meant
+          forking the component. Columns, labels and order now come from
+          `payload.document.columns` — the seeded `FireRegisterViewConfig` row —
+          and the three cells that are due-date BADGES rather than dates are
+          supplied as overrides. Same table as the other two registers.
+
+          The column order is unchanged: the config transcribes PIL/EHSD/CL/028
+          in the sheet's own order, which is the order this table hardcoded. */}
+      <ConfigRegisterTable
+        document={payload.document}
+        rows={rows as unknown as SharedRegisterRow[]}
+        actionsLabel=""
+        emptyMessage="No cylinder matches this filter."
+        renderCell={(key, row) => {
+          const r = row as unknown as RegisterRow;
+          // The three columns the register exists to answer: is this cylinder
+          // due? A date alone cannot say so, which is why they are badges.
+          if (key === "expiryDate") return <DueCell badge={r.badges.cylinderLife} iso={r.expiryDate} />;
+          if (key === "hpTestDueDate") return <DueCell badge={r.badges.hpTest} iso={r.hpTestDueDate} />;
+          if (key === "dueForRefilling") return <DueCell badge={r.badges.refill} iso={r.dueForRefilling} />;
+          if (key === "allottedSerialNo")
+            return (
+              <td className="border-b px-2 py-1.5 font-semibold" style={{ borderColor: MX.iceLine, color: MX.navy }}>
+                {r.allottedSerialNo ?? "—"}
+              </td>
+            );
+          if (key === "remarks")
+            return (
+              <td
+                className="max-w-[180px] truncate border-b px-2 py-1.5"
+                style={{ borderColor: MX.iceLine, color: MX.muted }}
+                title={r.remarks ?? ""}
+              >
+                {r.remarks ?? "—"}
+              </td>
+            );
+          return undefined; // everything else takes the shared default
+        }}
+        rowActions={(row) => {
+          const r = row as unknown as RegisterRow;
+          return (
+            <div className="flex items-center justify-end gap-0.5">
+              <Link
+                href={`/fire-safety/equipment/${r.id}`}
+                className="rounded p-1 hover:bg-slate-100"
+                title="View this cylinder — detail, certificates and inspection history"
+                aria-label={`View ${r.allottedSerialNo ?? r.equipmentCode}`}
+              >
+                <Eye size={13} style={{ color: MX.navy }} />
+              </Link>
+              <button
+                type="button"
+                onClick={() =>
+                  setQrFor({
+                    id: r.id,
+                    equipmentCode: r.equipmentCode,
+                    allottedSerialNo: r.allottedSerialNo,
+                    location: r.location,
+                    type: r.type,
+                    qrTokenValue: r.qrTokenValue ?? null,
+                  })
+                }
+                className="rounded p-1 hover:bg-slate-100"
+                title="QR sticker — print and apply to this cylinder"
+                aria-label={`QR sticker for ${r.allottedSerialNo ?? r.equipmentCode}`}
+              >
+                <QrCode size={13} style={{ color: MX.navy }} />
+              </button>
+              {canWrite && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditing(r);
+                    setOpen(true);
+                  }}
+                  className="rounded p-1 hover:bg-slate-100"
+                  title="Edit register row"
+                  aria-label={`Edit ${r.allottedSerialNo ?? r.equipmentCode}`}
                 >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={17} className="px-3 py-10 text-center text-[13px]" style={{ color: MX.muted }}>
-                  No cylinder matches this filter.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-50/70">
-                  <td className="border-b px-2 py-1.5 tabular-nums" style={{ borderColor: MX.iceLine, color: MX.muted }}>
-                    {r.slNo}
-                  </td>
-                  <td className="border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }}>
-                    {r.serialNo ?? "—"}
-                  </td>
-                  <td className="border-b px-2 py-1.5 font-medium" style={{ borderColor: MX.iceLine, color: MX.navy }}>
-                    {r.type || "—"}
-                  </td>
-                  <td className="border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }}>
-                    {r.capacity ?? "—"}
-                  </td>
-                  <td className="border-b px-2 py-1.5 tabular-nums" style={{ borderColor: MX.iceLine }}>
-                    {r.yearOfManufacture ?? "—"}
-                  </td>
-                  <DueCell badge={r.badges.cylinderLife} iso={r.expiryDate} />
-                  <td className="border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }}>
-                    {r.make ?? "—"}
-                  </td>
-                  <td className="border-b px-2 py-1.5 font-semibold" style={{ borderColor: MX.iceLine, color: MX.navy }}>
-                    {/* The register's own click-through to that cylinder's
-                        inspection history — the link the paper process cannot
-                        have, since the two documents are unconnected on paper. */}
-                    <Link href={`/fire-safety/fe-inspection?asset=${r.id}`} className="hover:underline">
-                      {r.allottedSerialNo ?? r.equipmentCode}
-                    </Link>
-                  </td>
-                  <td className="border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }}>
-                    {r.location}
-                  </td>
-                  <td className="whitespace-nowrap border-b px-2 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
-                    {fmtDate(r.hpTestedOn)}
-                  </td>
-                  <DueCell badge={r.badges.hpTest} iso={r.hpTestDueDate} />
-                  <td className="whitespace-nowrap border-b px-2 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
-                    {fmtDate(r.dateOfDischarge)}
-                  </td>
-                  <td className="whitespace-nowrap border-b px-2 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
-                    {fmtDate(r.refilledOn)}
-                  </td>
-                  <DueCell badge={r.badges.refill} iso={r.dueForRefilling} />
-                  <td className="border-b px-2 py-1.5 tabular-nums" style={{ borderColor: MX.iceLine }}>
-                    {r.weightKg ?? "—"}
-                  </td>
-                  <td className="max-w-[180px] truncate border-b px-2 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }} title={r.remarks ?? ""}>
-                    {r.remarks ?? "—"}
-                  </td>
-                  {/* View / Edit / Delete. The register shipped with Edit alone,
-                      so a cylinder could be corrected but never opened for its
-                      inspection history and never removed when it was condemned —
-                      the two things a register is actually maintained for. */}
-                  <td className="whitespace-nowrap border-b px-2 py-1.5 text-right" style={{ borderColor: MX.iceLine }}>
-                    <div className="flex items-center justify-end gap-0.5">
-                      <Link
-                        href={`/fire-safety/equipment/${r.id}`}
-                        className="rounded p-1 hover:bg-slate-100"
-                        title="View this cylinder — detail, certificates and inspection history"
-                        aria-label={`View ${r.allottedSerialNo ?? r.equipmentCode}`}
-                      >
-                        <Eye size={13} style={{ color: MX.navy }} />
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setQrFor({
-                            id: r.id,
-                            equipmentCode: r.equipmentCode,
-                            allottedSerialNo: r.allottedSerialNo,
-                            location: r.location,
-                            type: r.type,
-                          })
-                        }
-                        className="rounded p-1 hover:bg-slate-100"
-                        title="QR sticker — print and apply to this cylinder"
-                        aria-label={`QR sticker for ${r.allottedSerialNo ?? r.equipmentCode}`}
-                      >
-                        <QrCode size={13} style={{ color: MX.navy }} />
-                      </button>
-                      {canWrite && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditing(r);
-                            setOpen(true);
-                          }}
-                          className="rounded p-1 hover:bg-slate-100"
-                          title="Edit register row"
-                          aria-label={`Edit ${r.allottedSerialNo ?? r.equipmentCode}`}
-                        >
-                          <Pencil size={13} style={{ color: MX.navy }} />
-                        </button>
-                      )}
-                      {canDelete && (
-                        <button
-                          type="button"
-                          onClick={() => setRemoving(r)}
-                          className="rounded p-1 hover:bg-rose-50"
-                          title="Remove from the register (soft delete, reason required)"
-                          aria-label={`Remove ${r.allottedSerialNo ?? r.equipmentCode}`}
-                        >
-                          <Trash2 size={13} style={{ color: MX.red }} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+                  <Pencil size={13} style={{ color: MX.navy }} />
+                </button>
+              )}
+              {canDelete && (
+                <button
+                  type="button"
+                  onClick={() => setRemoving(r)}
+                  className="rounded p-1 hover:bg-rose-50"
+                  title="Remove from the register (soft delete, reason required)"
+                  aria-label={`Remove ${r.allottedSerialNo ?? r.equipmentCode}`}
+                >
+                  <Trash2 size={13} style={{ color: MX.red }} />
+                </button>
+              )}
+            </div>
+          );
+        }}
+      />
 
       <RegisterDialog open={open} onOpenChange={setOpen} row={editing} plants={plants} />
       <QrStickerDialog target={qrFor} onClose={() => setQrFor(null)} />

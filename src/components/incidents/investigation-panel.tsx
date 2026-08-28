@@ -36,6 +36,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
+import { WITNESS_LANGUAGES } from "@/lib/languages";
 
 type Capa = {
   id: string;
@@ -857,28 +858,11 @@ function WitnessesTab({ incidentId }: { incidentId: string }) {
                 </div>
                 <div>
                   <Label>Language</Label>
-                  {/* The statement has to be recorded in the language the witness
-                      actually gave it in, so the list has to cover the languages
-                      spoken at the sites in the system. It previously offered
-                      English, Hindi, Bengali and Khasi only — no Kannada or
-                      Tamil, which is what most of the plants in this deployment
-                      run on, so every South-Indian statement was filed under the
-                      wrong language. */}
+                  {/* One shared list — see @/lib/languages. This used to be
+                      declared inline here and again on the report form, and the
+                      two had drifted apart. */}
                   <Select value={draft.language ?? "English"} onChange={(e) => setDraft((prev) => ({ ...prev, language: e.target.value }))}>
-                    <option>English</option>
-                    <option>Hindi</option>
-                    <option>Kannada</option>
-                    <option>Tamil</option>
-                    <option>Telugu</option>
-                    <option>Malayalam</option>
-                    <option>Marathi</option>
-                    <option>Gujarati</option>
-                    <option>Punjabi</option>
-                    <option>Bengali</option>
-                    <option>Odia</option>
-                    <option>Assamese</option>
-                    <option>Khasi</option>
-                    <option>Other</option>
+                    {WITNESS_LANGUAGES.map((l) => <option key={l}>{l}</option>)}
                   </Select>
                 </div>
               </div>

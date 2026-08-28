@@ -271,6 +271,40 @@ const EXTRA_PERMISSIONS: { code: string; module: string; action: string; descrip
   // own rather than something any inspector can do to their own backlog.
   { code: "FIRE.CALENDAR",         module: "FIRE", action: "CALENDAR",         description: "Mark plant non-working days (Sunday/holiday) on the daily checklist grids" },
 
+  // ─── Chemical / Hazmat — the other half of the Operations bundle ─────────
+  // Declared here in full rather than via OPERATIONAL_MODULES for the same
+  // reason FIRE is: the blanket `for m of OPERATIONAL_MODULES` grants would
+  // hand the hazmat inventory to every role this matrix has never reviewed for
+  // chemical — and that is exactly the live defect. The module borrowed
+  // INCIDENT.READ / INCIDENT.UPDATE, and:
+  //
+  //   • WORKER and CONTRACTOR_WORKMAN hold INCIDENT.READ at OWN_RECORDS, which
+  //     get_accessible_plants_for widens to the whole plant — so a contractor
+  //     could read a site's complete hazmat inventory: every chemical, every
+  //     quantity, every storage location, and the threshold dashboard saying
+  //     which of them sit near a reportable regulatory limit.
+  //   • AUDITOR and LEAD_AUDITOR hold no INCIDENT grant at all, so the roles
+  //     that verify chemical storage could not open the register. That bites
+  //     harder here than for fire: the inventory is the input to the site's
+  //     MAH / threshold obligations, and an auditor who cannot read it cannot
+  //     verify them.
+  //
+  // Four codes, not nine. FIRE carries EXECUTE/VERIFY/APPROVE because its
+  // source sheets print a three-stage sign-off block that defines the
+  // segregation of duties. Chemical has no such block; what its router actually
+  // distinguishes is read / create / write / configure, and lifecycle codes
+  // with no endpoint behind them are vocabulary nobody can grant meaningfully.
+  // No DELETE either — chemical records are statutory and the module retires by
+  // status change, never by removal.
+  { code: "CHEMICAL.READ",      module: "CHEMICAL", action: "READ",      description: "Read the chemical register, inventory, ledger and regulatory-threshold dashboards" },
+  { code: "CHEMICAL.CREATE",    module: "CHEMICAL", action: "CREATE",    description: "Add a chemical to the master, a storage location, or an inventory item" },
+  { code: "CHEMICAL.UPDATE",    module: "CHEMICAL", action: "UPDATE",    description: "Edit a chemical, upload an SDS, move / transfer / dispose stock, reconcile a count" },
+  // Separate from UPDATE deliberately: the threshold rules decide when a site
+  // crosses a regulatory reporting limit and the incompatibility matrix decides
+  // what may be stored beside what. A storekeeper who can book stock in must
+  // not be able to raise the threshold that would otherwise have flagged it.
+  { code: "CHEMICAL.CONFIGURE", module: "CHEMICAL", action: "CONFIGURE", description: "Manage regulatory-threshold rules and the storage incompatibility matrix" },
+
   // ─── Combined Risk Register + Risk Aggregation Dashboard (HIRA Phase 2) ──
   { code: "RISK.COMBINED_VIEW",       module: "RISK", action: "COMBINED_VIEW",       description: "View the combined HIRA + EAI risk register" },
   { code: "RISK.DASHBOARD_VIEW",      module: "RISK", action: "DASHBOARD_VIEW",      description: "View the Risk Aggregation Dashboard (executive + plant-level)" },
@@ -567,6 +601,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // fill is reviewed and approved by someone else, which is the point of the
     // three-stage block printed on it.
     { module: "FIRE",        actions: ["READ", "EXECUTE"],                     scope: "OWN_DEPARTMENT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     { module: "MOC", actions: ["CREATE", "READ", "UPDATE"], scope: "OWN_DEPARTMENT" }, // MOC — raise minor changes
     { module: "SKILL_MATRIX", actions: ["READ", "ASSESS", "EXECUTE"], scope: "OWN_DEPARTMENT" }, // Skill Matrix §8.1
     // Observation: C=ALL, R/AP/EXP=DEPT, U/EX=OWN
@@ -651,6 +686,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // register too (CREATE/UPDATE) because they are the ones who find an
     // unregistered cylinder on a walk. No VERIFY/APPROVE — same reason as above.
     { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "EXPORT"], scope: "OWN_PLANT" },
+    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE"], scope: "OWN_PLANT" },
     // Guided Field Capture triage + Daily Alert Brief
     { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "OWN_PLANT" },
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },
@@ -705,6 +741,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // sign-off block. VERIFY only: a reviewer who could also EXECUTE could fill
     // a sheet and review it in the same breath.
     { module: "FIRE",        actions: ["READ", "VERIFY", "EXPORT"],            scope: "OWN_DEPARTMENT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     { module: "MOC", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXPORT"], scope: "OWN_DEPARTMENT" }, // MOC — approve minor/moderate (own dept)
     { module: "SKILL_MATRIX", actions: ["READ", "ASSESS", "SUSPEND", "APPROVE_OVERRIDE"], scope: "OWN_DEPARTMENT" }, // Skill Matrix §8.1
     // Observation: C=ALL, R/AP/EXP=DEPT, U/EX=OWN
@@ -775,6 +812,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // vs VERIFY (review) vs APPROVE (sign off) is enforced per action, not per
     // plant, and the roles that hold only some of those still hold only those.
     { module: "FIRE",        actions: ["READ", "CREATE", "UPDATE", "DELETE", "EXECUTE", "VERIFY", "APPROVE", "CLOSE", "EXPORT", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "CALENDAR"], scope: "ALL_PLANTS" },
+    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE", "CONFIGURE"], scope: "ALL_PLANTS" },
     // Guided Field Capture triage + Daily Alert Brief
     { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "OWN_PLANT" },
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },
@@ -857,6 +895,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // signing off a checklist they also filled in would defeat the sign-off.
     // CALENDAR sits here because declaring a plant shutdown is a plant-head act.
     { module: "FIRE",        actions: ["READ", "VERIFY", "APPROVE", "CLOSE", "EXPORT", "CALENDAR"], scope: "OWN_PLANT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     // Field-report visibility + Daily Alert Brief
     { module: "CAPTURE", actions: ["READ"], scope: "OWN_PLANT" },
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },
@@ -925,6 +964,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Group-wide fire authority, including document control over the controlled
     // checklist library — a revised client sheet applies to every site.
     { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "CALENDAR"], scope: "ALL_PLANTS" },
+    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE", "CONFIGURE"], scope: "ALL_PLANTS" },
     // Field-report visibility + Daily Alert Brief (multi-site rollup)
     { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "ALL_PLANTS" },
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "ALL_PLANTS" },
@@ -1023,6 +1063,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // rounds on them. EXECUTE, not APPROVE — the maintainer does not sign off
     // their own maintenance.
     { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "DELETE", "EXECUTE", "EXPORT"], scope: "OWN_PLANT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     { module: "MOC", actions: ["CREATE", "READ", "UPDATE", "APPROVE", "EXECUTE", "EXPORT"], scope: "OWN_PLANT" }, // MOC — equipment/maintenance changes
     { module: "OBSERVATION", actions: ["CREATE"],                            scope: "ALL_PLANTS" },
     { module: "OBSERVATION", actions: ["READ", "EXPORT"],                    scope: "OWN_DEPARTMENT" },
@@ -1071,6 +1112,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // module not yet in OPERATIONAL_MODULES.
   // ════════════════════════════════════════════════════════════════════
   ENVIRONMENT_MANAGER: [
+    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE"], scope: "OWN_PLANT" },
     { module: "OBSERVATION", actions: ["CREATE"],                            scope: "ALL_PLANTS" },
     { module: "OBSERVATION", actions: ["READ", "EXPORT"],                    scope: "OWN_PLANT" },
     { module: "OBSERVATION", actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
@@ -1110,6 +1152,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // Specialist roles — read-only access to incidents/inspections.
   // ════════════════════════════════════════════════════════════════════
   OCCUPATIONAL_HEALTH_OFFICER: [
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     { module: "INCIDENT",    actions: ["READ"],                              scope: "OWN_PLANT" },
     { module: "TRAINING",    actions: ["READ"],                              scope: "OWN_PLANT" },
     { module: "AGENT",       actions: ["RCA_INVOKE"],                       scope: "OWN_PLANT" }
@@ -1119,10 +1162,12 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // Fire is this role's core subject matter. Prepares and reviews; final
     // approval stays with the HOD tier.
     { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     { module: "INCIDENT",    actions: ["READ"],                              scope: "OWN_PLANT" },
     { module: "AGENT",       actions: ["RCA_INVOKE"],                       scope: "OWN_PLANT" }
   ],
   INDUSTRIAL_HYGIENIST: [
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     { module: "INSPECTION",  actions: ["READ"],                              scope: "OWN_PLANT" },
     { module: "INCIDENT",    actions: ["READ"],                              scope: "OWN_PLANT" },
     { module: "AGENT",       actions: ["RCA_INVOKE"],                       scope: "OWN_PLANT" }
@@ -1133,6 +1178,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   ADMIN: [
     // ── Fire & Life Safety ──────────────────────────────────────────
     { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "CALENDAR"], scope: "ALL_PLANTS" },
+    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE", "CONFIGURE"], scope: "ALL_PLANTS" },
     ...OPERATIONAL_MODULES.map((m) => ({ module: m, actions: [...OPERATIONAL_ACTIONS], scope: "ALL_PLANTS" as Scope })),
     // Guided Field Capture + Daily Alert Brief (UNMASK is admin-only per spec)
     { module: "CAPTURE", actions: ["CREATE", "READ", "TRIAGE", "UNMASK"], scope: "ALL_PLANTS" },
@@ -1225,6 +1271,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   SYSTEM_ADMIN: [
     // ── Fire & Life Safety ──────────────────────────────────────────
     { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "CALENDAR"], scope: "ALL_PLANTS" },
+    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE", "CONFIGURE"], scope: "ALL_PLANTS" },
     ...OPERATIONAL_MODULES.map((m) => ({ module: m, actions: [...OPERATIONAL_ACTIONS], scope: "ALL_PLANTS" as Scope })),
     // Guided Field Capture + Daily Alert Brief (UNMASK is admin-only per spec)
     { module: "CAPTURE", actions: ["CREATE", "READ", "TRIAGE", "UNMASK"], scope: "ALL_PLANTS" },
@@ -1365,6 +1412,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Fire & Life Safety ──────────────────────────────────────────
     // Board persona. Read-only, group-wide, consistent with every other module.
     { module: "FIRE",        actions: ["READ"],                                scope: "ALL_PLANTS" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "ALL_PLANTS" },
     // Board persona — read-only dashboards, heat maps, published board packs.
     { module: "ERM",  actions: ["READ", "EXPORT"], scope: "ALL_PLANTS" },
     // Cross-Domain RCA — read-only causal analytics + maps for the board view.
@@ -1387,6 +1435,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   PLANT_HSE_HEAD: [
     // ── Fire & Life Safety ──────────────────────────────────────────
     { module: "FIRE",        actions: ["READ", "VERIFY", "EXPORT"],            scope: "OWN_PLANT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     // Own-site OPS rollup risks only — router restricts the query to
     // sourceType=HSE_ROLLUP + OPS category for this role.
     { module: "ERM",  actions: ["READ"], scope: "OWN_PLANT" },
@@ -1408,6 +1457,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // ── Fire & Life Safety ──────────────────────────────────────────
     // Reads and exports the statutory record; no authority over its content.
     { module: "FIRE",        actions: ["READ", "EXPORT"],                      scope: "ALL_PLANTS" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "ALL_PLANTS" },
     // Owns the obligations register; EXCLUSIVE verify/waive (SoD). Reads the rest.
     { module: "COMPLIANCE", actions: ["READ", "MANAGE", "ATTEST", "VERIFY", "WAIVE"], scope: "ALL_PLANTS" },
     { module: "KRI",        actions: ["READ"], scope: "ALL_PLANTS" },
@@ -1489,6 +1539,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // export the PDF that gets handed over. No write authority on the records
     // under audit.
     { module: "FIRE",        actions: ["READ", "EXPORT"],                      scope: "OWN_PLANT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     // Cross-site engagements, matching the audit grant below; authors templates;
     // raises CAPAs. Leaving CAMS narrower than AUDIT_COMPLIANCE is how the same
     // role ends up able to conduct an audit at a site whose inspection register
@@ -1579,6 +1630,7 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
     // could not open it. Read + export only — an auditor who could edit the
     // record they are auditing is not auditing it.
     { module: "FIRE",        actions: ["READ", "EXPORT"],                      scope: "OWN_PLANT" },
+    { module: "CHEMICAL",    actions: ["READ"], scope: "OWN_PLANT" },
     // Executes assigned engagements; records findings; raises CAPAs; own-audit analytics.
     { module: "CAMS", actions: ["READ", "EXECUTE", "FINDING_MANAGE", "ANALYTICS"], scope: "OWN_PLANT" },
     // Conducts only — no scheduling, no close. The per-audit record guard

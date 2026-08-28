@@ -201,6 +201,9 @@ export type BadgeStatus = "OVERDUE" | "DUE_SOON" | "OK" | "NOT_RECORDED";
 export type Badge = { status: BadgeStatus; daysRemaining: number | null; dueDate: string | null };
 
 export type RegisterRow = {
+  /** The asset's opaque QR sticker value — see the Build 3 token change. Null
+   *  until the backfill has minted one. */
+  qrTokenValue?: string | null;
   id: string;
   slNo: number;
   equipmentCode: string;

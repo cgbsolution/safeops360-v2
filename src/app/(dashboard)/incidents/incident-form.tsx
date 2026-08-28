@@ -43,6 +43,7 @@ import { GpsCaptureStatus } from "@/components/ui/gps-capture";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { AlertCircle, Camera, Trash2, Upload, MapPin, Clock, X, ChevronDown, ChevronRight, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { WITNESS_LANGUAGES } from "@/lib/languages";
 import { RcaEditor, useRcaMethodSwitcher } from "@/components/incidents/rca-editor";
 import { type RcaMethod, RCA_METHODS_LIST, emptyDataFor, isEmptyRcaData } from "@/lib/rca/types";
 
@@ -763,10 +764,7 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
               <div>
                 <Label>Language</Label>
                 <Select value={w.language} onChange={(e) => updateWitness(w.tempId, { language: e.target.value })}>
-                  <option>English</option>
-                  <option>Hindi</option>
-                  <option>Bengali</option>
-                  <option>Khasi</option>
+                  {WITNESS_LANGUAGES.map((l) => <option key={l}>{l}</option>)}
                 </Select>
               </div>
               <button type="button" onClick={() => removeWitness(w.tempId)}

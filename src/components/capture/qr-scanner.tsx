@@ -8,13 +8,20 @@
 //   safeops:loc:<areaId>:<equipId> → area + asset in ONE scan (spec §4 banner)
 //   safeops:area:<areaId>          → area
 //   safeops:equipment:<equipId>    → equipment (area optional, second scan)
-//   safeops:fire-asset:<assetId>   → a fire-register asset (extinguisher, panel,
+//   safeops:fire-asset:<token>     → a fire-register asset (extinguisher, panel,
 //                                    hydrant); its own noun because FireEquipment
 //                                    and Equipment are different tables and an id
 //                                    from one resolves to nothing in the other
-//   …/fire-safety/scan/<assetId>   → the URL form printed on fire stickers, so a
+//   …/fire-safety/scan/<token>     → the URL form printed on fire stickers, so a
 //                                    label scans identically in this app and in a
 //                                    phone's stock camera
+//
+// The fire value is an OPAQUE TOKEN, not an asset id. Labels used to encode the
+// row id, which made one photographed sticker a map to the rest and made a lost
+// label impossible to revoke. Pre-reprint stickers still carry the bare id and
+// still parse here — the backend decides which kind it got, because only the
+// database can tell them apart, and guessing by shape would silently break the
+// day an id format changes.
 //   a bare areaId that matches the technician's plant areas
 // All formats resolve on-device (no server round-trip) so QR entry keeps
 // working in dead zones — the offline-first QR decision.
@@ -36,7 +43,14 @@ export function qrSupported(): boolean {
   return !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
 }
 
-export type QrResult = { areaId?: string; equipmentId?: string; fireAssetId?: string };
+export type QrResult = {
+  areaId?: string;
+  equipmentId?: string;
+  /** A fire sticker's opaque token — or, from a pre-reprint label, a bare asset
+   *  id. Resolved server-side; the name says token because that is what new
+   *  labels carry. */
+  fireAssetToken?: string;
+};
 
 // Fire stickers encode a URL rather than a bare token, because the person
 // scanning one is usually pointing the stock camera app at a cylinder in a
@@ -57,12 +71,12 @@ export function parseQrPayload(raw: string, knownAreaIds: Set<string>): QrResult
   if (value.startsWith("safeops:area:")) return { areaId: value.slice("safeops:area:".length) };
   if (value.startsWith("safeops:equipment:")) return { equipmentId: value.slice("safeops:equipment:".length) };
   if (value.startsWith(FIRE_TOKEN)) {
-    const id = value.slice(FIRE_TOKEN.length).trim();
-    return id ? { fireAssetId: id } : null;
+    const token = value.slice(FIRE_TOKEN.length).trim();
+    return token ? { fireAssetToken: token } : null;
   }
   // Checked before the bare-areaId fallback: a scan URL is never an area id.
   const fire = value.match(FIRE_PATH);
-  if (fire) return { fireAssetId: fire[1] };
+  if (fire) return { fireAssetToken: fire[1] };
   if (knownAreaIds.has(value)) return { areaId: value };
   return null;
 }

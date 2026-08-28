@@ -15,6 +15,7 @@ import { KpiEngine, type KpiResult } from "./kpi-engine";
 import { KPI_REGISTRY, type KpiCode } from "./kpi-registry";
 import { SCORECARD_WEIGHTS } from "./personas";
 import { scoreBand, type ScorecardRow } from "@/components/manhours/widgets/performance-scorecard";
+import { fetchFireChemicalCompliance, FIRE_CHEMICAL_COMPLIANCE } from "./fire-chemical-compliance";
 import type { PrismaClient } from "@prisma/client";
 
 interface Contribution {
@@ -93,18 +94,41 @@ export async function buildScorecard(opts: {
   const engine = new KpiEngine(opts.prisma);
   const codes: KpiCode[] = SCORECARD_WEIGHTS.map((w) => w.code);
 
+  // Fire/Chemical checklist compliance, sourced from the BACKEND read model
+  // rather than Prisma — see fire-chemical-compliance.ts for that decision.
+  // Fetched once for every plant instead of per-plant inside the map, so a
+  // twelve-plant scorecard is one parallel batch rather than twelve serial
+  // hops interleaved with the Prisma work.
+  //
+  // The map is SPARSE: a plant with nothing owed in the window is absent, not
+  // present with a zero. That absence is what makes it render as no-data.
+  const fireChemical = await fetchFireChemicalCompliance({
+    plantIds: opts.plants.map((p) => p.id),
+    period: { start: new Date(), end: new Date() },
+  });
+
   const rows = await Promise.all(
     opts.plants.map(async (plant) => {
       const results = await engine.computeKpiBatch(codes, { plantId: plant.id }, opts.period);
       const computed = computePlantScore(results);
       if (!computed) return null;
+      const fc = fireChemical[plant.id];
       return {
         plantId: plant.id,
         plantCode: plant.code,
         plantName: plant.name,
         score: computed.score,
         band: scoreBand(computed.score),
-        contributions: computed.contributions
+        contributions: computed.contributions,
+        // Reported, not weighted. FIRE_CHEMICAL_COMPLIANCE is deliberately
+        // absent from SCORECARD_WEIGHTS: those sum to exactly 100 with a
+        // fail-fast check, so weighting this one would take weight from the
+        // other eight and silently re-band every plant's historic composite.
+        // Undefined here means "cannot be computed" — the widget renders that
+        // as no-data, never as 0%.
+        fireChemicalCompliance: fc
+          ? { code: FIRE_CHEMICAL_COMPLIANCE, value: fc.value, numerator: fc.numerator, denominator: fc.denominator }
+          : undefined
       } as ScorecardRow;
     })
   );

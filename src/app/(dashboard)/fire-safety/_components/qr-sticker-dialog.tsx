@@ -24,6 +24,10 @@ export type QrTarget = {
   allottedSerialNo?: string | null;
   location?: string | null;
   type?: string | null;
+  /** The asset's OPAQUE sticker value (`FireEquipment.qrToken`), not its id.
+   *  Null until the backfill has minted one — the dialog says so rather than
+   *  showing a scan URL that resolves to nothing. */
+  qrTokenValue?: string | null;
 };
 
 export function QrStickerDialog({
@@ -45,7 +49,13 @@ export function QrStickerDialog({
 
   const png = `/api/fire/assets/${target.id}/qr.png?scale=10`;
   const svg = `/api/fire/assets/${target.id}/qr.svg`;
-  const scanUrl = `${typeof window !== "undefined" ? window.location.origin : ""}/fire-safety/scan/${target.id}`;
+  // Built from the stored token, never from the asset id. The id used to be
+  // what the label encoded, which is exactly the leak this change closes — a
+  // scan URL shown on screen is the same string that goes on the cylinder.
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const scanUrl = target.qrTokenValue
+    ? `${origin}/fire-safety/scan/${target.qrTokenValue}`
+    : null;
 
   return (
     <div
@@ -139,13 +149,23 @@ export function QrStickerDialog({
             <div className="text-[9.5px] font-semibold uppercase tracking-wider" style={{ color: MX.muted }}>
               Encoded link
             </div>
-            <a
-              href={`/fire-safety/scan/${target.id}`}
-              className="inline-flex items-center gap-1 break-all text-[10.5px] hover:underline"
-              style={{ color: MX.navy }}
-            >
-              {scanUrl} <ExternalLink size={9} className="shrink-0" />
-            </a>
+            {scanUrl ? (
+              <a
+                href={`/fire-safety/scan/${target.qrTokenValue}`}
+                className="inline-flex items-center gap-1 break-all text-[10.5px] hover:underline"
+                style={{ color: MX.navy }}
+              >
+                {scanUrl} <ExternalLink size={9} className="shrink-0" />
+              </a>
+            ) : (
+              // No token yet. Saying so beats printing a link that scans fine
+              // and resolves to nothing — the failure would otherwise surface
+              // months later, on a cylinder, to someone who cannot fix it.
+              <p className="text-[10.5px]" style={{ color: MX.amber }}>
+                No QR token has been issued for this asset yet, so a label cannot be printed.
+                An administrator needs to run the fire QR backfill.
+              </p>
+            )}
           </div>
         </div>
       </div>

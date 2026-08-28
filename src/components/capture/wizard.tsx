@@ -11,6 +11,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertOctagon,
+  AlertTriangle,
   Camera,
   Check,
   ChevronLeft,
@@ -18,6 +19,7 @@ import {
   ClipboardList,
   Clock,
   Eye,
+  Flame,
   Globe,
   Home,
   Images,
@@ -40,6 +42,7 @@ import { enqueueSubmission, fetchWithBootCache, syncOutbox } from "@/lib/capture
 import { SyncChip } from "./sync-chip";
 import type {
   CaptureBootstrap,
+  CaptureFireAsset,
   CleanupTextResponse,
   DraftDescriptionResponse,
   SelfSeverity,
@@ -206,7 +209,15 @@ function Chip({ label, selected, onClick, testId }: { label: string; selected: b
 
 type Phase = "boot" | "wizard" | "submitting" | "success" | "queued" | "error";
 
-export function CaptureWizard() {
+export function CaptureWizard({
+  // Set when the wizard was entered FROM a fire asset rather than by scanning
+  // inside it — the "log a finding" path off a fire sticker. The wizard treats
+  // it identically to an in-wizard scan, so the asset context arrives the same
+  // way regardless of which door the reporter came through.
+  initialFireAssetId = null,
+}: {
+  initialFireAssetId?: string | null;
+} = {}) {
   const router = useRouter();
 
   // ── language (persisted per device; picker on first launch) ──
@@ -254,6 +265,16 @@ export function CaptureWizard() {
   const [anonymous, setAnonymous] = useState(false);
   const [areaId, setAreaId] = useState<string | null>(null);
   const [equipmentId, setEquipmentId] = useState<string | null>(null);
+  // A scanned fire-register asset. Held separately from `equipmentId` all the
+  // way through: FireEquipment and Equipment are different tables, and the id
+  // must reach the server in the field that will actually resolve it.
+  const [fireAssetId, setFireAssetId] = useState<string | null>(null);
+  const [fireAsset, setFireAsset] = useState<CaptureFireAsset | null>(null);
+  // A sticker that resolves to nothing is said out loud here rather than
+  // dropped. Before this, the wizard advanced as though the scan had worked and
+  // the reporter filed a fire finding against no asset at all.
+  const [fireAssetError, setFireAssetError] = useState<string | null>(null);
+  const [fireAssetLoading, setFireAssetLoading] = useState(false);
   const [qrUsed, setQrUsed] = useState(false);
   const [showQr, setShowQr] = useState(false);
   const [showAllAreas, setShowAllAreas] = useState(false);
@@ -442,6 +463,116 @@ export function CaptureWizard() {
     const e = boot?.equipment?.find((x) => x.id === equipmentId);
     return e?.name ?? e?.code ?? null;
   }, [boot, equipmentId]);
+  // The fire asset reads as its stencilled tag where there is one — that is the
+  // number the reporter can check against the cylinder in front of them, and
+  // the platform's own code means nothing to them.
+  const fireAssetName = useMemo(() => {
+    if (!fireAsset) return fireAssetId ? "Fire asset" : null;
+    return fireAsset.allottedSerialNo
+      ? `${fireAsset.code} (${fireAsset.allottedSerialNo})`
+      : fireAsset.code;
+  }, [fireAsset, fireAssetId]);
+
+  // Resolve a scanned fire sticker to the asset it names.
+  //
+  // Cache first, network second — deliberately that order. The bootstrap ships
+  // a plant-scoped fire asset directory precisely so a scan in a corridor with
+  // no signal still names the cylinder; the fetch is the fallback for a sticker
+  // printed since the cache was built.
+  //
+  // Returns the asset, or null having set the error. It never resolves
+  // silently to nothing: an unresolvable sticker is the reporter's decision to
+  // make (rescan, or file without the link), not something to swallow.
+  const resolveFireAsset = useCallback(
+    async (value: string, { byToken }: { byToken: boolean }): Promise<CaptureFireAsset | null> => {
+      // Cache first, network second — deliberately that order, and the reason
+      // the bootstrap ships qrToken at all: a sticker is scanned in a corridor,
+      // which is where signal is worst.
+      const cached = boot?.fireAssets?.find((a) =>
+        byToken ? a.qrToken === value : a.id === value,
+      );
+      if (cached) return cached;
+      setFireAssetLoading(true);
+      try {
+        const path = byToken
+          ? `/api/capture/fire-asset/by-token/${encodeURIComponent(value)}`
+          : `/api/capture/fire-asset/${encodeURIComponent(value)}`;
+        const res = await fetch(path);
+        if (!res.ok) return null;
+        return (await res.json()) as CaptureFireAsset;
+      } catch {
+        // Offline AND not in the cache. The id is still carried — the server
+        // resolves and snapshots it on sync, and rejects it there if it never
+        // resolves. Losing the link here would be the old silent drop.
+        return null;
+      } finally {
+        setFireAssetLoading(false);
+      }
+    },
+    [boot],
+  );
+
+  // One entry point for both doors into a fire-asset report: the in-wizard
+  // scanner, and arrival from the fire scan route with `?fireAsset=<id>`.
+  const applyFireAsset = useCallback(
+    async (value: string, { advance, byToken }: { advance: boolean; byToken: boolean }) => {
+      setFireAssetError(null);
+      // Only an ID may be set optimistically. A scanned TOKEN is not an asset
+      // id, and putting one in `fireAssetId` would hand the server a value it
+      // would reject on submit — so the id is set from the resolved asset below.
+      setFireAssetId(byToken ? null : value);
+      setQrUsed(true);
+      const asset = await resolveFireAsset(value, { byToken });
+      if (asset) {
+        setFireAssetId(asset.id);
+        setFireAsset(asset);
+        // The sticker knows where it is; the reporter should not have to say so
+        // again. Pre-filling the area is the point of scanning the thing.
+        if (asset.location && !areaId) {
+          const match = boot?.areas.find(
+            (a) => a.name.toLowerCase() === asset.location?.toLowerCase(),
+          );
+          if (match) setAreaId(match.id);
+        }
+        if (advance) goNext();
+        return;
+      }
+      // Unresolved. Online this means the sticker is genuinely not in this
+      // site's register, and the reporter is told so and given both choices.
+      // Offline it means only that the cache predates the asset — the id is
+      // kept and the server has the last word on sync.
+      if (typeof navigator !== "undefined" && navigator.onLine === false) {
+        // Offline and not in the cache. An ID can still travel — the server
+        // resolves and snapshots it on sync. A TOKEN cannot: `location.fireAssetId`
+        // must carry an asset id, and sending a token there would be rejected
+        // at sync with the report already written. So the scan is reported as
+        // unresolved and the reporter decides, rather than filing something
+        // that will fail hours later with nobody watching.
+        if (!byToken) {
+          if (advance) goNext();
+          return;
+        }
+        setFireAssetId(null);
+        setFireAsset(null);
+        setFireAssetError(t("fireAssetOffline", lang ?? "en"));
+        return;
+      }
+      setFireAssetId(null);
+      setFireAsset(null);
+      setFireAssetError(t("fireAssetUnknown", lang ?? "en"));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- goNext is defined below and stable per render
+    [resolveFireAsset, boot, areaId, lang],
+  );
+
+  // Entry by `?fireAsset=<id>`: same handling as a scan, minus the advance —
+  // the reporter still has to say what kind of report this is.
+  const fireAssetBootstrapped = useRef(false);
+  useEffect(() => {
+    if (!initialFireAssetId || !boot || fireAssetBootstrapped.current) return;
+    fireAssetBootstrapped.current = true;
+    void applyFireAsset(initialFireAssetId, { advance: false, byToken: false });
+  }, [initialFireAssetId, boot, applyFireAsset]);
 
   const countTap = useCallback(() => {
     tapCount.current += 1;
@@ -721,7 +852,10 @@ export function CaptureWizard() {
       type,
       plantId: boot?.plant?.id,
       anonymous,
-      location: { areaId, equipmentId, qrScanned: qrUsed },
+      // fireAssetId travels in its own field, never folded into equipmentId —
+      // the server resolves each against a different table and snapshots the
+      // fire asset onto the report.
+      location: { areaId, equipmentId, fireAssetId, qrScanned: qrUsed },
       // STOP-classified flows send codes from ObservationTaxonomy; everything
       // else keeps sending CaptureTaxonomy hazard ids. The two never mix — the
       // server snapshots whichever arrives.
@@ -819,8 +953,15 @@ export function CaptureWizard() {
     if (!keepLocation) {
       setAreaId(null);
       setEquipmentId(null);
+      setFireAssetId(null);
+      setFireAsset(null);
       setQrUsed(false);
     }
+    // Cleared either way: an error about the last scan must not survive onto a
+    // report that is not using it. "Submit Another" keeping the asset (the
+    // three-findings-on-one-cylinder case) keeps a RESOLVED asset, never a
+    // failed one.
+    setFireAssetError(null);
     setL1(null);
     setL2(null);
     setMedia([]);
@@ -1102,6 +1243,82 @@ export function CaptureWizard() {
         {stage === "where" && (
           <>
             <ScreenHeading {...tPair("q_where", lang)} lang={lang} />
+
+            {/* A resolved fire sticker, confirmed back to the reporter. They
+                scanned a specific cylinder; they need to see the wizard agrees
+                which one before they describe a fault on it. */}
+            {fireAsset ? (
+              <div
+                className="mb-4 rounded-2xl border-2 border-[#C9A961] bg-[#FDF8EE] px-4 py-3"
+                data-testid="fire-asset-banner"
+              >
+                <div className="flex items-start gap-3">
+                  <Flame size={22} className="mt-0.5 shrink-0 text-[#B7791F]" />
+                  <div className="min-w-0">
+                    <BiText
+                      primary={t("fireAssetScanned", lang)}
+                      secondary={tPair("fireAssetScanned", lang).secondary}
+                    />
+                    <p className="mt-1 truncate text-lg font-semibold text-[#0B1F4D]">
+                      {fireAssetName}
+                    </p>
+                    {fireAsset.location ? (
+                      <p className="truncate text-base text-[#5A6478]">{fireAsset.location}</p>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            {fireAssetLoading ? (
+              <p className="mb-4 text-center text-base text-[#5A6478]">
+                {t("fireAssetLookingUp", lang)}
+              </p>
+            ) : null}
+
+            {/* The scan failed and the reporter is told, instead of being
+                advanced as though it had worked. Both ways out are offered:
+                the sticker may be damaged (rescan), or genuinely retired
+                (file the finding without the link rather than lose it). */}
+            {fireAssetError ? (
+              <div
+                className="mb-4 rounded-2xl border-2 border-[#C53030] bg-[#FEF2F2] px-4 py-3"
+                role="alert"
+                data-testid="fire-asset-error"
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle size={22} className="mt-0.5 shrink-0 text-[#C53030]" />
+                  <p className="text-base font-medium text-[#C53030]">{fireAssetError}</p>
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="rounded-xl bg-[#0B1F4D] px-4 py-2.5 text-base font-semibold text-white"
+                    onClick={() => {
+                      setFireAssetError(null);
+                      setFireAssetId(null);
+                      setShowQr(true);
+                    }}
+                  >
+                    {t("fireAssetRetry", lang)}
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-xl border-2 border-[#D9E1EF] px-4 py-2.5 text-base font-medium text-[#0B1F4D]"
+                    onClick={() => {
+                      // Drops the link on the reporter's say-so — which is the
+                      // difference between this and the defect being fixed.
+                      setFireAssetError(null);
+                      setFireAssetId(null);
+                      setFireAsset(null);
+                    }}
+                  >
+                    {t("fireAssetSkip", lang)}
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
             <TileGrid>
               {qrSupported() ? (
                 <Tile icon={QrCode} primary={t("scanQr", lang)} secondary={tPair("scanQr", lang).secondary} tone="gold" onClick={() => setShowQr(true)} />
@@ -1758,7 +1975,10 @@ export function CaptureWizard() {
             <ReviewCard
               lang={lang}
               typeKey={TYPE_TILES.find((tt) => tt.type === type)?.key ?? "type_observation"}
-              areaName={[areaName, assetName].filter(Boolean).join(" · ") || (qrUsed ? "QR" : "—")}
+              areaName={
+                [areaName, assetName, fireAssetName].filter(Boolean).join(" · ") ||
+                (qrUsed ? "QR" : "—")
+              }
               description={[flowSummary(), typedDescription.trim() || deviceTranscript || ""].filter(Boolean).join(" — ")}
               l1={l1}
               l2={l2}
@@ -1790,6 +2010,16 @@ export function CaptureWizard() {
             setShowQr(false);
             if (qr.areaId) setAreaId(qr.areaId);
             if (qr.equipmentId) setEquipmentId(qr.equipmentId);
+            // The branch that was missing. `qr-scanner.tsx` has parsed
+            // `safeops:fire-asset:` tokens since fire stickers shipped, but
+            // nothing here read the result — the wizard set qrUsed and advanced,
+            // so a scanned cylinder produced a report linked to nothing, with no
+            // error. applyFireAsset resolves it, pre-fills from it, and advances
+            // only once it has an answer.
+            if (qr.fireAssetToken) {
+              void applyFireAsset(qr.fireAssetToken, { advance: true, byToken: true });
+              return;
+            }
             setQrUsed(true);
             goNext(); // advance from "where" to the next screen for this flow
           }}

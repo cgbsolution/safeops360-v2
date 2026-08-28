@@ -346,19 +346,12 @@ export function ClassificationPanel({
             </div>
             <div>
               <Label>Team Members</Label>
-              <UserPicker value={null} onChange={(id) => { if (id && !teamMemberIds.includes(id)) setTeamMemberIds([...teamMemberIds, id]); }}
+              {/* UserPicker's own multi-select mode: it keeps the picked people
+                  as named, removable chips. The hand-rolled chip list this
+                  replaced printed `id.slice(0, 8)…`, so the HSE Manager was
+                  asked to confirm a team shown as raw cuid fragments. */}
+              <UserPicker multiple value={teamMemberIds} onChange={(ids) => setTeamMemberIds(ids)}
                 filter={{ plantId: initial.plantId }} placeholder="Add a team member…" />
-              {teamMemberIds.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {teamMemberIds.map((id) => (
-                    <span key={id} className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-slate-100 border border-slate-300 rounded">
-                      {id.slice(0, 8)}…
-                      <button type="button" onClick={() => setTeamMemberIds((prev) => prev.filter((x) => x !== id))}
-                        className="text-slate-500 hover:text-rose-600 ml-0.5">×</button>
-                    </span>
-                  ))}
-                </div>
-              )}
               {(severity === "HIGH" || severity === "CRITICAL") && (
                 <p className="text-xs text-amber-700 mt-1.5">
                   ⓘ For LTI / Fatality, Plant Head and Corporate HSE will be added automatically as observers when classification is confirmed.

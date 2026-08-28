@@ -13,6 +13,17 @@ export interface ScorecardRow {
   band: "WORLD_CLASS" | "EXCELLENT" | "AVERAGE" | "POOR";
   /** Per-KPI contributions for the breakdown tooltip / drilldown. */
   contributions: { code: string; weight: number; rawValue: number; normalised: number }[];
+  /** Fire + Chemical routine checklist completion, from the backend read model.
+   *  UNDEFINED means "cannot be computed" — no assets, no applicable checklist,
+   *  or no licence — and must render as no-data, never as 0%. Reported rather
+   *  than weighted: it is not in SCORECARD_WEIGHTS, so it does not move the
+   *  composite score. */
+  fireChemicalCompliance?: {
+    code: string;
+    value: number;
+    numerator: number;
+    denominator: number;
+  };
 }
 
 /**

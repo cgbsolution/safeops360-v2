@@ -34,6 +34,7 @@ export const KPI_CODES = [
   "HEINRICH_RATIO",
   "CAPA_CLOSURE_RATE",
   "TRAINING_COMPLIANCE",
+  "FIRE_CHEMICAL_COMPLIANCE",
   "INSPECTION_COMPLIANCE",
   "PTW_FLRA_COMPLIANCE",
   "DAYS_SINCE_LAST_LTI",
@@ -95,6 +96,7 @@ export type KpiNumeratorSpec =
         | "SEVERITY_NUMERATOR"
         | "CAPA_CLOSURE"
         | "TRAINING_COMPLIANCE"
+        | "FIRE_CHEMICAL_COMPLIANCE"
         | "INSPECTION_COMPLIANCE"
         | "PTW_FLRA_COMPLIANCE"
         | "COST_OF_INCIDENTS";
@@ -325,6 +327,30 @@ export const KPI_REGISTRY: Record<KpiCode, KpiDefinition> = {
     name: "Training Compliance Rate",
     formula: "(Employees with Valid Mandatory Training ÷ Total Employees) × 100",
     numerator: { kind: "CUSTOM", tag: "TRAINING_COMPLIANCE" },
+    denominator: { kind: "NONE" },
+    multiplier: 1,
+    benchmarks: { worldClass: 98, excellent: 95, average: 85, poor: 70 },
+    higherIsBetter: true,
+    isPercentage: true,
+    displayFormat: "percent"
+  },
+
+  // Fire + Chemical routine checklist completion. Sourced from the BACKEND
+  // read model (`/api/fire/compliance`), not from Prisma — see
+  // lib/manhours/fire-chemical-compliance.ts for that decision and why the
+  // alternative would have been a second implementation of this number.
+  //
+  // NOT in SCORECARD_WEIGHTS, deliberately. Those weights sum to exactly 100
+  // with a fail-fast check, so adding this one means taking weight away from
+  // the other eight — which silently re-bands every plant's historic composite
+  // score. Whether fire/chemical compliance should carry weight, and at whose
+  // expense, is a product decision, not a side effect of wiring up a data
+  // source. It is computed and reported; weighting is a follow-up.
+  FIRE_CHEMICAL_COMPLIANCE: {
+    code: "FIRE_CHEMICAL_COMPLIANCE",
+    name: "Fire & Chemical Checklist Compliance",
+    formula: "(Routine Checklists Completed ÷ Checklists Due) × 100",
+    numerator: { kind: "CUSTOM", tag: "FIRE_CHEMICAL_COMPLIANCE" },
     denominator: { kind: "NONE" },
     multiplier: 1,
     benchmarks: { worldClass: 98, excellent: 95, average: 85, poor: 70 },

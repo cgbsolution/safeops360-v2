@@ -43,6 +43,25 @@ const CATALOG = {
   scanQr: { en: "Scan QR code", hi: "QR कोड स्कैन करें" },
   qrHint: { en: "Fastest way — point camera at the area / machine QR", hi: "सबसे तेज़ — कैमरा QR कोड पर रखें" },
   qrNotFound: { en: "QR not recognised — pick the area instead", hi: "QR नहीं पहचाना — जगह खुद चुनें" },
+  // Fire-asset stickers (extinguisher / alarm panel / hydrant). A scan that
+  // cannot be resolved says so here rather than advancing silently, which is
+  // what it used to do — the reporter would then file a fire finding against
+  // nothing and never be told.
+  fireAssetScanned: { en: "Fire equipment scanned", hi: "फायर उपकरण स्कैन हुआ" },
+  fireAssetUnknown: {
+    en: "That fire sticker is not in the register for your site.",
+    hi: "यह फायर स्टिकर आपकी साइट के रजिस्टर में नहीं है।",
+  },
+  fireAssetRetry: { en: "Scan again", hi: "फिर से स्कैन करें" },
+  fireAssetSkip: { en: "Continue without it", hi: "इसके बिना आगे बढ़ें" },
+  fireAssetLookingUp: { en: "Checking the sticker…", hi: "स्टिकर जाँचा जा रहा है…" },
+  // A scanned token can only be turned into an asset by the cached directory or
+  // the server. Offline with neither, the report can still be filed — just not
+  // linked — and saying so beats queueing one that fails at sync unwatched.
+  fireAssetOffline: {
+    en: "No signal, so this sticker cannot be checked. You can still report without it.",
+    hi: "नेटवर्क नहीं है, स्टिकर जाँचा नहीं जा सकता। आप बिना इसके भी रिपोर्ट कर सकते हैं।",
+  },
 
   // screen 2 — what did you see?
   q_category: { en: "What did you see?", hi: "आपने क्या देखा?" },

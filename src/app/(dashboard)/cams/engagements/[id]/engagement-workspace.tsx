@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CalendarBookingsPanel } from "@/components/calendar/calendar-bookings-panel";
+import { ComplianceSnapshot } from "@/components/compliance/compliance-snapshot";
 import {
   ENGAGEMENT_STATUS_CHIP, RESULT_CHIP, SEVERITY_CHIP, FINDING_STATUS_CHIP,
   fmtDate, labelize, engagementTypeLabel,
@@ -167,6 +168,16 @@ function PlanTab({ engagement, approvedTemplates, perms, bookings }: { engagemen
         canManage={perms.schedule}
         locked={["CLOSED", "CANCELLED"].includes(engagement.status)}
       />
+
+      {/* Read-only context while conducting the engagement: how much of this
+          site's routine checklist programme has actually been done. Same
+          aggregation the Operations-side panel renders — one query, two
+          surfaces, so the two can never disagree about the same asset.
+
+          Renders nothing when the tenant has no FIRE licence or the caller has
+          no FIRE.READ. Absent is the right failure for a context panel; a red
+          error box on an auditor's workspace is not. */}
+      <ComplianceSnapshot engagementId={engagement.id} />
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
         <h3 className="mb-1 text-sm font-semibold text-slate-800">Checklist template</h3>

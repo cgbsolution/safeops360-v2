@@ -33,11 +33,31 @@ export type StopSubCategory = {
 
 export type CaptureEquipment = { id: string; code: string; name: string; location: string | null };
 
+/** A fire-register asset (extinguisher, alarm panel, hydrant) as scanned from
+ *  its sticker. A distinct type from CaptureEquipment because the ids come from
+ *  a different table — FireEquipment, not Equipment — and one resolves to
+ *  nothing in the other. */
+export type CaptureFireAsset = {
+  id: string;
+  /** The opaque value the sticker encodes. Present so a scan resolves to this
+   *  asset on-device; null only for an asset the backfill has not reached. */
+  qrToken: string | null;
+  code: string;
+  allottedSerialNo: string | null;
+  location: string | null;
+  type: string;
+  subtype: string | null;
+  plantId: string;
+};
+
 export type CaptureBootstrap = {
   user: { id: string; name: string; plantId: string | null };
   plant: { id: string; code: string; name: string } | null;
   areas: { id: string; name: string }[];
   equipment: CaptureEquipment[];
+  /** Plant-scoped fire asset directory, cached on-device so a sticker scanned
+   *  in a corridor names its cylinder with zero connectivity. */
+  fireAssets: CaptureFireAsset[];
   taxonomyVersion: number;
   features: { aiCaptureAssist: boolean; voiceTranscription: boolean; dailyBriefDigest: boolean };
 };
@@ -68,6 +88,9 @@ export type SubmissionOut = {
   mapPinX: number | null;
   mapPinY: number | null;
   equipmentId: string | null;
+  fireAssetId: string | null;
+  /** The asset as it was at submit time, not a re-read of the live row. */
+  fireAsset: CaptureFireAsset | null;
   qrScanned: boolean;
   categoryL1Id: string | null;
   categoryL2Id: string | null;
