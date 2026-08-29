@@ -99,6 +99,8 @@ export type EaiEntryOut = {
     targetLikelihoodReduction: number | null;
     targetMagnitudeReduction: number | null;
     estimatedCostBand: string | null;
+    proposedImplementationDate: string | null;
+    responsibleUserId: string | null;
     status: string;
   }>;
 

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { canApprove, can } from "@/lib/auth/permissions";
+import { can } from "@/lib/auth/permissions";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { AccessRestricted } from "@/components/access-restricted";
@@ -234,8 +234,12 @@ export default async function HiraEntryDetailPage(
   // button that would 403.
   const session = await getServerSession(authOptions);
   const sessionUserId = (session?.user as { id?: string } | undefined)?.id;
+  // Must carry plantId: HIRA.APPROVE is granted to Plant Head and HSE Manager
+  // at OWN_PLANT scope, and can() cannot satisfy OWN_PLANT from a recordId
+  // alone — so without this the approve action was invisible to every approver
+  // except the ALL_PLANTS tier, and no entry could be signed off in the UI.
   const userCanApprove = sessionUserId
-    ? (await canApprove(sessionUserId, "HIRA", entry.id)).allowed
+    ? (await can(sessionUserId, "HIRA.APPROVE", { plantId: study.plantId, recordId: entry.id })).allowed
     : false;
   // Elevated tier (Plant Head / Corporate HSE) — gates the Unacceptable-risk
   // override. Backend re-enforces HIRA.OVERRIDE_UNACCEPTABLE regardless.
@@ -329,6 +333,7 @@ export default async function HiraEntryDetailPage(
         canOverride={userCanOverride}
         trainingPrograms={trainingPrograms}
         inspectionTemplates={inspectionTemplates}
+        plantId={study.plantId}
       />
     </div>
   );

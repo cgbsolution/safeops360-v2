@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { UserPicker } from "@/components/ui/user-picker";
 import { Plus, Trash2, AlertTriangle, CheckCircle2, Lock } from "lucide-react";
 import type { EaiEntryOut, MatrixLevel, AspectItem, CategoryItem, ReceptorItem } from "./types";
 
@@ -12,6 +13,9 @@ type Props = {
   categories: CategoryItem[];
   receptors: ReceptorItem[];
   isEditable: boolean;
+  /** Plant of the parent study — scopes the responsible-person picker on a
+   *  recommended control to people who actually work at this site. */
+  plantId?: string;
 };
 
 // ── Row types ─────────────────────────────────────────────────────────────────
@@ -45,6 +49,11 @@ type RecControlRow = {
   description: string;
   rationale: string;
   estimatedCostBand: string;
+  // An improvement action with no owner and no date is not an action. The
+  // backend has always accepted both (EaiEntryRecommendedControlIn); the form
+  // simply never sent them, so every recommendation saved unassigned.
+  responsibleUserId: string;
+  proposedImplementationDate: string;
 };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -135,7 +144,11 @@ function initRecControlRows(entry: EaiEntryOut): RecControlRow[] {
     hierarchy: r.hierarchy,
     description: r.description,
     rationale: r.rationale ?? "",
-    estimatedCostBand: r.estimatedCostBand ?? ""
+    estimatedCostBand: r.estimatedCostBand ?? "",
+    responsibleUserId: r.responsibleUserId ?? "",
+    proposedImplementationDate: r.proposedImplementationDate
+      ? r.proposedImplementationDate.slice(0, 10)
+      : ""
   }));
 }
 
@@ -147,7 +160,8 @@ export function EntryEditor({
   aspects,
   categories,
   receptors,
-  isEditable
+  isEditable,
+  plantId
 }: Props) {
   const [isSaving, setIsSaving] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
@@ -293,7 +307,9 @@ export function EntryEditor({
         hierarchy: "ENGINEERING",
         description: "",
         rationale: "",
-        estimatedCostBand: ""
+        estimatedCostBand: "",
+        responsibleUserId: "",
+        proposedImplementationDate: ""
       }
     ]);
     markDirty();
@@ -428,7 +444,13 @@ export function EntryEditor({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
-          obligationRows.filter((o) => o.regulationCode && o.parameter)
+          obligationRows
+            .filter((o) => o.regulationCode && o.parameter)
+            // "Next monitoring due" is optional, but an untouched date input
+            // holds "" and the API expects a date or null — sending "" 422'd
+            // the whole save, so any obligation without a date could never be
+            // recorded at all.
+            .map((o) => ({ ...o, nextMonitoringDue: o.nextMonitoringDue || null }))
         )
       });
       if (!r5.ok) {
@@ -444,7 +466,12 @@ export function EntryEditor({
         body: JSON.stringify(
           recControlRows
             .filter((r) => r.description.trim())
-            .map((r, i) => ({ ...r, sortOrder: i }))
+            .map((r, i) => ({
+              ...r,
+              sortOrder: i,
+              responsibleUserId: r.responsibleUserId || null,
+              proposedImplementationDate: r.proposedImplementationDate || null
+            }))
         )
       });
       if (!r6.ok) {
@@ -954,6 +981,44 @@ export function EntryEditor({
                   placeholder="Rationale for this recommendation (optional)"
                   className="form-input text-sm"
                 />
+                <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                  <div>
+                    <label className="mb-0.5 block text-[10px] uppercase text-slate-500">
+                      Responsible person
+                    </label>
+                    <UserPicker
+                      value={row.responsibleUserId || null}
+                      onChange={(userId) => {
+                        setRecControlRows((rows) =>
+                          rows.map((r, idx) =>
+                            idx === i ? { ...r, responsibleUserId: userId ?? "" } : r
+                          )
+                        );
+                        markDirty();
+                      }}
+                      filter={{ plantId }}
+                      placeholder="Select the action owner…"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-0.5 block text-[10px] uppercase text-slate-500">
+                      Target implementation date
+                    </label>
+                    <input
+                      type="date"
+                      value={row.proposedImplementationDate}
+                      onChange={(e) => {
+                        setRecControlRows((rows) =>
+                          rows.map((r, idx) =>
+                            idx === i ? { ...r, proposedImplementationDate: e.target.value } : r
+                          )
+                        );
+                        markDirty();
+                      }}
+                      className="form-input"
+                    />
+                  </div>
+                </div>
               </li>
             ))}
           </ul>

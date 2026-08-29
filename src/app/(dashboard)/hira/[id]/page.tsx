@@ -4,6 +4,7 @@ import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Can } from "@/components/auth/can";
+import { StudyActions } from "./study-actions";
 import { markRecordTasksReadForViewer } from "@/lib/workflow/read-state";
 import { Plus, FileText, FileSpreadsheet, Printer } from "lucide-react";
 
@@ -150,6 +151,7 @@ export default async function HiraStudyDetailPage(
                 </Button>
               </Can>
             )}
+            <StudyActions studyId={study.id} status={study.status} />
           </div>
         }
       />

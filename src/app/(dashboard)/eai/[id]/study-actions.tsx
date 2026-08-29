@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Can } from "@/components/auth/can";
 
 type Props = { studyId: string; status: string };
 
@@ -18,16 +19,23 @@ export function StudyActions({ studyId, status }: Props) {
 
   let endpoint: string;
   let label: string;
+  // Each hop needs a different permission — submitting is an author action,
+  // approval is the Plant Head's, activation is the Environment/HSE Manager's.
+  // Offering all three to everyone just produced a 403 on click.
+  let permission: string;
 
   if (SUBMIT_STATUSES.includes(status)) {
     endpoint = "submit";
-    label = "Submit";
+    label = status === "DRAFT" ? "Start assessment" : status === "IN_PROGRESS" ? "Submit for team review" : "Send for approval";
+    permission = "EAI.UPDATE";
   } else if (status === "APPROVAL_PENDING") {
     endpoint = "approve";
-    label = "Approve";
+    label = "Approve register";
+    permission = "EAI.APPROVE";
   } else if (status === "APPROVED") {
     endpoint = "activate";
-    label = "Activate";
+    label = "Activate register";
+    permission = "EAI.EXECUTE";
   } else {
     return null;
   }
@@ -57,25 +65,20 @@ export function StudyActions({ studyId, status }: Props) {
     });
   }
 
-  const PENDING_LABEL: Record<string, string> = {
-    Submit: "Submitting…",
-    Approve: "Approving…",
-    Activate: "Activating…",
-  };
-
   return (
-    <div className="flex flex-col items-end gap-1">
-      <Button
-        type="button"
-        onClick={handleAction}
-        disabled={pending}
-        variant="default"
-      >
-        {pending ? PENDING_LABEL[label] ?? `${label}ing…` : label}
-      </Button>
-      {error && (
-        <span className="text-xs text-rose-600 max-w-xs text-right">{error}</span>
-      )}
-    </div>
+    <Can permission={permission}>
+      <div className="flex flex-col items-end gap-1">
+        <Button
+          type="button"
+          onClick={handleAction}
+          disabled={pending}
+          variant={endpoint === "submit" ? "default" : "success"}
+          data-testid="eai-study-action"
+        >
+          {pending ? "Working…" : label}
+        </Button>
+        {error && <span className="max-w-xs text-right text-xs text-rose-600">{error}</span>}
+      </div>
+    </Can>
   );
 }

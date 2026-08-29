@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Save, ChevronDown, ShieldAlert, FileWarning } from "lucide-react";
 import { RiskMatrixGrid } from "@/components/hira/risk-matrix-grid";
+import { UserPicker } from "@/components/ui/user-picker";
 import { parseApiError } from "@/lib/api-error";
 
 type Likelihood = { id: string; score: number; label: string; description: string };
@@ -339,7 +340,8 @@ export function EntryEditor({
   canApprove,
   canOverride = false,
   trainingPrograms = [],
-  inspectionTemplates = []
+  inspectionTemplates = [],
+  plantId
 }: {
   entry: EntryShape;
   matrix: {
@@ -359,6 +361,9 @@ export function EntryEditor({
   canOverride?: boolean;
   trainingPrograms?: { id: string; name: string }[];
   inspectionTemplates?: { id: string; name: string }[];
+  /** Plant the parent study belongs to — scopes the responsible-person picker
+   *  on a recommended control to people who actually work at this site. */
+  plantId?: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -577,6 +582,21 @@ export function EntryEditor({
           : null;
   const residualAcceptable = regionOk === null ? null : regionOk && thresholdOk;
 
+  // Gate for handing the entry to an approver. Mirrors what the server will
+  // check at approve() time, so the assessor is told what is missing here
+  // rather than being 409'd after the hand-off.
+  const notReadyReason =
+    existingControls.length === 0
+      ? "Record the controls that are already in place (Section 4) — the residual is derived from them."
+      : !residualLevel
+        ? "Set the residual risk (Section 5) before submitting."
+        : residualRegion === "UNACCEPTABLE"
+          ? "The residual is Unacceptable. Reduce it with additional controls, or obtain a Plant Head / Corporate HSE override, before submitting."
+          : residualRegion === "TOLERABLE" && !alarpDemonstrated
+            ? "The residual is Tolerable, so the ALARP demonstration in Section 5 must be completed — further controls considered, a cost/effort verdict, and a written justification."
+            : "";
+  const readyForReview = notReadyReason === "";
+
   function save() {
     setError(null);
     setSuccess(false);
@@ -774,6 +794,30 @@ export function EntryEditor({
       const data = await res.json().catch(() => ({} as any));
       setEntryStatus(data?.status ?? "APPROVED");
       setReapprovalRaised(false);
+      setSuccess(true);
+      router.refresh();
+    });
+  }
+
+  // Hand the finished assessment to the approver. POST
+  // /entries/{id}/submit-for-review has existed since Phase 1 but nothing in the
+  // UI called it, so a DRAFT entry could never reach IN_REVIEW — and the
+  // approve action below only appears from IN_REVIEW. The result was that no
+  // HIRA entry could be approved through the app at all.
+  function submitForReview() {
+    setError(null);
+    startTransition(async () => {
+      const res = await fetch(`/api/hira/entries/${entry.id}/submit-for-review`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: null })
+      });
+      if (!res.ok) {
+        setError(await parseApiError(res, "Submit for review failed"));
+        return;
+      }
+      const data = await res.json().catch(() => ({} as Record<string, unknown>));
+      setEntryStatus((data?.status as string) ?? "IN_REVIEW");
       setSuccess(true);
       router.refresh();
     });
@@ -1750,12 +1794,12 @@ export function EntryEditor({
                     onChange={(e) => updateRecommendedControl(rc.id, { rationale: e.target.value || null })}
                   />
                   <div className="mt-2">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Responsible person (user ID)</label>
-                    <input
-                      className={INPUT}
-                      placeholder="Paste user ID"
-                      value={rc.responsibleId ?? ""}
-                      onChange={(e) => updateRecommendedControl(rc.id, { responsibleId: e.target.value || null })}
+                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Responsible person</label>
+                    <UserPicker
+                      value={rc.responsibleId ?? null}
+                      onChange={(userId) => updateRecommendedControl(rc.id, { responsibleId: userId })}
+                      filter={{ plantId }}
+                      placeholder="Select the action owner…"
                     />
                   </div>
 
@@ -2037,6 +2081,41 @@ export function EntryEditor({
           </div>
         )}
 
+        {/* Ready-for-approval gate. A DRAFT entry that has a residual and, where
+            the region demands it, a completed ALARP demonstration is ready to be
+            handed to the approver. */}
+        {(entryStatus === "DRAFT" || entryStatus === "FLAGGED_FOR_REVIEW") && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mb-2 rounded border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-900"
+          >
+            <div className="flex items-start gap-2">
+              <FileWarning size={15} className="mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <div className="font-medium">
+                  {readyForReview
+                    ? "Assessment complete — ready to submit for approval."
+                    : "Finish the assessment before submitting it for approval."}
+                </div>
+                <div className="mt-0.5 text-xs">
+                  {readyForReview
+                    ? "Submitting moves the entry to In Review and hands it to a holder of HIRA.APPROVE. You can still edit it while it is in review."
+                    : notReadyReason}
+                </div>
+              </div>
+              <Button
+                onClick={submitForReview}
+                disabled={pending || isDirty || !readyForReview}
+                data-testid="hira-entry-submit-review"
+              >
+                {pending ? "Submitting…" : "Submit for approval"}
+              </Button>
+            </div>
+            {isDirty && <div className="mt-1.5 pl-6 text-xs">Save your pending changes first.</div>}
+          </div>
+        )}
+
         {/* Re-approval gate. A material change (risk scores, hazard rows,
             control effectiveness, proposal status) drops the entry out of
             APPROVED server-side; this is the way back. */}
@@ -2055,8 +2134,9 @@ export function EntryEditor({
                     : "This entry is awaiting approval."}
                 </div>
                 <div className="text-xs mt-0.5">
-                  The assessed risk or the basis for accepting it has changed, so the previous
-                  sign-off no longer covers it. Re-approve to return the entry to APPROVED.
+                  {entryStatus === "PENDING_REAPPROVAL"
+                    ? "The assessed risk or the basis for accepting it has changed, so the previous sign-off no longer covers it. Re-approve to return the entry to APPROVED."
+                    : "The assessor has handed this entry over. Check the hazards, the controls and the ALARP demonstration, then approve to move it to APPROVED."}
                 </div>
               </div>
               {canApprove && (
@@ -2065,7 +2145,11 @@ export function EntryEditor({
                   disabled={pending || isDirty || (residualRegion === "UNACCEPTABLE" && !overrideActive)}
                   variant="success"
                 >
-                  {pending ? "Approving…" : "Re-approve entry"}
+                  {pending
+                    ? "Approving…"
+                    : entryStatus === "PENDING_REAPPROVAL"
+                      ? "Re-approve entry"
+                      : "Approve entry"}
                 </Button>
               )}
             </div>

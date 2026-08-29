@@ -12,6 +12,7 @@ type StudyOut = {
   title: string;
   status: string;
   impactMatrixId: string;
+  plantId: string;
 };
 
 type MatrixOut = {
@@ -77,6 +78,7 @@ export default async function EaiEntryDetailPage(props: {
         categories={categories}
         receptors={receptors}
         isEditable={isEditable}
+        plantId={study.plantId}
       />
     </div>
   );
