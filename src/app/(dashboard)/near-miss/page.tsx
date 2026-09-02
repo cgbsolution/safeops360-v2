@@ -30,6 +30,8 @@ type NearMissListItem = {
   description: string;
   potentialSeverity: string;
   promotedToIncident: boolean;
+  targetDate: string | null;
+  closedAt: string | null;
   status: string;
   rootCauseCategory: string | null;
   initialRootCauseCategory: string | null;
@@ -80,6 +82,8 @@ export default async function NearMissPage(props: { searchParams: Promise<{ stat
       description: n.description,
       potentialSeverity: n.potentialSeverity,
       promotedToIncident: n.promotedToIncident,
+      targetDate: n.targetDate,
+      closedAt: n.closedAt,
       workflowStep,
       workflowColor,
       signal: insights.signalByRecord.get(n.id) ?? null

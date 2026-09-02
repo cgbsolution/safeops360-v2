@@ -15,6 +15,7 @@ import { ExecutionPanel, VerificationPanel } from "@/components/workflow/executi
 import { ResubmitPanel } from "@/components/workflow/resubmit-panel";
 import { NearMissAttachmentGallery } from "@/components/near-miss/nearmiss-attachment-gallery";
 import { CapaPlanSection } from "@/components/near-miss/capa-plan-section";
+import { TargetClosureDate } from "@/components/near-miss/target-closure-date";
 import { CommentsThread } from "@/components/near-miss/comments-thread";
 import PrintButtonClient from "./print-button";
 import { formatDate, formatDateTime, statusColor, severityColor, humanize } from "@/lib/utils";
@@ -109,6 +110,12 @@ export default async function NearMissDetail(
     instance.status === "IN_PROGRESS" &&
     isHseManagerLike &&
     currentStep?.stepType === "VERIFIER";
+
+  // Record-level target closure date. The backend gate is NEAR_MISS.UPDATE +
+  // "not CLOSED"; mirror it here with the roles that actually hold UPDATE at
+  // plant scope or wider (see prisma/seed-rbac.ts), plus whoever currently
+  // holds the review & CAPA-definition task — the natural moment to set it.
+  const canSetTargetDate = n.status !== "CLOSED" && (canDefineCapa || isHseManagerLike);
 
   // Joint Review reviewers (extracted from history — APPROVED entries on the
   // first CHECKER step "Joint Review")
@@ -507,7 +514,14 @@ export default async function NearMissDetail(
             </Card>
           )}
 
-          {/* ─── Section: CAPA Plan (client) ─── */}
+          {/* ─── Section: Target closure date + CAPA Plan (client) ─── */}
+          <TargetClosureDate
+            nearMissId={n.id}
+            targetDate={n.targetDate ?? null}
+            closedAt={n.closedAt ?? null}
+            canEdit={canSetTargetDate}
+          />
+
           {instance && (
             <CapaPlanSection
               nearMissId={n.id}
@@ -720,6 +734,9 @@ export default async function NearMissDetail(
               )}
               <Meta icon={AlertTriangle} label="Potential severity" value={n.potentialSeverity} />
               {n.riskLevel && <Meta icon={AlertCircle} label="Risk level" value={`${n.riskLevel} (${n.riskScore})`} />}
+              {n.targetDate && (
+                <Meta icon={CalendarDays} label="Target closure" value={formatDate(n.targetDate)} />
+              )}
               {n.slaTargetAt && <Meta icon={Clock} label="SLA target" value={formatDateTime(n.slaTargetAt)} />}
               {slaPerformance && <Meta icon={Clock} label="SLA performance" value={slaPerformance} />}
               {n.reporterType && <Meta icon={UserIcon} label="Reporter type" value={n.reporterType} />}

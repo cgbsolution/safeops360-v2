@@ -10,6 +10,7 @@ import { DeleteNearMissIconButton } from "@/components/near-miss/delete-icon-but
 import { SignalChip } from "@/components/ai/SignalChip";
 import type { Signal } from "@/lib/insights";
 import { formatDate, severityColor } from "@/lib/utils";
+import { overdueDays } from "@/lib/near-miss/target-date";
 
 export interface NearMissRow {
   id: string;
@@ -20,6 +21,9 @@ export interface NearMissRow {
   description: string;
   potentialSeverity: string;
   promotedToIncident: boolean;
+  /** Record-level target closure date (ISO), null until the HSE Manager sets it. */
+  targetDate: string | null;
+  closedAt: string | null;
   workflowStep: string;
   workflowColor: string;
   signal?: Signal | null;
@@ -79,6 +83,28 @@ const columns: ColumnDef<NearMissRow>[] = [
       <Badge className={severityColor(row.original.potentialSeverity)}>{row.original.potentialSeverity}</Badge>
     ),
     size: 110
+  },
+  {
+    accessorKey: "targetDate",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Target closure" />,
+    cell: ({ row }) => {
+      const late = overdueDays(row.original.targetDate, row.original.closedAt);
+      if (!row.original.targetDate) return <span className="text-xs text-slate-400">—</span>;
+      return (
+        <div className="whitespace-nowrap text-sm">
+          <span className={late !== null ? "font-medium text-rose-700" : ""}>
+            {formatDate(row.original.targetDate)}
+          </span>
+          {late !== null && (
+            <Badge className="ml-1.5 bg-rose-100 text-rose-700 border-rose-200">
+              {late}d late
+            </Badge>
+          )}
+        </div>
+      );
+    },
+    sortingFn: "datetime",
+    size: 150
   },
   {
     accessorKey: "workflowStep",
