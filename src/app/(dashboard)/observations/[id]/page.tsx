@@ -391,11 +391,15 @@ export default async function ObservationDetailPage(
             canDecide={canDecideDeroster}
             workers={o.workersInvolved.map((w: any) => ({
               id: w.id,
-              partyType: w.partyType as "USER" | "CONTRACTOR_WORKER",
-              name: w.nameSnapshot,
-              role: w.roleSnapshot,
-              employer: w.employerSnapshot,
-              rosterStatus: w.user?.rosterStatus ?? w.contractorWorker?.rosterStatus ?? null,
+              partyType: w.partyType as "USER" | "CONTRACTOR_WORKER" | "MANUAL",
+              // These come from the backend detail endpoint in WorkerInvolvedOut
+              // shape (name/role/employer/rosterStatus), NOT the raw Prisma
+              // columns — reading `nameSnapshot` here left every card blank
+              // until the panel's own re-fetch replaced the rows on mount.
+              name: w.name,
+              role: w.role,
+              employer: w.employer,
+              rosterStatus: w.rosterStatus ?? null,
               deroster: w.deroster
                 ? {
                     ...w.deroster,
@@ -482,10 +486,25 @@ export default async function ObservationDetailPage(
             <CardContent className="space-y-3 text-sm">
               <Meta icon={CalendarDays} label="Date" value={formatDate(o.date)} />
               <Meta icon={MapPin} label="Plant" value={o.plant.name} />
-              <Meta icon={MapPin} label="Area" value={o.area?.name ?? "—"} />
+              <Meta icon={MapPin} label="Location" value={o.area?.name ?? "—"} />
               <Meta icon={UserIcon} label="Observer" value={o.observer.name} />
               {o.contractorCompany && (
                 <Meta icon={UserIcon} label="Contractor" value={o.contractorCompany.name} />
+              )}
+              {/* Every named worker, not just the flagged ones. The Safety
+                  Review card below only renders workers carrying a deroster,
+                  so on a Medium/Low observation — or one naming someone typed
+                  in by hand — the names were recorded and then shown nowhere. */}
+              {o.workersInvolved?.length > 0 && (
+                <Meta
+                  icon={UserIcon}
+                  label={`Worker${o.workersInvolved.length > 1 ? "s" : ""} Involved`}
+                  value={o.workersInvolved
+                    .map((w: any) =>
+                      [w.name, w.code].filter(Boolean).join(" · ")
+                    )
+                    .join(", ")}
+                />
               )}
               <Meta
                 icon={UserIcon}

@@ -103,8 +103,11 @@ export function ObservationEditForm({
       return;
     }
     const atRisk = isAtRisk(type);
-    if (atRisk && (!taxonomy.categoryCode || !taxonomy.subCategoryCode)) {
-      setError("Select both a category and a sub-category for this observation type.");
+    // Category only. The sub-category is optional here for the same reason it
+    // is on create — it refines the classification rather than completing it —
+    // and clearing it on an existing record is a legitimate edit.
+    if (atRisk && !taxonomy.categoryCode) {
+      setError("Select a category for this observation type.");
       return;
     }
     // The server only demands a reason for a divergence it has not already
@@ -198,7 +201,7 @@ export function ObservationEditForm({
               />
             </div>
             <div>
-              <Label>Area</Label>
+              <Label>Location</Label>
               <Select value={areaId} onChange={(e) => setAreaId(e.target.value)}>
                 <option value="">— None —</option>
                 {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}

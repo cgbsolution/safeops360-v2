@@ -83,6 +83,12 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   const [dragOver, setDragOver] = useState(false);
   // Contractor companies (shared master) — reuse the near-miss masters endpoint.
   const [contractors, setContractors] = useState<{ id: string; name: string }[]>([]);
+  // Who employs the person this observation is about. Previously inferred from
+  // a single optional dropdown, where "left blank" meant both "own employee"
+  // and "haven't got to it yet" — the observer never actually stated which.
+  // Asking outright makes "own employee" a recorded answer, and only then is
+  // the company list worth showing.
+  const [employmentType, setEmploymentType] = useState<"COMPANY" | "CONTRACTOR">("COMPANY");
   // Controlled so the Worker Involved picker can scope to this company's crew.
   const [contractorCompanyId, setContractorCompanyId] = useState("");
   const [workersInvolved, setWorkersInvolved] = useState<WorkerRef[]>([]);
@@ -191,8 +197,17 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
     // A disabled <select> is skipped by native validation, so a submit while
     // the taxonomy is still loading would slip through with no category.
     // (The server rejects it too — this just gives a better message.)
-    if (isAtRisk(type) && (!taxonomy.categoryCode || !taxonomy.subCategoryCode)) {
-      setError("Select both a category and a sub-category for this observation type.");
+    // Sub-category is deliberately NOT checked: it refines the category rather
+    // than completing it, and everything downstream groups by the category.
+    if (isAtRisk(type) && !taxonomy.categoryCode) {
+      setError("Select a category for this observation type.");
+      return;
+    }
+
+    // Contractor was chosen but no company named — the whole point of the
+    // question is which contractor, so an unanswered "which" is not an answer.
+    if (employmentType === "CONTRACTOR" && !contractorCompanyId) {
+      setError("Select the contractor company, or switch this to a company employee.");
       return;
     }
 
@@ -245,14 +260,20 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
     const fd = new FormData(e.currentTarget);
     const payload: Record<string, any> = Object.fromEntries(fd.entries());
     // responsiblePersonId is now assigned by the Section Head during review.
-    // Empty contractor select → null (an empty-string FK would fail on insert).
-    if (!payload.contractorCompanyId) payload.contractorCompanyId = null;
+    // Taken from state, not the form: on "Company employee" the select isn't
+    // rendered at all, and an empty-string FK would fail on insert either way.
+    payload.contractorCompanyId =
+      employmentType === "CONTRACTOR" ? contractorCompanyId || null : null;
 
-    // Named workers, tagged with which people table each id belongs to.
+    // Named workers, tagged with which people table each id belongs to — or
+    // MANUAL, which belongs to neither and carries its own typed name/ID.
     payload.workersInvolved = workersInvolved.map((w) => ({
       partyType: w.partyType,
       userId: w.partyType === "USER" ? w.id : null,
-      contractorWorkerId: w.partyType === "CONTRACTOR_WORKER" ? w.id : null
+      contractorWorkerId: w.partyType === "CONTRACTOR_WORKER" ? w.id : null,
+      name: w.partyType === "MANUAL" ? w.name : null,
+      code: w.partyType === "MANUAL" ? w.code ?? null : null,
+      employer: w.partyType === "MANUAL" ? w.employer ?? null : null
     }));
 
     // targetDate is only honoured server-side when no SLA policy matches; with
@@ -377,7 +398,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                 {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </Select>
             </Field>
-            <Field label="Area" name="areaId" required>
+            <Field label="Location" name="areaId" required>
               <Select
                 name="areaId"
                 required
@@ -406,6 +427,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
               type={type}
               value={taxonomy}
               onChange={setTaxonomy}
+              subCategoryRequired={false}
               safeCategorySlot={
                 <Field label="Category" name="category" required>
                   <Select name="category" required defaultValue="PPE">
@@ -417,17 +439,44 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="Contractor (if applicable)" name="contractorCompanyId">
-              <Select
-                name="contractorCompanyId"
-                defaultValue=""
-                value={contractorCompanyId}
-                onChange={(e) => setContractorCompanyId(e.target.value)}
-              >
-                <option value="">— None (own employee) —</option>
-                {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </Select>
+            <Field label="Employed By" name="employmentType" required>
+              <div className="flex gap-2">
+                <EmploymentOption
+                  value="COMPANY"
+                  label="Company employee"
+                  checked={employmentType === "COMPANY"}
+                  onSelect={() => {
+                    setEmploymentType("COMPANY");
+                    // Drop the company too. Leaving it set would keep the
+                    // Worker Involved search scoped to that contractor's crew
+                    // while the form says "company employee".
+                    setContractorCompanyId("");
+                  }}
+                />
+                <EmploymentOption
+                  value="CONTRACTOR"
+                  label="Contractor"
+                  checked={employmentType === "CONTRACTOR"}
+                  onSelect={() => setEmploymentType("CONTRACTOR")}
+                />
+              </div>
             </Field>
+            {/* Only asked once "Contractor" is the answer — an always-visible
+                company list on a company-employee observation is a field the
+                observer has to read and then ignore. */}
+            {employmentType === "CONTRACTOR" && (
+              <Field label="Contractor Company" name="contractorCompanyId" required>
+                <Select
+                  name="contractorCompanyId"
+                  required
+                  value={contractorCompanyId}
+                  onChange={(e) => setContractorCompanyId(e.target.value)}
+                >
+                  <option value="">— Select the contractor company —</option>
+                  {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+              </Field>
+            )}
           </div>
 
           {/* Worker Involved — always visible, mandatory only for High/Critical
@@ -440,6 +489,9 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
               onChange={setWorkersInvolved}
               plantId={plantId}
               contractorCompanyId={contractorCompanyId || null}
+              contractorCompanyName={
+                contractors.find((c) => c.id === contractorCompanyId)?.name ?? null
+              }
               required={workersRequired}
               invalid={workersRequired && workersInvolved.length === 0}
             />
@@ -643,6 +695,42 @@ function PhotoTile({ photo, onRemove }: { photo: LocalPhoto; onRemove: () => voi
         </div>
       </div>
     </div>
+  );
+}
+
+/** One half of the Employed By choice. A real radio input under the styling —
+ *  keyboard and screen-reader behaviour comes free, and arrow keys move
+ *  between the two because they share a `name`. */
+function EmploymentOption({
+  value,
+  label,
+  checked,
+  onSelect
+}: {
+  value: string;
+  label: string;
+  checked: boolean;
+  onSelect: () => void;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex flex-1 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition",
+        checked
+          ? "border-primary-500 bg-primary-50/60 font-medium text-slate-900"
+          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+      )}
+    >
+      <input
+        type="radio"
+        name="employmentType"
+        value={value}
+        className="h-4 w-4 accent-primary-600"
+        checked={checked}
+        onChange={onSelect}
+      />
+      {label}
+    </label>
   );
 }
 

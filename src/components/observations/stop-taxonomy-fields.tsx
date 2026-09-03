@@ -49,7 +49,8 @@ export function StopTaxonomyFields({
   value,
   onChange,
   safeCategorySlot,
-  disabled
+  disabled,
+  subCategoryRequired = false
 }: {
   type: string;
   value: StopTaxonomyValue;
@@ -57,6 +58,13 @@ export function StopTaxonomyFields({
   /** Rendered instead of the STOP pair when the type is a safe observation. */
   safeCategorySlot?: React.ReactNode;
   disabled?: boolean;
+  /** The sub-category refines the category; it does not replace it. Everything
+   *  downstream — the legacy `category` dual-write, the SLA category-group
+   *  matrix, the heat-map — groups by the CATEGORY, so an observation with no
+   *  sub-category is still a complete, classifiable record. Optional by
+   *  default; the server agrees (services/observation_taxonomy.validate_selection).
+   *  A caller that genuinely needs the pair can turn it back on. */
+  subCategoryRequired?: boolean;
 }) {
   const axis = axisForType(type);
   const atRisk = isAtRisk(type);
@@ -206,11 +214,16 @@ export function StopTaxonomyFields({
 
       <div className="space-y-2">
         <Label htmlFor="subCategoryCode">
-          Sub-category<span className="text-rose-600 ml-0.5">*</span>
+          Sub-category
+          {subCategoryRequired ? (
+            <span className="text-rose-600 ml-0.5">*</span>
+          ) : (
+            <span className="ml-1.5 text-xs font-normal text-slate-500">(optional)</span>
+          )}
         </Label>
         <Select
           name="subCategoryCode"
-          required
+          required={subCategoryRequired}
           disabled={disabled || !value.categoryCode || loadingSubs}
           value={value.subCategoryCode}
           onChange={(e) => onChange({ categoryCode: value.categoryCode, subCategoryCode: e.target.value })}
@@ -220,7 +233,9 @@ export function StopTaxonomyFields({
               ? "— Select a category first —"
               : loadingSubs
                 ? "Loading…"
-                : "— Select a sub-category —"}
+                : subCategoryRequired
+                  ? "— Select a sub-category —"
+                  : "— None —"}
           </option>
           {subCategories.map((s) => (
             <option key={s.subCategoryCode} value={s.subCategoryCode}>

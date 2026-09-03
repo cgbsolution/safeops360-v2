@@ -65,7 +65,10 @@ export type DerosterRecord = {
 
 export type InvolvedWorker = {
   id: string;
-  partyType: "USER" | "CONTRACTOR_WORKER";
+  // MANUAL never carries a deroster (a hand-typed name has no roster row to
+  // soft-lock), so it never reaches a card here — but it does arrive in the
+  // `workers` prop, and the type has to admit it.
+  partyType: "USER" | "CONTRACTOR_WORKER" | "MANUAL";
   name: string;
   role?: string | null;
   employer?: string | null;

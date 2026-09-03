@@ -7585,6 +7585,11 @@ model ObservationWorkerInvolved {
   observationId String
   observation   Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
 
+  /// USER | CONTRACTOR_WORKER | MANUAL. MANUAL carries neither id — the
+  /// observer typed a name and works ID for someone in neither people table
+  /// (agency hand, visiting vendor, driver). A MANUAL row is a record, not a
+  /// link: it never triggers the deroster soft-lock, because there is no
+  /// roster row to lock.
   partyType          String
   userId             String?
   user               User?             @relation("ObservationWorkerInvolvedUser", fields: [userId], references: [id])
@@ -7596,6 +7601,10 @@ model ObservationWorkerInvolved {
   nameSnapshot     String
   roleSnapshot     String?
   employerSnapshot String?
+  /// Employee / works / gate-pass number. The only handle a MANUAL row has for
+  /// matching the person later; on a linked row, copied from the source record
+  /// when it carries one (ContractorWorker.workerCode).
+  codeSnapshot     String?
 
   addedById String?
   createdAt DateTime @default(now())

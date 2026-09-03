@@ -76,7 +76,8 @@ const STATEMENTS: string[] = [
   // ── ObservationWorkerInvolved ──
   // Polymorphic: exactly one of userId / contractorWorkerId, matching partyType.
   // The CHECK is the enforcement — the app layer validates too, but a direct
-  // INSERT must not be able to create a row that belongs to neither table.
+  // INSERT must not be able to create a row that belongs to neither table AND
+  // does not say who it is about.
   `CREATE TABLE IF NOT EXISTS "ObservationWorkerInvolved" (
     "id" TEXT NOT NULL,
     "observationId" TEXT NOT NULL,
@@ -86,10 +87,16 @@ const STATEMENTS: string[] = [
     "nameSnapshot" TEXT NOT NULL,
     "roleSnapshot" TEXT,
     "employerSnapshot" TEXT,
+    "codeSnapshot" TEXT,
     "addedById" TEXT,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "ObservationWorkerInvolved_pkey" PRIMARY KEY ("id")
   )`,
+  // MANUAL is the third arm: someone in neither people table, so BOTH ids are
+  // null and the typed nameSnapshot is the whole record. It is still a closed
+  // set — a row with no id and no name remains impossible.
+  // Kept in sync with apply-worker-involved-manual-ddl.ts, which retrofits this
+  // same shape onto a database created before manual entry existed.
   `DO $$ BEGIN
      ALTER TABLE "ObservationWorkerInvolved"
        ADD CONSTRAINT "ck_ObservationWorkerInvolved_party"
@@ -97,6 +104,9 @@ const STATEMENTS: string[] = [
          ("partyType" = 'USER' AND "userId" IS NOT NULL AND "contractorWorkerId" IS NULL)
          OR
          ("partyType" = 'CONTRACTOR_WORKER' AND "contractorWorkerId" IS NOT NULL AND "userId" IS NULL)
+         OR
+         ("partyType" = 'MANUAL' AND "userId" IS NULL AND "contractorWorkerId" IS NULL
+          AND length(btrim("nameSnapshot")) > 0)
        );
    EXCEPTION WHEN duplicate_object THEN NULL; END $$`,
   `DO $$ BEGIN
