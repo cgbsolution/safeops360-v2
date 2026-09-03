@@ -274,10 +274,13 @@ export default async function ObservationDetailPage(
 
           {/* Action panel — appears at top of main column when a task is assigned to me */}
           {myTask && myTask.taskType === "APPROVAL" && (() => {
-            // The CHECKER step (Section Head Review) is now the place
-            // where the responsible person gets assigned for an
-            // observation. If the observation doesn't yet have one and
-            // the current step is the CHECKER, force the picker.
+            // The observer now names the action owner on the submission
+            // form, and the default Safety Observation workflow has no
+            // CHECKER step at all — so this normally resolves to false.
+            // It is kept rather than deleted because the workflow builder
+            // can add a CHECKER back to this module, and a review step in
+            // front of an observation with no owner still has to be able
+            // to name one.
             const currentStepDef = instance?.definition.steps.find((s) => s.id === myTask.stepId);
             const isCheckerOnObservation =
               currentStepDef?.stepType === "CHECKER" && !o.responsiblePersonId;
@@ -412,11 +415,16 @@ export default async function ObservationDetailPage(
                     // state, so nothing is derived from `status` here.
                     displayLabel: DEROSTER_FALLBACK_LABEL[w.deroster.status] ?? w.deroster.status,
                     punitive: w.deroster.status === "confirmed",
-                    flaggedAt: w.deroster.flaggedAt.toISOString(),
-                    reviewDueAt: w.deroster.reviewDueAt.toISOString(),
-                    reviewedAt: w.deroster.reviewedAt?.toISOString() ?? null,
-                    escalatedAt: w.deroster.escalatedAt?.toISOString() ?? null,
-                    reinstatedAt: w.deroster.reinstatedAt?.toISOString() ?? null,
+                    // Same Prisma-era leftover that crashed the edit page:
+                    // backendFetch parses JSON, so these are already ISO
+                    // strings (DerosterRecord types them as `string`) and
+                    // .toISOString() on a string throws. `w` is `any`, so
+                    // nothing caught it until a flagged worker rendered.
+                    flaggedAt: w.deroster.flaggedAt,
+                    reviewDueAt: w.deroster.reviewDueAt,
+                    reviewedAt: w.deroster.reviewedAt ?? null,
+                    escalatedAt: w.deroster.escalatedAt ?? null,
+                    reinstatedAt: w.deroster.reinstatedAt ?? null,
                     correctiveAction: null
                   }
                 : null
@@ -485,8 +493,9 @@ export default async function ObservationDetailPage(
             <CardHeader><CardTitle className="text-sm">Metadata</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Meta icon={CalendarDays} label="Date" value={formatDate(o.date)} />
-              <Meta icon={MapPin} label="Plant" value={o.plant.name} />
+              <Meta icon={MapPin} label="Plant Unit Name" value={o.plant.name} />
               <Meta icon={MapPin} label="Location" value={o.area?.name ?? "—"} />
+              {o.department && <Meta icon={MapPin} label="Department" value={o.department} />}
               <Meta icon={UserIcon} label="Observer" value={o.observer.name} />
               {o.contractorCompany && (
                 <Meta icon={UserIcon} label="Contractor" value={o.contractorCompany.name} />

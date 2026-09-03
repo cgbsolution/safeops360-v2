@@ -521,6 +521,11 @@ model Observation {
   plant               Plant                   @relation(fields: [plantId], references: [id])
   areaId              String?
   area                Area?                   @relation(fields: [areaId], references: [id])
+  /// Free text, typed by the observer — the department as the site names it.
+  /// Deliberately not an FK to a department master: gating an observation on a
+  /// master row nobody has created yet loses the observation. Use
+  /// plantId/areaId for structured grouping.
+  department          String?
   type                ObservationType
   category            ObservationCategory
   // ─── DuPont STOP taxonomy ─────────────────────────────────────────────

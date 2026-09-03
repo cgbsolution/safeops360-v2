@@ -27,11 +27,17 @@ import {
 } from "@/components/observations/severity-suggestion";
 import { Loader2 } from "lucide-react";
 
+// At-risk types only, matching the create form. The two SAFE types are still
+// listed for a record that ALREADY is one — dropping them from the options of a
+// select whose value is "SAFE_ACT" would render a blank type and silently
+// reclassify the record on the next save. See `typeOptions` below.
 const TYPES = [
-  { value: "SAFE_ACT", label: "Safe Act" },
   { value: "UNSAFE_ACT", label: "Unsafe Act" },
-  { value: "SAFE_CONDITION", label: "Safe Condition" },
   { value: "UNSAFE_CONDITION", label: "Unsafe Condition" }
+];
+const LEGACY_SAFE_TYPES = [
+  { value: "SAFE_ACT", label: "Safe Act (legacy)" },
+  { value: "SAFE_CONDITION", label: "Safe Condition (legacy)" }
 ];
 // Legacy hazard categories — the classification for SAFE observations only.
 const CATEGORIES = [
@@ -62,6 +68,7 @@ export function ObservationEditForm({
     severity: string;
     description: string;
     areaId: string | null;
+    department?: string | null;
     targetDate: string | null;
   };
   areas: Area[];
@@ -80,8 +87,16 @@ export function ObservationEditForm({
   const [severity, setSeverity] = useState(observation.severity);
   const [description, setDescription] = useState(observation.description);
   const [areaId, setAreaId] = useState(observation.areaId ?? "");
+  const [department, setDepartment] = useState(observation.department ?? "");
   const [targetDate, setTargetDate] = useState(observation.targetDate ? observation.targetDate.slice(0, 10) : "");
   const [severityReason, setSeverityReason] = useState("");
+
+  // Keep a safe type selectable only while the record still carries one, so
+  // this form can render it and a reviewer can reclassify it to an at-risk
+  // type — after which the option disappears and cannot be chosen again.
+  const typeOptions = LEGACY_SAFE_TYPES.some((t) => t.value === observation.type)
+    ? [...TYPES, ...LEGACY_SAFE_TYPES]
+    : TYPES;
 
   // Same engine as the create form. `suppressInitialPrefill` is what keeps
   // opening this page from silently rewriting a severity somebody already
@@ -98,8 +113,8 @@ export function ObservationEditForm({
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (description.trim().length < 10) {
-      setError("Description must be at least 10 characters.");
+    if (!description.trim()) {
+      setError("Describe what was observed.");
       return;
     }
     const atRisk = isAtRisk(type);
@@ -144,6 +159,7 @@ export function ObservationEditForm({
           ...(severityReason.trim() ? { severityOverrideReason: severityReason.trim() } : {}),
           description,
           areaId: areaId || null,
+          department: department.trim() || null,
           targetDate: targetDate ? new Date(targetDate).toISOString() : null
         })
       });
@@ -172,7 +188,7 @@ export function ObservationEditForm({
             <div>
               <Label>Type</Label>
               <Select value={type} onChange={(e) => setType(e.target.value)}>
-                {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {typeOptions.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </Select>
             </div>
             <StopTaxonomyFields
@@ -206,6 +222,14 @@ export function ObservationEditForm({
                 <option value="">— None —</option>
                 {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </Select>
+            </div>
+            <div>
+              <Label>Department</Label>
+              <Input
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                placeholder="e.g. Dye House, Utilities, Cutting"
+              />
             </div>
             <div>
               <Label>Target Date</Label>

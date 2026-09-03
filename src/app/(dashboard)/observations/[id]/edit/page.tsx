@@ -51,7 +51,15 @@ export default async function EditObservationPage(props: { params: Promise<{ id:
           severity: o.severity,
           description: o.description,
           areaId: o.areaId,
-          targetDate: o.targetDate ? o.targetDate.toISOString() : null
+          department: o.department ?? null,
+          // backendFetch returns parsed JSON, so this is already an ISO
+          // string, not a Prisma Date — .toISOString() on it threw and took
+          // the whole server render down ("This page didn't load"). Passing
+          // the raw string through is also the correct fix for the date
+          // itself: the form slices the first 10 chars, so re-parsing it into
+          // a Date here would risk shifting the calendar day across the
+          // IST/UTC boundary.
+          targetDate: o.targetDate ?? null
         }}
         areas={areas}
       />

@@ -29,15 +29,20 @@ import {
   useSeveritySuggestion,
   severityLabel
 } from "@/components/observations/severity-suggestion";
+import { UserPicker } from "@/components/ui/user-picker";
 import { Camera, Upload, X, Image as ImageIcon, Film, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Plant = { id: string; name: string; areas: { id: string; name: string }[] };
 
+// At-risk types only. Safe Act / Safe Condition were removed from the create
+// form: this programme records deviations, and a "safe" observation carried no
+// STOP taxonomy, no severity rule and no action owner — it entered the same
+// five-step workflow to be reviewed, actioned, verified and closed with nothing
+// to action. The enum and the legacy hazard-category dropdown below both stay,
+// because historical safe observations still have to render and be editable.
 const TYPES = [
-  { value: "SAFE_ACT", label: "Safe Act" },
   { value: "UNSAFE_ACT", label: "Unsafe Act" },
-  { value: "SAFE_CONDITION", label: "Safe Condition" },
   { value: "UNSAFE_CONDITION", label: "Unsafe Condition" }
 ];
 
@@ -70,6 +75,14 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   const [areaId, setAreaId] = useState(plants[0]?.areas[0]?.id ?? "");
   const [severity, setSeverity] = useState("MEDIUM");
   const [severityReason, setSeverityReason] = useState("");
+  // Free text on purpose — see Observation.department. The observer names the
+  // department the way the site says it, rather than hunting a master list.
+  const [department, setDepartment] = useState("");
+  // The action owner, chosen by the observer at submit. This used to be the
+  // Section Head's job on the CHECKER step; that step is gone, so the
+  // ASSIGNEE_TASK step resolves its assignee straight from this value via
+  // approverField ACTION_OWNER.
+  const [responsiblePersonId, setResponsiblePersonId] = useState<string | null>(null);
   // Observation type drives the whole taxonomy — controlled so the STOP
   // dropdowns can react to Act ↔ Condition switches mid-entry.
   const [type, setType] = useState("UNSAFE_ACT");
@@ -204,13 +217,6 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
       return;
     }
 
-    // Contractor was chosen but no company named — the whole point of the
-    // question is which contractor, so an unanswered "which" is not an answer.
-    if (employmentType === "CONTRACTOR" && !contractorCompanyId) {
-      setError("Select the contractor company, or switch this to a company employee.");
-      return;
-    }
-
     // Worker Involved gate. The server enforces this too — this is just the
     // faster, clearer failure.
     if (workersRequired && workersInvolved.length === 0) {
@@ -259,7 +265,10 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
 
     const fd = new FormData(e.currentTarget);
     const payload: Record<string, any> = Object.fromEntries(fd.entries());
-    // responsiblePersonId is now assigned by the Section Head during review.
+    // The action owner is set here, at submit, and drives the first real task
+    // in the workflow. Empty string would fail as an FK, so send null.
+    payload.responsiblePersonId = responsiblePersonId || null;
+    payload.department = department.trim() || null;
     // Taken from state, not the form: on "Company employee" the select isn't
     // rendered at all, and an empty-string FK would fail on insert either way.
     payload.contractorCompanyId =
@@ -393,7 +402,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="Plant" name="plantId" required>
+            <Field label="Plant Unit Name" name="plantId" required>
               <Select name="plantId" value={plantId} onChange={onPlantChange} required>
                 {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </Select>
@@ -407,6 +416,15 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
               >
                 {selectedPlant?.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
               </Select>
+            </Field>
+            {/* Typed, not picked — see Observation.department. */}
+            <Field label="Department" name="department">
+              <Input
+                name="department"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                placeholder="e.g. Dye House, Utilities, Cutting"
+              />
             </Field>
           </div>
 
@@ -465,14 +483,13 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                 company list on a company-employee observation is a field the
                 observer has to read and then ignore. */}
             {employmentType === "CONTRACTOR" && (
-              <Field label="Contractor Company" name="contractorCompanyId" required>
+              <Field label="Contractor Company" name="contractorCompanyId">
                 <Select
                   name="contractorCompanyId"
-                  required
                   value={contractorCompanyId}
                   onChange={(e) => setContractorCompanyId(e.target.value)}
                 >
-                  <option value="">— Select the contractor company —</option>
+                  <option value="">— Not specified —</option>
                   {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </Select>
               </Field>
@@ -487,8 +504,6 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
             <WorkerInvolvedPicker
               value={workersInvolved}
               onChange={setWorkersInvolved}
-              plantId={plantId}
-              contractorCompanyId={contractorCompanyId || null}
               contractorCompanyName={
                 contractors.find((c) => c.id === contractorCompanyId)?.name ?? null
               }
@@ -503,7 +518,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
           </Field>
 
           <Field label="Description" name="description" required>
-            <Textarea name="description" required minLength={10} placeholder="Describe what was observed, where, and any context (10 chars min)..." rows={4} />
+            <Textarea name="description" required placeholder="Describe what was observed, where, and any context..." rows={4} />
           </Field>
 
           <Field label="Immediate Action Taken" name="immediateAction">
@@ -582,6 +597,27 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
             )}
           </div>
 
+          {/* Action owner — assigned here, by the observer, at submit.
+              The Section Head Review step that used to do this is gone, so
+              this value is what the ASSIGNEE_TASK step resolves its assignee
+              from (approverField ACTION_OWNER → Observation.responsiblePersonId).
+              Left blank, the engine falls back to the observer, which reads as
+              "the person who reported it also has to fix it" — hence the
+              warning rather than a silent default. */}
+          <Field label="Action Owner" name="responsiblePersonId">
+            <UserPicker
+              value={responsiblePersonId}
+              onChange={(id) => setResponsiblePersonId(id)}
+              filter={{ plantId }}
+              placeholder="Search and select who will action this"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              {responsiblePersonId
+                ? "They get the execution task as soon as this is submitted."
+                : "Optional. Leave blank only if you don't know yet — the execution task then falls to you as the observer until someone reassigns it."}
+            </p>
+          </Field>
+
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Target Closure Date" name="targetDate">
               <SlaTargetDateField
@@ -594,8 +630,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                 minDate={today}
               />
               <p className="text-xs text-slate-500 mt-1">
-                The Section Head will assign the responsible person during review,
-                and may reset this date at that point.
+                Set from the SLA policy for this severity and category group.
               </p>
             </Field>
           </div>

@@ -52,15 +52,29 @@ type DefInput = {
 const DEFINITIONS: DefInput[] = [
   // ─── 1. Safety Observation ─────────────────────────────────────────────
   {
+    // 4 steps, not 5. "Section Head Review" was removed: its only real output
+    // was naming the action owner, and that is now a field on the maker form
+    // (Observation.responsiblePersonId, set at submit). What remained was a 24h
+    // approval gate between someone reporting a hazard and anyone being asked
+    // to fix it. Verification and closure are still separate, independent
+    // hands — the review that matters is on the fix, not on the report.
+    //
+    // `approverField: ACTION_OWNER` now resolves the value the observer picked;
+    // blank falls back to the initiator (the observer). See
+    // services/workflow_engine._resolve_assignee.
+    //
+    // On an existing database this seeder is NOT how you apply the change —
+    // it re-mints step ids and orphans in-flight instances. Use
+    // Safeops360-backend/scripts/observation_4_step.py, which reshapes the
+    // definition in place.
     module: "OBSERVATION",
     name: "Safety Observation — Standard Workflow",
-    description: "Observation lifecycle: Observer → Section Head → Action Owner → HSE Officer → HSE Manager",
+    description: "Observation lifecycle: Observer → Action Owner → HSE Officer → HSE Manager",
     steps: [
       { sequence: 1, stepType: "MAKER", name: "Submitted by Observer" },
-      { sequence: 2, stepType: "CHECKER", name: "Section Head Review", approverRole: "SUPERVISOR", slaHours: 24, escalationRole: "HSE_MANAGER" },
-      { sequence: 3, stepType: "ASSIGNEE_TASK", name: "Action Owner Executes", approverField: "ACTION_OWNER", slaHours: 168, escalationRole: "HSE_MANAGER" },
-      { sequence: 4, stepType: "VERIFIER", name: "HSE Officer Verification", approverRole: "SAFETY_OFFICER", slaHours: 24, escalationRole: "HSE_MANAGER" },
-      { sequence: 5, stepType: "CLOSURE", name: "HSE Manager Closure", approverRole: "HSE_MANAGER" }
+      { sequence: 2, stepType: "ASSIGNEE_TASK", name: "Action Owner Executes", approverField: "ACTION_OWNER", slaHours: 168, escalationRole: "HSE_MANAGER" },
+      { sequence: 3, stepType: "VERIFIER", name: "HSE Officer Verification", approverRole: "SAFETY_OFFICER", slaHours: 24, escalationRole: "HSE_MANAGER" },
+      { sequence: 4, stepType: "CLOSURE", name: "HSE Manager Closure", approverRole: "HSE_MANAGER" }
     ]
   },
 
