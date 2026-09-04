@@ -51,6 +51,7 @@ export default async function EditObservationPage(props: { params: Promise<{ id:
           severity: o.severity,
           description: o.description,
           areaId: o.areaId,
+          location: o.location ?? null,
           department: o.department ?? null,
           // backendFetch returns parsed JSON, so this is already an ISO
           // string, not a Prisma Date — .toISOString() on it threw and took

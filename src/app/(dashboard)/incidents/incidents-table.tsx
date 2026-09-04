@@ -128,6 +128,13 @@ export function IncidentsTable({ data }: { data: IncidentRow[] }) {
       searchPlaceholder="Search incidents…"
       pageSize={15}
       emptyMessage="No incidents match the current filter."
+      exportFileName="incidents"
+      getRowLabel={(row) => row.number}
+      bulkDelete={{
+        endpoint: "/api/incidents",
+        permission: "INCIDENT.DELETE",
+        entityLabel: "incident"
+      }}
     />
   );
 }

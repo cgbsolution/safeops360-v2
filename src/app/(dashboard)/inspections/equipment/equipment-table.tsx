@@ -131,6 +131,7 @@ export function EquipmentTable({ data }: { data: EquipmentRow[] }) {
       searchPlaceholder="Search equipment…"
       pageSize={20}
       emptyMessage="No equipment matches filters."
+      exportFileName="equipment-master"
     />
   );
 }

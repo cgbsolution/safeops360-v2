@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { readApiError } from "@/lib/client-errors";
+import { DEPARTMENTS } from "@/lib/observation-masters";
 import {
   StopTaxonomyFields,
   isAtRisk,
@@ -67,7 +68,10 @@ export function ObservationEditForm({
     subCategoryCode?: string | null;
     severity: string;
     description: string;
+    // Legacy structured area. Still shown when a record carries one so it can
+    // be cleared, but never set on a new record — see `location`.
     areaId: string | null;
+    location?: string | null;
     department?: string | null;
     targetDate: string | null;
   };
@@ -87,6 +91,7 @@ export function ObservationEditForm({
   const [severity, setSeverity] = useState(observation.severity);
   const [description, setDescription] = useState(observation.description);
   const [areaId, setAreaId] = useState(observation.areaId ?? "");
+  const [location, setLocation] = useState(observation.location ?? "");
   const [department, setDepartment] = useState(observation.department ?? "");
   const [targetDate, setTargetDate] = useState(observation.targetDate ? observation.targetDate.slice(0, 10) : "");
   const [severityReason, setSeverityReason] = useState("");
@@ -159,7 +164,8 @@ export function ObservationEditForm({
           ...(severityReason.trim() ? { severityOverrideReason: severityReason.trim() } : {}),
           description,
           areaId: areaId || null,
-          department: department.trim() || null,
+          location: location.trim() || null,
+          department: department || null,
           targetDate: targetDate ? new Date(targetDate).toISOString() : null
         })
       });
@@ -218,18 +224,30 @@ export function ObservationEditForm({
             </div>
             <div>
               <Label>Location</Label>
-              <Select value={areaId} onChange={(e) => setAreaId(e.target.value)}>
-                <option value="">— None —</option>
-                {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </Select>
+              <Input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Where on site — line, machine, room or landmark"
+              />
             </div>
+            {/* Only for a record that predates the free-text Location field.
+                Offered so a reviewer can clear a stale area, never so a new one
+                can be attached — the dropdown is gone from the create form. */}
+            {observation.areaId && (
+              <div>
+                <Label>Area (legacy)</Label>
+                <Select value={areaId} onChange={(e) => setAreaId(e.target.value)}>
+                  <option value="">— None —</option>
+                  {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Department</Label>
-              <Input
-                value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-                placeholder="e.g. Dye House, Utilities, Cutting"
-              />
+              <Select value={department} onChange={(e) => setDepartment(e.target.value)}>
+                <option value="">— None —</option>
+                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </Select>
             </div>
             <div>
               <Label>Target Date</Label>

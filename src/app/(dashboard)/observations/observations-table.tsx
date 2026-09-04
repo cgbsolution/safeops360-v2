@@ -151,6 +151,13 @@ export function ObservationsTable({ data }: { data: ObservationRow[] }) {
       searchPlaceholder="Search observations…"
       pageSize={15}
       emptyMessage="No observations match the current filter."
+      exportFileName="observations"
+      getRowLabel={(row) => row.number}
+      bulkDelete={{
+        endpoint: "/api/observations",
+        permission: "OBSERVATION.DELETE",
+        entityLabel: "observation"
+      }}
     />
   );
 }

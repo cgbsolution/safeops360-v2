@@ -159,7 +159,7 @@ export default async function ObservationDetailPage(
     <div>
       <PageHeader
         title={o.number}
-        description={`${humanize(o.type)} · ${humanize(o.category)}`}
+        description={`${humanize(o.type)} · ${o.stopTaxonomy?.categoryLabel ?? humanize(o.category)}`}
         breadcrumbs={[{ label: "Observations", href: "/observations" }, { label: o.number }]}
         action={
           <div className="flex items-center gap-2">
@@ -494,7 +494,10 @@ export default async function ObservationDetailPage(
             <CardContent className="space-y-3 text-sm">
               <Meta icon={CalendarDays} label="Date" value={formatDate(o.date)} />
               <Meta icon={MapPin} label="Plant Unit Name" value={o.plant.name} />
-              <Meta icon={MapPin} label="Location" value={o.area?.name ?? "—"} />
+              {/* Free text on new records; legacy rows carry a structured Area
+                  instead, so fall back to it rather than showing a dash next to
+                  a location that was recorded, just differently. */}
+              <Meta icon={MapPin} label="Location" value={o.location ?? o.area?.name ?? "—"} />
               {o.department && <Meta icon={MapPin} label="Department" value={o.department} />}
               <Meta icon={UserIcon} label="Observer" value={o.observer.name} />
               {o.contractorCompany && (
@@ -540,9 +543,10 @@ export default async function ObservationDetailPage(
                     : humanize(o.category)
                 }
               />
-              {/* Sub-category exists only on at-risk records classified under the
-                  STOP taxonomy — legacy rows awaiting review show nothing here. */}
-              {o.stopTaxonomy && (
+              {/* Only on records that actually carry a sub-category. The field
+                  was removed from the form, so new observations have none and
+                  the server sends null rather than the structural placeholder. */}
+              {o.stopTaxonomy?.subCategoryLabel && (
                 <Meta icon={AlertCircle} label="Sub-category" value={o.stopTaxonomy.subCategoryLabel} />
               )}
             </CardContent>

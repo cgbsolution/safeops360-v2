@@ -145,6 +145,7 @@ export function InspectionTypesTable({ data }: { data: InspectionTypeRow[] }) {
       searchPlaceholder="Search inspection types…"
       pageSize={15}
       emptyMessage="No inspection types configured."
+      exportFileName="inspection-types"
     />
   );
 }

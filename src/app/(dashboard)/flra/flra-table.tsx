@@ -98,6 +98,13 @@ export function FlraTable({ data }: { data: FlraRow[] }) {
       searchPlaceholder="Search FLRAs…"
       pageSize={15}
       emptyMessage="No FLRAs found."
+      exportFileName="flra-register"
+      getRowLabel={(row) => row.number}
+      bulkDelete={{
+        endpoint: "/api/flra",
+        permission: "FLRA.DELETE",
+        entityLabel: "FLRA"
+      }}
     />
   );
 }

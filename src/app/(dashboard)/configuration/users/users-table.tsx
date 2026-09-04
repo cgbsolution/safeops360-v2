@@ -98,6 +98,7 @@ export function UsersTable({ data }: { data: UserRow[] }) {
       searchPlaceholder="Search users…"
       pageSize={15}
       emptyMessage="No users match the current filter."
+      exportFileName="users"
     />
   );
 }

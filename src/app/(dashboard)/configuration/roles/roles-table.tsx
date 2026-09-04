@@ -91,6 +91,7 @@ export function RolesTable({ data }: { data: RoleRow[] }) {
       searchPlaceholder="Search roles…"
       pageSize={20}
       emptyMessage="No roles configured."
+      exportFileName="roles"
     />
   );
 }

@@ -100,6 +100,7 @@ export function InspectionInboxTable({ data }: { data: InboxRow[] }) {
       searchPlaceholder="Search equipment…"
       pageSize={15}
       emptyMessage="No inspections assigned to you. Inspections are auto-generated from equipment master schedules."
+      exportFileName="my-inspections"
     />
   );
 }

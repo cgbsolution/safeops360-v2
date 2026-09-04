@@ -146,6 +146,7 @@ export function ProgramsTable({ data }: { data: ProgramRow[] }) {
       searchPlaceholder="Search programs…"
       pageSize={15}
       emptyMessage="No programs match the current filter."
+      exportFileName="training-programs"
     />
   );
 }

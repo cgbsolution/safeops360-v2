@@ -519,12 +519,19 @@ model Observation {
   date                DateTime
   plantId             String
   plant               Plant                   @relation(fields: [plantId], references: [id])
+  /// Kept for legacy records and the area hazard tier. New observations leave
+  /// this null and carry `location` instead — see below.
   areaId              String?
   area                Area?                   @relation(fields: [areaId], references: [id])
-  /// Free text, typed by the observer — the department as the site names it.
-  /// Deliberately not an FK to a department master: gating an observation on a
-  /// master row nobody has created yet loses the observation. Use
-  /// plantId/areaId for structured grouping.
+  /// Free text, typed by the observer — where on site this was seen. Replaced
+  /// the Area dropdown, because the place something is observed is rarely one
+  /// of a plant's registered areas ("behind the Elastic line, near the RM
+  /// door"), and a master row nobody has created must not be what stops an
+  /// observation being filed.
+  location            String?
+  /// Picked from the site department list (src/lib/observation-masters.ts).
+  /// Stored as text, not an FK: there is no Department table in this schema and
+  /// the list is a fixed twenty the site owns.
   department          String?
   type                ObservationType
   category            ObservationCategory

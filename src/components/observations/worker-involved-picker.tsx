@@ -26,6 +26,9 @@
 
 import * as React from "react";
 import { Plus, X, HardHat, UserRound, UserPlus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 /** Matches MIN_MANUAL_NAME in schemas/observation_sla.py. */
@@ -124,7 +127,7 @@ export function WorkerInvolvedPicker({
           Name and ID of the worker or employee
         </div>
         <div className="flex flex-wrap items-start gap-2 sm:flex-nowrap">
-          <input
+          <Input
             value={name}
             disabled={disabled}
             onChange={(e) => {
@@ -135,9 +138,9 @@ export function WorkerInvolvedPicker({
             placeholder="Full name"
             aria-label="Name of the worker or employee"
             aria-invalid={invalid || undefined}
-            className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            className="min-w-0 flex-1"
           />
-          <input
+          <Input
             value={code}
             disabled={disabled}
             onChange={(e) => {
@@ -147,19 +150,19 @@ export function WorkerInvolvedPicker({
             onKeyDown={onKeyDown}
             placeholder="Employee / worker ID"
             aria-label="Employee or worker ID"
-            className="min-w-0 flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+            className="min-w-0 flex-1"
           />
-          <button
+          <Button
             type="button"
             onClick={add}
             disabled={disabled}
             aria-label="Add this worker"
             title="Add this worker"
-            className="inline-flex h-9 shrink-0 items-center gap-1 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            className="shrink-0"
           >
             <Plus className="h-4 w-4" />
             Add
-          </button>
+          </Button>
         </div>
         {error && <p className="mt-1.5 text-xs text-destructive">{error}</p>}
       </div>
@@ -167,10 +170,8 @@ export function WorkerInvolvedPicker({
       {value.length > 0 && (
         <ul className="flex flex-wrap gap-1.5">
           {value.map((w) => (
-            <li
-              key={keyOf(w)}
-              className="inline-flex items-center gap-1.5 rounded-full border border-input bg-muted/50 py-1 pl-2.5 pr-1 text-xs"
-            >
+            <li key={keyOf(w)}>
+              <Badge className="border-input bg-muted/50 py-1 pl-2.5 pr-1 text-xs font-normal text-slate-700">
               {w.partyType === "USER" ? (
                 <UserRound className="h-3 w-3 opacity-60" />
               ) : w.partyType === "MANUAL" ? (
@@ -181,14 +182,17 @@ export function WorkerInvolvedPicker({
               <span className="font-medium">{w.name}</span>
               {w.code && <span className="text-muted-foreground">· {w.code}</span>}
               {w.employer && <span className="text-muted-foreground">· {w.employer}</span>}
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon"
                 aria-label={`Remove ${w.name}`}
                 onClick={() => onChange(value.filter((v) => keyOf(v) !== keyOf(w)))}
-                className="rounded-full p-0.5 hover:bg-background"
+                className="h-5 w-5 rounded-full p-0 hover:bg-background"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </Button>
+              </Badge>
             </li>
           ))}
         </ul>

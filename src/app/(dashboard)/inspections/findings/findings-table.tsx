@@ -143,6 +143,7 @@ export function FindingsTable({ data }: { data: FindingRow[] }) {
       searchPlaceholder="Search findings…"
       pageSize={15}
       emptyMessage="No findings match the current filter."
+      exportFileName="inspection-findings"
     />
   );
 }

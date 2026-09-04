@@ -144,6 +144,13 @@ export function NearMissTable({ data }: { data: NearMissRow[] }) {
       searchPlaceholder="Search near-miss records…"
       pageSize={15}
       emptyMessage="No near-miss records match the current filter."
+      exportFileName="near-miss-register"
+      getRowLabel={(row) => row.number}
+      bulkDelete={{
+        endpoint: "/api/near-miss",
+        permission: "NEAR_MISS.DELETE",
+        entityLabel: "near-miss record"
+      }}
     />
   );
 }

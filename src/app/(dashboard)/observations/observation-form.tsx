@@ -30,6 +30,8 @@ import {
   severityLabel
 } from "@/components/observations/severity-suggestion";
 import { UserPicker } from "@/components/ui/user-picker";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { DEPARTMENTS } from "@/lib/observation-masters";
 import { Camera, Upload, X, Image as ImageIcon, Film, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -69,14 +71,13 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitStage, setSubmitStage] = useState<"" | "creating" | "uploading">("");
   const [plantId, setPlantId] = useState(plants[0]?.id ?? "");
-  // Controlled because the area's hazard tier can lift the suggested severity a
-  // rung — a suggestion computed without the area would be wrong on a
-  // HighHazard area, and silently so.
-  const [areaId, setAreaId] = useState(plants[0]?.areas[0]?.id ?? "");
+  // Free text — where on site this was seen. Replaced the Area dropdown, so
+  // `areaId` is no longer collected here and new records leave it null; the
+  // column and its FK stay for legacy rows and the area hazard tier.
+  const [location, setLocation] = useState("");
   const [severity, setSeverity] = useState("MEDIUM");
   const [severityReason, setSeverityReason] = useState("");
-  // Free text on purpose — see Observation.department. The observer names the
-  // department the way the site says it, rather than hunting a master list.
+  // Picked from the site department list (Dept.list.xlsx), stored as text.
   const [department, setDepartment] = useState("");
   // The action owner, chosen by the observer at submit. This used to be the
   // Section Head's job on the CHECKER step; that step is gone, so the
@@ -119,7 +120,6 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
     return () => { alive = false; };
   }, []);
 
-  const selectedPlant = plants.find((p) => p.id === plantId);
   const today = new Date().toISOString().slice(0, 10);
 
   // Revoke object URLs when photos change/unmount
@@ -129,15 +129,6 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  function onPlantChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const next = e.target.value;
-    setPlantId(next);
-    // The area list is plant-scoped, so the previous area is no longer a member
-    // of it. Follow the browser's own behaviour for the uncontrolled select
-    // this replaced and land on the new plant's first area.
-    setAreaId(plants.find((p) => p.id === next)?.areas[0]?.id ?? "");
-  }
 
   function addFiles(incoming: FileList | File[]) {
     setError("");
@@ -186,12 +177,14 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   // Severity suggestion. Only at-risk types carry the STOP taxonomy, and the
   // matrix is keyed on it — a Safe Act has nothing to look up, so the hook is
   // disabled rather than sent a request that can only miss.
+  // No `areaId`: the Area dropdown is gone, so there is no structured area to
+  // resolve a hazard tier from and the suggestion is computed from the
+  // classification alone.
   const { suggestion: severitySuggestion, loading: severityLoading } = useSeveritySuggestion({
     observationType: type,
     categoryCode: taxonomy.categoryCode,
     subCategoryCode: taxonomy.subCategoryCode,
     plantId,
-    areaId,
     enabled: isAtRisk(type)
   });
 
@@ -268,7 +261,8 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
     // The action owner is set here, at submit, and drives the first real task
     // in the workflow. Empty string would fail as an FK, so send null.
     payload.responsiblePersonId = responsiblePersonId || null;
-    payload.department = department.trim() || null;
+    payload.location = location.trim() || null;
+    payload.department = department || null;
     // Taken from state, not the form: on "Company employee" the select isn't
     // rendered at all, and an empty-string FK would fail on insert either way.
     payload.contractorCompanyId =
@@ -403,28 +397,41 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Plant Unit Name" name="plantId" required>
-              <Select name="plantId" value={plantId} onChange={onPlantChange} required>
+              <Select
+                name="plantId"
+                value={plantId}
+                onChange={(e) => setPlantId(e.target.value)}
+                required
+              >
                 {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </Select>
             </Field>
-            <Field label="Location" name="areaId" required>
-              <Select
-                name="areaId"
-                required
-                value={areaId}
-                onChange={(e) => setAreaId(e.target.value)}
-              >
-                {selectedPlant?.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </Select>
-            </Field>
-            {/* Typed, not picked — see Observation.department. */}
-            <Field label="Department" name="department">
+            {/* Typed, not picked. The place something is observed is rarely one
+                of a plant's registered Areas — it is "behind the Elastic line,
+                near the RM door" — and a master row nobody has created must not
+                be what stops an observation being filed. Stored in
+                Observation.location; areaId is left null on new records. */}
+            <Field label="Location" name="location" required>
               <Input
+                name="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Where on site — line, machine, room or landmark"
+                required
+              />
+            </Field>
+            {/* The site's own department list (Dept.list.xlsx). Stored as text
+                rather than an FK — see Observation.department. */}
+            <Field label="Department" name="department" required>
+              <Select
                 name="department"
+                required
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
-                placeholder="e.g. Dye House, Utilities, Cutting"
-              />
+              >
+                <option value="">— Select the department —</option>
+                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </Select>
             </Field>
           </div>
 
@@ -439,13 +446,15 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                 {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </Select>
             </Field>
-            {/* At-risk → DuPont STOP category + sub-category, both scoped to the
-                act/condition axis. Safe → the legacy hazard category only. */}
+            {/* The site's own category list, scoped to the act/condition axis:
+                17 unsafe-condition categories, 19 unsafe-act ones. Served from
+                ObservationTaxonomy, which is also what the server validates the
+                submitted code against — see
+                prisma/seed-page-observation-categories.ts. */}
             <StopTaxonomyFields
               type={type}
               value={taxonomy}
               onChange={setTaxonomy}
-              subCategoryRequired={false}
               safeCategorySlot={
                 <Field label="Category" name="category" required>
                   <Select name="category" required defaultValue="PPE">
@@ -458,26 +467,20 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Employed By" name="employmentType" required>
-              <div className="flex gap-2">
-                <EmploymentOption
-                  value="COMPANY"
-                  label="Company employee"
-                  checked={employmentType === "COMPANY"}
-                  onSelect={() => {
-                    setEmploymentType("COMPANY");
-                    // Drop the company too. Leaving it set would keep the
-                    // Worker Involved search scoped to that contractor's crew
-                    // while the form says "company employee".
-                    setContractorCompanyId("");
-                  }}
-                />
-                <EmploymentOption
-                  value="CONTRACTOR"
-                  label="Contractor"
-                  checked={employmentType === "CONTRACTOR"}
-                  onSelect={() => setEmploymentType("CONTRACTOR")}
-                />
-              </div>
+              <RadioGroup
+                className="grid-cols-2 gap-2"
+                value={employmentType}
+                onValueChange={(v) => {
+                  setEmploymentType(v as "COMPANY" | "CONTRACTOR");
+                  // Drop the company when switching back. Leaving it set would
+                  // keep the Worker Involved search scoped to that contractor's
+                  // crew while the form says "company employee".
+                  if (v === "COMPANY") setContractorCompanyId("");
+                }}
+              >
+                <EmploymentOption value="COMPANY" label="Company employee" />
+                <EmploymentOption value="CONTRACTOR" label="Contractor" />
+              </RadioGroup>
             </Field>
             {/* Only asked once "Contractor" is the answer — an always-visible
                 company list on a company-employee observation is a field the
@@ -569,7 +572,11 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                   <Camera size={13} /> Take Photo
                 </Button>
               </div>
-              <input
+              {/* The two file pickers the Browse / Take Photo buttons open.
+                  Visually hidden but functional — never remove `hidden` in
+                  favour of display:none on a parent, or the click() calls above
+                  stop opening anything in Safari. */}
+              <Input
                 ref={fileInputRef}
                 type="file"
                 multiple
@@ -577,7 +584,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                 className="hidden"
                 onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
               />
-              <input
+              <Input
                 ref={cameraInputRef}
                 type="file"
                 accept="image/*"
@@ -715,14 +722,16 @@ function PhotoTile({ photo, onRemove }: { photo: LocalPhoto; onRemove: () => voi
            <ImageIcon size={28} className="text-slate-400" />}
         </div>
       )}
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={onRemove}
-        className="absolute top-1 right-1 bg-white/90 hover:bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition"
         aria-label="Remove"
+        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-white/90 p-0 shadow opacity-0 transition hover:bg-white group-hover:opacity-100"
       >
         <X size={12} />
-      </button>
+      </Button>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1.5">
         <div className="text-[10px] text-white truncate">{photo.file.name}</div>
         <div className="text-[10px] text-white/80">
@@ -733,39 +742,25 @@ function PhotoTile({ photo, onRemove }: { photo: LocalPhoto; onRemove: () => voi
   );
 }
 
-/** One half of the Employed By choice. A real radio input under the styling —
- *  keyboard and screen-reader behaviour comes free, and arrow keys move
- *  between the two because they share a `name`. */
-function EmploymentOption({
-  value,
-  label,
-  checked,
-  onSelect
-}: {
-  value: string;
-  label: string;
-  checked: boolean;
-  onSelect: () => void;
-}) {
+/** One option in the Employed By RadioGroup, styled as a selectable card. The
+ *  Label wraps the RadioGroupItem so the whole card is the hit target, and the
+ *  selected state is driven off the item's own data-state rather than a second
+ *  copy of "which one is checked" passed down as a prop. */
+function EmploymentOption({ value, label }: { value: string; label: string }) {
   return (
-    <label
+    <Label
+      htmlFor={`employment-${value}`}
       className={cn(
-        "flex flex-1 cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm transition",
-        checked
-          ? "border-primary-500 bg-primary-50/60 font-medium text-slate-900"
-          : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+        "flex cursor-pointer items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2",
+        "text-sm font-normal text-slate-700 transition hover:bg-slate-50",
+        "has-[button[data-state=checked]]:border-primary-500",
+        "has-[button[data-state=checked]]:bg-primary-50/60",
+        "has-[button[data-state=checked]]:font-medium has-[button[data-state=checked]]:text-slate-900"
       )}
     >
-      <input
-        type="radio"
-        name="employmentType"
-        value={value}
-        className="h-4 w-4 accent-primary-600"
-        checked={checked}
-        onChange={onSelect}
-      />
+      <RadioGroupItem id={`employment-${value}`} value={value} />
       {label}
-    </label>
+    </Label>
   );
 }
 

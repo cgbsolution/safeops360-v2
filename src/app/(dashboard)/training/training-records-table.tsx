@@ -107,6 +107,13 @@ export function TrainingRecordsTable({ data }: { data: TrainingRow[] }) {
       searchPlaceholder="Search employee or program…"
       pageSize={15}
       emptyMessage="No training records match the current filter."
+      exportFileName="training-records"
+      getRowLabel={(row) => `${row.employeeName} · ${row.programName}`}
+      bulkDelete={{
+        endpoint: "/api/training",
+        permission: "TRAINING.DELETE",
+        entityLabel: "training record"
+      }}
     />
   );
 }

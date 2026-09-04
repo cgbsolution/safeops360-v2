@@ -105,6 +105,13 @@ export function PtwTable({ data }: { data: PermitRow[] }) {
       searchPlaceholder="Search permits…"
       pageSize={15}
       emptyMessage="No permits match the current filter."
+      exportFileName="permits"
+      getRowLabel={(row) => row.number}
+      bulkDelete={{
+        endpoint: "/api/ptw",
+        permission: "PTW.DELETE",
+        entityLabel: "permit"
+      }}
     />
   );
 }

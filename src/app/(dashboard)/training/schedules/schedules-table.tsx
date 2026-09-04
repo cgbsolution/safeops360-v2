@@ -134,6 +134,7 @@ export function SchedulesTable({ data }: { data: ScheduleRow[] }) {
       searchPlaceholder="Search schedules…"
       pageSize={15}
       emptyMessage="No schedules match the current filter."
+      exportFileName="training-schedules"
     />
   );
 }

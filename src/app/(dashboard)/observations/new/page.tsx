@@ -13,7 +13,7 @@ export default async function NewObservationPage() {
     <div className="max-w-3xl">
       <PageHeader
         title="New Safety Observation"
-        description="Report a safe or unsafe act/condition for review and action"
+        description="Report an unsafe act or condition for action and verification"
         breadcrumbs={[{ label: "Observations", href: "/observations" }, { label: "New" }]}
       />
       <ObservationForm plants={plants.map((p) => ({ id: p.id, name: p.name, areas: p.areas.map((a) => ({ id: a.id, name: a.name })) }))} />

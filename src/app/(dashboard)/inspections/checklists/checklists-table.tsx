@@ -109,6 +109,7 @@ export function ChecklistsTable({ data }: { data: ChecklistRow[] }) {
       searchPlaceholder="Search checklists…"
       pageSize={15}
       emptyMessage="No checklist templates match the current filter."
+      exportFileName="inspection-checklists"
     />
   );
 }

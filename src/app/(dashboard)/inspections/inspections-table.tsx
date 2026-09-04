@@ -124,6 +124,13 @@ export function InspectionsTable({ data }: { data: InspectionRow[] }) {
       searchPlaceholder="Search inspections…"
       pageSize={15}
       emptyMessage="No inspections match the current filter."
+      exportFileName="inspections"
+      getRowLabel={(row) => row.number ?? row.id.slice(0, 8)}
+      bulkDelete={{
+        endpoint: "/api/inspections",
+        permission: "INSPECTION.DELETE",
+        entityLabel: "inspection"
+      }}
     />
   );
 }

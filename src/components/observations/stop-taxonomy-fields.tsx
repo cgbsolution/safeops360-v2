@@ -1,15 +1,30 @@
 "use client";
 
-// Type-aware Category / Sub-category pair for the Safety Observation forms.
+// Type-aware Category field for the Safety Observation forms.
 //
-// The bug this replaces: one shared master list fed both dropdowns regardless
-// of Act vs Condition, so "Unsafe Condition: PPE non-compliance" was a
-// selectable combination. Both lists are now fetched per act/condition axis
-// from /api/observation-taxonomy, whose category response only includes
-// categories that actually have sub-categories on that axis — so "Reactions of
-// People" and "Positions of People" are ABSENT from the Condition list, not
-// greyed out, not disabled with a tooltip. Nothing here hardcodes that; it
-// falls out of the seed data.
+// The bug this replaces: one shared master list fed the dropdown regardless of
+// Act vs Condition, so "Unsafe Condition: PPE non-compliance" was a selectable
+// combination. The list is now fetched per act/condition axis from
+// /api/observation-taxonomy, whose category response only includes categories
+// that actually have sub-categories on that axis — so "Reactions of People" and
+// "Positions of People" are ABSENT from the Condition list, not greyed out, not
+// disabled with a tooltip. Nothing here hardcodes that; it falls out of the
+// seed data.
+//
+// The Sub-category dropdown was REMOVED on request — the category alone is the
+// classification observers are asked for. Two consequences, both deliberate:
+//
+//   • `subCategoryCode` is still carried in this component's value and still
+//     submitted. It is never set on a new observation, but an existing record
+//     that has one keeps it through an edit, and changing the category clears
+//     it (the stored pair would otherwise be invalid and the server 400s).
+//
+//   • The severity suggestion goes quiet. SeverityMatrixRule is keyed on
+//     (axis, category, subCategory) and `find_matrix_rule` returns None without
+//     all three, so new observations get no suggested severity, no rationale
+//     and no override-reason gate — Severity is a plain manual dropdown. That
+//     is the engine's designed "no rule" path, not a failure; restoring
+//     suggestions would mean seeding category-level rules.
 //
 // Only at-risk types (UNSAFE_ACT / UNSAFE_CONDITION) carry the STOP taxonomy —
 // the sub-category labels are all deviation-phrased ("PPE not worn"), which
@@ -40,7 +55,6 @@ export function axisForType(type: string): "ACT" | "CONDITION" | null {
 }
 
 type Category = { categoryCode: string; categoryLabel: string; stopReferenceCode: string };
-type SubCategory = { subCategoryCode: string; subCategoryLabel: string; stopReferenceCode: string };
 
 export type StopTaxonomyValue = { categoryCode: string; subCategoryCode: string };
 
@@ -49,30 +63,20 @@ export function StopTaxonomyFields({
   value,
   onChange,
   safeCategorySlot,
-  disabled,
-  subCategoryRequired = false
+  disabled
 }: {
   type: string;
   value: StopTaxonomyValue;
   onChange: (next: StopTaxonomyValue) => void;
-  /** Rendered instead of the STOP pair when the type is a safe observation. */
+  /** Rendered instead of the STOP category when the type is a safe observation. */
   safeCategorySlot?: React.ReactNode;
   disabled?: boolean;
-  /** The sub-category refines the category; it does not replace it. Everything
-   *  downstream — the legacy `category` dual-write, the SLA category-group
-   *  matrix, the heat-map — groups by the CATEGORY, so an observation with no
-   *  sub-category is still a complete, classifiable record. Optional by
-   *  default; the server agrees (services/observation_taxonomy.validate_selection).
-   *  A caller that genuinely needs the pair can turn it back on. */
-  subCategoryRequired?: boolean;
 }) {
   const axis = axisForType(type);
   const atRisk = isAtRisk(type);
 
   const [categories, setCategories] = useState<Category[]>([]);
-  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [loadingCats, setLoadingCats] = useState(false);
-  const [loadingSubs, setLoadingSubs] = useState(false);
   const [loadError, setLoadError] = useState("");
   // Set when a type switch invalidated the current category (§5.3) — the
   // observer is told the selection was dropped rather than left wondering.
@@ -93,7 +97,6 @@ export function StopTaxonomyFields({
   useEffect(() => {
     if (!atRisk || !axis) {
       setCategories([]);
-      setSubCategories([]);
       setClearedNotice("");
       return;
     }
@@ -132,39 +135,6 @@ export function StopTaxonomyFields({
     };
   }, [axis, atRisk, apply]);
 
-  // ── Sub-categories: only once BOTH axis and category are set (§5.2) ──
-  useEffect(() => {
-    if (!atRisk || !axis || !value.categoryCode) {
-      setSubCategories([]);
-      return;
-    }
-    let alive = true;
-    setLoadingSubs(true);
-    fetch(
-      `/api/observation-taxonomy/subcategories?type=${axis}&category=${encodeURIComponent(value.categoryCode)}`
-    )
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Could not load sub-categories"))))
-      .then((data) => {
-        if (!alive) return;
-        const items: SubCategory[] = data.items ?? [];
-        setSubCategories(items);
-        // Drop a sub-category that doesn't belong to the new (axis, category).
-        const current = valueRef.current.subCategoryCode;
-        if (current && !items.some((s) => s.subCategoryCode === current)) {
-          apply({ categoryCode: valueRef.current.categoryCode, subCategoryCode: "" });
-        }
-      })
-      .catch((e) => {
-        if (alive) setLoadError(e?.message ?? "Could not load sub-categories");
-      })
-      .finally(() => {
-        if (alive) setLoadingSubs(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [axis, atRisk, value.categoryCode, apply]);
-
   if (!atRisk) return <>{safeCategorySlot}</>;
 
   const axisWord = axis === "CONDITION" ? "condition" : "act";
@@ -172,14 +142,11 @@ export function StopTaxonomyFields({
   return (
     <>
       <div className="space-y-2">
+        {/* No taxonomy badge. The list is the site's own (Dept.list.xlsx), not
+            DuPont STOP — labelling it as STOP would credit the wrong standard
+            for the site's own classification. */}
         <Label htmlFor="categoryCode">
           Category<span className="text-rose-600 ml-0.5">*</span>
-          <span
-            className="ml-2 rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
-            style={{ background: MX.ice, color: MX.navy }}
-          >
-            DuPont STOP
-          </span>
         </Label>
         <Select
           name="categoryCode"
@@ -210,39 +177,6 @@ export function StopTaxonomyFields({
             `Showing the ${categories.length} categories that apply to an unsafe ${axisWord}.`
           )}
         </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="subCategoryCode">
-          Sub-category
-          {subCategoryRequired ? (
-            <span className="text-rose-600 ml-0.5">*</span>
-          ) : (
-            <span className="ml-1.5 text-xs font-normal text-slate-500">(optional)</span>
-          )}
-        </Label>
-        <Select
-          name="subCategoryCode"
-          required={subCategoryRequired}
-          disabled={disabled || !value.categoryCode || loadingSubs}
-          value={value.subCategoryCode}
-          onChange={(e) => onChange({ categoryCode: value.categoryCode, subCategoryCode: e.target.value })}
-        >
-          <option value="">
-            {!value.categoryCode
-              ? "— Select a category first —"
-              : loadingSubs
-                ? "Loading…"
-                : subCategoryRequired
-                  ? "— Select a sub-category —"
-                  : "— None —"}
-          </option>
-          {subCategories.map((s) => (
-            <option key={s.subCategoryCode} value={s.subCategoryCode}>
-              {s.subCategoryLabel}
-            </option>
-          ))}
-        </Select>
       </div>
 
       {clearedNotice && (

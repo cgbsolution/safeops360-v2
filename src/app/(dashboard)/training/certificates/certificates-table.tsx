@@ -120,6 +120,7 @@ export function CertificatesTable({ data }: { data: CertificateRow[] }) {
       searchPlaceholder="Search holder or program…"
       pageSize={15}
       emptyMessage="No certificates match the current filter."
+      exportFileName="training-certificates"
     />
   );
 }
