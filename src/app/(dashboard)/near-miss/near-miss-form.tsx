@@ -19,18 +19,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserPicker } from "@/components/ui/user-picker";
+import { WorkerInvolvedPicker, type WorkerRef } from "@/components/observations/worker-involved-picker";
 import { GpsCaptureStatus } from "@/components/ui/gps-capture";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { readApiError } from "@/lib/client-errors";
 import { uploadNearMissAttachment } from "@/components/near-miss/upload-helper";
 import { DEPARTMENTS } from "@/lib/observation-masters";
+import { MultiSelect } from "@/components/ui/multi-select";
+import {
+  CATEGORY_TO_SEVERITY,
+  HAZARD_CATEGORIES,
+  HAZARD_OTHER,
+  NEAR_MISS_CATEGORIES,
+  NEAR_MISS_CATEGORY_OTHER,
+  PROBABILITY_LEVELS,
+  RISK_CATEGORIES,
+  RISK_CATEGORY_LABELS,
+  SEVERITY_LEVELS,
+  riskCategoryFor,
+  riskRating,
+  type RiskCategory,
+  type RiskLevel
+} from "@/lib/near-miss/risk-masters";
 import {
   AlertCircle,
   AlertTriangle,
   Camera,
   Loader2,
-  MapPin,
-  Mic,
+  Plus,
   Upload,
   X
 } from "lucide-react";
@@ -51,20 +67,13 @@ const SHIFT_OPTIONS = [
 type Plant = { id: string; name: string };
 
 type MasterListItem = { id: string; code: string; label: string; sortOrder: number };
-type ContractorCompany = { id: string; name: string; score: number };
 
-const SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
+// The site's printed card bands risk LOW / MEDIUM / HIGH and has no fourth
+// tier, so the form no longer offers CRITICAL. The enum still has it and older
+// records still carry it; nothing raised here produces one, which also means
+// auto-promotion to an Incident no longer fires from this form.
+const SEVERITIES = ["LOW", "MEDIUM", "HIGH"] as const;
 type Severity = (typeof SEVERITIES)[number];
-
-const CONSEQUENCE_TYPES = [
-  { code: "INJURY", label: "Injury", subRatings: ["MINOR", "MAJOR", "FATALITY_POTENTIAL"] },
-  { code: "PROPERTY_DAMAGE", label: "Property damage", subRatings: [] },
-  { code: "ENVIRONMENTAL", label: "Environmental", subRatings: [] },
-  { code: "PROCESS_LOSS", label: "Process loss", subRatings: [] },
-  { code: "FIRE_EXPLOSION", label: "Fire / explosion potential", subRatings: [] },
-  { code: "MULTIPLE_WORKER_IMPACT", label: "Multiple worker impact", subRatings: [] },
-  { code: "REPUTATION", label: "Reputation / stakeholder", subRatings: [] }
-] as const;
 
 const ROOT_CAUSE_HINTS = [
   { code: "HUMAN_FACTOR", label: "Human factor" },
@@ -75,7 +84,29 @@ const ROOT_CAUSE_HINTS = [
   { code: "EXTERNAL", label: "External factor" }
 ];
 
-const REPORTER_TYPES = ["EMPLOYEE", "CONTRACTOR", "EXTERNAL", "ANONYMOUS"] as const;
+// Who is filing. The site recognises two: its own staff and anyone else on
+// site. CONTRACTOR and EXTERNAL used to be separate options; with the
+// contractor-company field gone there is nothing to hang the distinction on,
+// so an outside party is EXTERNAL. ANONYMOUS is not offered here — the
+// checkbox sets it.
+const REPORTER_TYPES = [
+  { value: "EMPLOYEE", label: "Employee Staff" },
+  { value: "EXTERNAL", label: "External" }
+] as const;
+
+// Sentinel for "Other" in the activity dropdown — mirrors ACTIVITY_OTHER in
+// the near-miss router. Everything else in that list is a MasterItem id.
+const ACTIVITY_OTHER = "OTHER";
+
+/** WorkerRef → the personsInvolved / witnesses element the API expects. */
+function toPersonPayload(w: WorkerRef) {
+  return {
+    partyType: w.partyType === "USER" ? "USER" : "MANUAL",
+    userId: w.partyType === "USER" ? w.id : null,
+    name: w.name,
+    code: w.code ?? null
+  };
+}
 
 const MAX_FILES = 5;
 const MAX_SIZE = 50 * 1024 * 1024;
@@ -87,36 +118,42 @@ type LocalPhoto = {
   error?: string;
 };
 
-type ConsequenceSelection = {
-  type: string;
-  subRating?: string;
-  costEstimate?: number | null;
-  substanceEstimate?: string | null;
-  downtimeHours?: number | null;
-};
-
 export function NearMissForm({ plants }: { plants: Plant[] }) {
   const router = useRouter();
   const [plantId, setPlantId] = useState(plants[0]?.id ?? "");
   const [department, setDepartment] = useState<string>("");
   const [shiftId, setShiftId] = useState<string>("");
   const [severity, setSeverity] = useState<Severity>("MEDIUM");
-  const [consequences, setConsequences] = useState<ConsequenceSelection[]>([]);
-  const [hazardCategory, setHazardCategory] = useState<string>("");
-  const [energySource, setEnergySource] = useState<string>("");
+  // Risk Calculator (RR = L × S) off the site's printed card.
+  const [probability, setProbability] = useState<RiskLevel | null>(null);
+  const [severityLevel, setSeverityLevel] = useState<RiskLevel | null>(null);
+  const [severityDescription, setSeverityDescription] = useState<string>("");
+  // Severity wordings the reporter added because none of the three printed
+  // ones fitted. Local to this report — see riskSeverityDescription.
+  const [extraSeverities, setExtraSeverities] = useState<{ level: RiskLevel; label: string }[]>([]);
+  // Auto-filled from the calculator; the reporter can still overrule it.
+  const [categoryOverridden, setCategoryOverridden] = useState(false);
+  const [riskCategory, setRiskCategory] = useState<RiskCategory | "">("");
+
+  const [hazardCategories, setHazardCategories] = useState<string[]>([]);
+  const [hazardOther, setHazardOther] = useState<string>("");
+  const [nearMissCategory, setNearMissCategory] = useState<string>("");
+  const [nearMissCategoryDetail, setNearMissCategoryDetail] = useState<string>("");
   const [activityType, setActivityType] = useState<string>("");
   const [activityIsRoutine, setActivityIsRoutine] = useState<boolean | null>(null);
+  // null until the reporter answers; [] means they answered "no".
+  const [equipmentUsed, setEquipmentUsed] = useState<boolean | null>(null);
+  const [equipmentItems, setEquipmentItems] = useState<string[]>([]);
   const [reporterType, setReporterType] = useState<string>("EMPLOYEE");
   const [isAnonymous, setIsAnonymous] = useState(false);
-  const [contractorCompanyId, setContractorCompanyId] = useState<string>("");
-  const [personsInvolved, setPersonsInvolved] = useState<string[]>([]);
-  const [personsAffected, setPersonsAffected] = useState<string[]>([]);
-  const [witnesses, setWitnesses] = useState<string[]>([]);
+  // Hand-typed name + works ID, not a directory search — see
+  // WorkerInvolvedPicker for why, and for what a MANUAL row does not do.
+  const [personsInvolved, setPersonsInvolved] = useState<WorkerRef[]>([]);
+  const [witnesses, setWitnesses] = useState<WorkerRef[]>([]);
   const [riskLikelihood, setRiskLikelihood] = useState<number | null>(null);
   const [riskConsequence, setRiskConsequence] = useState<number | null>(null);
   const [initialRootCause, setInitialRootCause] = useState<string>("");
   const [suggestedActionOwnerId, setSuggestedActionOwnerId] = useState<string | null>(null);
-  const [multipleWorkers, setMultipleWorkers] = useState(false);
 
   const { coords: gps, status: gpsStatus, error: gpsError, request: requestGps } = useGeolocation();
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
@@ -131,15 +168,21 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   // Masters fetched from Python on mount. Departments and shifts are NOT
   // among them: both come from the site's own fixed lists (DEPARTMENTS,
   // SHIFT_OPTIONS) rather than the plant-scoped masters.
-  const [contractors, setContractors] = useState<ContractorCompany[]>([]);
   const [activityTypes, setActivityTypes] = useState<MasterListItem[]>([]);
-  const [hazardCats, setHazardCats] = useState<MasterListItem[]>([]);
-  const [energySources, setEnergySources] = useState<MasterListItem[]>([]);
-  const [equipmentList, setEquipmentList] = useState<{ id: string; code: string; name: string }[]>([]);
-  const [equipmentId, setEquipmentId] = useState<string>("");
 
   const today = new Date().toISOString().slice(0, 16);
-  const photoMandatory = severity === "HIGH" || severity === "CRITICAL";
+  // RR = L × S, and the band the card puts that number in. Both follow from
+  // the two picks, so they are derived rather than stored — except the
+  // category, which the reporter may overrule.
+  const calcRating = riskRating(probability, severityLevel);
+  const calcCategory = riskCategoryFor(calcRating);
+  const effectiveCategory: RiskCategory | "" = categoryOverridden ? riskCategory : calcCategory ?? "";
+  const severityOptions = useMemo(
+    () => [...SEVERITY_LEVELS, ...extraSeverities],
+    [extraSeverities]
+  );
+
+  const photoMandatory = severity === "HIGH";
   const validPhotos = photos.filter((p) => !p.error);
   const riskScore = riskLikelihood && riskConsequence ? riskLikelihood * riskConsequence : null;
   const riskLevel = useMemo(() => {
@@ -155,17 +198,11 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
     let cancelled = false;
     (async () => {
       try {
-        const [actRes, hazRes, energyRes, contractorsRes] = await Promise.all([
-          fetch("/api/near-miss/masters/items?type=ACTIVITY_TYPE").then((r) => r.json()).catch(() => []),
-          fetch("/api/near-miss/masters/items?type=HAZARD_CATEGORY").then((r) => r.json()).catch(() => []),
-          fetch("/api/near-miss/masters/items?type=ENERGY_SOURCE").then((r) => r.json()).catch(() => []),
-          fetch("/api/near-miss/masters/contractors").then((r) => r.json()).catch(() => [])
-        ]);
+        const actRes = await fetch("/api/near-miss/masters/items?type=ACTIVITY_TYPE")
+          .then((r) => r.json())
+          .catch(() => []);
         if (cancelled) return;
         setActivityTypes(Array.isArray(actRes) ? actRes : []);
-        setHazardCats(Array.isArray(hazRes) ? hazRes : []);
-        setEnergySources(Array.isArray(energyRes) ? energyRes : []);
-        setContractors(Array.isArray(contractorsRes) ? contractorsRes : []);
       } catch {
         /* swallow */
       }
@@ -173,32 +210,20 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch equipment per plant. Departments used to be fetched here too, from
-  // the RBAC-filtered plant master; that endpoint returns nothing for a
-  // department-scoped user with no matching Department row, which is why the
-  // dropdown read "No departments available". It now serves the site's own
-  // list (DEPARTMENTS) and needs no fetch at all.
+  // Nothing is fetched per plant any more. Departments came from an
+  // RBAC-filtered master that returns nothing for a department-scoped user
+  // with no matching Department row (that is why the dropdown read "No
+  // departments available"), and equipment came from a per-plant register that
+  // is empty for most plants. Both are now entered directly on the form.
+
+  // The card's risk category IS the potential severity band, so the calculator
+  // fills it in. Kept as an effect rather than a derived value because the
+  // reporter can still click a different band afterwards — this sets the
+  // starting point, it does not lock it.
   useEffect(() => {
-    if (!plantId) {
-      setEquipmentList([]); setEquipmentId("");
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      try {
-        const eqRes = await fetch(
-          `/api/near-miss/masters/equipment?plant_id=${encodeURIComponent(plantId)}`
-        ).then((r) => r.json()).catch(() => []);
-        if (!cancelled) {
-          setEquipmentList(Array.isArray(eqRes) ? eqRes : []);
-          setEquipmentId(""); // reset when plant changes
-        }
-      } catch {
-        if (!cancelled) setEquipmentList([]);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [plantId]);
+    if (!effectiveCategory) return;
+    setSeverity(CATEGORY_TO_SEVERITY[effectiveCategory]);
+  }, [effectiveCategory]);
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -233,37 +258,6 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
       if (t?.previewUrl) URL.revokeObjectURL(t.previewUrl);
       return prev.filter((p) => p.tempId !== id);
     });
-  }
-
-  function toggleConsequence(code: string) {
-    setConsequences((prev) =>
-      prev.find((c) => c.type === code)
-        ? prev.filter((c) => c.type !== code)
-        : [...prev, { type: code }]
-    );
-  }
-  function setConsequenceField(code: string, patch: Partial<ConsequenceSelection>) {
-    setConsequences((prev) => prev.map((c) => (c.type === code ? { ...c, ...patch } : c)));
-  }
-
-  // Voice-to-text helper (Web Speech API; gracefully falls through if unsupported)
-  function startVoice(setter: (s: string | ((prev: string) => string)) => void) {
-    const SpeechRecognition: any =
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      alert("Voice input not supported in this browser. Use Chrome on Android or desktop.");
-      return;
-    }
-    const r = new SpeechRecognition();
-    r.lang = "en-IN";
-    r.continuous = false;
-    r.interimResults = false;
-    r.onresult = (ev: any) => {
-      const transcript: string = ev.results[0][0].transcript;
-      setter((prev: string) => (prev ? prev + " " + transcript : transcript));
-    };
-    r.start();
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -301,15 +295,31 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
       isAnonymous,
       activityBeingPerformed: activityType || null,
       activityIsRoutine,
-      activity: ((fd.get("activityFreeText") as string) || "").trim() || null,
+      // Only meaningful alongside the "Other" activity — it is what the
+      // reporter typed when none of the listed activities fitted.
+      activity:
+        activityType === ACTIVITY_OTHER
+          ? ((fd.get("activityOther") as string) || "").trim() || null
+          : null,
       immediateAction: ((fd.get("immediateAction") as string) || "").trim() || null,
-      equipmentId: equipmentId || null,
-      contractorCompanyId: contractorCompanyId || null,
+      // null = unanswered, [] = "no equipment involved", [...] = the items.
+      equipmentInvolved:
+        equipmentUsed === null ? null : equipmentUsed ? equipmentItems : [],
       potentialSeverity: severity,
-      potentialConsequences: consequences.length ? consequences : null,
-      multipleWorkersAggravator: multipleWorkers,
-      hazardCategory: hazardCategory || null,
-      energySource: energySource || null,
+      // Risk Calculator. The rating and category are recomputed server-side
+      // from these two — see risk_calculator in the near-miss router.
+      riskProbability: probability,
+      riskSeverityLevel: severityLevel,
+      riskSeverityDescription: severityDescription || null,
+      hazardCategories: hazardCategories.length ? hazardCategories : null,
+      hazardCategoryOther: hazardCategories.includes(HAZARD_OTHER)
+        ? hazardOther.trim() || null
+        : null,
+      nearMissCategory: nearMissCategory || null,
+      nearMissCategoryDetail:
+        nearMissCategory === NEAR_MISS_CATEGORY_OTHER
+          ? nearMissCategoryDetail.trim() || null
+          : null,
       riskLikelihood,
       riskConsequence,
       initialRootCauseCategory: initialRootCause || null,
@@ -317,9 +327,8 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
       controlsThatWorked: ((fd.get("controlsWorked") as string) || "").trim() || null,
       recommendedActions: ((fd.get("recommendedActions") as string) || "").trim() || null,
       suggestedActionOwnerId: suggestedActionOwnerId || null,
-      personsInvolved: personsInvolved.map((u) => ({ userId: u })),
-      personsPotentiallyAffected: personsAffected.map((u) => ({ userId: u })),
-      witnesses: witnesses.map((u) => ({ userId: u }))
+      personsInvolved: personsInvolved.map(toPersonPayload),
+      witnesses: witnesses.map(toPersonPayload)
     };
 
     try {
@@ -342,9 +351,15 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
         setStage("uploading");
         for (const p of validPhotos) {
           const result = await uploadNearMissAttachment(created.id, p.file, "INITIAL_PHOTO");
-          if (!result.ok) failures.push({ id: p.tempId, fileName: p.file.name, error: result.error ?? "Upload failed" });
+          if (!result.ok)
+            failures.push({
+              id: p.tempId,
+              fileName: p.file.name,
+              error: result.error ?? "Upload failed"
+            });
         }
       }
+
       if (failures.length > 0) {
         setUploadFailures(failures);
         setStage("");
@@ -368,18 +383,6 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
     <Card>
       <CardContent className="p-6">
         <form onSubmit={onSubmit} className="space-y-6">
-          {/* CRITICAL severity warning — sticky, prominent */}
-          {severity === "CRITICAL" && (
-            <div className="rounded-md border-2 border-rose-400 bg-rose-50 p-4 flex gap-3">
-              <AlertTriangle size={20} className="text-rose-700 flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-rose-900">
-                <strong>This near miss will be auto-promoted to Incident Investigation on submission.</strong>
-                <div className="mt-1">
-                  Plant HSE Manager and Plant Head will be notified immediately via SMS and email.
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* ── Section 1: When & Where ── */}
           <Section title="When & Where">
@@ -433,50 +436,72 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
           <Section title="What Happened">
             <div className="space-y-4">
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <Label htmlFor="description">Description<Req /></Label>
-                  <button type="button" className="text-xs text-primary-700 flex items-center gap-1" onClick={() => startVoice((s) => {
-                    const el = document.getElementById("description") as HTMLTextAreaElement | null;
-                    if (el) {
-                      const next = typeof s === "function" ? (s as any)(el.value) : s;
-                      el.value = next;
-                    }
-                  })}>
-                    <Mic size={12} /> Voice
-                  </button>
-                </div>
+                <Label htmlFor="description">Description<Req /></Label>
                 <Textarea id="description" name="description" rows={4} required minLength={10} maxLength={1500} placeholder="What did you observe? When? What could have happened?" />
               </div>
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Activity being performed</Label>
-                  <Select value={activityType} onChange={(e) => setActivityType(e.target.value)}>
+                  <Select
+                    value={activityType}
+                    onChange={(e) => setActivityType(e.target.value)}
+                  >
                     <option value="">— Select —</option>
                     {activityTypes.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+                    <option value={ACTIVITY_OTHER}>Other</option>
                   </Select>
                 </div>
                 <div>
                   <Label>Activity is</Label>
-                  <div className="flex gap-2 mt-1">
-                    <ToggleButton active={activityIsRoutine === true} onClick={() => setActivityIsRoutine(true)}>Routine</ToggleButton>
-                    <ToggleButton active={activityIsRoutine === false} onClick={() => setActivityIsRoutine(false)}>Non-routine</ToggleButton>
-                  </div>
+                  <RadioRow
+                    name="activityIsRoutine"
+                    options={[
+                      { value: "routine", label: "Routine" },
+                      { value: "non-routine", label: "Non-routine" }
+                    ]}
+                    value={activityIsRoutine === null ? "" : activityIsRoutine ? "routine" : "non-routine"}
+                    onChange={(v) => setActivityIsRoutine(v === "routine")}
+                  />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="activityFreeText">Other detail (free text)</Label>
-                <Input id="activityFreeText" name="activityFreeText" placeholder="anything not captured above" />
-              </div>
+              {/* Only asked when the list did not fit — "Other" is the one
+                  activity the reporter has to describe themselves. */}
+              {activityType === ACTIVITY_OTHER && (
+                <div>
+                  <Label htmlFor="activityOther">Describe the activity<Req /></Label>
+                  <Input
+                    id="activityOther"
+                    name="activityOther"
+                    required
+                    placeholder="What was the person actually doing?"
+                  />
+                </div>
+              )}
               <div>
                 <Label>Equipment / tool involved</Label>
-                <Select value={equipmentId} onChange={(e) => setEquipmentId(e.target.value)}>
-                  <option value="">— None —</option>
-                  {equipmentList.map((eq) => (
-                    <option key={eq.id} value={eq.id}>{eq.code} — {eq.name}</option>
-                  ))}
-                </Select>
-                {plantId && equipmentList.length === 0 && (
-                  <p className="text-xs text-slate-500 mt-1">No equipment registered for this plant yet.</p>
+                <RadioRow
+                  name="equipmentUsed"
+                  options={[
+                    { value: "yes", label: "Yes" },
+                    { value: "no", label: "No" }
+                  ]}
+                  value={equipmentUsed === null ? "" : equipmentUsed ? "yes" : "no"}
+                  onChange={(v) => {
+                    const yes = v === "yes";
+                    setEquipmentUsed(yes);
+                    if (!yes) setEquipmentItems([]);
+                  }}
+                />
+                {equipmentUsed && (
+                  <div className="mt-2">
+                    <TextListInput
+                      label="Name the equipment or tool"
+                      placeholder="e.g. Overlock machine #12"
+                      addLabel="Add this item"
+                      value={equipmentItems}
+                      onChange={setEquipmentItems}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -494,113 +519,215 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
               </div>
               {!isAnonymous && (
                 <Select value={reporterType} onChange={(e) => setReporterType(e.target.value)}>
-                  {REPORTER_TYPES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  {REPORTER_TYPES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </Select>
               )}
               <div>
                 <Label>Persons directly involved</Label>
-                <MultiUserPicker plantId={plantId} value={personsInvolved} onChange={setPersonsInvolved} />
-              </div>
-              <div>
-                <Label>Persons potentially affected (could have been hurt)</Label>
-                <MultiUserPicker plantId={plantId} value={personsAffected} onChange={setPersonsAffected} />
+                <WorkerInvolvedPicker value={personsInvolved} onChange={setPersonsInvolved} />
               </div>
               <div>
                 <Label>Witnesses</Label>
-                <MultiUserPicker plantId={plantId} value={witnesses} onChange={setWitnesses} />
-              </div>
-              <div>
-                <Label>Contractor company (if applicable)</Label>
-                <Select value={contractorCompanyId} onChange={(e) => setContractorCompanyId(e.target.value)}>
-                  <option value="">— None —</option>
-                  {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </Select>
+                <WorkerInvolvedPicker value={witnesses} onChange={setWitnesses} />
               </div>
             </div>
           </Section>
 
           {/* ── Section 4: Potential Consequence ── */}
-          <Section title="Potential Consequence" subtitle="What could have happened — drives the workflow">
-            <div className="space-y-4">
+          <Section
+            title="Potential Consequence"
+            subtitle="Risk Calculator (RR = L × S) — what could have happened, and how badly"
+          >
+            <div className="space-y-5">
+              {/* The site's printed card scores risk on two 1-3 scales and
+                  bands their product. Probability and severity are asked
+                  first because the band falls out of them — the reporter
+                  should not be picking a band directly and then justifying it. */}
+              <div>
+                <Label>Probability (L) — how likely was this to happen<Req /></Label>
+                <div className="grid gap-2 mt-2 sm:grid-cols-3">
+                  {PROBABILITY_LEVELS.map((o) => (
+                    <LevelCard
+                      key={o.level}
+                      level={o.level}
+                      label={o.label}
+                      selected={probability === o.level}
+                      onSelect={() => setProbability(o.level)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>Severity (S) — how bad the outcome could have been<Req /></Label>
+                <div className="grid gap-2 mt-2">
+                  {severityOptions.map((o) => (
+                    <LevelCard
+                      key={o.level + ":" + o.label}
+                      level={o.level}
+                      label={o.label}
+                      selected={severityLevel === o.level && severityDescription === o.label}
+                      onSelect={() => {
+                        setSeverityLevel(o.level);
+                        setSeverityDescription(o.label);
+                      }}
+                    />
+                  ))}
+                </div>
+                {/* The card's three descriptions do not cover every site. A
+                    reporter can word their own, at whichever level they judge
+                    it — the level is what drives the rating. */}
+                <div className="mt-2">
+                  <SeverityAdder
+                    onAdd={(level, label) =>
+                      setExtraSeverities((prev) =>
+                        prev.some((e) => e.label.toLowerCase() === label.toLowerCase())
+                          ? prev
+                          : [...prev, { level, label }]
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Rating and category are arithmetic, so they are shown rather
+                  than asked. The category stays a select: the calculator sets
+                  the starting point and the reporter can overrule it. */}
+              <div className="rounded-md border border-slate-200 bg-slate-50/60 p-3">
+                <div className="grid gap-3 sm:grid-cols-3 items-end">
+                  <div>
+                    <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                      Risk rating (RR = L × S)
+                    </div>
+                    <div className="mt-1 text-2xl font-bold text-slate-800">
+                      {calcRating ?? "—"}
+                    </div>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <Label htmlFor="riskCategory">Risk category</Label>
+                    <Select
+                      id="riskCategory"
+                      value={effectiveCategory}
+                      onChange={(e) => {
+                        setCategoryOverridden(true);
+                        setRiskCategory(e.target.value as RiskCategory);
+                      }}
+                    >
+                      <option value="">— Pick a probability and a severity —</option>
+                      {RISK_CATEGORIES.map((c) => (
+                        <option key={c} value={c}>{RISK_CATEGORY_LABELS[c]}</option>
+                      ))}
+                    </Select>
+                    {categoryOverridden && calcCategory && effectiveCategory !== calcCategory && (
+                      <p className="mt-1 text-xs text-amber-700">
+                        The calculator rates this {RISK_CATEGORY_LABELS[calcCategory]}.{" "}
+                        <button
+                          type="button"
+                          className="underline"
+                          onClick={() => setCategoryOverridden(false)}
+                        >
+                          Use that instead
+                        </button>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div>
                 <Label>Potential severity<Req /></Label>
-                <div className="grid grid-cols-4 gap-2 mt-1">
-                  {SEVERITIES.map((s) => (
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Set from the risk category. Change it if the band does not fit.
+                </p>
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {SEVERITIES.map((sev) => (
                     <button
-                      key={s}
+                      key={sev}
                       type="button"
-                      onClick={() => setSeverity(s)}
+                      onClick={() => setSeverity(sev)}
                       className={cn(
                         "px-3 py-2 rounded-md border text-sm font-medium transition",
-                        severity === s
-                          ? s === "CRITICAL"
-                            ? "bg-rose-600 text-white border-rose-600"
-                            : s === "HIGH"
+                        severity === sev
+                          ? sev === "HIGH"
                             ? "bg-orange-500 text-white border-orange-500"
-                            : s === "MEDIUM"
+                            : sev === "MEDIUM"
                             ? "bg-amber-400 text-amber-950 border-amber-400"
                             : "bg-emerald-500 text-white border-emerald-500"
                           : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
                       )}
                     >
-                      {s}
+                      {sev}
                     </button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <Label>Consequence types (multi-select)</Label>
-                <div className="space-y-2 mt-2">
-                  {CONSEQUENCE_TYPES.map((c) => {
-                    const selected = consequences.find((x) => x.type === c.code);
+                <Label htmlFor="hazardCategories">Hazard category — tick everything you observed</Label>
+                <div className="mt-1">
+                  <MultiSelect
+                    id="hazardCategories"
+                    options={HAZARD_CATEGORIES.map((h) => ({ value: h.code, label: h.label }))}
+                    value={hazardCategories}
+                    onChange={setHazardCategories}
+                    placeholder="— Select the hazards —"
+                    searchPlaceholder="Search hazards…"
+                  />
+                </div>
+                {hazardCategories.includes(HAZARD_OTHER) && (
+                  <Input
+                    className="mt-2"
+                    value={hazardOther}
+                    onChange={(e) => setHazardOther(e.target.value)}
+                    placeholder="Describe the other unsafe act or condition"
+                  />
+                )}
+              </div>
+
+              <div>
+                <Label>Near miss category</Label>
+                <p className="text-xs text-slate-500 mt-0.5">Pick the one that fits best.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
+                  {NEAR_MISS_CATEGORIES.map((c) => {
+                    const selected = nearMissCategory === c.code;
                     return (
-                      <div key={c.code} className="border rounded-md p-2.5">
-                        <label className="flex items-center gap-2 text-sm">
-                          <input type="checkbox" checked={!!selected} onChange={() => toggleConsequence(c.code)} className="rounded" />
-                          <span className="font-medium">{c.label}</span>
-                        </label>
-                        {selected && c.subRatings.length > 0 && (
-                          <Select value={selected.subRating ?? ""} onChange={(e) => setConsequenceField(c.code, { subRating: e.target.value })} className="mt-2 h-8 text-xs">
-                            <option value="">— Sub-rating —</option>
-                            {c.subRatings.map((r) => <option key={r} value={r}>{r.replace(/_/g, " ")}</option>)}
-                          </Select>
+                      <button
+                        key={c.code}
+                        type="button"
+                        onClick={() => setNearMissCategory(selected ? "" : c.code)}
+                        aria-pressed={selected}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 rounded-md border p-2 text-center transition",
+                          selected
+                            ? "border-primary-700 bg-primary-50 ring-2 ring-primary-600"
+                            : "border-slate-200 bg-white hover:border-slate-400"
                         )}
-                        {selected && c.code === "PROPERTY_DAMAGE" && (
-                          <Input type="number" placeholder="Cost estimate (₹)" className="mt-2 h-8" onChange={(e) => setConsequenceField(c.code, { costEstimate: Number(e.target.value) || null })} />
-                        )}
-                        {selected && c.code === "PROCESS_LOSS" && (
-                          <Input type="number" placeholder="Downtime (hours)" className="mt-2 h-8" onChange={(e) => setConsequenceField(c.code, { downtimeHours: Number(e.target.value) || null })} />
-                        )}
-                        {selected && c.code === "ENVIRONMENTAL" && (
-                          <Input placeholder="Substance / quantity" className="mt-2 h-8" onChange={(e) => setConsequenceField(c.code, { substanceEstimate: e.target.value || null })} />
-                        )}
-                      </div>
+                      >
+                        {/* Plain <img>: these are 6 KB decorative pictograms
+                            already sized for the tile, so the Image optimiser
+                            has nothing to save here. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={"/near-miss-categories/" + c.image + ".webp"}
+                          alt=""
+                          width={56}
+                          height={56}
+                          className="h-14 w-14 object-contain"
+                        />
+                        <span className="text-[11px] leading-tight text-slate-700">{c.label}</span>
+                      </button>
                     );
                   })}
                 </div>
-              </div>
-
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={multipleWorkers} onChange={(e) => setMultipleWorkers(e.target.checked)} className="rounded" />
-                Multiple worker impact (escalates severity)
-              </label>
-
-              <div className="grid sm:grid-cols-2 gap-4">
-                <div>
-                  <Label>Hazard category</Label>
-                  <Select value={hazardCategory} onChange={(e) => setHazardCategory(e.target.value)}>
-                    <option value="">— Select —</option>
-                    {hazardCats.map((h) => <option key={h.id} value={h.id}>{h.label}</option>)}
-                  </Select>
-                </div>
-                <div>
-                  <Label>Energy source</Label>
-                  <Select value={energySource} onChange={(e) => setEnergySource(e.target.value)}>
-                    <option value="">— Select —</option>
-                    {energySources.map((es) => <option key={es.id} value={es.id}>{es.label}</option>)}
-                  </Select>
-                </div>
+                {nearMissCategory === NEAR_MISS_CATEGORY_OTHER && (
+                  <Textarea
+                    className="mt-2"
+                    rows={2}
+                    value={nearMissCategoryDetail}
+                    onChange={(e) => setNearMissCategoryDetail(e.target.value)}
+                    placeholder="Specify the category — what nearly happened?"
+                  />
+                )}
               </div>
             </div>
           </Section>
@@ -766,18 +893,215 @@ function Req() {
   return <span className="text-rose-600 ml-0.5">*</span>;
 }
 
-function ToggleButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+/** One option on a Risk Calculator scale. The LEVEL number is what the card
+ *  prints and what the rating multiplies, so it leads rather than hiding
+ *  inside the description. */
+function LevelCard({
+  level,
+  label,
+  selected,
+  onSelect
+}: {
+  level: RiskLevel;
+  label: string;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={onSelect}
+      aria-pressed={selected}
       className={cn(
-        "px-3 py-1.5 rounded-md border text-sm",
-        active ? "bg-primary-700 text-white border-primary-700" : "bg-white text-slate-700 border-slate-300"
+        "flex w-full items-start gap-2.5 rounded-md border p-2.5 text-left transition",
+        selected
+          ? "border-primary-700 bg-primary-50 ring-2 ring-primary-600"
+          : "border-slate-200 bg-white hover:border-slate-400"
       )}
     >
-      {children}
+      <span
+        className={cn(
+          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+          selected ? "bg-primary-700 text-white" : "bg-slate-100 text-slate-600"
+        )}
+      >
+        {level}
+      </span>
+      <span className="text-sm leading-snug text-slate-700">{label}</span>
     </button>
+  );
+}
+
+/** Adds a severity wording the printed card does not carry. The level is asked
+ *  alongside the text because the level, not the wording, is what the rating
+ *  multiplies — a description with no level would score nothing. */
+function SeverityAdder({ onAdd }: { onAdd: (level: RiskLevel, label: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [level, setLevel] = useState<RiskLevel>(1);
+  const [label, setLabel] = useState("");
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="inline-flex items-center gap-1 text-xs text-primary-700 hover:underline"
+      >
+        <Plus className="h-3 w-3" />
+        Add another severity description
+      </button>
+    );
+  }
+
+  function commit() {
+    const next = label.trim();
+    if (!next) return;
+    onAdd(level, next);
+    setLabel("");
+    setOpen(false);
+  }
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50/60 p-2">
+      <div className="mb-1.5 text-xs font-medium text-slate-500">
+        Describe a severity this card does not cover
+      </div>
+      <div className="flex items-start gap-2">
+        <Select
+          value={String(level)}
+          onChange={(e) => setLevel(Number(e.target.value) as RiskLevel)}
+          className="w-28 shrink-0"
+          aria-label="Severity level"
+        >
+          <option value="1">Level 1</option>
+          <option value="2">Level 2</option>
+          <option value="3">Level 3</option>
+        </Select>
+        <Input
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter inside a form submits it. Here it means "add this one".
+            if (e.key === "Enter") {
+              e.preventDefault();
+              commit();
+            }
+          }}
+          placeholder="What could have happened at this level?"
+          className="min-w-0 flex-1"
+        />
+        <Button type="button" onClick={commit} className="shrink-0">
+          <Plus className="h-4 w-4" />
+          Add
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/** A short set of mutually exclusive answers, as radios. Used where the answer
+ *  is a plain either/or and the reporter should see both choices and which one
+ *  is selected — not a pair of buttons where "unanswered" and "no" look alike. */
+function RadioRow({
+  name,
+  options,
+  value,
+  onChange
+}: {
+  name: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap gap-4 mt-2">
+      {options.map((o) => (
+        <label key={o.value} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
+          <input
+            type="radio"
+            name={name}
+            value={o.value}
+            checked={value === o.value}
+            onChange={() => onChange(o.value)}
+            className="h-4 w-4 accent-primary-700"
+          />
+          {o.label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+/** Type a line, press Add (or Enter), get a removable chip. For lists the site
+ *  keeps in its head rather than in a master table. */
+function TextListInput({
+  label,
+  placeholder,
+  addLabel,
+  value,
+  onChange
+}: {
+  label: string;
+  placeholder: string;
+  addLabel: string;
+  value: string[];
+  onChange: (v: string[]) => void;
+}) {
+  const [draft, setDraft] = useState("");
+
+  function add() {
+    const next = draft.trim();
+    if (!next) return;
+    if (value.some((v) => v.toLowerCase() === next.toLowerCase())) {
+      setDraft("");
+      return;
+    }
+    onChange([...value, next]);
+    setDraft("");
+  }
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50/60 p-2">
+      <div className="mb-1.5 text-xs font-medium text-slate-500">{label}</div>
+      <div className="flex items-start gap-2">
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter inside a form submits it. Here it means "add this item".
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder={placeholder}
+          className="min-w-0 flex-1"
+        />
+        <Button type="button" onClick={add} title={addLabel} aria-label={addLabel} className="shrink-0">
+          <Plus className="h-4 w-4" />
+          Add
+        </Button>
+      </div>
+      {value.length > 0 && (
+        <ul className="flex flex-wrap gap-1.5 mt-2">
+          {value.map((v) => (
+            <li key={v}>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white text-slate-700 text-xs border">
+                {v}
+                <button
+                  type="button"
+                  aria-label={`Remove ${v}`}
+                  onClick={() => onChange(value.filter((x) => x !== v))}
+                  className="rounded-full p-0.5 hover:bg-slate-100"
+                >
+                  <X size={11} />
+                </button>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -807,58 +1131,3 @@ function RiskScale({ value, onChange }: { value: number | null; onChange: (n: nu
   );
 }
 
-function MultiUserPicker({
-  plantId,
-  value,
-  onChange
-}: {
-  plantId: string;
-  value: string[];
-  onChange: (v: string[]) => void;
-}) {
-  // Lightweight wrapper around the existing single-user UserPicker. Adds
-  // selected ids one at a time; removes via chip click.
-  const [working, setWorking] = useState<string | null>(null);
-  return (
-    <div>
-      <UserPicker
-        value={working}
-        onChange={(id) => {
-          if (id && !value.includes(id)) onChange([...value, id]);
-          setWorking(null);
-        }}
-        filter={{ plantId: plantId || undefined }}
-        placeholder="Search and add..."
-      />
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-1 mt-2">
-          {value.map((uid) => (
-            <ChipUser key={uid} userId={uid} onRemove={() => onChange(value.filter((x) => x !== uid))} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ChipUser({ userId, onRemove }: { userId: string; onRemove: () => void }) {
-  const [name, setName] = useState<string>(userId.slice(0, 6));
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const r = await fetch(`/api/users/${userId}`);
-        if (!r.ok) return;
-        const j = await r.json();
-        if (!cancelled && j?.name) setName(j.name);
-      } catch { /* ignore */ }
-    })();
-    return () => { cancelled = true; };
-  }, [userId]);
-  return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 text-xs border">
-      {name}
-      <button type="button" onClick={onRemove} className="text-slate-400 hover:text-slate-700">×</button>
-    </span>
-  );
-}

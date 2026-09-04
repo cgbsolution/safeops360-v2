@@ -18,6 +18,13 @@ import { CapaPlanSection } from "@/components/near-miss/capa-plan-section";
 import { TargetClosureDate } from "@/components/near-miss/target-closure-date";
 import { CommentsThread } from "@/components/near-miss/comments-thread";
 import PrintButtonClient from "./print-button";
+import {
+  HAZARD_CATEGORY_LABELS,
+  NEAR_MISS_CATEGORIES,
+  NEAR_MISS_CATEGORY_LABELS,
+  NEAR_MISS_CATEGORY_OTHER,
+  RISK_CATEGORY_LABELS
+} from "@/lib/near-miss/risk-masters";
 import { formatDate, formatDateTime, statusColor, severityColor, humanize } from "@/lib/utils";
 import { getWorkflowState } from "@/lib/workflow/state";
 import {
@@ -147,9 +154,27 @@ export default async function NearMissDetail(
       : null;
 
   // Persons display arrays
-  const personsInvolved = (n.personsInvolved ?? []).map((p: any) => p.user).filter(Boolean);
-  const personsAffected = (n.personsPotentiallyAffected ?? []).map((p: any) => p.user).filter(Boolean);
-  const witnessUsers = (n.witnesses ?? []).map((w: any) => w.witness).filter(Boolean);
+  // A person row is either a directory link or a hand-typed MANUAL entry with
+  // no user attached, so read the name snapshot first and fall back to the
+  // linked record for rows written before the snapshot existed.
+  const toPerson = (row: any, linked: any) => {
+    const name = row.nameSnapshot ?? linked?.name;
+    if (!name) return null;
+    return {
+      id: row.id,
+      name,
+      designation: row.codeSnapshot ?? linked?.designation ?? null
+    };
+  };
+  const personsInvolved = (n.personsInvolved ?? [])
+    .map((p: any) => toPerson(p, p.user))
+    .filter(Boolean);
+  const personsAffected = (n.personsPotentiallyAffected ?? [])
+    .map((p: any) => toPerson(p, p.user))
+    .filter(Boolean);
+  const witnessUsers = (n.witnesses ?? [])
+    .map((w: any) => toPerson(w, w.witness))
+    .filter(Boolean);
 
   return (
     <div className="print:bg-white">
@@ -322,10 +347,14 @@ export default async function NearMissDetail(
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div>
                     <Lab>Activity</Lab>
-                    {/* activityBeingPerformed holds a MasterItem id; the API
-                        hydrates its label. `activity` is the free-text extra. */}
+                    {/* activityBeingPerformed holds a MasterItem id (or the
+                        "OTHER" sentinel); the API hydrates its label. On Other
+                        the whole answer is the free text, so print both — the
+                        label alone reads as "Other" and says nothing. */}
                     <p className="text-sm text-slate-700">
-                      {n.activityBeingPerformedLabel ?? n.activity ?? "—"}
+                      {n.activityBeingPerformedLabel && n.activity
+                        ? `${n.activityBeingPerformedLabel} — ${n.activity}`
+                        : n.activityBeingPerformedLabel ?? n.activity ?? "—"}
                     </p>
                   </div>
                   {n.activityIsRoutine !== null && n.activityIsRoutine !== undefined && (
@@ -336,12 +365,27 @@ export default async function NearMissDetail(
                   )}
                 </div>
               ) : null}
-              {n.equipment && (
+              {/* equipmentInvolved is the typed list; [] is the reporter
+                  answering "no equipment", which is worth showing. n.equipment
+                  is the legacy per-plant register link. */}
+              {(n.equipmentInvolved || n.equipment) && (
                 <div>
                   <Lab>Equipment / tool involved</Lab>
-                  <p className="text-sm text-slate-700 flex items-center gap-1">
-                    <Wrench size={12} className="text-slate-400" /> {n.equipment.name} ({n.equipment.code})
-                  </p>
+                  {n.equipmentInvolved?.length ? (
+                    <ul className="text-sm text-slate-700 space-y-0.5">
+                      {n.equipmentInvolved.map((item: string) => (
+                        <li key={item} className="flex items-center gap-1">
+                          <Wrench size={12} className="text-slate-400" /> {item}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : n.equipment ? (
+                    <p className="text-sm text-slate-700 flex items-center gap-1">
+                      <Wrench size={12} className="text-slate-400" /> {n.equipment.name} ({n.equipment.code})
+                    </p>
+                  ) : (
+                    <p className="text-sm text-slate-500">None involved</p>
+                  )}
                 </div>
               )}
               {(n.gpsLatitude && n.gpsLongitude) && (
@@ -410,9 +454,75 @@ export default async function NearMissDetail(
                     <Users size={11} className="inline mr-1" /> Multiple worker impact
                   </Badge>
                 )}
+                {/* hazardCategories is the tick-any-number grid off the
+                    printed card; hazardCategory / energySource are the single
+                    MasterItem ids older records carry. */}
+                {(n.hazardCategories ?? []).map((code: string) => (
+                  <Badge key={code} className="bg-slate-50 text-slate-700 border-slate-300">
+                    {HAZARD_CATEGORY_LABELS[code] ?? code}
+                  </Badge>
+                ))}
+                {n.hazardCategoryOther && (
+                  <Badge className="bg-slate-50 text-slate-700 border-slate-300">
+                    Other: {n.hazardCategoryOther}
+                  </Badge>
+                )}
                 {n.hazardCategory && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Hazard cat: {n.hazardCategoryLabel ?? n.hazardCategory}</Badge>}
                 {n.energySource && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Energy: {n.energySourceLabel ?? n.energySource}</Badge>}
               </div>
+
+              {n.nearMissCategory && (
+                <div className="flex items-center gap-2.5 rounded-md border border-slate-200 bg-slate-50/60 p-2.5">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={
+                      "/near-miss-categories/" +
+                      (NEAR_MISS_CATEGORIES.find((c) => c.code === n.nearMissCategory)?.image ??
+                        "other") +
+                      ".webp"
+                    }
+                    alt=""
+                    width={40}
+                    height={40}
+                    className="h-10 w-10 shrink-0 object-contain"
+                  />
+                  <div className="min-w-0">
+                    <div className="text-[10px] uppercase tracking-wider text-slate-500">
+                      Near miss category
+                    </div>
+                    <div className="text-sm text-slate-700">
+                      {NEAR_MISS_CATEGORY_LABELS[n.nearMissCategory] ?? n.nearMissCategory}
+                    </div>
+                    {n.nearMissCategory === NEAR_MISS_CATEGORY_OTHER && n.nearMissCategoryDetail && (
+                      <div className="text-xs text-slate-600 whitespace-pre-wrap">
+                        {n.nearMissCategoryDetail}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* The site's Risk Calculator. Separate from the 5x5 matrix
+                  below it: different scales, both recorded. */}
+              {n.riskRating != null && (
+                <div className="rounded-md border border-slate-200 p-2.5 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                    <span className="font-medium text-slate-700">Risk Calculator</span>
+                    <span>
+                      L {n.riskProbability} x S {n.riskSeverityLevel} = RR {n.riskRating}
+                    </span>
+                    {n.riskCategory && (
+                      <Badge className={RISK_BADGE[severityOfCategory(n.riskCategory)] ?? ""}>
+                        {RISK_CATEGORY_LABELS[n.riskCategory as keyof typeof RISK_CATEGORY_LABELS] ??
+                          n.riskCategory}
+                      </Badge>
+                    )}
+                  </div>
+                  {n.riskSeverityDescription && (
+                    <p className="text-xs text-slate-600">{n.riskSeverityDescription}</p>
+                  )}
+                </div>
+              )}
               {Array.isArray(n.potentialConsequences) && n.potentialConsequences.length > 0 ? (
                 <ul className="text-sm text-slate-700 space-y-1">
                   {n.potentialConsequences.map((c: any, i: number) => (
@@ -431,12 +541,10 @@ export default async function NearMissDetail(
                     <Badge key={c} className="bg-amber-100 text-amber-800 border-amber-200">{c.trim()}</Badge>
                   ))}
                 </div>
-              ) : (
-                <div className="text-sm text-slate-400">No consequence detail captured.</div>
-              )}
+              ) : null}
               {n.riskLikelihood && n.riskConsequence && (
                 <div className="pt-2 border-t flex items-center gap-3 text-xs text-slate-600">
-                  <span>Risk matrix:</span>
+                  <span>Risk matrix (5 x 5):</span>
                   <span>Likelihood {n.riskLikelihood} × Consequence {n.riskConsequence}</span>
                   <span>=</span>
                   <Badge className={RISK_BADGE[n.riskLevel ?? "MEDIUM"] ?? ""}>{n.riskLevel} ({n.riskScore})</Badge>
@@ -746,7 +854,9 @@ export default async function NearMissDetail(
               )}
               {n.slaTargetAt && <Meta icon={Clock} label="SLA target" value={formatDateTime(n.slaTargetAt)} />}
               {slaPerformance && <Meta icon={Clock} label="SLA performance" value={slaPerformance} />}
-              {n.reporterType && <Meta icon={UserIcon} label="Reporter type" value={n.reporterType} />}
+              {n.reporterType && (
+                <Meta icon={UserIcon} label="Reporter type" value={REPORTER_TYPE_LABELS[n.reporterType] ?? n.reporterType} />
+              )}
             </CardContent>
           </Card>
         </div>
@@ -763,6 +873,22 @@ function Lab({ children, className }: { children: React.ReactNode; className?: s
       {children}
     </div>
   );
+}
+
+// The report form words these as "Employee Staff" / "External"; older records
+// also carry CONTRACTOR and ANONYMOUS.
+const REPORTER_TYPE_LABELS: Record<string, string> = {
+  EMPLOYEE: "Employee Staff",
+  EXTERNAL: "External",
+  CONTRACTOR: "Contractor",
+  ANONYMOUS: "Anonymous"
+};
+
+/** The Risk Calculator's band, in the vocabulary RISK_BADGE is keyed on. */
+function severityOfCategory(category: string) {
+  if (category === "HIGH_RISK") return "HIGH";
+  if (category === "MEDIUM_RISK") return "MEDIUM";
+  return "LOW";
 }
 
 function PersonChips({ users }: { users: { id: string; name: string; designation: string | null }[] }) {

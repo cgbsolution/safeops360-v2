@@ -860,6 +860,12 @@ model NearMiss {
   immediateAction        String? // steps taken at the scene before the formal review
 
   // ─── Equipment & contractor ─────────────────────────────────────
+  // The report form asks "equipment involved? yes / no" and, on yes, takes the
+  // items as typed text — the Equipment master is registered per plant and is
+  // empty for most of them, so the dropdown had nothing to offer. Three states
+  // all carry meaning: null = not answered, [] = reporter said no, [...] = the
+  // named items. equipmentId stays for the records that already link one.
+  equipmentInvolved   Json?
   equipmentId         String?
   equipment           Equipment?         @relation(fields: [equipmentId], references: [id])
   contractorCompanyId String?
@@ -876,10 +882,33 @@ model NearMiss {
   multipleWorkersAggravator Boolean  @default(false)
 
   // ─── Hazard categorization ───────────────────────────────────────
-  hazardCategory String? // FK by id to MasterItem(type=HAZARD_CATEGORY)
-  energySource   String? // FK by id to MasterItem(type=ENERGY_SOURCE)
+  // The report form ticks any number off the site's printed hazard grid; the
+  // codes are in src/lib/near-miss/risk-masters.ts. hazardCategory (a single
+  // MasterItem id) and energySource are the shape it used to send and are kept
+  // for the records that carry them.
+  hazardCategories    Json? // string[] of HAZARD_CATEGORIES codes
+  hazardCategoryOther String? // free text, when OTHER_UNSAFE_ACT_CONDITION is ticked
+  hazardCategory      String? // FK by id to MasterItem(type=HAZARD_CATEGORY) — legacy
+  energySource        String? // FK by id to MasterItem(type=ENERGY_SOURCE) — legacy
 
-  // ─── Risk matrix scoring ────────────────────────────────────────
+  // ─── Near miss category ─────────────────────────────────────────
+  // Exactly one tile off the pictogram grid on the card. Free text carries the
+  // specifics when the reporter picks "Others".
+  nearMissCategory       String?
+  nearMissCategoryDetail String?
+
+  // ─── Risk Calculator (RR = L × S), off the site's printed card ───
+  // Two independent 1-3 scales. Deliberately NOT the 5×5 pair below: those
+  // columns hold 1-5 readings on 188 existing records and mixing scales would
+  // change what that data means. riskSeverityDescription snapshots the wording
+  // the reporter chose, which may be one they typed themselves.
+  riskProbability         Int? // 1-3
+  riskSeverityLevel       Int? // 1-3
+  riskSeverityDescription String?
+  riskRating              Int? // riskProbability × riskSeverityLevel — 1,2,3,4,6,9
+  riskCategory            String? // LOW_RISK | MEDIUM_RISK | HIGH_RISK
+
+  // ─── Risk matrix scoring (5 × 5) ────────────────────────────────
   riskLikelihood  Int?
   riskConsequence Int?
   riskScore       Int?
@@ -996,10 +1025,19 @@ model NearMissPersonInvolved {
   id         String   @id @default(cuid())
   nearMissId String
   nearMiss   NearMiss @relation(fields: [nearMissId], references: [id], onDelete: Cascade)
-  userId     String
-  user       User     @relation("NearMissPersonInvolved", fields: [userId], references: [id])
-  role       String?
+  // Null on a MANUAL row — the report form hand-types the name and works ID
+  // rather than searching the directory, exactly as Safety Observation does.
+  // A MANUAL row is a record, not a link: nothing keyed on a User id (training
+  // assignment, roster checks) can fire from it. codeSnapshot is the handle for
+  // reconciling the name against the directory later.
+  userId       String?
+  user         User?   @relation("NearMissPersonInvolved", fields: [userId], references: [id])
+  partyType    String  @default("USER") // USER | MANUAL
+  nameSnapshot String? // set for every row, including linked ones
+  codeSnapshot String? // employee / works / gate-pass number
+  role         String?
 
+  // Postgres treats NULLs as distinct, so this never collides across manual rows.
   @@unique([nearMissId, userId])
   @@index([nearMissId])
 }
@@ -1020,8 +1058,12 @@ model NearMissWitness {
   id                String   @id @default(cuid())
   nearMissId        String
   nearMiss          NearMiss @relation(fields: [nearMissId], references: [id], onDelete: Cascade)
-  witnessId         String
-  witness           User     @relation("NearMissWitness", fields: [witnessId], references: [id])
+  // Null on a MANUAL row — see NearMissPersonInvolved.userId.
+  witnessId         String?
+  witness           User?    @relation("NearMissWitness", fields: [witnessId], references: [id])
+  partyType         String   @default("USER") // USER | MANUAL
+  nameSnapshot      String?
+  codeSnapshot      String?
   statementCaptured Boolean  @default(false)
 
   @@unique([nearMissId, witnessId])
