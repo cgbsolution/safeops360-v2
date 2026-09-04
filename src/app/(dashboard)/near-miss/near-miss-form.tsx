@@ -14,7 +14,9 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
+import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,9 +35,12 @@ import {
   NEAR_MISS_CATEGORIES,
   NEAR_MISS_CATEGORY_OTHER,
   PROBABILITY_LEVELS,
-  RISK_CATEGORIES,
   RISK_CATEGORY_LABELS,
+  RISK_LEVELS,
+  RISK_RATINGS,
   SEVERITY_LEVELS,
+  categoryForLevel,
+  levelForCategory,
   riskCategoryFor,
   riskRating,
   type RiskCategory,
@@ -131,9 +136,10 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   // Severity wordings the reporter added because none of the three printed
   // ones fitted. Local to this report — see riskSeverityDescription.
   const [extraSeverities, setExtraSeverities] = useState<{ level: RiskLevel; label: string }[]>([]);
-  // Auto-filled from the calculator; the reporter can still overrule it.
-  const [categoryOverridden, setCategoryOverridden] = useState(false);
-  const [riskCategory, setRiskCategory] = useState<RiskCategory | "">("");
+  // Both auto-fill from the calculator and both stay clickable, so each keeps
+  // its own override. Null means "follow the calculator".
+  const [ratingOverride, setRatingOverride] = useState<number | null>(null);
+  const [levelOverride, setLevelOverride] = useState<RiskLevel | null>(null);
 
   const [hazardCategories, setHazardCategories] = useState<string[]>([]);
   const [hazardOther, setHazardOther] = useState<string>("");
@@ -150,8 +156,6 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   // WorkerInvolvedPicker for why, and for what a MANUAL row does not do.
   const [personsInvolved, setPersonsInvolved] = useState<WorkerRef[]>([]);
   const [witnesses, setWitnesses] = useState<WorkerRef[]>([]);
-  const [riskLikelihood, setRiskLikelihood] = useState<number | null>(null);
-  const [riskConsequence, setRiskConsequence] = useState<number | null>(null);
   const [initialRootCause, setInitialRootCause] = useState<string>("");
   const [suggestedActionOwnerId, setSuggestedActionOwnerId] = useState<string | null>(null);
 
@@ -175,8 +179,13 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   // the two picks, so they are derived rather than stored — except the
   // category, which the reporter may overrule.
   const calcRating = riskRating(probability, severityLevel);
-  const calcCategory = riskCategoryFor(calcRating);
-  const effectiveCategory: RiskCategory | "" = categoryOverridden ? riskCategory : calcCategory ?? "";
+  // Rating: the product, unless the coordinator picked a number themselves.
+  const effectiveRating = ratingOverride ?? calcRating;
+  // Level and risk category are one value read two ways (see risk-masters).
+  // The level follows whatever rating is in force, unless overridden in turn.
+  const effectiveLevel: RiskLevel | null =
+    levelOverride ?? levelForCategory(riskCategoryFor(effectiveRating));
+  const effectiveCategory: RiskCategory | "" = categoryForLevel(effectiveLevel) ?? "";
   const severityOptions = useMemo(
     () => [...SEVERITY_LEVELS, ...extraSeverities],
     [extraSeverities]
@@ -184,14 +193,6 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
 
   const photoMandatory = severity === "HIGH";
   const validPhotos = photos.filter((p) => !p.error);
-  const riskScore = riskLikelihood && riskConsequence ? riskLikelihood * riskConsequence : null;
-  const riskLevel = useMemo(() => {
-    if (!riskScore) return null;
-    if (riskScore >= 15) return { label: "CRITICAL", className: "bg-rose-600 text-white border-rose-600" };
-    if (riskScore >= 9) return { label: "HIGH", className: "bg-orange-500 text-white border-orange-500" };
-    if (riskScore >= 4) return { label: "MEDIUM", className: "bg-amber-400 text-amber-950 border-amber-400" };
-    return { label: "LOW", className: "bg-emerald-500 text-white border-emerald-500" };
-  }, [riskScore]);
 
   // Fetch masters once
   useEffect(() => {
@@ -311,6 +312,9 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
       riskProbability: probability,
       riskSeverityLevel: severityLevel,
       riskSeverityDescription: severityDescription || null,
+      // Sent rather than left to the server because both are overridable here.
+      riskRating: effectiveRating,
+      riskCategory: effectiveCategory || null,
       hazardCategories: hazardCategories.length ? hazardCategories : null,
       hazardCategoryOther: hazardCategories.includes(HAZARD_OTHER)
         ? hazardOther.trim() || null
@@ -320,8 +324,6 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
         nearMissCategory === NEAR_MISS_CATEGORY_OTHER
           ? nearMissCategoryDetail.trim() || null
           : null,
-      riskLikelihood,
-      riskConsequence,
       initialRootCauseCategory: initialRootCause || null,
       controlsThatFailed: ((fd.get("controlsFailed") as string) || "").trim() || null,
       controlsThatWorked: ((fd.get("controlsWorked") as string) || "").trim() || null,
@@ -393,18 +395,26 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
               </div>
               <div>
                 <Label>Plant Unit Name<Req /></Label>
-                <Select value={plantId} onChange={(e) => setPlantId(e.target.value)} required>
-                  {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </Select>
+                <SelectField
+                  id="plantId"
+                  required
+                  value={plantId}
+                  onChange={setPlantId}
+                  options={plants.map((p) => ({ value: p.id, label: p.name }))}
+                  placeholder="— Select the plant unit —"
+                />
               </div>
               {/* The site's own department list, shared with the Safety
                   Observation form. Stored as text — see observation-masters.ts. */}
               <div>
                 <Label>Department</Label>
-                <Select value={department} onChange={(e) => setDepartment(e.target.value)}>
-                  <option value="">— Select the department —</option>
-                  {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-                </Select>
+                <SelectField
+                  id="department"
+                  value={department}
+                  onChange={setDepartment}
+                  options={DEPARTMENTS.map((d) => ({ value: d, label: d }))}
+                  placeholder="— Select the department —"
+                />
               </div>
               <div>
                 <Label htmlFor="location">Location (Blocks &amp; building)</Label>
@@ -416,10 +426,13 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
               </div>
               <div>
                 <Label>Shift</Label>
-                <Select value={shiftId} onChange={(e) => setShiftId(e.target.value)}>
-                  <option value="">— Select —</option>
-                  {SHIFT_OPTIONS.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
-                </Select>
+                <SelectField
+                  id="shiftId"
+                  value={shiftId}
+                  onChange={setShiftId}
+                  options={SHIFT_OPTIONS.map((o) => ({ value: o.code, label: o.label }))}
+                  placeholder="— Select —"
+                />
               </div>
             </div>
             <div className="mt-2">
@@ -442,14 +455,16 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
               <div className="grid sm:grid-cols-2 gap-4">
                 <div>
                   <Label>Activity being performed</Label>
-                  <Select
+                  <SelectField
+                    id="activityType"
                     value={activityType}
-                    onChange={(e) => setActivityType(e.target.value)}
-                  >
-                    <option value="">— Select —</option>
-                    {activityTypes.map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
-                    <option value={ACTIVITY_OTHER}>Other</option>
-                  </Select>
+                    onChange={setActivityType}
+                    options={[
+                      ...activityTypes.map((a) => ({ value: a.id, label: a.label })),
+                      { value: ACTIVITY_OTHER, label: "Other" }
+                    ]}
+                    placeholder="— Select —"
+                  />
                 </div>
                 <div>
                   <Label>Activity is</Label>
@@ -512,15 +527,25 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label>Reporter type</Label>
-                <label className="flex items-center gap-2 text-sm">
-                  <input type="checkbox" checked={isAnonymous} onChange={(e) => setIsAnonymous(e.target.checked)} className="rounded" />
-                  Anonymous reporting
-                </label>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="isAnonymous"
+                    checked={isAnonymous}
+                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                  />
+                  <Label htmlFor="isAnonymous" className="cursor-pointer font-normal">
+                    Anonymous reporting
+                  </Label>
+                </div>
               </div>
               {!isAnonymous && (
-                <Select value={reporterType} onChange={(e) => setReporterType(e.target.value)}>
-                  {REPORTER_TYPES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                </Select>
+                <SelectField
+                  id="reporterType"
+                  value={reporterType}
+                  onChange={setReporterType}
+                  options={REPORTER_TYPES.map((r) => ({ value: r.value, label: r.label }))}
+                  placeholder="— Select —"
+                />
               )}
               <div>
                 <Label>Persons directly involved</Label>
@@ -545,35 +570,43 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                   should not be picking a band directly and then justifying it. */}
               <div>
                 <Label>Probability (L) — how likely was this to happen<Req /></Label>
-                <div className="grid gap-2 mt-2 sm:grid-cols-3">
-                  {PROBABILITY_LEVELS.map((o) => (
-                    <LevelCard
-                      key={o.level}
-                      level={o.level}
-                      label={o.label}
-                      selected={probability === o.level}
-                      onSelect={() => setProbability(o.level)}
-                    />
-                  ))}
-                </div>
+                <ChoiceCards
+                  name="probability"
+                  className="grid gap-2 mt-2 sm:grid-cols-3"
+                  options={PROBABILITY_LEVELS.map((o) => ({
+                    value: String(o.level),
+                    label: o.label
+                  }))}
+                  value={probability === null ? "" : String(probability)}
+                  onChange={(v) => setProbability(Number(v) as RiskLevel)}
+                  renderOption={(o, selected) => (
+                    <LevelBody level={Number(o.value) as RiskLevel} label={o.label} selected={selected} />
+                  )}
+                />
               </div>
 
               <div>
                 <Label>Severity (S) — how bad the outcome could have been<Req /></Label>
-                <div className="grid gap-2 mt-2">
-                  {severityOptions.map((o) => (
-                    <LevelCard
-                      key={o.level + ":" + o.label}
-                      level={o.level}
-                      label={o.label}
-                      selected={severityLevel === o.level && severityDescription === o.label}
-                      onSelect={() => {
-                        setSeverityLevel(o.level);
-                        setSeverityDescription(o.label);
-                      }}
-                    />
-                  ))}
-                </div>
+                {/* Keyed on the wording, not the level: two options can sit
+                    at the same level once the reporter adds their own. */}
+                <ChoiceCards
+                  name="severity"
+                  className="grid gap-2 mt-2"
+                  options={severityOptions.map((o) => ({ value: o.label, label: o.label }))}
+                  value={severityDescription}
+                  onChange={(v) => {
+                    const picked = severityOptions.find((o) => o.label === v);
+                    if (!picked) return;
+                    setSeverityLevel(picked.level);
+                    setSeverityDescription(picked.label);
+                  }}
+                  renderOption={(o, selected) => {
+                    const picked = severityOptions.find((x) => x.label === o.value);
+                    return (
+                      <LevelBody level={picked?.level ?? 1} label={o.label} selected={selected} />
+                    );
+                  }}
+                />
                 {/* The card's three descriptions do not cover every site. A
                     reporter can word their own, at whichever level they judge
                     it — the level is what drives the rating. */}
@@ -590,76 +623,46 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                 </div>
               </div>
 
-              {/* Rating and category are arithmetic, so they are shown rather
-                  than asked. The category stays a select: the calculator sets
-                  the starting point and the reporter can overrule it. */}
-              <div className="rounded-md border border-slate-200 bg-slate-50/60 p-3">
-                <div className="grid gap-3 sm:grid-cols-3 items-end">
-                  <div>
-                    <div className="text-[10px] uppercase tracking-wider text-slate-500">
-                      Risk rating (RR = L × S)
-                    </div>
-                    <div className="mt-1 text-2xl font-bold text-slate-800">
-                      {calcRating ?? "—"}
-                    </div>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label htmlFor="riskCategory">Risk category</Label>
-                    <Select
-                      id="riskCategory"
-                      value={effectiveCategory}
-                      onChange={(e) => {
-                        setCategoryOverridden(true);
-                        setRiskCategory(e.target.value as RiskCategory);
-                      }}
-                    >
-                      <option value="">— Pick a probability and a severity —</option>
-                      {RISK_CATEGORIES.map((c) => (
-                        <option key={c} value={c}>{RISK_CATEGORY_LABELS[c]}</option>
-                      ))}
-                    </Select>
-                    {categoryOverridden && calcCategory && effectiveCategory !== calcCategory && (
-                      <p className="mt-1 text-xs text-amber-700">
-                        The calculator rates this {RISK_CATEGORY_LABELS[calcCategory]}.{" "}
-                        <button
-                          type="button"
-                          className="underline"
-                          onClick={() => setCategoryOverridden(false)}
-                        >
-                          Use that instead
-                        </button>
-                      </p>
-                    )}
-                  </div>
+              {/* The rating and its band are set below, in the Risk
+                  Calculator. Shown here too because it is what the rest of
+                  this section reads against. */}
+              {effectiveCategory && (
+                <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50/60 p-2.5">
+                  <span className="text-[10px] uppercase tracking-wider text-slate-500">
+                    Risk category
+                  </span>
+                  <Badge className={RISK_BAND_BADGE[effectiveCategory]}>
+                    {RISK_CATEGORY_LABELS[effectiveCategory]}
+                  </Badge>
+                  {effectiveRating != null && (
+                    <span className="text-xs text-slate-600">rating {effectiveRating}</span>
+                  )}
                 </div>
-              </div>
+              )}
 
               <div>
                 <Label>Potential severity<Req /></Label>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Set from the risk category. Change it if the band does not fit.
                 </p>
-                <div className="grid grid-cols-3 gap-2 mt-2">
-                  {SEVERITIES.map((sev) => (
-                    <button
-                      key={sev}
-                      type="button"
-                      onClick={() => setSeverity(sev)}
-                      className={cn(
-                        "px-3 py-2 rounded-md border text-sm font-medium transition",
-                        severity === sev
-                          ? sev === "HIGH"
-                            ? "bg-orange-500 text-white border-orange-500"
-                            : sev === "MEDIUM"
-                            ? "bg-amber-400 text-amber-950 border-amber-400"
-                            : "bg-emerald-500 text-white border-emerald-500"
-                          : "bg-white text-slate-700 border-slate-300 hover:border-slate-400"
-                      )}
-                    >
-                      {sev}
-                    </button>
-                  ))}
-                </div>
+                <ChoiceCards
+                  name="potentialSeverity"
+                  className="grid grid-cols-3 gap-2 mt-2"
+                  options={SEVERITIES.map((sev) => ({ value: sev, label: sev }))}
+                  value={severity}
+                  onChange={(v) => setSeverity(v as Severity)}
+                  cardClassName={(selected, o) =>
+                    cn(
+                      "px-3 py-2 text-center text-sm font-medium",
+                      selected &&
+                        (o.value === "HIGH"
+                          ? "!border-orange-500 !bg-orange-500 !ring-orange-500 text-white"
+                          : o.value === "MEDIUM"
+                          ? "!border-amber-400 !bg-amber-400 !ring-amber-400 text-amber-950"
+                          : "!border-emerald-500 !bg-emerald-500 !ring-emerald-500 text-white")
+                    )
+                  }
+                />
               </div>
 
               <div>
@@ -687,38 +690,36 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
               <div>
                 <Label>Near miss category</Label>
                 <p className="text-xs text-slate-500 mt-0.5">Pick the one that fits best.</p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                  {NEAR_MISS_CATEGORIES.map((c) => {
-                    const selected = nearMissCategory === c.code;
-                    return (
-                      <button
-                        key={c.code}
-                        type="button"
-                        onClick={() => setNearMissCategory(selected ? "" : c.code)}
-                        aria-pressed={selected}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 rounded-md border p-2 text-center transition",
-                          selected
-                            ? "border-primary-700 bg-primary-50 ring-2 ring-primary-600"
-                            : "border-slate-200 bg-white hover:border-slate-400"
-                        )}
-                      >
-                        {/* Plain <img>: these are 6 KB decorative pictograms
-                            already sized for the tile, so the Image optimiser
-                            has nothing to save here. */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={"/near-miss-categories/" + c.image + ".webp"}
-                          alt=""
-                          width={56}
-                          height={56}
-                          className="h-14 w-14 object-contain"
-                        />
-                        <span className="text-[11px] leading-tight text-slate-700">{c.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
+                <ChoiceCards
+                  name="nearMissCategory"
+                  className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2"
+                  options={NEAR_MISS_CATEGORIES.map((c) => ({ value: c.code, label: c.label }))}
+                  value={nearMissCategory}
+                  onChange={setNearMissCategory}
+                  cardClassName={() => "p-2"}
+                  renderOption={(o) => (
+                    <span className="flex flex-col items-center gap-1.5 text-center">
+                      {/* Plain <img>: these are 6 KB decorative pictograms
+                          already sized for the tile, so the Image optimiser
+                          has nothing to save here. */}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={
+                          "/near-miss-categories/" +
+                          (NEAR_MISS_CATEGORIES.find((c) => c.code === o.value)?.image ?? "other") +
+                          ".webp"
+                        }
+                        alt=""
+                        width={56}
+                        height={56}
+                        className="h-14 w-14 object-contain"
+                      />
+                      <span className="text-[11px] font-normal leading-tight text-slate-700">
+                        {o.label}
+                      </span>
+                    </span>
+                  )}
+                />
                 {nearMissCategory === NEAR_MISS_CATEGORY_OTHER && (
                   <Textarea
                     className="mt-2"
@@ -732,24 +733,68 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
             </div>
           </Section>
 
-          {/* ── Section 5: Risk Assessment (5×5) ── */}
-          <Section title="Risk Assessment (5 × 5)">
-            <div className="grid sm:grid-cols-2 gap-4">
+          {/* ── Section 5: Risk Calculator ── */}
+          <Section
+            title="Risk Calculator"
+            subtitle="RR = L × S — filled in from the picks above; change either if you disagree"
+          >
+            <div className="space-y-4">
               <div>
-                <Label>Likelihood of recurrence (1-5)</Label>
-                <RiskScale value={riskLikelihood} onChange={setRiskLikelihood} />
+                <Label>Level (1-3)</Label>
+                <NumberScale
+                  name="riskLevelBand"
+                  values={RISK_LEVELS}
+                  value={effectiveLevel}
+                  onChange={(n) => setLevelOverride(n as RiskLevel)}
+                  toneFor={(n) => LEVEL_TONE[n as RiskLevel]}
+                />
+                {effectiveCategory && (
+                  <p className="mt-1.5 text-xs text-slate-600">
+                    Level {effectiveLevel} is{" "}
+                    <span className="font-medium">{RISK_CATEGORY_LABELS[effectiveCategory]}</span>{" "}
+                    on the card.
+                  </p>
+                )}
               </div>
+
               <div>
-                <Label>Severity if it had happened (1-5)</Label>
-                <RiskScale value={riskConsequence} onChange={setRiskConsequence} />
+                <Label>Risk rating (1-9)</Label>
+                <NumberScale
+                  name="riskRating"
+                  values={RISK_RATINGS}
+                  value={effectiveRating}
+                  onChange={(n) => {
+                    setRatingOverride(n);
+                    // A new rating re-bands the level; an earlier level
+                    // override would otherwise silently outrank it.
+                    setLevelOverride(null);
+                  }}
+                  toneFor={(n) => LEVEL_TONE[levelForCategory(riskCategoryFor(n)) ?? 1]}
+                />
+                {calcRating != null && effectiveRating !== calcRating && (
+                  <p className="mt-1.5 text-xs text-amber-700">
+                    L × S gives {calcRating}.{" "}
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto p-0 text-xs text-amber-800"
+                      onClick={() => {
+                        setRatingOverride(null);
+                        setLevelOverride(null);
+                      }}
+                    >
+                      Use that instead
+                    </Button>
+                  </p>
+                )}
+                {calcRating == null && (
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Pick a probability and a severity above and this fills itself in.
+                  </p>
+                )}
               </div>
             </div>
-            {riskScore !== null && riskLevel && (
-              <div className="mt-3 flex items-center gap-3">
-                <span className="text-xs text-slate-500">Computed risk:</span>
-                <Badge className={riskLevel.className}>{riskLevel.label} ({riskScore})</Badge>
-              </div>
-            )}
           </Section>
 
           {/* ── Section 6: Existing Controls ── */}
@@ -769,10 +814,13 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
           {/* ── Section 7: Initial Root Cause Hint ── */}
           <Section title="Initial Root Cause Hint">
             <Label>Reporter's first guess</Label>
-            <Select value={initialRootCause} onChange={(e) => setInitialRootCause(e.target.value)}>
-              <option value="">— Select —</option>
-              {ROOT_CAUSE_HINTS.map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
-            </Select>
+            <SelectField
+              id="initialRootCause"
+              value={initialRootCause}
+              onChange={setInitialRootCause}
+              options={ROOT_CAUSE_HINTS.map((r) => ({ value: r.code, label: r.label }))}
+              placeholder="— Select —"
+            />
           </Section>
 
           {/* ── Section 8: Site Photos ── */}
@@ -795,13 +843,30 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                   <Camera size={13} /> Take Photo
                 </Button>
               </div>
-              <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,application/pdf" className="hidden"
-                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
-              <input ref={cameraInputRef} type="file" accept="image/*"
+              {/* Hidden and driven by the buttons above — a native file
+                  picker cannot be styled, so this is the only way to give it
+                  the design system's chrome. */}
+              <Input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*,video/*,application/pdf"
+                className="hidden"
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
+              />
+              <Input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 {...({ capture: "environment" } as any)}
                 className="hidden"
-                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
+                tabIndex={-1}
+                aria-hidden="true"
+                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
+              />
             </div>
             {photos.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
@@ -813,9 +878,16 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">{p.file.name}</div>
                     )}
-                    <button type="button" onClick={() => removePhoto(p.tempId)} className="absolute top-1 right-1 bg-white/90 rounded-full p-1 shadow">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="icon"
+                      aria-label={`Remove ${p.file.name}`}
+                      onClick={() => removePhoto(p.tempId)}
+                      className="absolute right-1 top-1 h-6 w-6 rounded-full bg-white/90 p-0 shadow hover:bg-white"
+                    >
                       <X size={12} />
-                    </button>
+                    </Button>
                     {p.error && <div className="absolute inset-x-0 bottom-0 bg-rose-600 text-white text-[10px] px-1 py-0.5 truncate">{p.error}</div>}
                   </div>
                 ))}
@@ -893,32 +965,20 @@ function Req() {
   return <span className="text-rose-600 ml-0.5">*</span>;
 }
 
-/** One option on a Risk Calculator scale. The LEVEL number is what the card
- *  prints and what the rating multiplies, so it leads rather than hiding
- *  inside the description. */
-function LevelCard({
+/** The body of one option on a Risk Calculator scale. The LEVEL number is
+ *  what the printed card shows and what the rating multiplies, so it leads
+ *  rather than hiding inside the description. */
+function LevelBody({
   level,
   label,
-  selected,
-  onSelect
+  selected
 }: {
   level: RiskLevel;
   label: string;
   selected: boolean;
-  onSelect: () => void;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onSelect}
-      aria-pressed={selected}
-      className={cn(
-        "flex w-full items-start gap-2.5 rounded-md border p-2.5 text-left transition",
-        selected
-          ? "border-primary-700 bg-primary-50 ring-2 ring-primary-600"
-          : "border-slate-200 bg-white hover:border-slate-400"
-      )}
-    >
+    <span className="flex w-full items-start gap-2.5 p-2.5 text-left">
       <span
         className={cn(
           "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
@@ -927,8 +987,8 @@ function LevelCard({
       >
         {level}
       </span>
-      <span className="text-sm leading-snug text-slate-700">{label}</span>
-    </button>
+      <span className="text-sm font-normal leading-snug text-slate-700">{label}</span>
+    </span>
   );
 }
 
@@ -942,14 +1002,16 @@ function SeverityAdder({ onAdd }: { onAdd: (level: RiskLevel, label: string) => 
 
   if (!open) {
     return (
-      <button
+      <Button
         type="button"
+        variant="link"
+        size="sm"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1 text-xs text-primary-700 hover:underline"
+        className="h-auto gap-1 p-0 text-xs"
       >
         <Plus className="h-3 w-3" />
         Add another severity description
-      </button>
+      </Button>
     );
   }
 
@@ -967,16 +1029,18 @@ function SeverityAdder({ onAdd }: { onAdd: (level: RiskLevel, label: string) => 
         Describe a severity this card does not cover
       </div>
       <div className="flex items-start gap-2">
-        <Select
-          value={String(level)}
-          onChange={(e) => setLevel(Number(e.target.value) as RiskLevel)}
-          className="w-28 shrink-0"
-          aria-label="Severity level"
-        >
-          <option value="1">Level 1</option>
-          <option value="2">Level 2</option>
-          <option value="3">Level 3</option>
-        </Select>
+        <div className="w-28 shrink-0">
+          <SelectField
+            value={String(level)}
+            onChange={(v) => setLevel(Number(v) as RiskLevel)}
+            ariaLabel="Severity level"
+            options={[
+              { value: "1", label: "Level 1" },
+              { value: "2", label: "Level 2" },
+              { value: "3", label: "Level 3" }
+            ]}
+          />
+        </div>
         <Input
           value={label}
           onChange={(e) => setLabel(e.target.value)}
@@ -999,9 +1063,65 @@ function SeverityAdder({ onAdd }: { onAdd: (level: RiskLevel, label: string) => 
   );
 }
 
-/** A short set of mutually exclusive answers, as radios. Used where the answer
- *  is a plain either/or and the reporter should see both choices and which one
- *  is selected — not a pair of buttons where "unanswered" and "no" look alike. */
+/** A group of mutually exclusive choices rendered as cards.
+ *
+ *  Radix RadioGroup rather than a row of buttons with `aria-pressed`: these
+ *  are genuinely "pick one of N", and the primitive brings the roving
+ *  tabindex a radio group needs — arrow keys move between options, Tab enters
+ *  and leaves the group as one stop. The control itself is visually hidden
+ *  and the Label is the card, which is shadcn's own radio-as-card pattern.
+ */
+function ChoiceCards({
+  name,
+  options,
+  value,
+  onChange,
+  className,
+  cardClassName,
+  renderOption
+}: {
+  name: string;
+  options: { value: string; label: string }[];
+  value: string;
+  onChange: (v: string) => void;
+  className?: string;
+  /** Extra classes on each card, given whether that card is selected. */
+  cardClassName?: (selected: boolean, option: { value: string; label: string }) => string;
+  /** Card body. Defaults to the label text. */
+  renderOption?: (option: { value: string; label: string }, selected: boolean) => React.ReactNode;
+}) {
+  return (
+    <RadioGroup value={value} onValueChange={onChange} className={className}>
+      {options.map((o) => {
+        const id = `${name}-${o.value}`;
+        const selected = value === o.value;
+        return (
+          <div key={o.value} className="min-w-0">
+            <RadioGroupItem id={id} value={o.value} className="peer sr-only" />
+            <Label
+              htmlFor={id}
+              className={cn(
+                "block cursor-pointer rounded-md border transition",
+                "peer-focus-visible:ring-2 peer-focus-visible:ring-primary-600 peer-focus-visible:ring-offset-1",
+                cardClassName?.(selected, o) ?? "",
+                selected
+                  ? "border-primary-700 bg-primary-50 ring-2 ring-primary-600"
+                  : "border-slate-200 bg-white hover:border-slate-400"
+              )}
+            >
+              {renderOption ? renderOption(o, selected) : o.label}
+            </Label>
+          </div>
+        );
+      })}
+    </RadioGroup>
+  );
+}
+
+/** A short set of mutually exclusive answers, as plain radios in a row. Used
+ *  where the answer is an either/or and the reporter should see both choices
+ *  and which one is selected — not a pair of buttons where "unanswered" and
+ *  "no" look alike. */
 function RadioRow({
   name,
   options,
@@ -1014,21 +1134,23 @@ function RadioRow({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-4 mt-2">
-      {options.map((o) => (
-        <label key={o.value} className="flex items-center gap-2 text-sm text-slate-700 cursor-pointer">
-          <input
-            type="radio"
-            name={name}
-            value={o.value}
-            checked={value === o.value}
-            onChange={() => onChange(o.value)}
-            className="h-4 w-4 accent-primary-700"
-          />
-          {o.label}
-        </label>
-      ))}
-    </div>
+    <RadioGroup
+      value={value}
+      onValueChange={onChange}
+      className="flex flex-row flex-wrap gap-4 mt-2"
+    >
+      {options.map((o) => {
+        const id = `${name}-${o.value}`;
+        return (
+          <div key={o.value} className="flex items-center gap-2">
+            <RadioGroupItem id={id} value={o.value} />
+            <Label htmlFor={id} className="cursor-pointer font-normal text-slate-700">
+              {o.label}
+            </Label>
+          </div>
+        );
+      })}
+    </RadioGroup>
   );
 }
 
@@ -1083,51 +1205,76 @@ function TextListInput({
         </Button>
       </div>
       {value.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5 mt-2">
+        <div className="flex flex-wrap gap-1.5 mt-2">
           {value.map((v) => (
-            <li key={v}>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white text-slate-700 text-xs border">
-                {v}
-                <button
-                  type="button"
-                  aria-label={`Remove ${v}`}
-                  onClick={() => onChange(value.filter((x) => x !== v))}
-                  className="rounded-full p-0.5 hover:bg-slate-100"
-                >
-                  <X size={11} />
-                </button>
-              </span>
-            </li>
+            <Badge
+              key={v}
+              className="border-slate-200 bg-white py-1 pl-2.5 pr-1 font-normal text-slate-700"
+            >
+              {v}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Remove ${v}`}
+                onClick={() => onChange(value.filter((x) => x !== v))}
+                className="h-5 w-5 rounded-full p-0 hover:bg-slate-100"
+              >
+                <X size={11} />
+              </Button>
+            </Badge>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
 }
 
-function RiskScale({ value, onChange }: { value: number | null; onChange: (n: number) => void }) {
+/** Colour per band, shared by the Level and Risk rating scales so a 3 and a 9
+ *  read as the same severity of answer. */
+const LEVEL_TONE: Record<RiskLevel, string> = {
+  1: "!border-emerald-500 !bg-emerald-500 !ring-emerald-500 text-white",
+  2: "!border-amber-400 !bg-amber-400 !ring-amber-400 text-amber-950",
+  3: "!border-orange-500 !bg-orange-500 !ring-orange-500 text-white"
+};
+
+const RISK_BAND_BADGE: Record<RiskCategory, string> = {
+  LOW_RISK: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  MEDIUM_RISK: "bg-amber-100 text-amber-900 border-amber-200",
+  HIGH_RISK: "bg-orange-100 text-orange-900 border-orange-200"
+};
+
+/** A row of numbered boxes, one selectable — the shape the printed card's
+ *  LEVEL and RISK RATING columns take on screen. Radio semantics, because
+ *  that is what "pick one of these numbers" is. */
+function NumberScale({
+  name,
+  values,
+  value,
+  onChange,
+  toneFor
+}: {
+  name: string;
+  values: number[];
+  value: number | null;
+  onChange: (n: number) => void;
+  /** Classes for the selected box, so a 9 can look different from a 1. */
+  toneFor: (n: number) => string;
+}) {
   return (
-    <div className="grid grid-cols-5 gap-1 mt-1">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange(n)}
-          className={cn(
-            "py-2 rounded-md border text-sm font-bold",
-            value === n
-              ? n >= 4
-                ? "bg-rose-500 text-white border-rose-500"
-                : n === 3
-                ? "bg-amber-400 text-amber-950 border-amber-400"
-                : "bg-emerald-500 text-white border-emerald-500"
-              : "bg-white text-slate-600 border-slate-300"
-          )}
-        >
-          {n}
-        </button>
-      ))}
-    </div>
+    <ChoiceCards
+      name={name}
+      className="mt-1 flex flex-row flex-wrap gap-1.5"
+      options={values.map((n) => ({ value: String(n), label: String(n) }))}
+      value={value === null ? "" : String(value)}
+      onChange={(v) => onChange(Number(v))}
+      cardClassName={(selected, o) =>
+        cn(
+          "w-11 py-2 text-center text-sm font-bold",
+          selected ? toneFor(Number(o.value)) : "text-slate-600"
+        )
+      }
+    />
   );
 }
 

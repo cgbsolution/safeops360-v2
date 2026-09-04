@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, MapPin, MapPinOff, ShieldAlert } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import {
   useGeolocationPermission,
   type GeolocationPermission,
@@ -138,13 +139,15 @@ export function GpsCaptureStatus({
         <div className="flex items-center gap-1.5 text-amber-700">
           <ShieldAlert size={12} />
           <span>Location is blocked for this site — the browser will not ask again.</span>
-          <button
+          <Button
             type="button"
+            variant="link"
+            size="sm"
             onClick={() => setShowHelp((v) => !v)}
-            className="underline underline-offset-2 hover:text-amber-900"
+            className="h-auto p-0 text-xs text-amber-700 hover:text-amber-900"
           >
             {showHelp ? "Hide steps" : "How to allow"}
-          </button>
+          </Button>
         </div>
         {showHelp && (
           <div className="mt-1.5 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-amber-900">
@@ -160,13 +163,15 @@ export function GpsCaptureStatus({
                 <code className="rounded bg-amber-100 px-1 py-0.5">{guide.settingsPath}</code>
               </div>
             )}
-            <button
+            <Button
               type="button"
+              variant="outline"
+              size="sm"
               onClick={onRetry}
-              className="mt-2 rounded border border-amber-300 bg-white px-2 py-1 font-medium hover:bg-amber-100"
+              className="mt-2 border-amber-300 text-amber-900 hover:bg-amber-100"
             >
               I’ve allowed it — try again
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -186,13 +191,15 @@ export function GpsCaptureStatus({
     <div className={`${cls} text-amber-700`}>
       <MapPinOff size={12} />
       <span>{message}</span>
-      <button
+      <Button
         type="button"
+        variant="link"
+        size="sm"
         onClick={onRetry}
-        className="underline underline-offset-2 hover:text-amber-900"
+        className="h-auto p-0 text-xs text-amber-700 hover:text-amber-900"
       >
         Use my location
-      </button>
+      </Button>
     </div>
   );
 }

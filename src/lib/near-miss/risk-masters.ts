@@ -56,18 +56,55 @@ export const RISK_CATEGORY_LABELS: Record<RiskCategory, string> = {
 };
 
 /**
- * Rating → category, exactly as the card bands it: 1,2 low · 3,4 medium ·
- * 6,9 high. L × S over two 1-3 scales can only produce those six numbers, so
- * every reachable rating is listed rather than inferred from thresholds.
+ * Rating → category. The card bands the six ratings L × S can actually
+ * produce: 1,2 low · 3,4 medium · 6,9 high.
+ *
+ * 5, 7 and 8 are unreachable by multiplication but ARE selectable, because the
+ * coordinator can set the rating by hand. They are banded by continuing the
+ * card's own boundaries — 5 sits with 3,4; 7 and 8 sit with 6,9 — which
+ * extends the card without contradicting any row printed on it.
  */
 const RATING_TO_CATEGORY: Record<number, RiskCategory> = {
   1: "LOW_RISK",
   2: "LOW_RISK",
   3: "MEDIUM_RISK",
   4: "MEDIUM_RISK",
+  5: "MEDIUM_RISK",
   6: "HIGH_RISK",
+  7: "HIGH_RISK",
+  8: "HIGH_RISK",
   9: "HIGH_RISK"
 };
+
+/** Every rating the coordinator can pick. L × S tops out at 9. */
+export const RISK_RATINGS: number[] = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+/** Every level the coordinator can pick — the card's LEVEL column. */
+export const RISK_LEVELS: RiskLevel[] = [1, 2, 3];
+
+/**
+ * LEVEL and RISK CATEGORY are the same column read two ways: the card's level
+ * 1 row is LOW RISK, level 2 is MEDIUM, level 3 is HIGH. Keeping them as one
+ * value is what lets the form offer the level as a number box and still
+ * record a category.
+ */
+const LEVEL_TO_CATEGORY: Record<RiskLevel, RiskCategory> = {
+  1: "LOW_RISK",
+  2: "MEDIUM_RISK",
+  3: "HIGH_RISK"
+};
+
+export function categoryForLevel(level: RiskLevel | null): RiskCategory | null {
+  return level ? LEVEL_TO_CATEGORY[level] : null;
+}
+
+export function levelForCategory(category: RiskCategory | null | ""): RiskLevel | null {
+  if (!category) return null;
+  const found = (Object.keys(LEVEL_TO_CATEGORY) as unknown as RiskLevel[]).find(
+    (l) => LEVEL_TO_CATEGORY[l] === category
+  );
+  return found ?? null;
+}
 
 /** The workflow's own severity band. The card has no CRITICAL tier, so this
  *  form never produces one — see the note on auto-promotion in the router. */

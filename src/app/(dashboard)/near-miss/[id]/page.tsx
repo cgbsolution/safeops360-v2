@@ -508,9 +508,20 @@ export default async function NearMissDetail(
                 <div className="rounded-md border border-slate-200 p-2.5 space-y-1">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                     <span className="font-medium text-slate-700">Risk Calculator</span>
+                    {/* Never printed as an equation: the coordinator can set
+                        the rating by hand, and "2 x 3 = 8" is not a thing to
+                        show an auditor. The mismatch is called out instead. */}
                     <span>
-                      L {n.riskProbability} x S {n.riskSeverityLevel} = RR {n.riskRating}
+                      L {n.riskProbability ?? "—"} · S {n.riskSeverityLevel ?? "—"} · RR{" "}
+                      {n.riskRating}
                     </span>
+                    {n.riskProbability != null &&
+                      n.riskSeverityLevel != null &&
+                      n.riskProbability * n.riskSeverityLevel !== n.riskRating && (
+                        <span className="text-amber-700">
+                          set by hand (L × S gives {n.riskProbability * n.riskSeverityLevel})
+                        </span>
+                      )}
                     {n.riskCategory && (
                       <Badge className={RISK_BADGE[severityOfCategory(n.riskCategory)] ?? ""}>
                         {RISK_CATEGORY_LABELS[n.riskCategory as keyof typeof RISK_CATEGORY_LABELS] ??
