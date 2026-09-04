@@ -103,13 +103,16 @@ export default async function NearMissDetail(
 
   // Permission gates
   const isHseManagerLike = role === "HSE_MANAGER" || role === "ADMIN" || role === "CORPORATE_HSE";
-  // Only the actor who currently holds the "Review Meeting & CAPA Definition"
-  // task may define CAPAs — not every HSE Manager, and not the reporter. This
-  // mirrors the backend gate in near_miss.create_capa (_is_capa_definition_actor).
+  // Only the actor who currently holds the CAPA-owning task may add CAPAs and
+  // name their owners — not every HSE Manager, and not the reporter. Both step
+  // names are accepted because records raised before the v2 workflow are still
+  // sitting at the old one. Mirrors CAPA_STEP_NAMES /
+  // _is_capa_definition_actor in the near-miss router.
+  const CAPA_STEP_NAMES = ["Safety Officer Review", "Review Meeting & CAPA Definition"];
   const canDefineCapa =
     !!instance &&
     instance.status === "IN_PROGRESS" &&
-    currentStep?.name === "Review Meeting & CAPA Definition" &&
+    CAPA_STEP_NAMES.includes(currentStep?.name ?? "") &&
     !!myTask &&
     myTask.stepId === currentStep?.id;
   const canVerifyCapa =
@@ -147,6 +150,7 @@ export default async function NearMissDetail(
 
   // SLA performance
   const slaPerformance = computeSlaPerf(n.slaTargetAt, n.closedAt ?? n.slaActualClosedAt);
+  const slaBreached = isSlaBreached(n.slaTargetAt, n.closedAt ?? n.slaActualClosedAt);
   // Cycle time
   const cycleHours =
     n.closedAt && n.createdAt
@@ -186,6 +190,11 @@ export default async function NearMissDetail(
           <div className="flex items-center gap-2 print:hidden">
             <Badge className={severityColor(n.potentialSeverity)}>Potential: {n.potentialSeverity}</Badge>
             {n.riskLevel && <Badge className={RISK_BADGE[n.riskLevel] ?? ""}>Risk: {n.riskLevel}</Badge>}
+            {slaBreached && (
+              <Badge className="border-rose-200 bg-rose-100 text-rose-800">
+                <Clock size={11} className="mr-1" /> SLA breached
+              </Badge>
+            )}
             {instance ? (
               <Badge
                 className={
@@ -864,6 +873,7 @@ export default async function NearMissDetail(
                 <Meta icon={CalendarDays} label="Target closure" value={formatDate(n.targetDate)} />
               )}
               {n.slaTargetAt && <Meta icon={Clock} label="SLA target" value={formatDateTime(n.slaTargetAt)} />}
+              {n.slaHours && <Meta icon={Clock} label="SLA" value={`${n.slaHours} h from raising`} />}
               {slaPerformance && <Meta icon={Clock} label="SLA performance" value={slaPerformance} />}
               {n.reporterType && (
                 <Meta icon={UserIcon} label="Reporter type" value={REPORTER_TYPE_LABELS[n.reporterType] ?? n.reporterType} />
@@ -954,12 +964,20 @@ function PrintButton() {
 }
 
 // ─── SLA performance ────────────────────────────────────────────
+/** True while the record is open and its SLA target has already passed. The
+ *  breach is derived, never stored: a stored flag would need a job to set it
+ *  and would be wrong for the hours between the deadline and that job. */
+function isSlaBreached(targetAt: Date | string | null, closedAt: Date | string | null) {
+  if (!targetAt || closedAt) return false;
+  return new Date(targetAt).getTime() < Date.now();
+}
+
 function computeSlaPerf(targetAt: Date | string | null, closedAt: Date | string | null): string | null {
   if (!targetAt) return null;
   if (!closedAt) {
     const ms = new Date(targetAt).getTime() - Date.now();
     if (ms < 0) {
-      return `Overdue by ${Math.round(Math.abs(ms) / 3_600_000)}h`;
+      return `SLA breached — ${Math.round(Math.abs(ms) / 3_600_000)}h over`;
     }
     return "On track";
   }

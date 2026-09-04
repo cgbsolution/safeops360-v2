@@ -20,15 +20,16 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { UserPicker } from "@/components/ui/user-picker";
 import {
-  CheckCircle2, XCircle, Plus, AlertCircle, Loader2, ClipboardList
+  CheckCircle2, XCircle, Plus, AlertCircle, Loader2, ClipboardList, UserPlus
 } from "lucide-react";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
+import { toDateInputValue, toTargetIso, todayInAppZone } from "@/lib/near-miss/target-date";
 
 type Capa = {
   id: string;
   description: string;
   type: "CORRECTIVE" | "PREVENTIVE";
-  ownerId: string;
+  ownerId: string | null;
   targetDate: string;
   status: "PENDING" | "IN_PROGRESS" | "COMPLETED" | "OVERDUE" | "VERIFIED" | "REJECTED";
   evidenceUrl: string | null;
@@ -111,8 +112,10 @@ export function CapaPlanSection({
             key={c.id}
             capa={c}
             nearMissId={nearMissId}
+            plantId={plantId}
             currentUserId={currentUserId}
             canVerify={canVerify}
+            canAssign={canDefine}
             onChanged={() => { void load(); router.refresh(); }}
           />
         ))}
@@ -193,17 +196,26 @@ function AddCapaForm({
 function CapaRow({
   capa,
   nearMissId,
+  plantId,
   currentUserId,
   canVerify,
+  canAssign,
   onChanged
 }: {
   capa: Capa;
   nearMissId: string;
+  plantId: string;
   currentUserId: string;
   canVerify: boolean;
+  /** The Safety Officer holds this step — they name each CAPA's owner. */
+  canAssign: boolean;
   onChanged: () => void;
 }) {
-  const [mode, setMode] = useState<"idle" | "submit" | "reject">("idle");
+  const [mode, setMode] = useState<"idle" | "submit" | "reject" | "assign">("idle");
+  const [assignOwnerId, setAssignOwnerId] = useState<string | null>(capa.ownerId);
+  // Read back in the display zone for the same reason it is written at noon
+  // UTC — see lib/near-miss/target-date.
+  const [assignTargetDate, setAssignTargetDate] = useState(toDateInputValue(capa.targetDate));
   const [completionNotes, setCompletionNotes] = useState("");
   const [evidenceUrl, setEvidenceUrl] = useState("");
   const [evidenceDescription, setEvidenceDescription] = useState("");
@@ -215,7 +227,7 @@ function CapaRow({
   const ownerCanSubmit = isOwner && (capa.status === "PENDING" || capa.status === "IN_PROGRESS" || capa.status === "REJECTED");
   const verifierCanAct = canVerify && capa.status === "COMPLETED";
 
-  async function send(action: "SUBMIT" | "VERIFY" | "REJECT", payload: Record<string, any>) {
+  async function send(action: "ASSIGN" | "SUBMIT" | "VERIFY" | "REJECT", payload: Record<string, any>) {
     setBusy(true); setErr("");
     const r = await fetch(`/api/near-miss/${nearMissId}/capas/${capa.id}`, {
       method: "PATCH",
@@ -247,7 +259,13 @@ function CapaRow({
           </div>
           <div className="text-sm text-slate-900">{capa.description}</div>
           <div className="text-xs text-slate-500 mt-1">
-            Target: {formatDate(capa.targetDate)}
+            {/* A CAPA written on the report has neither until the Safety
+                Officer assigns it, so say so rather than print an empty date. */}
+            {capa.ownerId && capa.targetDate ? (
+              <>Target: {formatDate(capa.targetDate)}</>
+            ) : (
+              <span className="text-amber-700">Awaiting owner &amp; target date</span>
+            )}
             {capa.completedAt && <> · Submitted {formatDateTime(capa.completedAt)}</>}
             {capa.verifiedAt && <> · Verified {formatDateTime(capa.verifiedAt)}</>}
           </div>
@@ -264,6 +282,51 @@ function CapaRow({
         </div>
       </div>
 
+      {canAssign && mode === "idle" && (
+        <Button size="sm" variant={capa.ownerId ? "outline" : "default"} onClick={() => setMode("assign")}>
+          <UserPlus size={13} /> {capa.ownerId ? "Reassign" : "Assign owner"}
+        </Button>
+      )}
+      {mode === "assign" && (
+        <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50/60 p-2">
+          <div>
+            <Label className="text-xs">Owner</Label>
+            <UserPicker
+              value={assignOwnerId}
+              onChange={setAssignOwnerId}
+              filter={{ plantId }}
+              placeholder="Search and pick..."
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Target date</Label>
+            <Input
+              type="date"
+              value={assignTargetDate}
+              min={todayInAppZone()}
+              onChange={(e) => setAssignTargetDate(e.target.value)}
+            />
+          </div>
+          {err && <p className="text-xs text-rose-700">{err}</p>}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              disabled={busy || !assignOwnerId || !assignTargetDate}
+              onClick={() =>
+                send("ASSIGN", {
+                  ownerId: assignOwnerId,
+                  targetDate: toTargetIso(assignTargetDate)
+                })
+              }
+            >
+              <CheckCircle2 size={13} /> Save
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => setMode("idle")} disabled={busy}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
       {ownerCanSubmit && mode === "idle" && (
         <Button size="sm" onClick={() => setMode("submit")}>
           <CheckCircle2 size={13} /> Submit completion

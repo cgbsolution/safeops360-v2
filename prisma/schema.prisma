@@ -992,6 +992,10 @@ model NearMiss {
   closureTriggers       Json?
 
   // ─── SLA tracking ─────────────────────────────────────────────
+  // Closure SLA in hours, chosen on the report form. Stored rather than
+  // re-derived from severity so editing the severity later cannot silently
+  // move a record's deadline; severity only supplies the default.
+  slaHours          Int?
   slaTargetAt       DateTime?
   slaActualClosedAt DateTime?
   slaPerformance    String?
@@ -1076,9 +1080,14 @@ model NearMissCapa {
   nearMiss            NearMiss  @relation(fields: [nearMissId], references: [id], onDelete: Cascade)
   description         String
   type                String // CORRECTIVE | PREVENTIVE
-  ownerId             String
-  owner               User      @relation("NearMissCapaOwner", fields: [ownerId], references: [id])
-  targetDate          DateTime
+  // Null between the report being raised and the Safety Officer naming an
+  // owner at step 2 — the reporter writes the CAPA, the Safety Officer says
+  // who does it. The Safety Officer Review step cannot be completed while any
+  // CAPA on the record is still unowned, so a null never reaches execution.
+  ownerId             String?
+  owner               User?     @relation("NearMissCapaOwner", fields: [ownerId], references: [id])
+  // Null for the same window as ownerId — the Safety Officer sets both.
+  targetDate          DateTime?
   // PENDING | IN_PROGRESS | COMPLETED | OVERDUE | VERIFIED | REJECTED
   status              String    @default("PENDING")
   evidenceUrl         String?

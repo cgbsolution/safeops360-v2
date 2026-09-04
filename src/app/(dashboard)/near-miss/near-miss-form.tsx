@@ -27,6 +27,7 @@ import { useGeolocation } from "@/hooks/use-geolocation";
 import { readApiError } from "@/lib/client-errors";
 import { uploadNearMissAttachment } from "@/components/near-miss/upload-helper";
 import { DEPARTMENTS } from "@/lib/observation-masters";
+import { toTargetIso, todayInAppZone } from "@/lib/near-miss/target-date";
 import { MultiSelect } from "@/components/ui/multi-select";
 import {
   CATEGORY_TO_SEVERITY,
@@ -103,6 +104,25 @@ const REPORTER_TYPES = [
 // the near-miss router. Everything else in that list is a MasterItem id.
 const ACTIVITY_OTHER = "OTHER";
 
+type CapaType = "CORRECTIVE" | "PREVENTIVE";
+type CapaDraft = { description: string; type: CapaType };
+
+// Closure SLA presets. The reporter picks one; the default follows the
+// severity band, which is the rule the backend applied on its own before the
+// field existed (_SLA_HOURS_BY_SEVERITY in the near-miss router).
+const SLA_PRESETS = [
+  { hours: 24, label: "24 hours" },
+  { hours: 48, label: "48 hours" },
+  { hours: 168, label: "7 days" },
+  { hours: 336, label: "14 days" }
+] as const;
+
+const DEFAULT_SLA_HOURS: Record<Severity, number> = {
+  LOW: 336,
+  MEDIUM: 168,
+  HIGH: 48
+};
+
 /** WorkerRef → the personsInvolved / witnesses element the API expects. */
 function toPersonPayload(w: WorkerRef) {
   return {
@@ -157,7 +177,13 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   const [personsInvolved, setPersonsInvolved] = useState<WorkerRef[]>([]);
   const [witnesses, setWitnesses] = useState<WorkerRef[]>([]);
   const [initialRootCause, setInitialRootCause] = useState<string>("");
+  // The Safety Officer who verifies this report and assigns its CAPAs. Still
+  // NearMiss.suggestedActionOwnerId underneath — the column already held
+  // "the person this should go to", which is exactly what this is.
   const [suggestedActionOwnerId, setSuggestedActionOwnerId] = useState<string | null>(null);
+  const [capas, setCapas] = useState<CapaDraft[]>([]);
+  const [targetDate, setTargetDate] = useState<string>("");
+  const [slaHours, setSlaHours] = useState<string>(String(DEFAULT_SLA_HOURS.MEDIUM));
 
   const { coords: gps, status: gpsStatus, error: gpsError, request: requestGps } = useGeolocation();
   const [photos, setPhotos] = useState<LocalPhoto[]>([]);
@@ -175,6 +201,8 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   const [activityTypes, setActivityTypes] = useState<MasterListItem[]>([]);
 
   const today = new Date().toISOString().slice(0, 16);
+  // The target picker's floor is today in the DISPLAY zone, not in UTC.
+  const todayDate = todayInAppZone();
   // RR = L × S, and the band the card puts that number in. Both follow from
   // the two picks, so they are derived rather than stored — except the
   // category, which the reporter may overrule.
@@ -225,6 +253,15 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
     if (!effectiveCategory) return;
     setSeverity(CATEGORY_TO_SEVERITY[effectiveCategory]);
   }, [effectiveCategory]);
+
+  // The SLA default follows the severity band the Risk Calculator produced,
+  // right up until the reporter picks one themselves — after that it is
+  // theirs and the band no longer moves it.
+  const slaTouched = useRef(false);
+  useEffect(() => {
+    if (slaTouched.current) return;
+    setSlaHours(String(DEFAULT_SLA_HOURS[severity]));
+  }, [severity]);
 
   // Cleanup blob URLs on unmount
   useEffect(() => {
@@ -325,10 +362,14 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
           ? nearMissCategoryDetail.trim() || null
           : null,
       initialRootCauseCategory: initialRootCause || null,
-      controlsThatFailed: ((fd.get("controlsFailed") as string) || "").trim() || null,
-      controlsThatWorked: ((fd.get("controlsWorked") as string) || "").trim() || null,
-      recommendedActions: ((fd.get("recommendedActions") as string) || "").trim() || null,
+      // The Safety Officer named here becomes step 2's assignee — see the
+      // SAFETY_OFFICER branch in workflow_engine._resolve_assignee.
       suggestedActionOwnerId: suggestedActionOwnerId || null,
+      capas: capas.length ? capas : null,
+      // Pinned to noon UTC by toTargetIso: a calendar day stored at local
+      // midnight reads back a day earlier for IST users.
+      targetDate: targetDate ? toTargetIso(targetDate) : null,
+      slaHours: Number(slaHours) || null,
       personsInvolved: personsInvolved.map(toPersonPayload),
       witnesses: witnesses.map(toPersonPayload)
     };
@@ -797,20 +838,6 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
             </div>
           </Section>
 
-          {/* ── Section 6: Existing Controls ── */}
-          <Section title="Existing Controls">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="controlsFailed">Controls that failed</Label>
-                <Textarea id="controlsFailed" name="controlsFailed" rows={3} placeholder="Existing barriers that should have prevented this..." />
-              </div>
-              <div>
-                <Label htmlFor="controlsWorked">Controls that worked</Label>
-                <Textarea id="controlsWorked" name="controlsWorked" rows={3} placeholder="Barriers that DID prevent the incident..." />
-              </div>
-            </div>
-          </Section>
-
           {/* ── Section 7: Initial Root Cause Hint ── */}
           <Section title="Initial Root Cause Hint">
             <Label>Reporter's first guess</Label>
@@ -895,25 +922,85 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
             )}
           </Section>
 
-          {/* ── Section 9: Immediate Action & Recommendation ── */}
-          <Section title="Immediate Action & Recommendation">
+          {/* ── Section 9: Immediate Action & CAPA ── */}
+          <Section
+            title="Immediate Action & CAPA"
+            subtitle="What you did on the spot, and what should be done about it"
+          >
             <div className="space-y-4">
               <div>
                 <Label htmlFor="immediateAction">Immediate action taken</Label>
                 <Textarea id="immediateAction" name="immediateAction" rows={2} placeholder="Steps taken on the spot..." />
               </div>
+
+              {/* CAPAs are written here, by the person who saw it. The Safety
+                  Officer names an owner and a date for each at the next
+                  workflow step — which is why neither is asked for now. */}
               <div>
-                <Label htmlFor="recommendedActions">Recommended corrective actions</Label>
-                <Textarea id="recommendedActions" name="recommendedActions" rows={2} placeholder="What you think should be done..." />
+                <Label>Corrective &amp; preventive actions (CAPA)</Label>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  What should be done so this cannot happen again? The Safety Officer
+                  assigns who does each one.
+                </p>
+                <div className="mt-2">
+                  <CapaListInput value={capas} onChange={setCapas} />
+                </div>
               </div>
+
               <div>
-                <Label>Suggested action owner</Label>
-                <UserPicker
-                  value={suggestedActionOwnerId}
-                  onChange={setSuggestedActionOwnerId}
-                  filter={{ plantId: plantId || undefined }}
-                  placeholder="Search and pick..."
-                />
+                <Label htmlFor="safetyOfficer">Safety officer<Req /></Label>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Verifies this report and assigns each CAPA. Leave blank and it goes to
+                  whoever holds the Safety Officer role at this plant.
+                </p>
+                <div className="mt-1">
+                  <UserPicker
+                    id="safetyOfficer"
+                    value={suggestedActionOwnerId}
+                    onChange={setSuggestedActionOwnerId}
+                    filter={{ plantId: plantId || undefined }}
+                    placeholder="Search and pick..."
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="targetDate">Target closure date</Label>
+                  <Input
+                    id="targetDate"
+                    name="targetDate"
+                    type="date"
+                    value={targetDate}
+                    min={todayDate}
+                    onChange={(e) => setTargetDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="slaHours">Closure SLA</Label>
+                  <SelectField
+                    id="slaHours"
+                    value={slaHours}
+                    onChange={(v) => {
+                      // From here on the SLA is the reporter's, not the
+                      // severity band's — see the effect that seeds it.
+                      slaTouched.current = true;
+                      setSlaHours(v);
+                    }}
+                    options={SLA_PRESETS.map((o) => ({
+                      value: String(o.hours),
+                      label:
+                        o.hours === DEFAULT_SLA_HOURS[severity]
+                          ? `${o.label} — default for ${severity}`
+                          : o.label
+                    }))}
+                    placeholder="— Select —"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    The clock starts on submission. Past it, the record shows as
+                    <span className="font-medium"> SLA breached</span> and escalates.
+                  </p>
+                </div>
               </div>
             </div>
           </Section>
@@ -1059,6 +1146,109 @@ function SeverityAdder({ onAdd }: { onAdd: (level: RiskLevel, label: string) => 
           Add
         </Button>
       </div>
+    </div>
+  );
+}
+
+/** The CAPAs a reporter writes on the form. Each is a line of what should be
+ *  done and whether it is corrective or preventive; no owner and no date,
+ *  because the Safety Officer sets both at the next workflow step and the step
+ *  will not close until they have. */
+function CapaListInput({
+  value,
+  onChange
+}: {
+  value: CapaDraft[];
+  onChange: (v: CapaDraft[]) => void;
+}) {
+  const [description, setDescription] = useState("");
+  const [type, setType] = useState<CapaType>("CORRECTIVE");
+
+  function add() {
+    const next = description.trim();
+    if (next.length < 3) return;
+    if (value.some((c) => c.description.toLowerCase() === next.toLowerCase())) {
+      setDescription("");
+      return;
+    }
+    onChange([...value, { description: next, type }]);
+    setDescription("");
+    setType("CORRECTIVE");
+  }
+
+  return (
+    <div className="rounded-md border border-slate-200 bg-slate-50/60 p-2">
+      <div className="mb-1.5 text-xs font-medium text-slate-500">
+        Describe one action, then Add
+      </div>
+      <div className="flex items-start gap-2">
+        <div className="w-36 shrink-0">
+          <SelectField
+            value={type}
+            onChange={(v) => setType(v as CapaType)}
+            ariaLabel="CAPA type"
+            options={[
+              { value: "CORRECTIVE", label: "Corrective" },
+              { value: "PREVENTIVE", label: "Preventive" }
+            ]}
+          />
+        </div>
+        <Input
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter inside a form submits it. Here it means "add this one".
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          placeholder="e.g. Fit a self-closing latch on the ramp gate"
+          className="min-w-0 flex-1"
+        />
+        <Button
+          type="button"
+          onClick={add}
+          title="Add this CAPA"
+          aria-label="Add this CAPA"
+          className="shrink-0"
+        >
+          <Plus className="h-4 w-4" />
+          Add
+        </Button>
+      </div>
+      {value.length > 0 && (
+        <ol className="mt-2 space-y-1.5">
+          {value.map((c, i) => (
+            <li
+              key={c.description}
+              className="flex items-start gap-2 rounded-md border border-slate-200 bg-white p-2"
+            >
+              <Badge
+                className={cn(
+                  "mt-0.5 shrink-0 border-transparent",
+                  c.type === "PREVENTIVE"
+                    ? "bg-sky-100 text-sky-800"
+                    : "bg-violet-100 text-violet-800"
+                )}
+              >
+                {c.type === "PREVENTIVE" ? "Preventive" : "Corrective"}
+              </Badge>
+              <span className="min-w-0 flex-1 text-sm text-slate-700">{c.description}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={`Remove CAPA ${i + 1}`}
+                onClick={() => onChange(value.filter((x) => x.description !== c.description))}
+                className="h-6 w-6 shrink-0 rounded-full p-0"
+              >
+                <X size={12} />
+              </Button>
+            </li>
+          ))}
+        </ol>
+      )}
     </div>
   );
 }
