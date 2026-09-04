@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { readApiError } from "@/lib/client-errors";
@@ -88,6 +89,9 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   // dropdowns can react to Act ↔ Condition switches mid-entry.
   const [type, setType] = useState("UNSAFE_ACT");
   const [taxonomy, setTaxonomy] = useState<StopTaxonomyValue>({ categoryCode: "", subCategoryCode: "" });
+  // The safe-axis category. Was an uncontrolled <select defaultValue="PPE">;
+  // a Radix listbox has no form value of its own, so the default now lives here.
+  const [safeCategory, setSafeCategory] = useState("PPE");
   const [error, setError] = useState("");
   const [uploadFailures, setUploadFailures] = useState<{ id: string; fileName: string; error: string }[]>([]);
   const [createdObservationId, setCreatedObservationId] = useState<string | null>(null);
@@ -95,8 +99,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
-  // Contractor companies (shared master) — reuse the near-miss masters endpoint.
-  const [contractors, setContractors] = useState<{ id: string; name: string }[]>([]);
+
   // Who employs the person this observation is about. Previously inferred from
   // a single optional dropdown, where "left blank" meant both "own employee"
   // and "haven't got to it yet" — the observer never actually stated which.
@@ -104,21 +107,12 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
   // the company list worth showing.
   const [employmentType, setEmploymentType] = useState<"COMPANY" | "CONTRACTOR">("COMPANY");
   // Controlled so the Worker Involved picker can scope to this company's crew.
-  const [contractorCompanyId, setContractorCompanyId] = useState("");
+
   const [workersInvolved, setWorkersInvolved] = useState<WorkerRef[]>([]);
   // Observation date is controlled because the SLA preview is computed from it.
   const [obsDate, setObsDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [targetDateOverride, setTargetDateOverride] = useState("");
   const [targetDateReason, setTargetDateReason] = useState("");
-
-  useEffect(() => {
-    let alive = true;
-    fetch("/api/near-miss/masters/contractors")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => { if (alive && Array.isArray(rows)) setContractors(rows); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -265,8 +259,10 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
     payload.department = department || null;
     // Taken from state, not the form: on "Company employee" the select isn't
     // rendered at all, and an empty-string FK would fail on insert either way.
-    payload.contractorCompanyId =
-      employmentType === "CONTRACTOR" ? contractorCompanyId || null : null;
+    payload.employmentType = employmentType;
+    // No company is collected any more, so this stays null on new records. The
+    // column and every reader of it are untouched for the records that have one.
+    payload.contractorCompanyId = null;
 
     // Named workers, tagged with which people table each id belongs to — or
     // MANUAL, which belongs to neither and carries its own typed name/ID.
@@ -371,12 +367,13 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
             <Field label="Date" name="date" required>
               {/* Controlled: the SLA target date is observationDate + slaDays,
                   so backdating the observation moves the closure date with it. */}
-              <Input
+              <DatePicker
+                id="date"
                 name="date"
-                type="date"
                 value={obsDate}
-                onChange={(e) => setObsDate(e.target.value)}
+                onChange={setObsDate}
                 required
+                ariaLabel="Observation date"
               />
             </Field>
             {/* Pre-filled from the severity matrix once Category + Sub-category
@@ -397,14 +394,15 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Plant Unit Name" name="plantId" required>
-              <Select
+              <SelectField
+                id="plantId"
                 name="plantId"
                 value={plantId}
-                onChange={(e) => setPlantId(e.target.value)}
+                onChange={setPlantId}
                 required
-              >
-                {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </Select>
+                placeholder="— Select the plant unit —"
+                options={plants.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </Field>
             {/* Typed, not picked. The place something is observed is rarely one
                 of a plant's registered Areas — it is "behind the Elastic line,
@@ -423,28 +421,28 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
             {/* The site's own department list (Dept.list.xlsx). Stored as text
                 rather than an FK — see Observation.department. */}
             <Field label="Department" name="department" required>
-              <Select
+              <SelectField
+                id="department"
                 name="department"
                 required
                 value={department}
-                onChange={(e) => setDepartment(e.target.value)}
-              >
-                <option value="">— Select the department —</option>
-                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </Select>
+                onChange={setDepartment}
+                placeholder="— Select the department —"
+                options={DEPARTMENTS.map((d) => ({ value: d, label: d }))}
+              />
             </Field>
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Observation Type" name="type" required>
-              <Select
+              <SelectField
+                id="type"
                 name="type"
                 required
                 value={type}
-                onChange={(e) => setType(e.target.value)}
-              >
-                {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </Select>
+                onChange={setType}
+                options={TYPES.map((t) => ({ value: t.value, label: t.label }))}
+              />
             </Field>
             {/* The site's own category list, scoped to the act/condition axis:
                 17 unsafe-condition categories, 19 unsafe-act ones. Served from
@@ -457,46 +455,35 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
               onChange={setTaxonomy}
               safeCategorySlot={
                 <Field label="Category" name="category" required>
-                  <Select name="category" required defaultValue="PPE">
-                    {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
-                  </Select>
+                  <SelectField
+                    id="category"
+                    name="category"
+                    required
+                    value={safeCategory}
+                    onChange={setSafeCategory}
+                    options={CATEGORIES.map((c) => ({ value: c, label: c.replace(/_/g, " ") }))}
+                  />
                 </Field>
               }
             />
           </div>
 
+          {/* Employed By is the whole question. Naming the specific contractor
+              company was dropped on request: the observer is reporting what they
+              saw, and "which of the site's contractors employs this person" is a
+              lookup they often cannot answer standing in front of them. The
+              answer is stored on Observation.employmentType. */}
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Employed By" name="employmentType" required>
               <RadioGroup
                 className="grid-cols-2 gap-2"
                 value={employmentType}
-                onValueChange={(v) => {
-                  setEmploymentType(v as "COMPANY" | "CONTRACTOR");
-                  // Drop the company when switching back. Leaving it set would
-                  // keep the Worker Involved search scoped to that contractor's
-                  // crew while the form says "company employee".
-                  if (v === "COMPANY") setContractorCompanyId("");
-                }}
+                onValueChange={(v) => setEmploymentType(v as "COMPANY" | "CONTRACTOR")}
               >
                 <EmploymentOption value="COMPANY" label="Company employee" />
                 <EmploymentOption value="CONTRACTOR" label="Contractor" />
               </RadioGroup>
             </Field>
-            {/* Only asked once "Contractor" is the answer — an always-visible
-                company list on a company-employee observation is a field the
-                observer has to read and then ignore. */}
-            {employmentType === "CONTRACTOR" && (
-              <Field label="Contractor Company" name="contractorCompanyId">
-                <Select
-                  name="contractorCompanyId"
-                  value={contractorCompanyId}
-                  onChange={(e) => setContractorCompanyId(e.target.value)}
-                >
-                  <option value="">— Not specified —</option>
-                  {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </Select>
-              </Field>
-            )}
           </div>
 
           {/* Worker Involved — always visible, mandatory only for High/Critical
@@ -507,9 +494,6 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
             <WorkerInvolvedPicker
               value={workersInvolved}
               onChange={setWorkersInvolved}
-              contractorCompanyName={
-                contractors.find((c) => c.id === contractorCompanyId)?.name ?? null
-              }
               required={workersRequired}
               invalid={workersRequired && workersInvolved.length === 0}
             />

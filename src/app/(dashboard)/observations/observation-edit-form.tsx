@@ -10,7 +10,8 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
@@ -193,9 +194,12 @@ export function ObservationEditForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label>Type</Label>
-              <Select value={type} onChange={(e) => setType(e.target.value)}>
-                {typeOptions.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </Select>
+              <SelectField
+                value={type}
+                onChange={setType}
+                ariaLabel="Observation type"
+                options={typeOptions.map((t) => ({ value: t.value, label: t.label }))}
+              />
             </div>
             <StopTaxonomyFields
               type={type}
@@ -204,9 +208,12 @@ export function ObservationEditForm({
               safeCategorySlot={
                 <div>
                   <Label>Category</Label>
-                  <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-                    {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
-                  </Select>
+                  <SelectField
+                    value={category}
+                    onChange={setCategory}
+                    ariaLabel="Category"
+                    options={CATEGORIES.map((c) => ({ value: c, label: c.replace(/_/g, " ") }))}
+                  />
                 </div>
               }
             />
@@ -236,22 +243,28 @@ export function ObservationEditForm({
             {observation.areaId && (
               <div>
                 <Label>Area (legacy)</Label>
-                <Select value={areaId} onChange={(e) => setAreaId(e.target.value)}>
-                  <option value="">— None —</option>
-                  {areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </Select>
+                <SelectField
+                  value={areaId}
+                  onChange={setAreaId}
+                  ariaLabel="Area"
+                  placeholder="— None —"
+                  options={areas.map((a) => ({ value: a.id, label: a.name }))}
+                />
               </div>
             )}
             <div>
               <Label>Department</Label>
-              <Select value={department} onChange={(e) => setDepartment(e.target.value)}>
-                <option value="">— None —</option>
-                {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
-              </Select>
+              <SelectField
+                value={department}
+                onChange={setDepartment}
+                ariaLabel="Department"
+                placeholder="— None —"
+                options={DEPARTMENTS.map((d) => ({ value: d, label: d }))}
+              />
             </div>
             <div>
               <Label>Target Date</Label>
-              <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+              <DatePicker value={targetDate} onChange={setTargetDate} ariaLabel="Target date" />
             </div>
           </div>
           <div>

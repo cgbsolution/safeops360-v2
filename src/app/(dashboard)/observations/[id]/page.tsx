@@ -440,22 +440,27 @@ export default async function ObservationDetailPage(
               or after a rework rejection). */}
           <ActionEvidencePanel observationId={o.id} currentUserId={userId} />
 
-          {/* Upload gating — only two legitimate uploaders:
-                - Observer (the maker) → INITIAL_PHOTO, while record isn't closed
-                - Action Owner with active EXECUTION task → ACTION_EVIDENCE
-              Verifier and everyone else can read but doesn't see the
-              Add Photos button. */}
+          {/* This section is the OBSERVER'S evidence — what they saw when they
+              filed the report. Only they can add to it, and only while the
+              record is open.
+
+              The action owner used to get an "Add photos" button here too,
+              which quietly filed their photos as ACTION_EVIDENCE into the
+              maker's gallery. Two problems: it put a control on someone else's
+              evidence in front of a person who had not filed it, and it gave
+              corrective-action proof a second way in that bypassed the task.
+              Action evidence now has exactly one route — the photo picker
+              inside "Submit Completed Task" — so the proof always arrives
+              attached to the submission that claims it. The server enforces
+              both halves; see _guard_attachment_category. */}
           {(() => {
             const isObserver = userId === o.observerId;
-            const isExecutor = myTask?.taskType === "EXECUTION";
             const workflowOpen = instance ? instance.status !== "COMPLETED" : true;
-            const canUpload = workflowOpen && (isObserver || isExecutor);
-            const uploadCategory = isExecutor ? "ACTION_EVIDENCE" : "INITIAL_PHOTO";
             return (
               <ObservationAttachmentGallery
                 observationId={o.id}
-                uploadCategory={uploadCategory}
-                canUpload={canUpload}
+                uploadCategory="INITIAL_PHOTO"
+                canUpload={workflowOpen && isObserver}
                 currentUserId={userId}
               />
             );

@@ -34,7 +34,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { AlertCircle, Loader2 } from "lucide-react";
 
 const MX = { navy: "#0B1F4D", gold: "#C9A961", ice: "#E8EEF7" };
@@ -148,26 +148,24 @@ export function StopTaxonomyFields({
         <Label htmlFor="categoryCode">
           Category<span className="text-rose-600 ml-0.5">*</span>
         </Label>
-        <Select
+        <SelectField
+          id="categoryCode"
           name="categoryCode"
           required
           disabled={disabled || loadingCats}
           value={value.categoryCode}
-          onChange={(e) => {
+          placeholder={loadingCats ? "Loading…" : `— Select a category observable as an unsafe ${axisWord} —`}
+          onChange={(categoryCode) => {
             setClearedNotice("");
             // Changing category always invalidates the sub-category (§5.2).
-            onChange({ categoryCode: e.target.value, subCategoryCode: "" });
+            onChange({ categoryCode, subCategoryCode: "" });
           }}
-        >
-          <option value="">
-            {loadingCats ? "Loading…" : `— Select a category observable as an unsafe ${axisWord} —`}
-          </option>
-          {categories.map((c) => (
-            <option key={c.categoryCode} value={c.categoryCode}>
-              {c.categoryLabel} ({c.stopReferenceCode})
-            </option>
-          ))}
-        </Select>
+          options={categories.map((c) => ({
+            value: c.categoryCode,
+            label: c.categoryLabel,
+            hint: c.stopReferenceCode
+          }))}
+        />
         <p className="text-xs text-slate-500">
           {loadingCats ? (
             <span className="inline-flex items-center gap-1">

@@ -68,6 +68,10 @@ export const STEP_TYPE_LIST: { value: StepType; label: string; description: stri
   { value: "CLOSURE", label: "Closure", description: "Final closure of the record." }
 ];
 
+/** Last-resort role list. The builder is passed the real, active role catalogue
+ *  from the database (see configuration/workflows/[id]/page.tsx); this only
+ *  covers the case where that prop is missing, so the dropdown is never empty.
+ *  Do NOT add roles here — add them to the RBAC seeders. */
 export const ROLE_OPTIONS = [
   { value: "WORKER", label: "Worker" },
   { value: "HSE_MANAGER", label: "HSE Manager" },
@@ -190,6 +194,12 @@ export function dtoStepToEditor(s: DefinitionDTO["steps"][number], clientId: str
 }
 
 export function detectAssignmentMode(s: EditorStep): AssignmentMode {
+  // A role AND a pinned user together is still "By Role": the role says who the
+  // step is for, the pin says one named person covers it for every plant
+  // instead of resolving per-plant. Checked first, because reading that
+  // combination as a plain Specific User step would drop the role on the next
+  // save and lose the pin's meaning.
+  if (s.approverRole && s.approverUserId) return "ROLE";
   if (s.approverUserId) return "USER";
   if (s.approverGroupRoles && s.approverGroupRoles.length > 0) return "GROUP";
   if (s.approverField) return "FIELD";

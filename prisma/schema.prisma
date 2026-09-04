@@ -533,6 +533,11 @@ model Observation {
   /// Stored as text, not an FK: there is no Department table in this schema and
   /// the list is a fixed twenty the site owns.
   department          String?
+  /// COMPANY | CONTRACTOR — the "Employed By" answer on the maker form. Null on
+  /// records filed before the field existed; those have no recorded answer, and
+  /// defaulting them to COMPANY would back-label a contractor's act as an
+  /// employee's. Not an enum: hand-DDL column with a CHECK constraint.
+  employmentType      String?
   type                ObservationType
   category            ObservationCategory
   // ─── DuPont STOP taxonomy ─────────────────────────────────────────────
@@ -829,15 +834,20 @@ model NearMiss {
   description String
 
   // ─── Location / context ──────────────────────────────────────────
-  location         String? // legacy free-text (kept for back-compat; new submissions use specificLocation + GPS)
+  location         String? // "Location (Blocks & building)" — manual entry on the report form
   specificLocation String? // free-text specifics ("near south packer #3 outlet")
   gpsLatitude      Float?
   gpsLongitude     Float?
 
   // ─── Departmental & shift context ────────────────────────────────
-  departmentId String?
-  department   Department? @relation(fields: [departmentId], references: [id])
-  shiftId      String? // FK by id to MasterItem(type=SHIFT) — not enforced as relation since MasterItem is generic
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  // The report form picks from the site's own fixed department list — the same
+  // twenty names the Safety Observation form uses (src/lib/observation-masters.ts),
+  // which is not the plant-scoped Department master. Stored as text for exactly
+  // the reason Observation.department is. departmentId stays for legacy records.
+  departmentName String?
+  shiftId        String? // NEAR_MISS_SHIFTS code (GS/FS/SS/NS); legacy rows hold a MasterItem(SHIFT) id
 
   // ─── Reporter context ────────────────────────────────────────────
   reporterType String? // EMPLOYEE | CONTRACTOR | EXTERNAL | ANONYMOUS

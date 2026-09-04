@@ -1,13 +1,17 @@
 /**
- * Site master lists for the Safety Observation form, as supplied by Page
- * Industries (Dept.list.xlsx, 2026-09-04).
+ * Site master lists for the Safety Observation and Near Miss forms, as
+ * supplied by Page Industries (Dept.list.xlsx, 2026-09-04).
  *
- * DEPARTMENTS is a constant rather than a database master on purpose: there is
- * no Department table in this schema, `Observation.department` is a plain text
- * column, and the list is a fixed 20 that the site owns. A constant keeps the
- * dropdown authoritative without inventing a table, an admin screen and a
- * seeder for twenty strings that change once a year. If the list ever needs to
- * be editable in-app, that is the point to promote it to a table — not before.
+ * DEPARTMENTS is a constant rather than a database master on purpose. The
+ * Department table that does exist is plant-scoped and shared with Incidents,
+ * Permits, HIRA, EAI and Manhours, and it holds a different, generic set of
+ * thirteen names (HSE, Operations, Maintenance, …) seeded per plant — not this
+ * site's twenty. Both `Observation.department` and `NearMiss.departmentName`
+ * are therefore plain text columns fed from this list. A constant keeps the
+ * dropdown authoritative without forking that shared master, and without
+ * inventing an admin screen and a seeder for twenty strings that change once a
+ * year. If the list ever needs to be editable in-app, that is the point to
+ * promote it to a table of its own — not before.
  *
  * The observation CATEGORIES are deliberately NOT here. They live in
  * ObservationTaxonomy and are served per act/condition axis by

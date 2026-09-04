@@ -57,15 +57,27 @@ function toEditorSteps(initial: DefinitionDTO): EditorStep[] {
     .map((s) => dtoStepToEditor(s, uid()));
 }
 
-export function WorkflowEditor({ initial }: { initial: DefinitionDTO }) {
+/** Every active role, loaded from the RBAC tables by the page and threaded down
+ *  to the step properties panel. Not a module constant: the role catalogue is
+ *  data, and a hardcoded copy is a copy that goes stale the first time someone
+ *  adds a role. */
+export type RoleOption = { code: string; name: string };
+
+export function WorkflowEditor({
+  initial,
+  roles = []
+}: {
+  initial: DefinitionDTO;
+  roles?: RoleOption[];
+}) {
   return (
     <ReactFlowProvider>
-      <EditorInner initial={initial} />
+      <EditorInner initial={initial} roles={roles} />
     </ReactFlowProvider>
   );
 }
 
-function EditorInner({ initial }: { initial: DefinitionDTO }) {
+function EditorInner({ initial, roles }: { initial: DefinitionDTO; roles: RoleOption[] }) {
   const router = useRouter();
   const initialSteps = useMemo(() => toEditorSteps(initial), [initial]);
   const [steps, setSteps] = useState<EditorStep[]>(initialSteps);
@@ -580,6 +592,7 @@ function EditorInner({ initial }: { initial: DefinitionDTO }) {
         {selectedStep && (
           <PropertiesPanel
             step={{ ...selectedStep, sequence: selectedIndex + 1 }}
+            roles={roles}
             isFirst={selectedIndex === 0}
             onChange={(next) => updateStep(selectedStep.clientId, next)}
             onDelete={() => deleteStep(selectedStep.clientId)}

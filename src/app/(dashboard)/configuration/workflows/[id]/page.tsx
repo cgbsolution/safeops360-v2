@@ -9,6 +9,18 @@ export default async function WorkflowEditorPage(props: { params: Promise<{ id: 
   const params = await props.params;
   await requirePermission("CONFIGURATION.WORKFLOWS");
 
+  // Every assignable role, read from the RBAC tables rather than the four-entry
+  // hardcoded list the builder used to ship with. That list predated most of the
+  // role catalogue, so "By Role" could only ever target Worker, HSE Manager,
+  // Plant Head or Admin — a step routed to, say, the Plant Head could not be
+  // built here at all, and a definition that already named another role showed
+  // an empty dropdown that silently cleared the role on the next save.
+  const roles = await prisma.role.findMany({
+    where: { isActive: true },
+    select: { code: true, name: true },
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }]
+  });
+
   const def = await prisma.workflowDefinition.findUnique({
     where: { id: params.id },
     include: {
@@ -55,5 +67,5 @@ export default async function WorkflowEditorPage(props: { params: Promise<{ id: 
     }))
   };
 
-  return <WorkflowEditor initial={dto} />;
+  return <WorkflowEditor initial={dto} roles={roles} />;
 }

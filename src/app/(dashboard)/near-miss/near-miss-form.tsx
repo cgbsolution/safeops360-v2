@@ -23,6 +23,7 @@ import { GpsCaptureStatus } from "@/components/ui/gps-capture";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { readApiError } from "@/lib/client-errors";
 import { uploadNearMissAttachment } from "@/components/near-miss/upload-helper";
+import { DEPARTMENTS } from "@/lib/observation-masters";
 import {
   AlertCircle,
   AlertTriangle,
@@ -35,10 +36,21 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-type Plant = { id: string; name: string; areas: { id: string; name: string }[] };
+// The site's four shifts. Held here rather than in the SHIFT MasterItem
+// master because that master (A/B/C/G) is shared with the Incident form and
+// is not this site's roster — reseeding it would have changed Incidents too.
+// The code is what gets stored in NearMiss.shiftId; the backend accepts these
+// alongside the legacy MasterItem ids (see NEAR_MISS_SHIFTS in the router).
+const SHIFT_OPTIONS = [
+  { code: "GS", label: "GS — General Shift" },
+  { code: "FS", label: "FS — First Shift" },
+  { code: "SS", label: "SS — Second Shift" },
+  { code: "NS", label: "NS — Night Shift" }
+] as const;
+
+type Plant = { id: string; name: string };
 
 type MasterListItem = { id: string; code: string; label: string; sortOrder: number };
-type Department = { id: string; plantId: string; name: string; code: string | null };
 type ContractorCompany = { id: string; name: string; score: number };
 
 const SEVERITIES = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
@@ -86,8 +98,7 @@ type ConsequenceSelection = {
 export function NearMissForm({ plants }: { plants: Plant[] }) {
   const router = useRouter();
   const [plantId, setPlantId] = useState(plants[0]?.id ?? "");
-  const [areaId, setAreaId] = useState<string>("");
-  const [departmentId, setDepartmentId] = useState<string>("");
+  const [department, setDepartment] = useState<string>("");
   const [shiftId, setShiftId] = useState<string>("");
   const [severity, setSeverity] = useState<Severity>("MEDIUM");
   const [consequences, setConsequences] = useState<ConsequenceSelection[]>([]);
@@ -117,11 +128,10 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   const [error, setError] = useState("");
   const [uploadFailures, setUploadFailures] = useState<{ id: string; fileName: string; error: string }[]>([]);
 
-  // Masters fetched from Python on mount
-  const [departments, setDepartments] = useState<Department[]>([]);
-  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  // Masters fetched from Python on mount. Departments and shifts are NOT
+  // among them: both come from the site's own fixed lists (DEPARTMENTS,
+  // SHIFT_OPTIONS) rather than the plant-scoped masters.
   const [contractors, setContractors] = useState<ContractorCompany[]>([]);
-  const [shifts, setShifts] = useState<MasterListItem[]>([]);
   const [activityTypes, setActivityTypes] = useState<MasterListItem[]>([]);
   const [hazardCats, setHazardCats] = useState<MasterListItem[]>([]);
   const [energySources, setEnergySources] = useState<MasterListItem[]>([]);
@@ -129,7 +139,6 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
   const [equipmentId, setEquipmentId] = useState<string>("");
 
   const today = new Date().toISOString().slice(0, 16);
-  const selectedPlant = useMemo(() => plants.find((p) => p.id === plantId), [plants, plantId]);
   const photoMandatory = severity === "HIGH" || severity === "CRITICAL";
   const validPhotos = photos.filter((p) => !p.error);
   const riskScore = riskLikelihood && riskConsequence ? riskLikelihood * riskConsequence : null;
@@ -146,15 +155,13 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
     let cancelled = false;
     (async () => {
       try {
-        const [shiftRes, actRes, hazRes, energyRes, contractorsRes] = await Promise.all([
-          fetch("/api/near-miss/masters/items?type=SHIFT").then((r) => r.json()).catch(() => []),
+        const [actRes, hazRes, energyRes, contractorsRes] = await Promise.all([
           fetch("/api/near-miss/masters/items?type=ACTIVITY_TYPE").then((r) => r.json()).catch(() => []),
           fetch("/api/near-miss/masters/items?type=HAZARD_CATEGORY").then((r) => r.json()).catch(() => []),
           fetch("/api/near-miss/masters/items?type=ENERGY_SOURCE").then((r) => r.json()).catch(() => []),
           fetch("/api/near-miss/masters/contractors").then((r) => r.json()).catch(() => [])
         ]);
         if (cancelled) return;
-        setShifts(Array.isArray(shiftRes) ? shiftRes : []);
         setActivityTypes(Array.isArray(actRes) ? actRes : []);
         setHazardCats(Array.isArray(hazRes) ? hazRes : []);
         setEnergySources(Array.isArray(energyRes) ? energyRes : []);
@@ -166,34 +173,28 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
     return () => { cancelled = true; };
   }, []);
 
-  // Fetch departments + equipment per plant.
-  // We surface a `loadingDepartments` flag for the dropdown so users see
-  // "Loading departments…" instead of an empty list during the 1-2s the
-  // RBAC-filtered fetch takes — otherwise it looks like there are no
-  // departments and people abandon the form.
+  // Fetch equipment per plant. Departments used to be fetched here too, from
+  // the RBAC-filtered plant master; that endpoint returns nothing for a
+  // department-scoped user with no matching Department row, which is why the
+  // dropdown read "No departments available". It now serves the site's own
+  // list (DEPARTMENTS) and needs no fetch at all.
   useEffect(() => {
     if (!plantId) {
-      setDepartments([]); setEquipmentList([]); setEquipmentId("");
-      setLoadingDepartments(false);
+      setEquipmentList([]); setEquipmentId("");
       return;
     }
     let cancelled = false;
-    setLoadingDepartments(true);
     (async () => {
       try {
-        const [deptRes, eqRes] = await Promise.all([
-          fetch(`/api/near-miss/masters/departments?plant_id=${encodeURIComponent(plantId)}`).then((r) => r.json()).catch(() => []),
-          fetch(`/api/near-miss/masters/equipment?plant_id=${encodeURIComponent(plantId)}`).then((r) => r.json()).catch(() => [])
-        ]);
+        const eqRes = await fetch(
+          `/api/near-miss/masters/equipment?plant_id=${encodeURIComponent(plantId)}`
+        ).then((r) => r.json()).catch(() => []);
         if (!cancelled) {
-          setDepartments(Array.isArray(deptRes) ? deptRes : []);
           setEquipmentList(Array.isArray(eqRes) ? eqRes : []);
           setEquipmentId(""); // reset when plant changes
         }
       } catch {
-        if (!cancelled) { setDepartments([]); setEquipmentList([]); }
-      } finally {
-        if (!cancelled) setLoadingDepartments(false);
+        if (!cancelled) setEquipmentList([]);
       }
     })();
     return () => { cancelled = true; };
@@ -285,11 +286,14 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
 
     const payload: Record<string, any> = {
       plantId,
-      areaId: areaId || null,
-      departmentId: departmentId || null,
+      departmentName: department || null,
       shiftId: shiftId || null,
       date: dateStr ? new Date(dateStr).toISOString() : new Date().toISOString(),
       description: (fd.get("description") as string) || "",
+      // "Location (Blocks & building)" — the site names its areas by block and
+      // building rather than picking from the Area master, so this is the
+      // free-text `location` column, not areaId.
+      location: ((fd.get("location") as string) || "").trim() || null,
       specificLocation: ((fd.get("specificLocation") as string) || "").trim() || null,
       gpsLatitude: gps?.lat ?? null,
       gpsLongitude: gps?.lng ?? null,
@@ -385,36 +389,23 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                 <Input id="date" name="date" type="datetime-local" defaultValue={today} required />
               </div>
               <div>
-                <Label>Plant<Req /></Label>
-                <Select value={plantId} onChange={(e) => { setPlantId(e.target.value); setAreaId(""); setDepartmentId(""); }} required>
+                <Label>Plant Unit Name<Req /></Label>
+                <Select value={plantId} onChange={(e) => setPlantId(e.target.value)} required>
                   {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                 </Select>
               </div>
+              {/* The site's own department list, shared with the Safety
+                  Observation form. Stored as text — see observation-masters.ts. */}
               <div>
                 <Label>Department</Label>
-                <Select
-                  value={departmentId}
-                  onChange={(e) => setDepartmentId(e.target.value)}
-                  disabled={loadingDepartments}
-                >
-                  <option value="">
-                    {loadingDepartments
-                      ? "Loading departments…"
-                      : departments.length === 0
-                        ? "— No departments available —"
-                        : "— Select —"}
-                  </option>
-                  {!loadingDepartments && departments.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
-                  ))}
+                <Select value={department} onChange={(e) => setDepartment(e.target.value)}>
+                  <option value="">— Select the department —</option>
+                  {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
                 </Select>
               </div>
               <div>
-                <Label>Area</Label>
-                <Select value={areaId} onChange={(e) => setAreaId(e.target.value)}>
-                  <option value="">— Select —</option>
-                  {selectedPlant?.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </Select>
+                <Label htmlFor="location">Location (Blocks &amp; building)</Label>
+                <Input id="location" name="location" placeholder="e.g. Block B, Stitching building 2" />
               </div>
               <div>
                 <Label htmlFor="specificLocation">Specific location</Label>
@@ -424,7 +415,7 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                 <Label>Shift</Label>
                 <Select value={shiftId} onChange={(e) => setShiftId(e.target.value)}>
                   <option value="">— Select —</option>
-                  {shifts.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
+                  {SHIFT_OPTIONS.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
                 </Select>
               </div>
             </div>

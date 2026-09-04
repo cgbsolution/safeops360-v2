@@ -27,7 +27,7 @@
  */
 
 import * as React from "react";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Sparkles, AlertTriangle, MapPin } from "lucide-react";
 
@@ -189,13 +189,14 @@ export function SeveritySuggestionField({
     <div className="space-y-1.5">
       {/* Never disabled — not while loading either. A slow lookup must not make
           the field feel broken, and the server re-resolves regardless. */}
-      <Select name={name} required value={value} onChange={(e) => onChange(e.target.value)}>
-        {ladder.map((s) => (
-          <option key={s} value={s}>
-            {severityLabel(s)}
-          </option>
-        ))}
-      </Select>
+      <SelectField
+        name={name}
+        required
+        value={value}
+        onChange={onChange}
+        ariaLabel="Severity"
+        options={ladder.map((s) => ({ value: s, label: severityLabel(s) }))}
+      />
 
       {/* Persistent inline label, not a tooltip — §3.2. It has to survive the
           observer looking away to read the rationale. */}

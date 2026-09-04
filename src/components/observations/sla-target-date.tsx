@@ -19,6 +19,7 @@
 
 import * as React from "react";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil, Info, AlertTriangle, RotateCcw } from "lucide-react";
 
@@ -109,12 +110,12 @@ export function SlaTargetDateField({
     const pending = preview.reason === "PENDING_DECISION";
     return (
       <div className="space-y-1.5">
-        <Input
+        <DatePicker
           name="targetDate"
-          type="date"
           min={minDate}
           value={overrideDate}
-          onChange={(e) => onOverrideDate(e.target.value)}
+          onChange={onOverrideDate}
+          ariaLabel="Target closure date"
         />
         <p className="flex items-start gap-1.5 text-xs text-amber-700">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -136,7 +137,7 @@ export function SlaTargetDateField({
 
   if (loading || !preview) {
     return (
-      <Input name="targetDate" type="date" min={minDate} disabled placeholder="Calculating…" />
+      <DatePicker name="targetDate" min={minDate} value="" onChange={() => {}} disabled placeholder="Calculating…" />
     );
   }
 
@@ -145,13 +146,13 @@ export function SlaTargetDateField({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <Input
-          type="date"
+        <DatePicker
           value={editing ? overrideDate : autoDate}
           min={minDate}
-          readOnly={!editing}
-          onChange={(e) => onOverrideDate(e.target.value)}
-          className={editing ? "" : "bg-muted/50 text-muted-foreground"}
+          disabled={!editing}
+          onChange={onOverrideDate}
+          ariaLabel="Target closure date"
+          className={editing ? "" : "bg-muted/50 text-muted-foreground disabled:opacity-100"}
         />
         {!editing ? (
           <button

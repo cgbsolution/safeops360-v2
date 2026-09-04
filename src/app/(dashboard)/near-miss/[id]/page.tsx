@@ -717,10 +717,17 @@ export default async function NearMissDetail(
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <Meta icon={CalendarDays} label="Reported" value={formatDateTime(n.date)} />
-              <Meta icon={MapPin} label="Plant" value={n.plant.name} />
+              <Meta icon={MapPin} label="Plant Unit Name" value={n.plant.name} />
               {n.department && <Meta icon={Building2} label="Department" value={n.department.name} />}
-              <Meta icon={MapPin} label="Area" value={n.area?.name ?? "—"} />
-              <Meta icon={MapPin} label="Specific location" value={n.specificLocation ?? n.location ?? "—"} />
+              {/* Records raised before the form moved to free-text location still
+                  carry an Area; show whichever the record actually has. */}
+              <Meta
+                icon={MapPin}
+                label="Location (Blocks & building)"
+                value={n.location ?? n.area?.name ?? "—"}
+              />
+              <Meta icon={MapPin} label="Specific location" value={n.specificLocation ?? "—"} />
+              {n.shift?.label && <Meta icon={Clock} label="Shift" value={n.shift.label} />}
               <Meta
                 icon={UserIcon}
                 label="Reporter"

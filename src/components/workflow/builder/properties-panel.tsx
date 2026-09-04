@@ -41,17 +41,28 @@ const ASSIGNMENT_MODES: { v: AssignmentMode; l: string; help: string }[] = [
 
 export function PropertiesPanel({
   step,
+  roles,
   isFirst,
   onChange,
   onDelete,
   onClose
 }: {
   step: EditorStep;
+  /** The active role catalogue, loaded from the database by the page. Falls
+   *  back to ROLE_OPTIONS only so the dropdown is never empty. */
+  roles?: { code: string; name: string }[];
   isFirst: boolean;
   onChange: (next: EditorStep) => void;
   onDelete: () => void;
   onClose: () => void;
 }) {
+  const roleChoices = useMemo(
+    () =>
+      roles && roles.length > 0
+        ? roles.map((r) => ({ value: r.code, label: r.name }))
+        : ROLE_OPTIONS,
+    [roles]
+  );
   const [condition, setCondition] = useState<EditorCondition>(() => parseConditionExpr(step.conditionExpr));
 
   // Reset condition rows when switching to a different step
@@ -64,6 +75,9 @@ export function PropertiesPanel({
   }
 
   function setMode(mode: AssignmentMode) {
+    // Re-clicking the mode the step is already in must not wipe its settings —
+    // that is how a pinned "By Role" step silently lost its person.
+    if (mode === detectAssignmentMode(step)) return;
     const cleared = { approverRole: null, approverField: null, approverUserId: null, approverUserName: null, approverGroupRoles: null };
     if (mode === "ROLE") onChange({ ...step, ...cleared, approverRole: step.approverRole ?? "HSE_MANAGER" });
     else if (mode === "FIELD") onChange({ ...step, ...cleared, approverField: step.approverField ?? "ACTION_OWNER" });
@@ -173,17 +187,80 @@ export function PropertiesPanel({
             </div>
 
             {mode === "ROLE" && (
-              <div className="mt-2 space-y-1">
+              <div className="mt-2 space-y-2">
                 <Select
                   value={step.approverRole ?? ""}
                   onChange={(e) => patch({ approverRole: e.target.value || null })}
                 >
                   <option value="">— Pick a role —</option>
-                  {ROLE_OPTIONS.map((r) => (
+                  {roleChoices.map((r) => (
                     <option key={r.value} value={r.value}>{r.label}</option>
                   ))}
                 </Select>
-                <p className="text-[11px] text-slate-500">{ASSIGNMENT_MODES[0].help}</p>
+
+                {/* Which holder of that role. Two genuinely different routings,
+                    so they are a choice rather than a hidden default:
+
+                      Per plant — the engine resolves a holder at the record's
+                        own plant, so a Plant Head step reaches THAT plant's
+                        head. This is what makes one definition serve every site.
+
+                      One person — a single named holder takes the step for
+                        every plant. Stored as approverUserId alongside the role;
+                        the engine checks the pinned user first, and the role is
+                        kept so the step still says who it is for. */}
+                <div className="rounded-md border border-slate-200 p-2 space-y-1.5">
+                  <p className="text-[11px] font-medium text-slate-700">Which holder of this role?</p>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => patch({ approverUserId: null, approverUserName: null })}
+                      className={cn(
+                        "px-2.5 py-1.5 text-xs rounded-md border text-left transition",
+                        !step.approverUserId
+                          ? "border-primary-500 bg-primary-50 text-primary-900"
+                          : "border-slate-200 text-slate-700 hover:border-slate-300"
+                      )}
+                    >
+                      Per plant
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => patch({ approverUserId: step.approverUserId ?? null })}
+                      className={cn(
+                        "px-2.5 py-1.5 text-xs rounded-md border text-left transition",
+                        step.approverUserId
+                          ? "border-primary-500 bg-primary-50 text-primary-900"
+                          : "border-slate-200 text-slate-700 hover:border-slate-300"
+                      )}
+                    >
+                      One person
+                    </button>
+                  </div>
+                  {/* Scoped to people who actually hold the selected role.
+                      workflow_engine._rbac_gate requires the assignee to hold
+                      step.approverRole before it will let them approve, execute
+                      or verify — so pinning someone outside the role would
+                      create a task that lands in their inbox and then refuses
+                      every action they take on it. */}
+                  <UserPicker
+                    value={step.approverUserId}
+                    onChange={(id, user) =>
+                      patch({ approverUserId: id, approverUserName: user?.name ?? null })
+                    }
+                    filter={step.approverRole ? { role: step.approverRole } : undefined}
+                    disabled={!step.approverRole}
+                    placeholder={
+                      step.approverRole ? "Search people holding this role" : "Pick a role first"
+                    }
+                    emptyText="Nobody holds this role yet."
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    {step.approverUserId
+                      ? "Every record routes to this one person, whichever plant it belongs to."
+                      : "The engine picks a holder of this role at the record's own plant, falling back to a globally scoped holder."}
+                  </p>
+                </div>
               </div>
             )}
 

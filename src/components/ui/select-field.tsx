@@ -32,6 +32,7 @@ export type SelectOption = {
 
 export function SelectField({
   value, onChange, options, placeholder = "— select —", disabled, invalid, className, id, ariaLabel,
+  name, required,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -42,15 +43,31 @@ export function SelectField({
   className?: string;
   id?: string;
   ariaLabel?: string;
+  /**
+   * Form field name. The forms build their payload with `new FormData(form)`,
+   * and a Radix listbox contributes nothing to that, so the value is mirrored
+   * into a hidden input. Deliberately NOT Radix's own `name` prop: that emits
+   * an aria-hidden native <select>, and marking it `required` makes Chrome try
+   * to focus an invisible control ("not focusable") on submit.
+   */
+  name?: string;
+  /** Advisory only — announced to AT. Enforce the rule in the submit handler. */
+  required?: boolean;
 }) {
   return (
     <RSelect.Root value={value || undefined} onValueChange={onChange} disabled={disabled}>
+      {name ? <input type="hidden" name={name} value={value ?? ""} /> : null}
       <RSelect.Trigger
         id={id}
         aria-label={ariaLabel}
         aria-invalid={invalid || undefined}
+        aria-required={required || undefined}
         className={cn(
           "flex h-10 w-full items-center justify-between gap-2 rounded-md border bg-white px-3 py-2 text-sm",
+          // A long option or placeholder must ellipsize, not wrap and burst the
+          // 40px trigger — "— Select a category observable as an unsafe act —"
+          // is a real label here.
+          "overflow-hidden text-left [&>span:first-child]:min-w-0 [&>span:first-child]:truncate",
           "focus:outline-none focus:ring-2 focus:ring-primary-600 focus:ring-offset-2",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "data-[placeholder]:text-slate-400",

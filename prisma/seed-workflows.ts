@@ -69,12 +69,22 @@ const DEFINITIONS: DefInput[] = [
     // definition in place.
     module: "OBSERVATION",
     name: "Safety Observation — Standard Workflow",
-    description: "Observation lifecycle: Observer → Action Owner → HSE Officer → HSE Manager",
+    // Verification returns to the OBSERVER who raised the report, not a Safety
+    // Officer: the person who saw the hazard knows what "fixed" looks like for
+    // it and is standing in the area, where a verifier who never saw it is
+    // checking a photograph against a description. Closure is the Plant Head —
+    // the accountability signature on the plant's own record.
+    //
+    // Applied to a live database by
+    // Safeops360-backend/scripts/observation_verifier_closure.py, which edits the
+    // step rows IN PLACE. Do not use this seeder for that: it re-mints step ids
+    // and orphans every in-flight instance's currentStepId / WorkflowTask.stepId.
+    description: "Observation lifecycle: Observer → Action Owner → Observer verifies → Plant Head closes",
     steps: [
       { sequence: 1, stepType: "MAKER", name: "Submitted by Observer" },
       { sequence: 2, stepType: "ASSIGNEE_TASK", name: "Action Owner Executes", approverField: "ACTION_OWNER", slaHours: 168, escalationRole: "HSE_MANAGER" },
-      { sequence: 3, stepType: "VERIFIER", name: "HSE Officer Verification", approverRole: "SAFETY_OFFICER", slaHours: 24, escalationRole: "HSE_MANAGER" },
-      { sequence: 4, stepType: "CLOSURE", name: "HSE Manager Closure", approverRole: "HSE_MANAGER" }
+      { sequence: 3, stepType: "VERIFIER", name: "Observer Verification", approverField: "ORIGINATOR", slaHours: 24, escalationRole: "HSE_MANAGER" },
+      { sequence: 4, stepType: "CLOSURE", name: "Plant Head Closure", approverRole: "PLANT_HEAD" }
     ]
   },
 
