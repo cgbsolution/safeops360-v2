@@ -57,6 +57,7 @@
     "db:apply-observation-location": "tsx prisma/apply-observation-location-ddl.ts",
     "db:apply-worker-involved-manual": "tsx prisma/apply-worker-involved-manual-ddl.ts",
     "db:seed-page-observation-categories": "tsx prisma/seed-page-observation-categories.ts",
+    "db:patch-safety-officer-access": "tsx prisma/patch-safety-officer-operational-access.ts",
     "db:apply-observation-severity": "tsx prisma/apply-observation-severity-ddl.ts",
     "db:apply-department-audit": "tsx prisma/apply-department-audit-ddl.ts",
     "db:seed-severity-matrix": "tsx prisma/seed-severity-matrix.ts",

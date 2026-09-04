@@ -679,35 +679,38 @@ const ROLE_GRANTS: Record<string, Grant[]> = {
   // Safety Officer — Safety step approver + final close on PTW.
   // ════════════════════════════════════════════════════════════════════
   SAFETY_OFFICER: [
-    // ── Fire & Life Safety ──────────────────────────────────────────
-    // "Checked by: [Safety Officer]" is printed on the daily hydrant sheet and
-    // the daily alarm sheet carries a Safety Officer signature row, so this role
-    // is a preparer across the plant, not just its own department. Owns the
-    // register too (CREATE/UPDATE) because they are the ones who find an
-    // unregistered cylinder on a walk. No VERIFY/APPROVE — same reason as above.
-    { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "EXECUTE", "EXPORT"], scope: "OWN_PLANT" },
-    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE"], scope: "OWN_PLANT" },
-    // Guided Field Capture triage + Daily Alert Brief
-    { module: "CAPTURE", actions: ["READ", "TRIAGE"], scope: "OWN_PLANT" },
+    // ══════════════════════════════════════════════════════════════════
+    // OPERATIONAL SAFETY — full authority, group-wide.
+    //
+    // Every action in the Permission catalogue for the eight modules in the
+    // sidebar's "Operational Safety" group, at ALL_PLANTS. Replaced the previous
+    // tiered arrangement (CREATE=ALL / READ+APPROVE+VERIFY=OWN_PLANT /
+    // UPDATE+EXECUTE=OWN_RECORDS) on an explicit instruction that Safety
+    // Officers hold every action across every plant.
+    //
+    // Applied to a live database by prisma/patch-safety-officer-operational-access.ts,
+    // and restated here because step 3 of this seeder DELETES every
+    // RolePermission row and rebuilds from this matrix — without these lines a
+    // re-seed silently reverts the grant. app/seed/seed_rbac.py carries the same
+    // block for the same reason; all three must stay in step.
+    //
+    // Two of these are policy choices rather than defaults, kept visible:
+    //   • DELETE destroys a filed safety record; elsewhere in this matrix it
+    //     sits with HSE_MANAGER / SYSTEM_ADMIN.
+    //   • CAPTURE.UNMASK reveals the reporter behind an ANONYMOUS capture. It
+    //     is an audited confidentiality control — granting it plant-wide is a
+    //     decision about the reporting culture, not a permissions detail.
+    { module: "OBSERVATION", actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "NEAR_MISS",   actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "PTW",         actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "FLRA",        actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "INCIDENT",    actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT"], scope: "ALL_PLANTS" },
+    { module: "FIRE",        actions: ["CREATE", "READ", "UPDATE", "DELETE", "APPROVE", "EXECUTE", "VERIFY", "CLOSE", "EXPORT", "TEMPLATE_AUTHOR", "TEMPLATE_APPROVE", "CALENDAR"], scope: "ALL_PLANTS" },
+    { module: "CHEMICAL",    actions: ["CREATE", "READ", "UPDATE", "CONFIGURE"], scope: "ALL_PLANTS" },
+    { module: "CAPTURE",     actions: ["CREATE", "READ", "TRIAGE", "UNMASK"], scope: "ALL_PLANTS" },
+    // ══════════════════════════════════════════════════════════════════
+    // Daily Alert Brief
     { module: "ALERT", actions: ["READ", "ACK", "MUTE"], scope: "OWN_PLANT" },
-    // Observation: C=ALL, R/AP/VR/EXP=PLANT, U/EX=OWN
-    { module: "OBSERVATION", actions: ["CREATE"],                            scope: "ALL_PLANTS" },
-    { module: "OBSERVATION", actions: ["READ", "APPROVE", "VERIFY", "EXPORT"], scope: "OWN_PLANT" },
-    { module: "OBSERVATION", actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
-    // Near Miss: C=ALL, R/AP/VR/EXP=PLANT, U/EX=OWN
-    { module: "NEAR_MISS",   actions: ["CREATE"],                            scope: "ALL_PLANTS" },
-    { module: "NEAR_MISS",   actions: ["READ", "APPROVE", "VERIFY", "EXPORT"], scope: "OWN_PLANT" },
-    { module: "NEAR_MISS",   actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
-    // Incident: C=ALL, R/VR/EXP=PLANT, U/EX=OWN (CAPA owner)
-    { module: "INCIDENT",    actions: ["CREATE"],                            scope: "ALL_PLANTS" },
-    { module: "INCIDENT",    actions: ["READ", "VERIFY", "EXPORT"],          scope: "OWN_PLANT" },
-    { module: "INCIDENT",    actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
-    // PTW: C/R/AP/CL/EXP=PLANT, U=OWN (Safety step + final close)
-    { module: "PTW",         actions: ["CREATE", "READ", "APPROVE", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
-    { module: "PTW",         actions: ["UPDATE"],                            scope: "OWN_RECORDS" },
-    // FLRA: C/R/VR/CL/EXP=PLANT, U/EX=OWN
-    { module: "FLRA",        actions: ["CREATE", "READ", "VERIFY", "CLOSE", "EXPORT"], scope: "OWN_PLANT" },
-    { module: "FLRA",        actions: ["UPDATE", "EXECUTE"],                 scope: "OWN_RECORDS" },
     // Training: R/EXP=PLANT
     { module: "TRAINING",    actions: ["READ", "EXPORT"],                    scope: "OWN_PLANT" },
     // Inspection: R/AP/VR/EXP=PLANT, EX=OWN
