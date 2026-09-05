@@ -184,7 +184,7 @@ export function ErmAlerts() {
                       type="button"
                       onClick={() => openItem(n)}
                       className={
-                        "flex w-full items-start gap-2.5 border-l-2 px-4 py-2.5 text-left transition-colors hover:bg-slate-50 " +
+                        "justify-start flex w-full items-start gap-2.5 border-l-2 px-4 py-2.5 text-left transition-colors hover:bg-slate-50 " +
                         SEVERITY_ACCENT[n.severity] +
                         (n.isRead ? " bg-white" : " bg-primary-50/40")
                       }>

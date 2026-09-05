@@ -189,7 +189,7 @@ export function WorkflowTracker({
       {/* Audit trail (collapsible) */}
       <Card className="rounded-lg border bg-white shadow-none">
         <Button variant="ghost"
-          onClick={() => setExpanded(expanded ? null : "audit")} className="w-full flex justify-between px-4 py-3 text-left">
+          onClick={() => setExpanded(expanded ? null : "audit")} className="h-auto whitespace-normal w-full flex justify-between px-4 py-3 text-left">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-slate-900">Audit Trail</span>
             <span className="text-xs text-slate-500">({history.length} {history.length === 1 ? "entry" : "entries"})</span>

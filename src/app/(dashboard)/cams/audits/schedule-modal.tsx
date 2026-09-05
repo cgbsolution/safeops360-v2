@@ -678,7 +678,7 @@ export function ScheduleModal({
                       aria-pressed={on}
                       title={`${c.description} · ${c.library.checkpointCount} checkpoints across ${c.library.categories.length} ${scopeAxisWords(c.library).many}`}
                       className={cn(
-                        "h-auto flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left transition",
+                        "justify-start h-auto flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left transition",
                         on
                           ? "border-primary-600 bg-primary-50 text-primary-900 shadow-sm"
                           : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
@@ -1033,7 +1033,7 @@ export function ScheduleModal({
                 const v = auditorPreflight.verdicts[u.id];
                 const blocked = !!v && v.blockingCount > 0 && !v.waived;
                 return (
-                  <Button key={u.id} type="button" variant="ghost" onClick={() => toggleCoAuditor(u.id)} className={cn("h-auto flex w-full items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-left text-sm last:border-0 hover:bg-slate-50", on && "bg-primary-50/60")}>
+                  <Button key={u.id} type="button" variant="ghost" onClick={() => toggleCoAuditor(u.id)} className={cn("justify-start h-auto flex w-full items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-left text-sm last:border-0 hover:bg-slate-50", on && "bg-primary-50/60")}>
                     <span className={cn("flex size-4 items-center justify-center rounded border", on ? "border-primary-600 bg-primary-600 text-white" : "border-slate-300")}>{on && <Check size={11} />}</span>
                     <IndependenceDot verdict={v} pending={auditorPreflight.loading} />
                     {/* Blocked candidates stay clickable: selecting one still
@@ -1125,7 +1125,7 @@ export function ScheduleModal({
                 const v = auditeePreflight.verdicts[u.id];
                 const blocked = !!v && v.blockingCount > 0 && !v.waived;
                 return (
-                  <Button key={u.id} type="button" variant="ghost" onClick={() => toggleAuditee(u.id)} className={cn("h-auto flex w-full items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-left text-sm last:border-0 hover:bg-slate-50", on && "bg-primary-50/60")}>
+                  <Button key={u.id} type="button" variant="ghost" onClick={() => toggleAuditee(u.id)} className={cn("justify-start h-auto flex w-full items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-left text-sm last:border-0 hover:bg-slate-50", on && "bg-primary-50/60")}>
                     <span className={cn("flex size-4 items-center justify-center rounded border", on ? "border-primary-600 bg-primary-600 text-white" : "border-slate-300")}>{on && <Check size={11} />}</span>
                     <IndependenceDot verdict={v} pending={auditeePreflight.loading} />
                     <span className={cn("min-w-0 truncate text-slate-700", blocked && "text-slate-400 line-through decoration-rose-300")}>

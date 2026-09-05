@@ -449,7 +449,7 @@ export function ProgrammeWizard({
                           onClick={() => { setIndustryCode(l.industryCode); setDisciplineCodes([]); }}
                           title={l.categoryDescription ?? l.industryName}
                           className={cn(
-                            "h-auto flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left transition",
+                            "justify-start h-auto flex-col items-start gap-0.5 rounded-lg border px-2.5 py-2 text-left transition",
                             on ? "border-violet-500 bg-violet-50 text-violet-900 shadow-sm"
                                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50",
                           )}
@@ -546,7 +546,7 @@ export function ProgrammeWizard({
                       <Button variant="ghost" key={d.code} type="button"
                         onClick={() => setDisciplineCodes((p) => toggle(p, d.code))}
                         className={cn(
-                          "flex w-full items-center gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50",
+                          "justify-start flex w-full items-center gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50",
                           on && "bg-violet-50/60",
                         )}>
                         <span className={cn(

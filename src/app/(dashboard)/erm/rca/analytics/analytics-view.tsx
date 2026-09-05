@@ -110,7 +110,7 @@ export function AnalyticsView({ data, domain }: { data: CauseAnalyticsResponse; 
               type="button"
               variant="ghost"
               onClick={() => setOpenCause({ id: c.subCauseId, name: c.subCauseName })}
-              className="grid h-auto w-full cursor-pointer grid-cols-[230px_1fr_auto] items-center gap-3 px-1.5 py-1 text-left hover:bg-slate-50"
+              className="justify-start grid h-auto w-full cursor-pointer grid-cols-[230px_1fr_auto] items-center gap-3 px-1.5 py-1 text-left hover:bg-slate-50"
               title="View underlying risks & citing RCAs"
             >
               <div className="flex items-center gap-1.5 truncate">

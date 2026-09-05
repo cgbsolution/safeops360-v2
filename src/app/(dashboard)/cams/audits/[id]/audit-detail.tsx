@@ -457,7 +457,7 @@ export function AuditDetailView({
           <h3 className="mb-3 text-sm font-semibold text-slate-800">Discipline compliance</h3>
           <div className="space-y-2.5">
             {disciplineRag.map((c) => (
-              <Button variant="ghost" key={c.id} type="button" onClick={() => document.getElementById(`disc-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="block w-full text-left">
+              <Button variant="ghost" key={c.id} type="button" onClick={() => document.getElementById(`disc-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="h-auto whitespace-normal block w-full text-left">
                 <div className="mb-1 flex justify-between text-xs">
                   <span className="text-slate-600 hover:text-primary-700">{c.name}</span>
                   {c.pct == null ? (
@@ -733,7 +733,7 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
 
   return (
     <div className="px-4 py-3">
-      <Button variant="ghost" onClick={() => setOpen((o) => !o)} className="flex w-full items-start gap-3 text-left">
+      <Button variant="ghost" onClick={() => setOpen((o) => !o)} className="justify-start h-auto whitespace-normal flex w-full items-start gap-3 text-left">
         <span className={cn("mt-0.5 size-2.5 shrink-0 rounded-full", meta.dot)} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">

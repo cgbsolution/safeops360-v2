@@ -259,7 +259,7 @@ function KindCard({
   return (
     <Button type="button" variant="outline" onClick={onClick} disabled={disabled} aria-pressed={on}
       className={cn(
-        "h-auto flex-col items-start rounded-lg p-2.5 text-left",
+        "justify-start h-auto flex-col items-start rounded-lg p-2.5 text-left",
         on && "border-violet-500 bg-violet-50 hover:bg-violet-100",
       )}>
       <div className={cn("text-sm font-medium", on ? "text-violet-900" : "text-slate-700")}>

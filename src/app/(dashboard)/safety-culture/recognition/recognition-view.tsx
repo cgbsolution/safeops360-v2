@@ -318,7 +318,7 @@ export function RecognitionView({
                         type="button"
                         variant="ghost"
                         onClick={() => openStreak(e.userId)}
-                        className={`h-auto flex w-full items-center gap-3 rounded-lg border p-3 text-left transition ${
+                        className={`justify-start h-auto flex w-full items-center gap-3 rounded-lg border p-3 text-left transition ${
                           open ? "border-primary-400 bg-primary-50/40" : "border-slate-200 hover:bg-slate-50"
                         }`}
                       >

@@ -99,7 +99,7 @@ function Kpi({
       onClick={onClick}
       disabled={!onClick}
       className={
-        "flex h-auto flex-col items-start gap-0 whitespace-normal rounded-xl border bg-white px-3 py-2.5 text-left transition disabled:opacity-100 " +
+        "justify-start flex h-auto flex-col items-start gap-0 whitespace-normal rounded-xl border bg-white px-3 py-2.5 text-left transition disabled:opacity-100 " +
         (active ? "border-slate-900 ring-1 ring-slate-900" : "border-slate-200") +
         (onClick ? " hover:border-slate-300 cursor-pointer" : " cursor-default")
       }

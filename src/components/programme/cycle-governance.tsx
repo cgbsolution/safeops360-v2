@@ -183,7 +183,7 @@ export function CycleGovernance({
       {cycle.status === "ACTIVE" && needsReview && (
         <Button variant="outline"
           type="button"
-          onClick={onGoToReviews} className="mt-2 flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-xs">
+          onClick={onGoToReviews} className="justify-start mt-2 flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-xs">
           <Info size={13} className="mt-0.5 shrink-0" />
           <span>
             This cycle has no programme review. ISO 19011 §5.6 asks how you know the

@@ -307,7 +307,7 @@ export function FloorMapping({
     <div className="border-t border-slate-100 bg-slate-50/60">
       <Button variant="ghost"
         type="button"
-        onClick={() => setOpen((o) => !o)} className="flex w-full gap-2 px-3 py-2 text-left text-xs">
+        onClick={() => setOpen((o) => !o)} className="justify-start flex w-full gap-2 px-3 py-2 text-left text-xs">
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Layers size={13} className="text-slate-400" />
         <span className="font-medium">Floors &amp; process mapping</span>

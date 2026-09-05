@@ -142,7 +142,7 @@ export function PropertiesPanel({
                   title={disabled ? "First step must be Maker" : opt.description}
                   onClick={() => patch({ stepType: opt.value as StepType })}
                   className={cn(
-                    "px-2.5 py-2 text-xs rounded-md border text-left transition",
+                    "h-auto whitespace-normal px-2.5 py-2 text-xs rounded-md border text-left transition",
                     selected ? "border-primary-500 bg-primary-50 text-primary-900 ring-1 ring-primary-200" : "border-slate-200 hover:border-slate-300 text-slate-700",
                     disabled && "opacity-40 cursor-not-allowed"
                   )}>

@@ -84,7 +84,7 @@ export function HorizonBoard({ items }: { items: HorizonItem[] }) {
                 bySignal[sig].map((it) => (
                   <Button variant="outline"
                     key={it.id}
-                    onClick={() => setActive(it)} className="block w-full rounded-lg p-3 text-left transition-shadow hover:shadow-md">
+                    onClick={() => setActive(it)} className="h-auto whitespace-normal block w-full rounded-lg p-3 text-left transition-shadow hover:shadow-md">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="text-sm font-semibold text-slate-900">{it.title}</h3>
                       {it.disposition && (

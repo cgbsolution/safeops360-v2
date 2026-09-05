@@ -206,7 +206,7 @@ function DashboardView({ d, onJump }: { d: DashboardData | null; onJump: (t: Tab
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
         {cards.map((card) => (
           <Button key={card.label} type="button" variant="ghost" onClick={() => onJump(card.to)}
-            className={cn("flex h-auto flex-col items-stretch gap-0 whitespace-normal rounded-xl border p-4 text-left transition hover:shadow-sm", tone[card.tone])}>
+            className={cn("justify-start flex h-auto flex-col items-stretch gap-0 whitespace-normal rounded-xl border p-4 text-left transition hover:shadow-sm", tone[card.tone])}>
             <div className="flex items-center justify-between">
               <span className="opacity-70">{card.icon}</span>
               <span className="text-2xl font-extrabold tabular-nums">{card.value}</span>

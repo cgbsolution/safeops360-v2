@@ -80,7 +80,7 @@ export function NotificationList({ items }: { items: InboxNotification[] }) {
             type="button"
             onClick={() => open(n)}
             className={cn(
-              "block w-full border-l-[3px] px-5 py-4 text-left transition hover:bg-slate-50",
+              "h-auto whitespace-normal block w-full border-l-[3px] px-5 py-4 text-left transition hover:bg-slate-50",
               unread ? "border-l-primary-600 bg-primary-50/40" : "border-l-transparent"
             )}>
             <div className="mb-1 flex flex-wrap items-center gap-2">

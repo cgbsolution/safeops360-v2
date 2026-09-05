@@ -43,7 +43,7 @@ export function BreachesView({ breaches }: { breaches: AppetiteBreach[] }) {
           <Button variant="outline"
             key={b.id}
             type="button"
-            onClick={() => setOpenId(b.id)} className="block w-full rounded-xl p-5 text-left transition-shadow hover:shadow-md">
+            onClick={() => setOpenId(b.id)} className="h-auto whitespace-normal block w-full rounded-xl p-5 text-left transition-shadow hover:shadow-md">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">

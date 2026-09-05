@@ -213,7 +213,7 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
                     type="button"
                     onClick={() => setProgramId(p.id)}
                     className={[
-                      "w-full text-left rounded-md border p-3 transition-colors",
+                      "h-auto whitespace-normal w-full text-left rounded-md border p-3 transition-colors",
                       active
                         ? "border-primary-500 bg-primary-50"
                         : "border-slate-200 bg-white hover:border-primary-300",

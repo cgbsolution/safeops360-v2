@@ -151,7 +151,7 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
                       variant="ghost"
                       onClick={() => togglePlan(p.id)}
                       className={cn(
-                        "flex h-auto w-full flex-col items-stretch gap-0 whitespace-normal rounded-xl border-2 p-3 text-left transition-colors",
+                        "justify-start flex h-auto w-full flex-col items-stretch gap-0 whitespace-normal rounded-xl border-2 p-3 text-left transition-colors",
                         on ? "border-rose-500 bg-rose-50" : "border-slate-200 bg-white hover:border-slate-300"
                       )}
                     >
@@ -217,7 +217,7 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
                   variant="ghost"
                   onClick={() => setSeverity(lvl as 1 | 2 | 3)}
                   className={cn(
-                    "h-auto flex min-h-16 w-full gap-4 rounded-2xl border-2 p-4 text-left transition-colors",
+                    "justify-start h-auto flex min-h-16 w-full gap-4 rounded-2xl border-2 p-4 text-left transition-colors",
                     on ? "border-rose-600 bg-rose-50" : "border-slate-200 bg-white hover:border-slate-300"
                   )}
                 >

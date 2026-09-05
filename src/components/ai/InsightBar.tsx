@@ -105,7 +105,7 @@ function InsightCard({
       title={insight.evidence}
       aria-pressed={active}
       className={cn(
-        "group relative flex w-full items-start gap-3 rounded-xl border p-3 text-left transition",
+        "justify-start group relative flex w-full items-start gap-3 rounded-xl border p-3 text-left transition",
         sev.card,
         "hover:elevation-1",
         active && "ring-2 ring-primary-500 ring-offset-1",

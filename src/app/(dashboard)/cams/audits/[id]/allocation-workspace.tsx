@@ -602,7 +602,7 @@ function CheckpointTab({ auditId, disciplines, team, nameOf, allocate }: {
                   <Button variant="ghost"
                     type="button" onClick={() => toggle(r.id)} aria-pressed={on}
                     className={cn(
-                      "flex w-full items-start gap-2.5 px-5 py-2 text-left transition",
+                      "justify-start flex w-full items-start gap-2.5 px-5 py-2 text-left transition",
                       on ? "bg-primary-50/60" : "hover:bg-slate-50",
                     )}>
                     <span className="mt-0.5 shrink-0 text-slate-400">

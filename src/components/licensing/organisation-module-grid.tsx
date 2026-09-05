@@ -217,7 +217,7 @@ export function OrganisationModuleGrid() {
                     onChange={(e) => setSection(section.items, e.target.checked)}
                     aria-label={`Toggle all screens in ${section.label ?? section.key}`} />
                   <Button variant="ghost"
-                    type="button" className="flex min-w-0 flex-1 gap-2 text-left"
+                    type="button" className="justify-start flex min-w-0 flex-1 gap-2 text-left"
                     onClick={() =>
                       setCollapsed((p) => ({ ...p, [section.key]: !isCollapsed }))
                     }>

@@ -301,7 +301,7 @@ function FindingCard({
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <Button variant="ghost"
         type="button"
-        onClick={() => setOpen((v) => !v)} className="flex w-full items-start gap-3 p-4 text-left">
+        onClick={() => setOpen((v) => !v)} className="justify-start flex w-full items-start gap-3 p-4 text-left">
         <span className={cn("mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", sev.cls)}>
           {sev.label}
         </span>

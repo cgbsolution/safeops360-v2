@@ -1723,8 +1723,8 @@ export function CaptureWizard({
                   }}
                   className={
                     severity === value
-                      ? "flex min-h-[88px] items-center gap-4 rounded-2xl border-4 p-4 text-left transition-transform active:scale-[0.98]"
-                      : "flex min-h-[88px] items-center gap-4 rounded-2xl border-2 border-[#D9E1EF] bg-white p-4 text-left transition-transform active:scale-[0.98]"
+                      ? "flex min-h-[88px] justify-start items-center gap-4 rounded-2xl border-4 p-4 text-left transition-transform active:scale-[0.98]"
+                      : "flex min-h-[88px] justify-start items-center gap-4 rounded-2xl border-2 border-[#D9E1EF] bg-white p-4 text-left transition-transform active:scale-[0.98]"
                   }
                   style={severity === value ? { borderColor: color, background: `${color}14` } : undefined}>
                   <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full" style={{ background: `${color}22` }}>

@@ -88,7 +88,7 @@ export function CoverageMatrix({ data }: { data: CoverageResponse }) {
             <Card key={siteId} className="overflow-hidden rounded-xl border border-slate-200">
               <Button variant="ghost"
                 type="button"
-                onClick={() => toggle(siteId)} className="flex w-full gap-2 px-3 py-2.5 text-left"
+                onClick={() => toggle(siteId)} className="justify-start flex w-full gap-2 px-3 py-2.5 text-left"
                 aria-expanded={open}>
                 {open ? (
                   <ChevronDown size={15} className="shrink-0 text-slate-400" />

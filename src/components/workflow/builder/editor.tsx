@@ -464,7 +464,7 @@ function EditorInner({ initial, roles }: { initial: DefinitionDTO; roles: RoleOp
                 className="h-8 text-base font-semibold"
               />
             ) : (
-              <Button variant="ghost" className="text-left max-w-full" onClick={() => setEditingHeader(true)} title="Click to rename">
+              <Button variant="ghost" className="h-auto whitespace-normal text-left max-w-full" onClick={() => setEditingHeader(true)} title="Click to rename">
                 <div className="text-base font-semibold text-slate-900 truncate hover:text-primary-700">
                   {name || "Untitled workflow"}
                 </div>

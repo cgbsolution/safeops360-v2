@@ -370,7 +370,7 @@ function CreateSlotDialog({
                     setUnitIds((p) => (on ? p.filter((x) => x !== u.id) : [...p, u.id]))
                   }
                   className={cn(
-                    "flex w-full items-center gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50",
+                    "justify-start flex w-full items-center gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50",
                     on && "bg-violet-50/60",
                   )}>
                   <span className={cn("flex size-3.5 items-center justify-center rounded border text-[9px]",

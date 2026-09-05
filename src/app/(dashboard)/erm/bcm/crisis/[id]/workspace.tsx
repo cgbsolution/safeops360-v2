@@ -300,7 +300,7 @@ function RecoverySection({ crisis, elapsedHours, disabled }: { crisis: CrisisDet
               onClick={() => check(t)}
               disabled={t.checked || disabled || busyId === t.id}
               className={cn(
-                "flex w-full items-start gap-3 rounded-xl border-2 p-3 text-left transition-colors disabled:cursor-default h-auto",
+                "justify-start flex w-full items-start gap-3 rounded-xl border-2 p-3 text-left transition-colors disabled:cursor-default h-auto",
                 toneRing
               )}
             >
