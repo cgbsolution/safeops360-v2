@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const DEFAULT_SECTIONS: Record<string, boolean> = {
   executiveSummary: true,
@@ -63,68 +68,60 @@ export function NewPackButton() {
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center gap-2 rounded-md bg-primary-700 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-primary-800"
-      >
+      <Button variant="default"
+        onClick={() => setOpen(true)} className="gap-2 rounded-md px-4 py-2 text-sm text-white shadow-sm transition-colors">
         <Plus size={16} /> New Pack
-      </button>
+      </Button>
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+          <Card className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-900">New Board Pack</h2>
-              <button
-                onClick={() => setOpen(false)}
-                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
-                aria-label="Close"
-              >
+              <Button variant="ghost"
+                onClick={() => setOpen(false)} className="rounded p-1"
+                aria-label="Close">
                 <X size={18} />
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <Label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Title
-                </label>
-                <input
+                </Label>
+                <Input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder={`Risk Board Pack — ${quarterLabel}`}
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                />
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <Label className="mb-1 block text-xs font-semibold uppercase tracking-wider text-slate-500">
                   Quarter
-                </label>
-                <input
+                </Label>
+                <Input
                   value={quarterLabel}
                   onChange={(e) => setQuarterLabel(e.target.value)}
                   placeholder="Q2 FY2026"
-                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-                />
+                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" />
               </div>
               <p className="text-[11px] text-slate-400">
                 All standard sections (executive summary, heat map, top-10, movement, treatment status, new
                 risks, escalations) are enabled by default. You can toggle them in the editor.
               </p>
               {error && (
-                <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
                   {error}
-                </div>
+                </Alert>
               )}
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
-              <button
-                onClick={() => setOpen(false)}
-                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+              <Button variant="outline"
+                onClick={() => setOpen(false)} className="rounded-md px-4 py-2 text-sm">
                 Cancel
-              </button>
+              </Button>
               <button
                 onClick={create}
                 disabled={busy}
@@ -133,7 +130,7 @@ export function NewPackButton() {
                 {busy ? "Creating…" : "Create Pack"}
               </button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </>

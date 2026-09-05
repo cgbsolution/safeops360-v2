@@ -12,6 +12,9 @@ import {
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { TwinBadges } from "../twin-badges";
 import { OnboardVendorButton } from "./onboard-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -93,9 +96,9 @@ export default async function VendorRegisterPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Tier 3 seed has been run, and you are logged in with a vendor role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -127,41 +130,41 @@ export default async function VendorRegisterPage(props: {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1180px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Legal name</th>
-                  <th className="px-3 py-2.5">Category</th>
-                  <th className="px-3 py-2.5">Criticality</th>
-                  <th className="px-3 py-2.5">Tier</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                  <th className="px-3 py-2.5 text-right">Annual spend</th>
-                  <th className="px-3 py-2.5">Single?</th>
-                  <th className="px-3 py-2.5">Risk | ESG</th>
-                  <th className="px-3 py-2.5">Onboarding</th>
-                  <th className="px-3 py-2.5">Next review</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1180px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Legal name</TableHead>
+                  <TableHead className="px-3 py-2.5">Category</TableHead>
+                  <TableHead className="px-3 py-2.5">Criticality</TableHead>
+                  <TableHead className="px-3 py-2.5">Tier</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">Annual spend</TableHead>
+                  <TableHead className="px-3 py-2.5">Single?</TableHead>
+                  <TableHead className="px-3 py-2.5">Risk | ESG</TableHead>
+                  <TableHead className="px-3 py-2.5">Onboarding</TableHead>
+                  <TableHead className="px-3 py-2.5">Next review</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
                       No vendors match the current filters. Use “Onboard Vendor” to add one.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((v) => (
-                    <tr key={v.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={v.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/vendors/${v.id}`} className="font-medium text-primary-700 hover:underline">
                           {v.vendorCode}
                         </Link>
-                      </td>
-                      <td className="max-w-[220px] px-3 py-2.5 text-slate-700">{v.legalName}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{v.category}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[220px] px-3 py-2.5 text-slate-700">{v.legalName}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{v.category}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span
                           className={
                             "inline-block rounded border px-2 py-0.5 text-[11px] " +
@@ -170,26 +173,26 @@ export default async function VendorRegisterPage(props: {
                         >
                           {v.criticality.charAt(0) + v.criticality.slice(1).toLowerCase()}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{TIER_LABEL[v.tier] ?? v.tier}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{v.relationshipOwnerName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-700">{inrCompact(v.annualSpendInr)}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{TIER_LABEL[v.tier] ?? v.tier}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{v.relationshipOwnerName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-700">{inrCompact(v.annualSpendInr)}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         {v.isSingleSource ? (
                           <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">Single</span>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <TwinBadges
                           riskBand={v.currentRiskBand}
                           riskScore={v.currentRiskScore}
                           esgBand={v.currentEsgBand}
                           esgScore={v.currentEsgScore}
                         />
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span
                           className={
                             "inline-block rounded border px-2 py-0.5 text-[11px] " +
@@ -198,8 +201,8 @@ export default async function VendorRegisterPage(props: {
                         >
                           {v.onboardingStatus.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums text-slate-500">
                         {v.reviewOverdue ? (
                           <span className="rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700">
                             Overdue · {fmtDate(v.nextReviewDate)}
@@ -207,13 +210,13 @@ export default async function VendorRegisterPage(props: {
                         ) : (
                           fmtDate(v.nextReviewDate)
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

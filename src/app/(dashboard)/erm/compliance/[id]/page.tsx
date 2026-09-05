@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { ObligationDetail } from "../../lib-p2";
 import { ObligationDetailView } from "./detail-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -29,12 +30,12 @@ export default async function ObligationDetailPage(props: { params: Promise<{ id
         ]}
       />
       {error || !obligation ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Obligation not found."}{" "}
           <Link href="/erm/compliance/register" className="font-medium underline">
             Back to register
           </Link>
-        </div>
+        </Alert>
       ) : (
         <ObligationDetailView obligation={obligation} />
       )}

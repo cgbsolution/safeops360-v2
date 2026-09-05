@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { Competency, Mapping } from "@/lib/training-engine";
 import { MappingsView } from "./mappings-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,9 @@ export default async function MappingsConfigPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       ) : (
         <MappingsView mappings={mappings} competencies={competencies} />
       )}

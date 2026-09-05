@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Loader2, MapPin, MapPinOff, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 import {
   useGeolocationPermission,
   type GeolocationPermission,
@@ -150,7 +151,7 @@ export function GpsCaptureStatus({
           </Button>
         </div>
         {showHelp && (
-          <div className="mt-1.5 rounded-md border border-amber-200 bg-amber-50 p-2.5 text-amber-900">
+          <Alert variant="warning" className="mt-1.5 p-2.5">
             <div className="font-medium">Allow location in {guide.browser}</div>
             <ol className="mt-1 list-decimal space-y-0.5 pl-4">
               {guide.steps.map((s) => (
@@ -172,7 +173,7 @@ export function GpsCaptureStatus({
             >
               I’ve allowed it — try again
             </Button>
-          </div>
+          </Alert>
         )}
       </div>
     );

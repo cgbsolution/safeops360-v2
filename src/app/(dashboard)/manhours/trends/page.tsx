@@ -179,7 +179,7 @@ function YoyTile({
   goodDirection: "good" | "bad" | "flat";
 }) {
   return (
-    <div className="rounded-md border bg-white p-3">
+    <Card className="rounded-md border bg-white p-3 shadow-none">
       <div className="text-[10px] uppercase tracking-wider text-slate-500">{name}</div>
       <div className="mt-1 flex items-baseline justify-between">
         <div className="text-2xl font-bold tabular-nums" style={{ color: current.bandColor }}>
@@ -212,7 +212,7 @@ function YoyTile({
         <div className="mt-1 text-xs text-slate-500">No prior baseline</div>
       )}
       <div className="mt-1 text-[10px] text-slate-400 font-mono">{code}</div>
-    </div>
+    </Card>
   );
 }
 

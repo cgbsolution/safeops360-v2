@@ -23,6 +23,9 @@ import { ExportButtons } from "../_components/export-buttons";
 import { QrStickerDialog, QrTarget } from "../_components/qr-sticker-dialog";
 import { NewEquipmentDialog } from "../equipment/new-equipment";
 import { RowActions } from "../equipment/row-actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
 
 export type FireAsset = {
   id: string;
@@ -123,19 +126,15 @@ export function AssetTable({
           );
         })}
 
-        <select
+        <SelectField
           value={type ?? ""}
-          onChange={(e) => setType(e.target.value || null)}
-          className="rounded-lg border px-2 py-1.5 text-[12px] outline-none"
+          onChange={(v) => setType(v || null)}
+          ariaLabel="Filter by asset type"
+          placeholder="All types"
+          className="h-auto rounded-lg px-2 py-1.5 text-[12px]"
           style={{ borderColor: MX.iceLine, color: MX.ink }}
-        >
-          <option value="">All types</option>
-          {types.map((t) => (
-            <option key={t} value={t}>
-              {t.replace(/_/g, " ")}
-            </option>
-          ))}
-        </select>
+          options={types.map((t) => ({ value: t, label: t.replace(/_/g, " ") }))}
+        />
 
         <div className="relative">
           <Search size={13} className="absolute left-2 top-2.5" style={{ color: MX.muted }} />
@@ -181,65 +180,65 @@ export function AssetTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border bg-white" style={{ borderColor: MX.iceLine }}>
-        <table className="w-full min-w-[860px] border-collapse text-[12px]">
-          <thead>
-            <tr style={{ background: MX.ice }}>
+      <Card className="overflow-x-auto rounded-xl shadow-none" style={{ borderColor: MX.iceLine }}>
+        <Table className="w-full min-w-[860px] border-collapse text-[12px]">
+          <TableHeader>
+            <TableRow style={{ background: MX.ice }}>
               {["Code", "Type", "Subtype", "Location", "Capacity", "Last inspected", "Next due", "Status", ""].map((h) => (
-                <th
+                <TableHead
                   key={h}
                   className="whitespace-nowrap border-b px-2.5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider"
                   style={{ borderColor: MX.iceLine, color: MX.navy }}
                 >
                   {h}
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {rows.length === 0 ? (
-              <tr>
-                <td colSpan={9} className="px-3 py-10 text-center text-[13px]" style={{ color: MX.muted }}>
+              <TableRow>
+                <TableCell colSpan={9} className="px-3 py-10 text-center text-[13px]" style={{ color: MX.muted }}>
                   No asset matches this filter.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               rows.map((a) => {
                 const st = STATUS_STYLE[a.status] ?? { bg: MX.ice, fg: MX.muted };
                 return (
-                  <tr key={a.id} className="hover:bg-slate-50/70">
-                    <td className="border-b px-2.5 py-1.5 font-semibold" style={{ borderColor: MX.iceLine }}>
+                  <TableRow key={a.id} className="hover:bg-slate-50/70">
+                    <TableCell className="border-b px-2.5 py-1.5 font-semibold" style={{ borderColor: MX.iceLine }}>
                       <Link href={`/fire-safety/equipment/${a.id}`} style={{ color: MX.navy }} className="hover:underline">
                         {a.equipmentCode}
                       </Link>
-                    </td>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
                       {a.type.replace(/_/g, " ")}
-                    </td>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
                       {a.assetSubtype ?? "—"}
-                    </td>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
                       {a.location}
-                    </td>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
                       {a.capacitySpec ?? "—"}
-                    </td>
-                    <td className="whitespace-nowrap border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
                       {fmtDate(a.lastInspectionDate)}
-                    </td>
-                    <td className="whitespace-nowrap border-b px-2.5 py-1.5 tabular-nums" style={{ borderColor: MX.iceLine }}>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap border-b px-2.5 py-1.5 tabular-nums" style={{ borderColor: MX.iceLine }}>
                       {fmtDate(a.nextInspectionDueDate)}
-                    </td>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
                       <span
                         className="inline-block rounded px-1.5 py-0.5 text-[10.5px] font-semibold"
                         style={{ background: st.bg, color: st.fg }}
                       >
                         {a.status.replace(/_/g, " ")}
                       </span>
-                    </td>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           type="button"
@@ -284,14 +283,14 @@ export function AssetTable({
                           zones={zones.filter((z) => z.plantId === a.plantId)}
                         />
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
       <QrStickerDialog target={qrFor} onClose={() => setQrFor(null)} />
 

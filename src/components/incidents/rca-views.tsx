@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ChevronRight, AlertCircle, ShieldCheck, ShieldAlert, ShieldOff, Clock, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 // ─── Shared parse helper ───────────────────────────────────────────────
 function tryParse<T>(s: string | null | undefined): T | null {
@@ -134,7 +135,7 @@ export function FishboneView({ raw }: { raw: string | null }) {
         </div>
 
         {data.rootCauses && data.rootCauses.length > 0 && (
-          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 p-3">
+          <Alert variant="destructive" size="lg" className="mt-4 rounded-lg p-3">
             <div className="flex items-center gap-2 mb-2">
               <AlertCircle size={14} className="text-rose-700" />
               <div className="text-xs uppercase tracking-wider font-bold text-rose-800">Root Causes Identified</div>
@@ -144,7 +145,7 @@ export function FishboneView({ raw }: { raw: string | null }) {
                 <li key={i} className="text-sm text-rose-900 leading-snug">• {rc}</li>
               ))}
             </ul>
-          </div>
+          </Alert>
         )}
       </CardContent>
     </Card>
@@ -248,13 +249,13 @@ export function FtaView({ raw }: { raw: string | null }) {
         )}
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
+        <Card className="p-3 shadow-none">
           <FtaTreeNode node={data.tree} depth={0} />
-        </div>
+        </Card>
 
         <div className="grid sm:grid-cols-2 gap-3">
           {data.minimalCutSets && data.minimalCutSets.length > 0 && (
-            <div className="rounded-lg border border-slate-200 p-3 bg-slate-50/60">
+            <Card className="bg-slate-50/60 p-3 shadow-none">
               <div className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2">
                 Minimal Cut Sets
               </div>
@@ -265,10 +266,10 @@ export function FtaView({ raw }: { raw: string | null }) {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
           {data.actualCutSet && data.actualCutSet.length > 0 && (
-            <div className="rounded-lg border border-rose-200 p-3 bg-rose-50/60">
+            <Card className="border-rose-200 bg-rose-50/60 p-3 shadow-none">
               <div className="text-xs uppercase tracking-wider font-bold text-rose-700 mb-2">
                 Actual Path That Occurred
               </div>
@@ -277,7 +278,7 @@ export function FtaView({ raw }: { raw: string | null }) {
                   <li key={i} className="text-xs text-rose-900">• {b}</li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
         </div>
       </CardContent>
@@ -342,10 +343,10 @@ export function BowtieView({ raw }: { raw: string | null }) {
 
           {/* TOP EVENT — center */}
           <div className="flex items-center justify-center">
-            <div className="w-full rounded-lg border-2 border-rose-300 bg-rose-100 text-rose-900 p-4 text-center shadow-sm">
+            <Card className="w-full border-2 border-rose-300 bg-rose-100 p-4 text-center text-rose-900">
               <div className="text-[10px] uppercase tracking-wider font-bold text-rose-700">Top Event</div>
               <div className="text-sm font-semibold mt-1 leading-snug">{data.topEvent ?? "—"}</div>
-            </div>
+            </Card>
           </div>
 
           {/* CONSEQUENCES — right side */}
@@ -402,7 +403,7 @@ export function TapRootView({ raw }: { raw: string | null }) {
         {data.snapChart && data.snapChart.length > 0 && (
           <div>
             <div className="text-xs uppercase tracking-wider font-bold text-slate-600 mb-2">SnapCharT — Sequence of Events</div>
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <Card className="p-3 shadow-none">
               <ol className="relative border-l-2 border-slate-200 ml-2 space-y-3">
                 {data.snapChart.map((n, i) => (
                   <li key={i} className="ml-3">
@@ -439,7 +440,7 @@ export function TapRootView({ raw }: { raw: string | null }) {
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary-600" /> Action</span>
                 <span className="flex items-center gap-1"><Clock size={10} className="text-amber-500" /> Condition</span>
               </div>
-            </div>
+            </Card>
           </div>
         )}
 
@@ -468,18 +469,18 @@ export function TapRootView({ raw }: { raw: string | null }) {
         )}
 
         {data.genericCauses && data.genericCauses.length > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-3">
+          <Card className="border-amber-200 bg-amber-50/60 p-3 shadow-none">
             <div className="text-xs uppercase tracking-wider font-bold text-amber-800 mb-2">Generic Causes</div>
             <ul className="space-y-1">
               {data.genericCauses.map((g, i) => (
                 <li key={i} className="text-sm text-amber-900">• {g}</li>
               ))}
             </ul>
-          </div>
+          </Card>
         )}
 
         {data.correctiveActions && data.correctiveActions.length > 0 && (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-3">
+          <Card className="border-emerald-200 bg-emerald-50/60 p-3 shadow-none">
             <div className="flex items-center gap-2 mb-2">
               <Wrench size={14} className="text-emerald-700" />
               <div className="text-xs uppercase tracking-wider font-bold text-emerald-800">Corrective Actions</div>
@@ -489,7 +490,7 @@ export function TapRootView({ raw }: { raw: string | null }) {
                 <li key={i} className="leading-snug">{a}</li>
               ))}
             </ol>
-          </div>
+          </Card>
         )}
       </CardContent>
     </Card>

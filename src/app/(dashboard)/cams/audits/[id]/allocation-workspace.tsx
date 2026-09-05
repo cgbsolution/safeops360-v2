@@ -36,6 +36,8 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
+import { Badge } from "@/components/ui/badge";
+import { SelectField } from "@/components/ui/select-field";
 import {
   AuditTeam, AuditTeamMember, CheckpointResponse, DisciplineRollup, apiErrorMessage,
   REQUIREMENT_TYPE_META, CRITICALITY_CHIP, CRITICALITY_FALLBACK,
@@ -366,9 +368,9 @@ function DisciplineTab({ disciplines, team, busy, setBusy, allocate }: {
                 <span className="min-w-0 truncate text-sm font-medium text-slate-700">{g.categoryName}</span>
                 <span className="shrink-0 text-[11px] text-slate-400">{g.total} cp</span>
                 {dirty && (
-                  <span className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                  <Badge variant="warning" className="shrink-0 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
                     Not saved
-                  </span>
+                  </Badge>
                 )}
               </div>
 
@@ -521,10 +523,16 @@ function CheckpointTab({ auditId, disciplines, team, nameOf, allocate }: {
     <div className="flex max-h-[58vh] flex-col">
       {/* Scope + search */}
       <div className="flex flex-wrap items-center gap-2 border-b px-5 py-2">
-        <Select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} className="h-8 w-52 text-xs">
-          <option value="ALL">All disciplines</option>
-          {disciplines.map((d) => <option key={d.categoryId} value={d.categoryId}>{d.categoryName}</option>)}
-        </Select>
+        <SelectField
+          value={disciplineId}
+          onChange={setDisciplineId}
+          ariaLabel="Filter by discipline"
+          className="h-8 w-52 text-xs"
+          options={[
+            { value: "ALL", label: "All disciplines" },
+            ...disciplines.map((d) => ({ value: d.categoryId, label: d.categoryName }))
+          ]}
+        />
         <div className="relative">
           <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search code / question…" className="h-8 w-56 pl-7 text-xs" />
@@ -591,13 +599,12 @@ function CheckpointTab({ auditId, disciplines, team, nameOf, allocate }: {
               const on = selected.has(r.id);
               return (
                 <li key={r.id}>
-                  <button
+                  <Button variant="ghost"
                     type="button" onClick={() => toggle(r.id)} aria-pressed={on}
                     className={cn(
                       "flex w-full items-start gap-2.5 px-5 py-2 text-left transition",
                       on ? "bg-primary-50/60" : "hover:bg-slate-50",
-                    )}
-                  >
+                    )}>
                     <span className="mt-0.5 shrink-0 text-slate-400">
                       {on ? <CheckSquare size={15} className="text-primary-600" /> : <Square size={15} />}
                     </span>
@@ -626,7 +633,7 @@ function CheckpointTab({ auditId, disciplines, team, nameOf, allocate }: {
                         </span>
                       </span>
                     </span>
-                  </button>
+                  </Button>
                 </li>
               );
             })}

@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { WIDGET_BY_ID, type WidgetSpan } from "@/lib/dashboard/widget-catalog";
 import { Sparkline } from "@/components/dashboard/sparkline";
 import { HeinrichPyramid, ObservationsTrendChart } from "@/components/dashboard/charts";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   RadialGauge,
   Donut,
@@ -168,10 +170,10 @@ export function DashboardWidget({ id, span, plant, dateFrom, dateTo, editing, lo
         </div>
         <div className="flex flex-shrink-0 items-center gap-2">
           {meta.category === "AI" && (
-            <span className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+            <Badge variant="success" className="flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
               LIVE
-            </span>
+            </Badge>
           )}
           {drillHref && !editing && (
             <Link href={drillHref} className="text-slate-400 transition hover:text-primary-600" aria-label="Open module">
@@ -226,36 +228,35 @@ function RestrictedState({ module }: { module?: string }) {
 function EditChrome({ locked, onRemove, onCycleSize, resizable, isAdmin, onToggleLock }: { locked?: boolean; onRemove?: () => void; onCycleSize?: () => void; resizable?: boolean; isAdmin?: boolean; onToggleLock?: () => void }) {
   return (
     <div className="absolute -top-2.5 right-2 left-2 z-10 flex items-center justify-between">
-      <span className="inline-flex cursor-grab items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-400 shadow-sm active:cursor-grabbing">
+      <Badge variant="neutral" className="inline-flex cursor-grab items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[10px] text-slate-400 shadow-sm active:cursor-grabbing">
         <GripVertical size={11} /> drag
-      </span>
+      </Badge>
       <span className="flex items-center gap-1">
         {resizable && (
-          <button type="button" onClick={onCycleSize} className="rounded-full border border-slate-200 bg-white p-1 text-slate-500 shadow-sm transition hover:text-primary-600" aria-label="Resize widget">
+          <Button variant="outline" type="button" onClick={onCycleSize} className="rounded-full p-1 shadow-sm" aria-label="Resize widget">
             <Maximize2 size={12} />
-          </button>
+          </Button>
         )}
         {isAdmin && (
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={onToggleLock}
             className={cn("rounded-full border border-slate-200 bg-white p-1 shadow-sm transition", locked ? "text-primary-600" : "text-slate-400 hover:text-primary-600")}
             aria-label={locked ? "Unlock widget (allow removal)" : "Lock widget as mandatory"}
-            title={locked ? "Mandatory — click to unlock" : "Lock as mandatory for all users"}
-          >
+            title={locked ? "Mandatory — click to unlock" : "Lock as mandatory for all users"}>
             <Lock size={12} />
-          </button>
+          </Button>
         )}
         {locked ? (
           !isAdmin && (
-            <span className="rounded-full border border-slate-200 bg-white p-1 text-slate-300 shadow-sm" title="Locked by admin — cannot be removed">
+            <Badge variant="neutral" className="rounded-full border border-slate-200 bg-white p-1 text-slate-300 shadow-sm" title="Locked by admin — cannot be removed">
               <Lock size={12} />
-            </span>
+            </Badge>
           )
         ) : (
-          <button type="button" onClick={onRemove} className="rounded-full border border-slate-200 bg-white p-1 text-slate-500 shadow-sm transition hover:bg-rose-50 hover:text-rose-600" aria-label="Remove widget">
+          <Button variant="destructive" type="button" onClick={onRemove} className="rounded-full p-1 shadow-sm" aria-label="Remove widget">
             <X size={12} />
-          </button>
+          </Button>
         )}
       </span>
     </div>

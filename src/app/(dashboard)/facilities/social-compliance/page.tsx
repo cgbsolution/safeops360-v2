@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { SocialRegisterView } from "./social-register-view";
 import type { SocialComplianceRegisterResponse } from "../lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +28,7 @@ export default async function SocialComplianceRegisterPage() {
         description="Every worker across the estate in one register — employment split, gender, migrant, youngest-worker age, wages, working hours, freedom of association, grievance and SA8000 training — with the flags a buyer audit (SA8000 / WRAP / BSCI / SMETA) would raise."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <SocialRegisterView data={data!} />
       )}

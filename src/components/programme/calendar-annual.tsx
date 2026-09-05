@@ -127,7 +127,7 @@ export function AnnualCalendar({
             cells do not — which is why the month grid had no mobile design. */}
         <div className="mt-3 grid grid-cols-12 gap-1">
           {byMonth.map((m, i) => (
-            <button
+            <Button variant="ghost"
               key={i}
               type="button"
               onClick={() => setMonth(month === i ? null : i)}
@@ -137,11 +137,10 @@ export function AnnualCalendar({
                 "flex min-h-[44px] flex-col items-center justify-center rounded transition",
                 density(m.length),
                 month === i && "ring-2 ring-violet-600 ring-offset-1",
-              )}
-            >
+              )}>
               <span className="text-[10px] font-medium opacity-80">{MONTHS_SHORT[i]}</span>
               <span className="text-sm font-bold tabular-nums">{m.length || ""}</span>
-            </button>
+            </Button>
           ))}
         </div>
         <p className="mt-1.5 text-[11px] text-slate-400">

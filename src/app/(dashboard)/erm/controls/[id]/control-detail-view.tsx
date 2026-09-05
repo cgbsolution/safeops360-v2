@@ -8,10 +8,13 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { ControlAttachments } from "@/components/erm/control-attachments";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 import {
   RATING_CHIP,
   STRENGTH_CHIP,
@@ -114,7 +117,7 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
       )}
 
       {/* Header card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">{CONTROL_TYPE_LABEL[detail.controlType] ?? detail.controlType}</span>
@@ -142,10 +145,10 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
             )}
           </span>
         </div>
-      </div>
+      </Card>
 
       {/* Overview */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Overview</h2>
         {detail.description && <p className="text-sm text-slate-600">{detail.description}</p>}
         {detail.controlDesignNotes && (
@@ -164,10 +167,10 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Mappings */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-900">
             Mapped risks / processes / obligations <span className="text-slate-400">({detail.mappings.length})</span>
@@ -200,10 +203,10 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
 
       {/* Test history */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-900">Test history</h2>
           <div className="flex items-center gap-2">
@@ -276,17 +279,17 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       {/* Evidence & Documents */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-1 text-sm font-semibold text-slate-900">Evidence &amp; Documents</h2>
         <p className="mb-3 text-xs text-slate-500">Control evidence, test workpapers and review documents. PDF, images, Office files, CSV/TXT and Outlook messages up to 25 MB.</p>
         <ControlAttachments controlId={detail.id} canEdit={true} />
-      </div>
+      </Card>
 
       {/* Deficiencies */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">
           Deficiencies <span className="text-slate-400">({detail.deficiencies.length})</span>
         </h2>
@@ -346,7 +349,7 @@ export function ControlDetailView({ detail }: { detail: ControlDetail }) {
             })}
           </ul>
         )}
-      </div>
+      </Card>
 
       {mapOpen && <AddMappingModal controlId={detail.id} existing={detail.mappings} onClose={() => setMapOpen(false)} onSaved={() => { setMapOpen(false); router.refresh(); }} />}
       {planOpen && <SchedulePlanModal controlId={detail.id} ownerId={detail.controlOwnerId} onClose={() => setPlanOpen(false)} onSaved={() => { setPlanOpen(false); router.refresh(); }} />}
@@ -367,19 +370,19 @@ function ReportButton({ onReport, busy }: { onReport: (ref: string) => void; bus
       </Button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-          <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+          <Card className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-base font-semibold text-slate-900">Report to Audit Committee</h2>
               <Button onClick={() => setOpen(false)} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
             </div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Audit Committee reference</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Audit Committee reference</Label>
             <Input value={ref} onChange={(e) => setRef(e.target.value)} placeholder="e.g. AC-2026-Q2-07" />
             <p className="mt-2 text-[11px] text-slate-400">CRO-only — a 403 here means you lack the CRO role.</p>
             <div className="mt-5 flex justify-end gap-2">
               <Button onClick={() => setOpen(false)} variant="outline">Cancel</Button>
               <Button onClick={() => { onReport(ref.trim()); setOpen(false); }} disabled={busy || ref.trim().length < 1}>Report</Button>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </>
@@ -450,7 +453,7 @@ function AddMappingModal({ controlId, existing, onClose, onSaved }: { controlId:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Add mapping</h2>
           <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
@@ -458,42 +461,44 @@ function AddMappingModal({ controlId, existing, onClose, onSaved }: { controlId:
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Target type</label>
-              <Select value={targetType} onChange={(e) => setTargetType(e.target.value as any)}>
-                <option value="risk">Risk</option>
-                <option value="process">Process</option>
-                <option value="obligation">Obligation</option>
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Target type</Label>
+              <SelectField value={targetType} onChange={(value) => setTargetType(value as any)}
+                options={[
+                { value: "risk", label: "Risk" },
+                { value: "process", label: "Process" },
+                { value: "obligation", label: "Obligation" }
+              ]}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Strength</label>
-              <Select value={mitigationStrength} onChange={(e) => setMitigationStrength(e.target.value)}>
-                {STRENGTHS.map((s) => <option key={s} value={s}>{tidy(s)}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Strength</Label>
+              <SelectField value={mitigationStrength} onChange={setMitigationStrength}
+                options={STRENGTHS.map((s) => ({ value: s, label: tidy(s) }))}
+              />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">{targetType === "risk" ? "Risk" : targetType === "process" ? "Process" : "Obligation ID"}</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">{targetType === "risk" ? "Risk" : targetType === "process" ? "Process" : "Obligation ID"}</Label>
             {targetType === "obligation" ? (
               <Input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder="Paste obligation id" />
             ) : optErr ? (
               <Input value={targetId} onChange={(e) => setTargetId(e.target.value)} placeholder={`Could not load list — paste ${targetType} id`} />
             ) : (
-              <Select value={targetId} onChange={(e) => setTargetId(e.target.value)}>
-                <option value="">{options.length ? `Select a ${targetType}…` : "Loading…"}</option>
-                {options.map((o) => <option key={o.id} value={o.id}>{o.code ? `${o.code} · ` : ""}{o.label}</option>)}
-              </Select>
+              <SelectField value={targetId} onChange={setTargetId}
+                placeholder={options.length ? `Select a ${targetType}…` : "Loading…"}
+                options={options.map((o) => ({ value: o.id, label: `${o.code ? `${o.code} · ` : ""}${o.label}` }))}
+              />
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Coverage notes</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Coverage notes</Label>
             <Textarea value={coverageNotes} onChange={(e) => setCoverageNotes(e.target.value)} rows={2} placeholder="How this control mitigates the target." />
           </div>
 
           {dupPrimary && <p className="text-[11px] text-amber-600">A primary mapping already exists — the backend may reject a second primary.</p>}
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button onClick={onClose} variant="outline">Cancel</Button>
@@ -501,7 +506,7 @@ function AddMappingModal({ controlId, existing, onClose, onSaved }: { controlId:
             <Plus size={14} /> {busy ? "Adding…" : "Add mapping"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -545,44 +550,44 @@ function SchedulePlanModal({ controlId, ownerId, onClose, onSaved }: { controlId
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Schedule test plan</h2>
           <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Test cycle label</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Test cycle label</Label>
             <Input value={testCycleLabel} onChange={(e) => setTestCycleLabel(e.target.value)} placeholder="e.g. FY26 Q2 interim" />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
-              <Select value={testMethod} onChange={(e) => setTestMethod(e.target.value)}>
-                {TEST_METHODS.map((m) => <option key={m} value={m}>{tidy(m)}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Method</Label>
+              <SelectField value={testMethod} onChange={setTestMethod}
+                options={TEST_METHODS.map((m) => ({ value: m, label: tidy(m) }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Sample size</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Sample size</Label>
               <Input type="number" min={1} value={sampleSizePlanned} onChange={(e) => setSampleSizePlanned(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Times / year</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Times / year</Label>
               <Input type="number" min={1} value={testFrequencyPerYear} onChange={(e) => setTestFrequencyPerYear(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Assigned tester</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Assigned tester</Label>
               <UserPicker value={assignedTesterId} onChange={(id) => setAssignedTesterId(id)} placeholder="Select tester" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</Label>
               <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
             </div>
           </div>
           {ownerIsTester && <p className="text-[11px] font-medium text-amber-600">Segregation of duties — the tester cannot be the control owner. The backend will reject this.</p>}
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button onClick={onClose} variant="outline">Cancel</Button>
@@ -590,7 +595,7 @@ function SchedulePlanModal({ controlId, ownerId, onClose, onSaved }: { controlId
             {busy ? "Scheduling…" : "Schedule plan"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -650,7 +655,7 @@ function RecordTestModal({ controlId, testPlans, onClose, onSaved }: { controlId
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Record test</h2>
           <Button onClick={onClose} variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-slate-700"><X size={18} /></Button>
@@ -662,80 +667,80 @@ function RecordTestModal({ controlId, testPlans, onClose, onSaved }: { controlId
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Test plan</label>
-              <Select value={testPlanId} onChange={(e) => setTestPlanId(e.target.value)}>
-                <option value="">Ad-hoc</option>
-                {testPlans.map((tp) => <option key={tp.id} value={tp.id}>{tp.testCycleLabel}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Test plan</Label>
+              <SelectField value={testPlanId} onChange={setTestPlanId}
+                placeholder="Ad-hoc"
+                options={testPlans.map((tp) => ({ value: tp.id, label: tp.testCycleLabel }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Test type</label>
-              <Select value={testType} onChange={(e) => setTestType(e.target.value)}>
-                {TEST_TYPES.map((t) => <option key={t} value={t}>{tidy(t)}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Test type</Label>
+              <SelectField value={testType} onChange={setTestType}
+                options={TEST_TYPES.map((t) => ({ value: t, label: tidy(t) }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
-              <Select value={method} onChange={(e) => setMethod(e.target.value)}>
-                {TEST_METHODS.map((m) => <option key={m} value={m}>{tidy(m)}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Method</Label>
+              <SelectField value={method} onChange={setMethod}
+                options={TEST_METHODS.map((m) => ({ value: m, label: tidy(m) }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Test date</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Test date</Label>
               <Input type="date" value={testDate} onChange={(e) => setTestDate(e.target.value)} />
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Sample size</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Sample size</Label>
               <Input type="number" min={0} value={sampleSize} onChange={(e) => setSampleSize(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Exceptions found</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Exceptions found</Label>
               <Input type="number" min={0} value={exceptionsFound} onChange={(e) => setExceptionsFound(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Conclusion</label>
-            <Select value={conclusion} onChange={(e) => setConclusion(e.target.value)}>
-              {CONCLUSIONS.map((c) => <option key={c} value={c}>{tidy(c)}</option>)}
-            </Select>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Conclusion</Label>
+            <SelectField value={conclusion} onChange={setConclusion}
+              options={CONCLUSIONS.map((c) => ({ value: c, label: tidy(c) }))}
+            />
             <p className={"mt-1 text-[11px] " + (isDeficient ? "text-amber-600" : "text-slate-400")}>{CONCLUSION_GUIDANCE[conclusion]}</p>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Workpaper notes <span className="text-rose-500">*</span></label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Workpaper notes <span className="text-rose-500">*</span></Label>
             <Textarea value={workpaperNotes} onChange={(e) => setWorkpaperNotes(e.target.value)} rows={3} placeholder="Procedures performed, population, samples tested, results." />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Evidence attachment IDs (comma-separated, optional)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Evidence attachment IDs (comma-separated, optional)</Label>
             <Input value={evidenceIds} onChange={(e) => setEvidenceIds(e.target.value)} placeholder="att-1, att-2" />
           </div>
 
           {isDeficient && (
-            <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <Alert variant="warning" className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-amber-700">Deficiency detail (a non-effective conclusion auto-creates a deficiency)</p>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Deficiency description</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Deficiency description</Label>
                 <Textarea value={deficiencyDescription} onChange={(e) => setDeficiencyDescription(e.target.value)} rows={2} />
               </div>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">Root cause</label>
+                  <Label className="mb-1 block text-xs font-medium text-slate-600">Root cause</Label>
                   <Textarea value={deficiencyRootCause} onChange={(e) => setDeficiencyRootCause(e.target.value)} rows={2} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">Identified risk impact</label>
+                  <Label className="mb-1 block text-xs font-medium text-slate-600">Identified risk impact</Label>
                   <Textarea value={identifiedRiskImpact} onChange={(e) => setIdentifiedRiskImpact(e.target.value)} rows={2} />
                 </div>
               </div>
-            </div>
+            </Alert>
           )}
 
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button onClick={onClose} variant="outline">Cancel</Button>
@@ -743,7 +748,7 @@ function RecordTestModal({ controlId, testPlans, onClose, onSaved }: { controlId
             {busy ? "Recording…" : "Record test"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -9,6 +9,9 @@ import {
 } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { NewPlanButton } from "./new-plan-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -70,9 +73,9 @@ export default async function PlansPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 3 (BCM) seed has been run and you are logged in with a BCM role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -88,61 +91,61 @@ export default async function PlansPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.items.length} shown</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[980px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Title</th>
-                  <th className="px-3 py-2.5">Type</th>
-                  <th className="px-3 py-2.5">Site</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                  <th className="px-3 py-2.5 text-center">Processes</th>
-                  <th className="px-3 py-2.5 text-center">Ver</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Health</th>
-                  <th className="px-3 py-2.5">Last exercised</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[980px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Title</TableHead>
+                  <TableHead className="px-3 py-2.5">Type</TableHead>
+                  <TableHead className="px-3 py-2.5">Site</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Processes</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Ver</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5">Health</TableHead>
+                  <TableHead className="px-3 py-2.5">Last exercised</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
                       No plans match the current filter. Use “New Plan” to add one.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((p) => (
-                    <tr key={p.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={p.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/bcm/plans/${p.id}`} className="font-medium text-primary-700 hover:underline">{p.planCode}</Link>
-                      </td>
-                      <td className="max-w-[260px] px-3 py-2.5 text-slate-800">{p.title}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{PLAN_TYPE_LABEL[p.planType] ?? p.planType.replace(/_/g, " ")}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{p.siteName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{p.ownerName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-center text-xs tabular-nums text-slate-600">{p.coveredProcessCount}</td>
-                      <td className="px-3 py-2.5 text-center text-xs tabular-nums text-slate-500">v{p.version}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[260px] px-3 py-2.5 text-slate-800">{p.title}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{PLAN_TYPE_LABEL[p.planType] ?? p.planType.replace(/_/g, " ")}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{p.siteName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{p.ownerName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-center text-xs tabular-nums text-slate-600">{p.coveredProcessCount}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-center text-xs tabular-nums text-slate-500">v{p.version}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"rounded border px-2 py-0.5 text-[11px] " + (PLAN_STATUS_CHIP[p.status] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                           {p.status.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"rounded border px-2 py-0.5 text-[11px] " + (PLAN_HEALTH_CHIP[p.healthChip] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                           {p.healthChip}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-500">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-500">
                         {p.lastExercisedAt ? fmtDate(p.lastExercisedAt) : <span className="text-rose-500">never</span>}
                         {p.exerciseOverdue && <span className="ml-1 text-[10px] font-semibold text-amber-600">overdue</span>}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

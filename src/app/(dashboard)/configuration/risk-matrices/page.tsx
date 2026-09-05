@@ -2,6 +2,8 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +32,7 @@ export default async function RiskMatricesPage() {
         description="Configurable risk assessment matrices used by HIRA studies. Changes apply only to studies created after the change."
       />
 
-      <div className="rounded-xl border bg-amber-50 border-amber-200 p-4 mb-4 text-sm text-amber-900">
+      <Alert variant="warning" className="rounded-xl border bg-amber-50 border-amber-200 p-4 mb-4 text-sm text-amber-900">
         <div className="font-medium">Editing in this UI is read-only for now.</div>
         <div className="mt-1">
           To add or modify a matrix, edit{" "}
@@ -38,11 +40,11 @@ export default async function RiskMatricesPage() {
           <code className="px-1 rounded bg-amber-100">npx tsx prisma/seed-hira-masters.ts</code>.
           Full cell-by-cell edit UI ships in Phase 1 follow-up.
         </div>
-      </div>
+      </Alert>
 
       <div className="space-y-4">
         {matrices.map((m) => (
-          <div key={m.id} className="rounded-xl border bg-white overflow-hidden">
+          <Card key={m.id} className="rounded-xl border bg-white overflow-hidden shadow-none">
             <div className="px-4 py-3 border-b flex items-start justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
@@ -77,7 +79,7 @@ export default async function RiskMatricesPage() {
               <Stat label="Routine threshold" value={m.acceptableResidual.routine ?? "—"} />
               <Stat label="Emergency threshold" value={m.acceptableResidual.emergency ?? "—"} />
             </div>
-          </div>
+          </Card>
         ))}
       </div>
     </div>

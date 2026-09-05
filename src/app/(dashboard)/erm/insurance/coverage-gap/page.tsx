@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { CoverageGap, InsuranceDashboard } from "@/app/(dashboard)/erm/lib-t3";
 import { GapView } from "./gap-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -34,9 +35,9 @@ export default async function CoverageGapPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Tier 3 seed has been run, and you are logged in with an insurance role.
-        </div>
+        </Alert>
       ) : (
         <GapView gaps={gaps} openClaims={dashboard?.openClaims ?? []} />
       )}

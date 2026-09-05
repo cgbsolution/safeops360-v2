@@ -2,10 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Label } from "@/components/ui/label";
 import { ArrowDown, ArrowUp, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const MX = { navy: "#0B1F4D", gold: "#C9A961" };
 
@@ -67,29 +68,31 @@ export function CalibrationTable({
         <CardContent className="flex flex-wrap items-end gap-4 p-4">
           <div className="space-y-1">
             <Label htmlFor="days">Window</Label>
-            <Select
+            <SelectField
               id="days"
               value={String(days)}
-              onChange={(e) => navigate(Number(e.target.value), includeAll)}
+              onChange={(value) => navigate(Number(value), includeAll)}
               className="w-40"
-            >
-              <option value="30">Last 30 days</option>
-              <option value="90">Last 90 days</option>
-              <option value="180">Last 180 days</option>
-              <option value="365">Last 12 months</option>
-            </Select>
+              options={[
+              { value: "30", label: "Last 30 days" },
+              { value: "90", label: "Last 90 days" },
+              { value: "180", label: "Last 180 days" },
+              { value: "365", label: "Last 12 months" }
+            ]}
+            />
           </div>
           <div className="space-y-1">
             <Label htmlFor="sources">Counting</Label>
-            <Select
+            <SelectField
               id="sources"
               value={includeAll ? "1" : "0"}
-              onChange={(e) => navigate(days, e.target.value === "1")}
+              onChange={(value) => navigate(days, value === "1")}
               className="w-64"
-            >
-              <option value="0">Observer form only</option>
-              <option value="1">All sources (incl. triage &amp; edits)</option>
-            </Select>
+              options={[
+              { value: "0", label: "Observer form only" },
+              { value: "1", label: "All sources (incl. triage & edits)" }
+            ]}
+            />
           </div>
           <p className="max-w-md text-xs text-slate-500">
             A triager&apos;s or an editor&apos;s severity call is not observer disagreement, so it is
@@ -113,45 +116,45 @@ export function CalibrationTable({
       ) : (
         <Card>
           <CardContent className="overflow-x-auto p-0">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-                  <th className="px-4 py-3 font-semibold">Sub-category</th>
-                  <th className="px-4 py-3 font-semibold">Axis</th>
-                  <th className="px-4 py-3 font-semibold">Suggests</th>
-                  <th className="px-4 py-3 text-right font-semibold">Overrides</th>
-                  <th className="px-4 py-3 text-right font-semibold">Of</th>
-                  <th className="px-4 py-3 text-right font-semibold">Rate</th>
-                  <th className="px-4 py-3 font-semibold">Direction</th>
-                  <th className="px-4 py-3 font-semibold">Reading</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                  <TableHead className="px-4 py-3 font-semibold">Sub-category</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold">Axis</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold">Suggests</TableHead>
+                  <TableHead className="px-4 py-3 text-right font-semibold">Overrides</TableHead>
+                  <TableHead className="px-4 py-3 text-right font-semibold">Of</TableHead>
+                  <TableHead className="px-4 py-3 text-right font-semibold">Rate</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold">Direction</TableHead>
+                  <TableHead className="px-4 py-3 font-semibold">Reading</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {report.rows.map((r) => {
                   const consistent = (r.directionConsistencyPct ?? 0) >= 80;
                   const frequent = (r.overrideRatePct ?? 0) >= 40;
                   const actionable = consistent && frequent && r.overrides >= 3;
                   return (
-                    <tr
+                    <TableRow
                       key={`${r.observationType}|${r.categoryCode}|${r.subCategoryCode}`}
                       className="border-b last:border-0"
                     >
-                      <td className="px-4 py-3">
+                      <TableCell className="px-4 py-3">
                         <div className="font-medium" style={{ color: MX.navy }}>
                           {label(r.subCategoryCode)}
                         </div>
                         <div className="text-xs text-slate-500">{label(r.categoryCode)}</div>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-xs text-slate-500">
                         {r.observationType === "CONDITION" ? "Condition" : "Act"}
-                      </td>
-                      <td className="px-4 py-3">{severityLabel(r.suggestedSeverity)}</td>
-                      <td className="px-4 py-3 text-right font-medium">{r.overrides}</td>
-                      <td className="px-4 py-3 text-right text-slate-500">{r.observations}</td>
-                      <td className="px-4 py-3 text-right">
+                      </TableCell>
+                      <TableCell className="px-4 py-3">{severityLabel(r.suggestedSeverity)}</TableCell>
+                      <TableCell className="px-4 py-3 text-right font-medium">{r.overrides}</TableCell>
+                      <TableCell className="px-4 py-3 text-right text-slate-500">{r.observations}</TableCell>
+                      <TableCell className="px-4 py-3 text-right">
                         {r.overrideRatePct == null ? "—" : `${r.overrideRatePct}%`}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
                         <span
                           className={cn(
                             "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium",
@@ -172,8 +175,8 @@ export function CalibrationTable({
                             ? ` · ${r.directionConsistencyPct}%`
                             : ""}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 text-xs">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-xs">
                         {actionable ? (
                           <span className="font-medium" style={{ color: MX.gold }}>
                             Rule likely wrong — consider setting it{" "}
@@ -186,12 +189,12 @@ export function CalibrationTable({
                         ) : (
                           <span className="text-slate-500">Not yet enough signal to act on.</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       )}

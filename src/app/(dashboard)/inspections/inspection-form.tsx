@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
 import { parseApiError } from "@/lib/api-error";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 type Equipment = {
   id: string;
@@ -47,8 +50,10 @@ export function InspectionForm({ equipment }: { equipment: Equipment[] }) {
 
   const [results, setResults] = useState<Record<string, string>>({});
 
-  function onEquipmentChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    setEquipmentId(e.target.value);
+  // Takes the value, not a change event: the equipment picker is a Radix
+  // listbox now, and there is no DOM event behind the selection.
+  function onEquipmentChange(value: string) {
+    setEquipmentId(value);
     setInspectorId(null); // re-pick inspector when plant changes via equipment
     setResults({});
   }
@@ -91,13 +96,9 @@ export function InspectionForm({ equipment }: { equipment: Equipment[] }) {
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label>Equipment<span className="text-rose-600 ml-0.5">*</span></Label>
-            <Select name="equipmentId" value={equipmentId} onChange={onEquipmentChange} required>
-              {equipment.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.code} — {e.name} ({e.plant.name})
-                </option>
-              ))}
-            </Select>
+            <SelectField name="equipmentId" value={equipmentId} onChange={onEquipmentChange} required
+              options={equipment.map((e) => ({ value: String(e.id), label: `${e.code} — ${e.name} (${e.plant.name})` }))}
+            />
             {selectedEq && (
               <p className="text-xs text-slate-500">Frequency: {selectedEq.frequency.replace(/_/g, " ")}</p>
             )}
@@ -128,13 +129,12 @@ export function InspectionForm({ equipment }: { equipment: Equipment[] }) {
           </div>
 
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
+             
               id="recordNow"
               checked={recordCompleted}
               onChange={(e) => setRecordCompleted(e.target.checked)}
-              className="rounded border-slate-300 text-primary-700 focus:ring-primary-600"
-            />
+              className="rounded border-slate-300 text-primary-700 focus:ring-primary-600" />
             <Label htmlFor="recordNow" className="cursor-pointer">Record completion now (in-field shortcut)</Label>
           </div>
 
@@ -142,11 +142,13 @@ export function InspectionForm({ equipment }: { equipment: Equipment[] }) {
             <>
               <div className="space-y-2">
                 <Label>Overall Result<span className="text-rose-600 ml-0.5">*</span></Label>
-                <Select name="result" required defaultValue="Pass">
-                  <option value="Pass">Pass</option>
-                  <option value="Partial">Partial / Minor</option>
-                  <option value="Fail">Fail</option>
-                </Select>
+                <SelectField name="result" required defaultValue="Pass"
+                  options={[
+                  { value: "Pass", label: "Pass" },
+                  { value: "Partial", label: "Partial / Minor" },
+                  { value: "Fail", label: "Fail" }
+                ]}
+                />
                 <p className="text-[11px] text-slate-500">
                   A Fail / Partial result auto-creates a Safety Observation for follow-up.
                 </p>
@@ -155,23 +157,24 @@ export function InspectionForm({ equipment }: { equipment: Equipment[] }) {
               {checklist.length > 0 ? (
                 <div>
                   <Label>Checklist Items</Label>
-                  <div className="mt-2 space-y-2 border rounded-md p-3 bg-slate-50">
+                  <Card className="mt-2 space-y-2 border rounded-md p-3 bg-slate-50 shadow-none">
                     {checklist.map((item, i) => (
                       <div key={i} className="flex items-center justify-between gap-3 text-sm">
                         <span className="flex-1 min-w-0">{item}</span>
-                        <Select
+                        <SelectField
                           className="w-32"
                           value={results[item] ?? "Pass"}
-                          onChange={(e) => setResults({ ...results, [item]: e.target.value })}
-                        >
-                          <option>Pass</option>
-                          <option>Marginal</option>
-                          <option>Fail</option>
-                          <option>N/A</option>
-                        </Select>
+                          onChange={(value) => setResults({ ...results, [item]: value })}
+                          options={[
+                          { value: "Pass", label: "Pass" },
+                          { value: "Marginal", label: "Marginal" },
+                          { value: "Fail", label: "Fail" },
+                          { value: "N/A", label: "N/A" }
+                        ]}
+                        />
                       </div>
                     ))}
-                  </div>
+                  </Card>
                 </div>
               ) : (
                 <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
@@ -186,7 +189,7 @@ export function InspectionForm({ equipment }: { equipment: Equipment[] }) {
             </>
           )}
 
-          {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">{error}</div>}
+          {error && <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">{error}</Alert>}
 
           <div className="flex gap-3">
             <Button type="submit" disabled={submitting}>{submitting ? "Saving..." : recordCompleted ? "Save Inspection" : "Schedule Inspection"}</Button>

@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { InspectionForm } from "../inspection-form";
 import { requirePermission } from "@/lib/auth/server";
 import { getAccessiblePlants } from "@/lib/auth/permissions";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +47,7 @@ export default async function NewInspectionPage() {
         breadcrumbs={[{ label: "Inspections", href: "/inspections" }, { label: "New" }]}
       />
       {equipment.length === 0 ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
+        <Alert variant="warning" className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-sm text-amber-900">
           <div className="mb-2 font-semibold">No equipment available in your scope</div>
           <p className="mb-3">
             You have permission to schedule inspections, but none of the equipment in the system
@@ -57,7 +58,7 @@ export default async function NewInspectionPage() {
           <Link href="/inspections" className="font-medium text-primary-700 hover:underline">
             ← Back to inspections
           </Link>
-        </div>
+        </Alert>
       ) : (
         <InspectionForm equipment={equipment} />
       )}

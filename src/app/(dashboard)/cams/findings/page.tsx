@@ -3,6 +3,9 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { AttachmentCountBadge } from "@/components/evidence/AttachmentCountBadge";
 import { requirePermission } from "@/lib/auth/server";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   SEVERITY_CHIP, FINDING_STATUS_CHIP, fmtDate, labelize,
   type FindingListResponse,
@@ -88,7 +91,7 @@ export default async function FindingsRegisterPage(props: {
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Findings" }]}
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -102,56 +105,56 @@ export default async function FindingsRegisterPage(props: {
             {toggle("overdueOnly", "Overdue")}
             <span className="ml-auto text-xs text-slate-500">{data.total} finding(s)</span>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Finding</th>
-                  <th className="px-3 py-2.5">Engagement</th>
-                  <th className="px-3 py-2.5">Severity</th>
-                  <th className="px-3 py-2.5">Clause</th>
-                  <th className="px-3 py-2.5">Site</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">CAPA</th>
-                  <th className="px-3 py-2.5">Due</th>
-                  <th className="px-3 py-2.5 text-center">Age</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1100px] text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Finding</TableHead>
+                  <TableHead className="px-3 py-2.5">Engagement</TableHead>
+                  <TableHead className="px-3 py-2.5">Severity</TableHead>
+                  <TableHead className="px-3 py-2.5">Clause</TableHead>
+                  <TableHead className="px-3 py-2.5">Site</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5">CAPA</TableHead>
+                  <TableHead className="px-3 py-2.5">Due</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Age</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr><td colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">No findings match the current filter.</td></tr>
+                  <TableRow><TableCell colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">No findings match the current filter.</TableCell></TableRow>
                 ) : (
                   data.items.map((f) => (
-                    <tr key={f.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={f.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={f.href ?? `/cams/findings/${f.id}`} className="font-medium text-primary-700 hover:underline">{f.findingCode}</Link>
                         {f.isRepeatFinding && <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">repeat</span>}
                         {f.href?.startsWith("/cams/audits") && <span className="ml-1 rounded bg-violet-100 px-1 text-[10px] font-semibold text-violet-700">audit</span>}
-                      </td>
-                      <td className="max-w-[260px] px-3 py-2.5 text-slate-700">
+                      </TableCell>
+                      <TableCell className="max-w-[260px] px-3 py-2.5 text-slate-700">
                         <span className="flex items-center gap-1.5">
                           <span className="truncate">{f.title}</span>
                           <AttachmentCountBadge count={attachmentCounts[f.id] ?? 0} />
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs"><Link href={f.href ?? `/cams/engagements/${f.engagementId}`} className="text-primary-700 hover:underline">{f.engagementCode}</Link></td>
-                      <td className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (SEVERITY_CHIP[f.severity] ?? "")}>{labelize(f.severity)}</span></td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{f.standardClauseRef ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{f.siteName ?? "—"}</td>
-                      <td className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (FINDING_STATUS_CHIP[f.status] ?? "")}>{labelize(f.status)}</span></td>
-                      <td className="px-3 py-2.5 text-xs">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs"><Link href={f.href ?? `/cams/engagements/${f.engagementId}`} className="text-primary-700 hover:underline">{f.engagementCode}</Link></TableCell>
+                      <TableCell className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (SEVERITY_CHIP[f.severity] ?? "")}>{labelize(f.severity)}</span></TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{f.standardClauseRef ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{f.siteName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (FINDING_STATUS_CHIP[f.status] ?? "")}>{labelize(f.status)}</span></TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs">
                         {f.capaNumber ? <Link href="/capa" className="text-blue-700 hover:underline">{f.capaNumber}</Link>
                           : f.capaRequired ? <span className="text-rose-500">required</span> : <span className="text-slate-300">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">{fmtDate(f.dueDate)}</td>
-                      <td className="px-3 py-2.5 text-center text-xs tabular-nums text-slate-500">{f.ageDays}d</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums text-slate-500">{fmtDate(f.dueDate)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-center text-xs tabular-nums text-slate-500">{f.ageDays}d</TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

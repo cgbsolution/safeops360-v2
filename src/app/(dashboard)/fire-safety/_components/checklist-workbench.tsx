@@ -28,6 +28,7 @@ import {
 import { ChecklistFormRunner } from "./checklist-form";
 import { ChecklistGridRunner } from "./checklist-grid";
 import { DocumentHeader } from "./document-header";
+import { Card } from "@/components/ui/card";
 
 const FREQ_LABEL: Record<string, string> = {
   DAILY: "Daily",
@@ -183,9 +184,9 @@ export function ChecklistWorkbench({
 
   if (loadError) {
     return (
-      <div className="rounded-xl border p-6 text-[13px]" style={{ borderColor: MX.red, background: MX.redSoft, color: MX.red }}>
+      <Card className="rounded-xl p-6 text-[13px] shadow-none" style={{ borderColor: MX.red, background: MX.redSoft, color: MX.red }}>
         {loadError}
-      </div>
+      </Card>
     );
   }
 
@@ -265,13 +266,13 @@ export function ChecklistWorkbench({
       {/* ── the sheet ───────────────────────────────────────────────────── */}
       <section className="min-w-0">
         {!asset ? (
-          <div className="rounded-xl border bg-white p-8 text-center text-[13px]" style={{ borderColor: MX.iceLine, color: MX.muted }}>
+          <Card className="rounded-xl p-8 text-center text-[13px] shadow-none" style={{ borderColor: MX.iceLine, color: MX.muted }}>
             <div className="text-[15px] font-semibold" style={{ color: MX.navy, fontFamily: DISPLAY_FONT }}>
               {title}
             </div>
             <p className="mx-auto mt-1 max-w-md">{description}</p>
             <p className="mt-3">Register a {assetTypeLabel.toLowerCase().replace(/s$/, "")} to start recording checks.</p>
-          </div>
+          </Card>
         ) : (
           <>
             {template && (

@@ -6,6 +6,14 @@ import { Check, ChevronLeft, ChevronRight, Plus, X, AlertTriangle, Search } from
 import { UserPicker } from "@/components/ui/user-picker";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   CATEGORIES,
   CATEGORY_LABEL,
@@ -233,7 +241,7 @@ export function ChangeWizard({ plantId }: { plantId: string }) {
   return (
     <div className="space-y-4 max-w-4xl">
       {/* Stepper */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <ol className="flex flex-wrap items-center gap-2">
           {STEPS.map((label, i) => {
             const done = i < step;
@@ -256,13 +264,13 @@ export function ChangeWizard({ plantId }: { plantId: string }) {
             );
           })}
         </ol>
-      </div>
+      </Card>
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</Alert>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         {step === 0 && (
           <IdentifyStep
             {...{
@@ -300,34 +308,28 @@ export function ChangeWizard({ plantId }: { plantId: string }) {
             {...{ title, category, classification, urgency, isTemporary, temporaryExpiryDate, riskPre, riskResidual, hazards, affectedDepts, reviewers, trainingRequired, equipment }}
           />
         )}
-      </div>
+      </Card>
 
       <div className="flex items-center justify-between">
-        <button
+        <Button variant="outline"
           type="button"
           onClick={back}
-          disabled={step === 0 || busy}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-40"
-        >
+          disabled={step === 0 || busy} className="gap-1 rounded-lg px-4 py-2 text-sm">
           <ChevronLeft size={16} /> Back
-        </button>
+        </Button>
         <div className="flex items-center gap-2">
-          <button
+          <Button variant="outline"
             type="button"
             onClick={() => submit(false)}
-            disabled={busy}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-40"
-          >
+            disabled={busy} className="rounded-lg px-4 py-2 text-sm">
             Save as draft
-          </button>
+          </Button>
           {step < 4 ? (
-            <button
+            <Button variant="default"
               type="button"
-              onClick={next}
-              className="inline-flex items-center gap-1 rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800"
-            >
+              onClick={next} className="gap-1 rounded-lg px-4 py-2 text-sm text-white">
               Next <ChevronRight size={16} />
-            </button>
+            </Button>
           ) : (
             <button
               type="button"
@@ -348,10 +350,10 @@ export function ChangeWizard({ plantId }: { plantId: string }) {
 function Field({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">
+      <Label className="mb-1 block text-xs font-medium text-slate-600">
         {label}
         {required && <span className="ml-0.5 text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
       {hint && <span className="mt-1 block text-[11px] text-slate-400">{hint}</span>}
     </div>
@@ -368,7 +370,7 @@ function ChipInput({ label, placeholder, items, setItems }: { label: string; pla
   return (
     <Field label={label}>
       <div className="flex gap-1.5">
-        <input
+        <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -378,20 +380,19 @@ function ChipInput({ label, placeholder, items, setItems }: { label: string; pla
             }
           }}
           className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          placeholder={placeholder}
-        />
-        <button type="button" onClick={add} className="shrink-0 rounded-lg border border-slate-300 bg-white px-2 text-slate-600 hover:border-primary-500" aria-label={`Add ${label}`}>
+          placeholder={placeholder} />
+        <Button variant="outline" type="button" onClick={add} className="shrink-0 rounded-lg px-2" aria-label={`Add ${label}`}>
           <Plus size={16} />
-        </button>
+        </Button>
       </div>
       {items.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {items.map((c, i) => (
             <span key={i} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">
               {c}
-              <button type="button" onClick={() => setItems(items.filter((_, j) => j !== i))} className="opacity-60 hover:opacity-100" aria-label={`Remove ${c}`}>
+              <Button variant="ghost" type="button" onClick={() => setItems(items.filter((_, j) => j !== i))} className="opacity-60 hover:opacity-100" aria-label={`Remove ${c}`}>
                 <X size={12} />
-              </button>
+              </Button>
             </span>
           ))}
         </div>
@@ -414,7 +415,7 @@ function RiskMatrixPicker({ label, value, onChange }: { label: string; value: Ma
   }
   const band = value?.band;
   return (
-    <div className="rounded-lg border border-slate-200 p-4">
+    <Card className="rounded-lg border border-slate-200 p-4 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <h4 className="text-sm font-semibold text-slate-800">{label}</h4>
         {value && (
@@ -428,9 +429,9 @@ function RiskMatrixPicker({ label, value, onChange }: { label: string; value: Ma
           <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">Likelihood (1–5)</div>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" onClick={() => set(n, severity)} className={cn("h-8 w-8 rounded border text-sm font-medium", likelihood === n ? "border-primary-600 bg-primary-700 text-white" : "border-slate-300 bg-white text-slate-600 hover:border-primary-400")}>
+              <Button key={n} type="button" variant="outline" onClick={() => set(n, severity)} className={cn("h-8 w-8 rounded border text-sm font-medium", likelihood === n ? "border-primary-600 bg-primary-700 text-white" : "border-slate-300 bg-white text-slate-600 hover:border-primary-400")}>
                 {n}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
@@ -438,14 +439,14 @@ function RiskMatrixPicker({ label, value, onChange }: { label: string; value: Ma
           <div className="mb-1 text-[11px] font-medium uppercase tracking-wider text-slate-500">Severity (1–5)</div>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
-              <button key={n} type="button" onClick={() => set(likelihood, n)} className={cn("h-8 w-8 rounded border text-sm font-medium", severity === n ? "border-primary-600 bg-primary-700 text-white" : "border-slate-300 bg-white text-slate-600 hover:border-primary-400")}>
+              <Button key={n} type="button" variant="outline" aria-pressed={severity === n} onClick={() => set(likelihood, n)} className={cn("h-8 w-8 rounded border p-0 text-sm font-medium", severity === n && "border-primary-600 bg-primary-700 text-white hover:bg-primary-800 hover:text-white")}>
                 {n}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -482,9 +483,9 @@ function EquipmentSelect({ plantId, items, setItems }: { plantId: string; items:
   return (
     <Field label="Affected equipment / assets" hint="Search the plant asset registry.">
       <div className="relative">
-        <div className="flex items-center gap-2 rounded-lg border border-slate-300 px-2">
+        <Card className="flex items-center gap-2 rounded-lg border border-slate-300 px-2 shadow-none">
           <Search size={14} className="text-slate-400" />
-          <input
+          <Input
             value={q}
             onChange={(e) => {
               setQ(e.target.value);
@@ -492,18 +493,17 @@ function EquipmentSelect({ plantId, items, setItems }: { plantId: string; items:
             }}
             onFocus={() => setOpen(true)}
             className="w-full py-2 text-sm outline-none"
-            placeholder="Type an asset code or name…"
-          />
-        </div>
+            placeholder="Type an asset code or name…" />
+        </Card>
         {open && results.length > 0 && (
-          <div className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
+          <Card className="absolute z-10 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-slate-200 bg-white shadow-lg">
             {results.map((r) => (
-              <button key={r.id} type="button" onClick={() => add(r)} className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50">
+              <Button variant="ghost" key={r.id} type="button" onClick={() => add(r)} className="block w-full px-3 py-2 text-left text-sm">
                 <span className="font-mono text-xs text-slate-500">{r.code}</span> {r.name}
                 <span className="text-xs text-slate-400"> · {r.location}</span>
-              </button>
+              </Button>
             ))}
-          </div>
+          </Card>
         )}
       </div>
       {items.length > 0 && (
@@ -511,9 +511,9 @@ function EquipmentSelect({ plantId, items, setItems }: { plantId: string; items:
           {items.map((e) => (
             <span key={e.id} className="inline-flex items-center gap-1 rounded-md border border-sky-200 bg-sky-50 px-2 py-1 text-xs text-sky-800">
               {e.label}
-              <button type="button" onClick={() => setItems(items.filter((x) => x.id !== e.id))} className="opacity-60 hover:opacity-100" aria-label="Remove">
+              <Button variant="ghost" type="button" onClick={() => setItems(items.filter((x) => x.id !== e.id))} className="opacity-60 hover:opacity-100" aria-label="Remove">
                 <X size={12} />
-              </button>
+              </Button>
             </span>
           ))}
         </div>
@@ -527,49 +527,45 @@ function IdentifyStep(p: any) {
   return (
     <div className="space-y-4">
       <Field label="Title" required>
-        <input value={p.title} onChange={(e: any) => p.setTitle(e.target.value)} className={cn("w-full rounded-lg border p-2 text-sm", p.touched && !p.title.trim() ? "border-rose-300" : "border-slate-300")} placeholder="e.g. Replace bag filter on Kiln-2 with higher-capacity unit" />
+        <Input value={p.title} onChange={(e: any) => p.setTitle(e.target.value)} className={cn("w-full rounded-lg border p-2 text-sm", p.touched && !p.title.trim() ? "border-rose-300" : "border-slate-300")} placeholder="e.g. Replace bag filter on Kiln-2 with higher-capacity unit" />
       </Field>
       <Field label="Description" required>
-        <textarea value={p.description} onChange={(e: any) => p.setDescription(e.target.value)} rows={3} className={cn("w-full rounded-lg border p-2 text-sm", p.touched && !p.description.trim() ? "border-rose-300" : "border-slate-300")} placeholder="What is changing, and from what to what?" />
+        <Textarea value={p.description} onChange={(e: any) => p.setDescription(e.target.value)} rows={3} className={cn("w-full rounded-lg border p-2 text-sm", p.touched && !p.description.trim() ? "border-rose-300" : "border-slate-300")} placeholder="What is changing, and from what to what?" />
       </Field>
       <div className="grid gap-4 md:grid-cols-3">
         <Field label="Change type">
-          <select value={p.category} onChange={(e: any) => p.setCategory(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>
-            ))}
-          </select>
+          <SelectField value={p.category} onChange={(e: any) => p.setCategory(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            options={CATEGORIES.map((c) => ({ value: c, label: CATEGORY_LABEL[c] }))}
+          />
         </Field>
         <Field label="Subcategory">
-          <input value={p.subcategory} onChange={(e: any) => p.setSubcategory(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="optional" />
+          <Input value={p.subcategory} onChange={(e: any) => p.setSubcategory(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="optional" />
         </Field>
         <Field label="Classification">
-          <select value={p.classification} onChange={(e: any) => p.setClassification(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
-            {CLASSIFICATIONS.map((c) => (
-              <option key={c} value={c}>{c[0].toUpperCase() + c.slice(1)}</option>
-            ))}
-          </select>
+          <SelectField value={p.classification} onChange={(e: any) => p.setClassification(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            options={CLASSIFICATIONS.map((c) => ({ value: c, label: c[0].toUpperCase() + c.slice(1) }))}
+          />
         </Field>
         <Field label="Origin">
-          <select value={p.origin} onChange={(e: any) => p.setOrigin(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
-            {ORIGINS.map((o) => (
-              <option key={o} value={o}>{ORIGIN_LABEL[o]}</option>
-            ))}
-          </select>
+          <SelectField value={p.origin} onChange={(e: any) => p.setOrigin(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            options={ORIGINS.map((o) => ({ value: o, label: ORIGIN_LABEL[o] }))}
+          />
         </Field>
         <Field label="Urgency">
-          <select value={p.urgency} onChange={(e: any) => p.setUrgency(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
-            {Object.entries(URGENCY_LABEL).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
+          <SelectField
+            value={p.urgency}
+            onChange={p.setUrgency}
+            ariaLabel="Urgency"
+            className="w-full rounded-lg p-2 text-sm"
+            options={Object.entries(URGENCY_LABEL).map(([v, l]) => ({ value: v, label: String(l) }))}
+          />
         </Field>
       </div>
       {p.urgency === "emergency" && (
-        <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+        <Alert variant="warning" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           <span>Emergency changes may start implementation before full approval, but require retroactive approval within 72 hours and cannot be closed until it is recorded.</span>
-        </div>
+        </Alert>
       )}
 
       <EquipmentSelect plantId={p.plantId} items={p.equipment} setItems={p.setEquipment} />
@@ -581,31 +577,31 @@ function IdentifyStep(p: any) {
       <ChipInput label="Related / linked MOCs" placeholder="Add a MOC number or id…" items={p.linkedMocIds} setItems={p.setLinkedMocIds} />
 
       <div className="flex items-end gap-2">
-        <input id="isTemporary" type="checkbox" checked={p.isTemporary} onChange={(e: any) => p.setIsTemporary(e.target.checked)} className="h-4 w-4" />
-        <label htmlFor="isTemporary" className="text-sm text-slate-700">This is a temporary change</label>
+        <Checkbox id="isTemporary" checked={p.isTemporary} onChange={(e: any) => p.setIsTemporary(e.target.checked)} className="h-4 w-4" />
+        <Label htmlFor="isTemporary" className="text-sm text-slate-700">This is a temporary change</Label>
       </div>
       {p.isTemporary && (
         <Field label="Expiration date" required hint="Required for temporary changes — the owner is reminded at T-7 and T-1 days.">
-          <input type="date" value={p.temporaryExpiryDate} onChange={(e: any) => p.setTemporaryExpiryDate(e.target.value)} className={cn("w-56 rounded-lg border p-2 text-sm", p.touched && !p.temporaryExpiryDate ? "border-rose-300" : "border-slate-300")} />
+          <Input type="date" value={p.temporaryExpiryDate} onChange={(e: any) => p.setTemporaryExpiryDate(e.target.value)} className={cn("w-56 rounded-lg border p-2 text-sm", p.touched && !p.temporaryExpiryDate ? "border-rose-300" : "border-slate-300")} />
         </Field>
       )}
 
       <div className="grid gap-4 md:grid-cols-3">
         <Field label="Cost estimate (INR)">
-          <input type="number" value={p.costEstimate} onChange={(e: any) => p.setCostEstimate(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="optional" />
+          <Input type="number" value={p.costEstimate} onChange={(e: any) => p.setCostEstimate(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="optional" />
         </Field>
         <Field label="Proposed implementation">
-          <input type="date" value={p.proposedImplementationDate} onChange={(e: any) => p.setProposedImplementationDate(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+          <Input type="date" value={p.proposedImplementationDate} onChange={(e: any) => p.setProposedImplementationDate(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
         </Field>
         <Field label="Target completion">
-          <input type="date" value={p.targetCompletionDate} onChange={(e: any) => p.setTargetCompletionDate(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+          <Input type="date" value={p.targetCompletionDate} onChange={(e: any) => p.setTargetCompletionDate(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
         </Field>
       </div>
       <Field label="Business justification">
-        <textarea value={p.businessJustification} onChange={(e: any) => p.setBusinessJustification(e.target.value)} rows={2} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+        <Textarea value={p.businessJustification} onChange={(e: any) => p.setBusinessJustification(e.target.value)} rows={2} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
       </Field>
       <Field label="Expected benefits">
-        <textarea value={p.expectedBenefits} onChange={(e: any) => p.setExpectedBenefits(e.target.value)} rows={2} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+        <Textarea value={p.expectedBenefits} onChange={(e: any) => p.setExpectedBenefits(e.target.value)} rows={2} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
       </Field>
     </div>
   );
@@ -616,20 +612,20 @@ function RiskStep(p: any) {
   return (
     <div className="space-y-5">
       <div className="flex items-start gap-2">
-        <input id="psm" type="checkbox" checked={p.psmApplicable} onChange={(e: any) => p.setPsmApplicable(e.target.checked)} className="mt-1 h-4 w-4" />
-        <label htmlFor="psm" className="text-sm text-slate-700">
+        <Checkbox id="psm" checked={p.psmApplicable} onChange={(e: any) => p.setPsmApplicable(e.target.checked)} className="mt-1 h-4 w-4" />
+        <Label htmlFor="psm" className="text-sm text-slate-700">
           Process Safety Management (PSM) applies to this change
-        </label>
+        </Label>
       </div>
       {p.psmApplicable && (
-        <div className="grid gap-4 md:grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-4">
+        <Card className="grid gap-4 md:grid-cols-2 rounded-lg border border-slate-200 bg-slate-50 p-4 shadow-none">
           <Field label="PSM-covered process">
-            <input value={p.psmCoveredProcess} onChange={(e: any) => p.setPsmCoveredProcess(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. Ammonia refrigeration" />
+            <Input value={p.psmCoveredProcess} onChange={(e: any) => p.setPsmCoveredProcess(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. Ammonia refrigeration" />
           </Field>
           <Field label="Affected safeguards">
-            <input value={p.psmSafeguards} onChange={(e: any) => p.setPsmSafeguards(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. Relief valve setpoint, interlock IL-12" />
+            <Input value={p.psmSafeguards} onChange={(e: any) => p.setPsmSafeguards(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="e.g. Relief valve setpoint, interlock IL-12" />
           </Field>
-        </div>
+        </Card>
       )}
 
       <RiskMatrixPicker label="Pre-change risk rating *" value={p.riskPre} onChange={p.setRiskPre} />
@@ -640,16 +636,16 @@ function RiskStep(p: any) {
           {HAZARD_CATEGORIES.map((h) => {
             const on = p.hazards.includes(h);
             return (
-              <button key={h} type="button" onClick={() => p.setHazards(on ? p.hazards.filter((x: string) => x !== h) : [...p.hazards, h])} className={cn("rounded-full border px-3 py-1 text-xs font-medium", on ? "border-rose-300 bg-rose-50 text-rose-800" : "border-slate-300 bg-white text-slate-600 hover:border-rose-300")}>
+              <Button key={h} type="button" variant="outline" size="sm" aria-pressed={on} onClick={() => p.setHazards(on ? p.hazards.filter((x: string) => x !== h) : [...p.hazards, h])} className={cn("rounded-full px-3 py-1 text-xs font-medium", on && "border-rose-300 bg-rose-50 text-rose-800 hover:bg-rose-100")}>
                 {HAZARD_LABEL[h]}
-              </button>
+              </Button>
             );
           })}
         </div>
       </Field>
 
       <Field label="Mitigations / controls">
-        <textarea value={p.mitigations} onChange={(e: any) => p.setMitigations(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Controls that bring the risk down to the residual rating…" />
+        <Textarea value={p.mitigations} onChange={(e: any) => p.setMitigations(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Controls that bring the risk down to the residual rating…" />
       </Field>
 
       <RiskMatrixPicker label="Post-mitigation residual risk rating" value={p.riskResidual} onChange={p.setRiskResidual} />
@@ -668,35 +664,35 @@ function ImpactStep(p: any) {
           {IMPACT_DEPARTMENTS.map((d) => {
             const affected = p.dept[d]?.affected;
             return (
-              <label key={d} className={cn("flex items-center justify-between rounded-lg border px-3 py-2 text-sm cursor-pointer", affected ? "border-primary-300 bg-primary-50" : "border-slate-200")}>
+              <Label key={d} className={cn("flex items-center justify-between rounded-lg border px-3 py-2 text-sm cursor-pointer", affected ? "border-primary-300 bg-primary-50" : "border-slate-200")}>
                 <span className="text-slate-700">{IMPACT_DEPT_LABEL[d]}</span>
-                <input type="checkbox" checked={!!affected} onChange={(e) => p.setDept({ ...p.dept, [d]: { ...p.dept[d], affected: e.target.checked } })} className="h-4 w-4" />
-              </label>
+                <Checkbox checked={!!affected} onChange={(e) => p.setDept({ ...p.dept, [d]: { ...p.dept[d], affected: e.target.checked } })} className="h-4 w-4" />
+              </Label>
             );
           })}
         </div>
       </div>
 
       <Field label="Communication / training plan" hint="Who needs to be informed or trained before implementation?">
-        <textarea value={p.communicationPlan} onChange={(e: any) => p.setCommunicationPlan(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
+        <Textarea value={p.communicationPlan} onChange={(e: any) => p.setCommunicationPlan(e.target.value)} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" />
       </Field>
 
       <div className="flex items-start gap-2">
-        <input id="trainingReq" type="checkbox" checked={p.trainingRequired} onChange={(e: any) => p.setTrainingRequired(e.target.checked)} className="mt-1 h-4 w-4" />
-        <label htmlFor="trainingReq" className="text-sm text-slate-700">
+        <Checkbox id="trainingReq" checked={p.trainingRequired} onChange={(e: any) => p.setTrainingRequired(e.target.checked)} className="mt-1 h-4 w-4" />
+        <Label htmlFor="trainingReq" className="text-sm text-slate-700">
           Training is required before go-live
           <span className="block text-xs text-slate-400">The change cannot be approved for implementation until an active training certificate is linked.</span>
-        </label>
+        </Label>
       </div>
       {p.trainingRequired && (
         <Field label="Training certificate ID" hint="Paste an ACTIVE TrainingCertificate id now, or link it on the detail page before approval.">
-          <input value={p.trainingCertificateId} onChange={(e: any) => p.setTrainingCertificateId(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="TrainingCertificate.id" />
+          <Input value={p.trainingCertificateId} onChange={(e: any) => p.setTrainingCertificateId(e.target.value)} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="TrainingCertificate.id" />
         </Field>
       )}
 
-      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+      <Card className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500 shadow-none">
         Supporting documents (drawings, P&IDs, vendor specs, risk assessments) are attached on the change-request page once it is created.
-      </div>
+      </Card>
     </div>
   );
 }
@@ -715,7 +711,7 @@ function RoutingStep(p: any) {
   return (
     <div className="space-y-5">
       {p.affectedDepts.length > 0 ? (
-        <div className="rounded-lg border border-slate-200 p-4">
+        <Card className="rounded-lg border border-slate-200 p-4 shadow-none">
           <h4 className="mb-2 text-sm font-semibold text-slate-800">Suggested reviewers</h4>
           <p className="mb-3 text-xs text-slate-500">Department heads for the affected departments ({p.affectedDepts.join(", ")}).</p>
           {p.suggestions.length === 0 ? (
@@ -723,24 +719,24 @@ function RoutingStep(p: any) {
           ) : (
             <div className="flex flex-wrap gap-2">
               {p.suggestions.map((s: Reviewer) => (
-                <button key={s.specificUserId} type="button" onClick={() => addSuggestion(s)} className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs text-slate-700 hover:border-primary-400">
+                <Button key={s.specificUserId} type="button" variant="outline" size="sm" onClick={() => addSuggestion(s)} className="gap-1 rounded-full px-3 py-1 text-xs">
                   <Plus size={12} /> {s.name}
-                </button>
+                </Button>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       ) : (
         <p className="text-xs text-slate-500">No departments flagged as affected — add reviewers manually.</p>
       )}
 
-      <div className="rounded-lg border border-slate-200 p-4">
+      <Card className="rounded-lg border border-slate-200 p-4 shadow-none">
         <h4 className="mb-2 text-sm font-semibold text-slate-800">Add a reviewer</h4>
         <div className="grid gap-3 md:grid-cols-[1fr,200px]">
           <UserPicker value={null} onChange={addUser} filter={{ plantId: p.plantId }} placeholder="Search users…" />
-          <input value={role} onChange={(e) => setRole(e.target.value)} className="rounded-lg border border-slate-300 p-2 text-sm" placeholder="Role (e.g. Safety head)" />
+          <Input value={role} onChange={(e) => setRole(e.target.value)} className="rounded-lg border border-slate-300 p-2 text-sm" placeholder="Role (e.g. Safety head)" />
         </div>
-      </div>
+      </Card>
 
       <div>
         <h4 className="mb-2 text-sm font-semibold text-slate-800">Approval chain ({p.reviewers.length})</h4>
@@ -755,9 +751,9 @@ function RoutingStep(p: any) {
                   <span className="font-medium text-slate-800">{r.name}</span>
                   <span className="ml-2 text-xs text-slate-500">{r.role}</span>
                 </span>
-                <button type="button" onClick={() => p.setReviewers(p.reviewers.filter((x: Reviewer) => x.specificUserId !== r.specificUserId))} className="text-slate-400 hover:text-rose-600" aria-label="Remove reviewer">
+                <Button variant="ghost" type="button" onClick={() => p.setReviewers(p.reviewers.filter((x: Reviewer) => x.specificUserId !== r.specificUserId))} aria-label="Remove reviewer">
                   <X size={14} />
-                </button>
+                </Button>
               </li>
             ))}
           </ol>
@@ -765,7 +761,7 @@ function RoutingStep(p: any) {
       </div>
 
       <Field label="Escalation SLA (days)" hint="If a reviewer hasn't acted within this many days, their manager is notified and the MOC is flagged overdue.">
-        <input type="number" min={1} value={p.escalationDays} onChange={(e: any) => p.setEscalationDays(e.target.value)} className="w-32 rounded-lg border border-slate-300 p-2 text-sm" />
+        <Input type="number" min={1} value={p.escalationDays} onChange={(e: any) => p.setEscalationDays(e.target.value)} className="w-32 rounded-lg border border-slate-300 p-2 text-sm" />
       </Field>
     </div>
   );

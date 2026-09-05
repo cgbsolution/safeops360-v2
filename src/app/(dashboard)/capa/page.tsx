@@ -14,6 +14,8 @@ import { ObservationAnalyticsPanels } from "@/components/observations/analytics-
 import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
 import { fetchInsights } from "@/lib/insights";
 import { Plus, FileDown } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -183,7 +185,7 @@ export default async function CapaListPage(
                 <Button>
                   <Plus size={16} /> New CAPA
                 </Button>
-                <div className="hidden group-hover:block absolute right-0 mt-1 w-64 rounded-lg border bg-white shadow-lg z-10">
+                <Card className="hidden group-hover:block absolute right-0 mt-1 w-64 rounded-lg border bg-white shadow-lg z-10">
                   <ul className="py-1 text-sm">
                     {[
                       { href: "/capa/new/manual", label: "Manual", desc: "Free-form, no source" },
@@ -205,7 +207,7 @@ export default async function CapaListPage(
                       </li>
                     ))}
                   </ul>
-                </div>
+                </Card>
               </div>
             </Can>
           </div>
@@ -262,30 +264,30 @@ export default async function CapaListPage(
       </FilterTabsList>
 
       {data.items.length === 0 ? (
-        <div className="rounded-xl border bg-white p-8 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-8 text-center text-slate-500 shadow-none">
           No CAPAs match the current filter.
-        </div>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-3">CAPA</th>
-                <th className="text-left px-4 py-3">Source</th>
-                <th className="text-left px-4 py-3">Severity</th>
-                <th className="text-left px-4 py-3">State</th>
-                <th className="text-left px-4 py-3">Owner</th>
-                <th className="text-left px-4 py-3">Days Open</th>
-                <th className="text-left px-4 py-3">Target</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
+        <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
+              <TableRow>
+                <TableHead className="text-left px-4 py-3">CAPA</TableHead>
+                <TableHead className="text-left px-4 py-3">Source</TableHead>
+                <TableHead className="text-left px-4 py-3">Severity</TableHead>
+                <TableHead className="text-left px-4 py-3">State</TableHead>
+                <TableHead className="text-left px-4 py-3">Owner</TableHead>
+                <TableHead className="text-left px-4 py-3">Days Open</TableHead>
+                <TableHead className="text-left px-4 py-3">Target</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {visibleItems.map((c) => (
-                <tr
+                <TableRow
                   key={c.id}
                   className={c.daysOverdue > 0 ? "bg-rose-50/40 hover:bg-rose-50/60" : "hover:bg-slate-50"}
                 >
-                  <td className="px-4 py-3">
+                  <TableCell className="px-4 py-3">
                     <Link
                       href={`/capa/${c.id}`}
                       className="font-mono text-xs text-primary-700 hover:underline"
@@ -296,8 +298,8 @@ export default async function CapaListPage(
                       <div className="text-[10px] text-slate-400 mt-0.5">alias: {c.aliasNumber}</div>
                     )}
                     <div className="text-xs text-slate-700 mt-0.5 line-clamp-1">{c.title}</div>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <span
                       className={`inline-block px-2 py-0.5 text-xs rounded border ${
                         SOURCE_CHIP[c.sourceCategoryCode ?? "OTHER"] ?? "bg-slate-100 text-slate-700 border-slate-200"
@@ -308,8 +310,8 @@ export default async function CapaListPage(
                     {c.sourceReferenceSummary && (
                       <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">{c.sourceReferenceSummary}</div>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <span
                       className={`inline-block px-2 py-0.5 text-xs rounded border ${
                         SEVERITY_CHIP[c.severity] ?? "bg-slate-100 text-slate-800 border-slate-200"
@@ -317,8 +319,8 @@ export default async function CapaListPage(
                     >
                       {c.severity}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span
                         className={`inline-block px-2 py-0.5 text-xs rounded border ${
@@ -331,23 +333,23 @@ export default async function CapaListPage(
                         <SignalChip signal={insights.signalByRecord.get(c.id)!} href={`/capa/${c.id}`} />
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-700">{c.primaryOwnerName ?? "—"}</td>
-                  <td className="px-4 py-3 text-xs">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-xs text-slate-700">{c.primaryOwnerName ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-3 text-xs">
                     {c.daysOverdue > 0 ? (
                       <span className="text-rose-700 font-semibold">{c.daysOverdue}d overdue</span>
                     ) : (
                       <span className="text-slate-700">{c.daysOpen}d</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-xs text-slate-700">
                     {c.closureTargetDate ? new Date(c.closureTargetDate).toLocaleDateString() : "—"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

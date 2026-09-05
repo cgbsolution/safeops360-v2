@@ -17,6 +17,7 @@ import {
   Stethoscope,
 } from "lucide-react";
 import CertificationsTab from "./CertificationsTab";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -163,9 +164,9 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
 
   if (!worker) {
     return (
-      <div className="rounded-xl border bg-white p-10 text-center text-sm text-slate-500">
+      <Card className="rounded-xl border bg-white p-10 text-center text-sm text-slate-500 shadow-none">
         Worker not found or failed to load.
-      </div>
+      </Card>
     );
   }
 
@@ -181,7 +182,7 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
       </div>
 
       {/* Profile card */}
-      <div className="rounded-xl border bg-white shadow-sm p-5 mb-5">
+      <Card className="rounded-xl border bg-white shadow-sm p-5 mb-5">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             {/* Photo placeholder */}
@@ -234,11 +235,11 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
             </p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Identity + Contact cards */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-5">
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <User size={14} /> Identity
           </h2>
@@ -250,9 +251,9 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
             <InfoRow label="PAN" value={worker.panNumber ?? "—"} />
             <InfoRow label="ESIC No." value={worker.esicNumber ?? "—"} />
           </dl>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <Phone size={14} /> Contact
           </h2>
@@ -261,9 +262,9 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
             <InfoRow label="Emergency Contact" value={worker.emergencyContactName ?? "—"} />
             <InfoRow label="Emergency Phone" value={worker.emergencyContactPhone ?? "—"} />
           </dl>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
             <Stethoscope size={14} /> Medical Fitness
           </h2>
@@ -276,7 +277,7 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
           <dl className="space-y-2 text-sm">
             <InfoRow label="Valid Until" value={fmtDate(worker.medicalFitnessValidUpto)} />
           </dl>
-        </div>
+        </Card>
       </div>
 
       {/* Tabs */}
@@ -290,7 +291,7 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
 
         {/* Mobilizations */}
         <TabsContent value="mobilizations">
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b">
               <h3 className="text-sm font-semibold text-slate-700">Mobilization History ({mobilizations.length})</h3>
             </div>
@@ -331,7 +332,7 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
                 </TableBody>
               </Table>
             )}
-          </div>
+          </Card>
         </TabsContent>
 
         {/* Certifications */}
@@ -346,7 +347,7 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
 
         {/* Inductions */}
         <TabsContent value="inductions">
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b">
               <h3 className="text-sm font-semibold text-slate-700">Site Inductions ({inductions.length})</h3>
             </div>
@@ -381,12 +382,12 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
                 </TableBody>
               </Table>
             )}
-          </div>
+          </Card>
         </TabsContent>
 
         {/* Gate History */}
         <TabsContent value="gate">
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b">
               <h3 className="text-sm font-semibold text-slate-700">Gate Clearance History ({gateHistory.length})</h3>
             </div>
@@ -421,7 +422,7 @@ export default async function WorkerDetailPage({ params }: { params: Promise<{ i
                 </TableBody>
               </Table>
             )}
-          </div>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

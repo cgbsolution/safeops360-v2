@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ShieldAlert, GraduationCap, Save, Send } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 
 const CATEGORIES = ["ROUTINE", "STATUTORY", "PRE_OPERATIONAL", "POST_INCIDENT", "CONDITION_BASED", "THIRD_PARTY", "FOCUSED"] as const;
 const FREQUENCIES = ["DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "HALF_YEARLY", "ANNUAL"] as const;
@@ -136,15 +138,15 @@ export function InspectionTypeForm({ initial, trainingPrograms }: Props) {
           </div>
           <div>
             <Label>Category</Label>
-            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c.replace(/_/g, " ")}</option>)}
-            </Select>
+            <SelectField value={category} onChange={setCategory}
+              options={CATEGORIES.map((c) => ({ value: String(c), label: c.replace(/_/g, " ") }))}
+            />
           </div>
           <div>
             <Label>Default Frequency</Label>
-            <Select value={defaultFrequency} onChange={(e) => setDefaultFrequency(e.target.value)}>
-              {FREQUENCIES.map((f) => <option key={f} value={f}>{f.replace(/_/g, " ")}</option>)}
-            </Select>
+            <SelectField value={defaultFrequency} onChange={setDefaultFrequency}
+              options={FREQUENCIES.map((f) => ({ value: String(f), label: f.replace(/_/g, " ") }))}
+            />
           </div>
         </CardContent>
       </Card>
@@ -186,10 +188,10 @@ export function InspectionTypeForm({ initial, trainingPrograms }: Props) {
           <CardDescription>Mark types that satisfy a regulatory requirement so that retention rules, regulatory form numbering, and inspector authentication are enforced.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={isStatutory} onChange={(e) => setIsStatutory(e.target.checked)} />
+          <Label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={isStatutory} onChange={(e) => setIsStatutory(e.target.checked)} />
             This is a statutory inspection
-          </label>
+          </Label>
           {isStatutory && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-6 border-l-2 border-rose-200">
               <div>
@@ -202,10 +204,10 @@ export function InspectionTypeForm({ initial, trainingPrograms }: Props) {
               </div>
               <div>
                 <Label>Statutory form type</Label>
-                <Select value={statutoryFormType} onChange={(e) => setStatutoryFormType(e.target.value)}>
-                  <option value="">— Select —</option>
-                  {STATUTORY_FORM_TYPES.map((f) => <option key={f} value={f}>{f.replace(/_/g, " ")}</option>)}
-                </Select>
+                <SelectField value={statutoryFormType} onChange={setStatutoryFormType}
+                  placeholder="— Select —"
+                  options={STATUTORY_FORM_TYPES.map((f) => ({ value: String(f), label: f.replace(/_/g, " ") }))}
+                />
               </div>
               <div>
                 <Label>Record retention (years)</Label>
@@ -224,10 +226,10 @@ export function InspectionTypeForm({ initial, trainingPrograms }: Props) {
           <CardDescription>Restrict who can execute this inspection based on training program certification.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={requiresCertifiedInspector} onChange={(e) => setRequiresCertifiedInspector(e.target.checked)} />
+          <Label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={requiresCertifiedInspector} onChange={(e) => setRequiresCertifiedInspector(e.target.checked)} />
             Inspector must hold required training certification(s)
-          </label>
+          </Label>
           {requiresCertifiedInspector && (
             <div className="pl-6 border-l-2 border-amber-200">
               <Label>Required certifications (program codes)</Label>
@@ -262,15 +264,15 @@ export function InspectionTypeForm({ initial, trainingPrograms }: Props) {
           <CardTitle>Status</CardTitle>
         </CardHeader>
         <CardContent>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+          <Label className="flex items-center gap-2 text-sm">
+            <Checkbox checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
             Active — available for new equipment links and schedule generation
-          </label>
+          </Label>
         </CardContent>
       </Card>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</Alert>
       )}
 
       <div className="flex gap-2 justify-end">

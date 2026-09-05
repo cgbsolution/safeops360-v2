@@ -6,6 +6,9 @@ import { KpiTile } from "@/components/erm/shared";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { DEF_SEVERITY_CHIP, type ControlsDashboard } from "@/app/(dashboard)/erm/lib-t3";
 import { EffectivenessDonut } from "./dashboard-charts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -56,9 +59,9 @@ export default async function ControlsDashboardPage() {
       />
 
       {error || !d ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "No dashboard data."}. Ensure the ERM Tier 3 seed has been run and you are logged in with a controls role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-5 grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
@@ -72,7 +75,7 @@ export default async function ControlsDashboardPage() {
 
           {/* Pinned: unreported material weaknesses */}
           {d.unreportedMaterialWeaknesses.length > 0 && (
-            <div className="mb-5 rounded-xl border border-rose-300 bg-rose-50 p-5">
+            <Alert variant="destructive" className="mb-5 rounded-xl border border-rose-300 bg-rose-50 p-5">
               <div className="mb-2 flex items-center gap-2">
                 <AlertTriangle size={16} className="text-rose-700" />
                 <h2 className="text-sm font-semibold text-rose-900">
@@ -94,18 +97,18 @@ export default async function ControlsDashboardPage() {
               <Link href="/erm/controls/deficiencies?severity=MATERIAL_WEAKNESS" className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-rose-800 hover:underline">
                 Go to deficiencies <ArrowRight size={12} />
               </Link>
-            </div>
+            </Alert>
           )}
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Effectiveness donut */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">Effectiveness distribution</h2>
               <EffectivenessDonut ratingDistribution={d.ratingDistribution} />
-            </div>
+            </Card>
 
             {/* Deficiency by severity */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">Deficiencies by severity</h2>
               <div className="space-y-2.5">
                 {SEVERITY_ORDER.map((sev) => {
@@ -132,49 +135,49 @@ export default async function ControlsDashboardPage() {
                   );
                 })}
               </div>
-            </div>
+            </Card>
           </div>
 
           {/* Overdue tests table */}
-          <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <Card className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
             <div className="border-b border-slate-100 px-5 py-3">
               <h2 className="text-sm font-semibold text-slate-900">
                 Overdue tests <span className="text-slate-400">({d.overdueList.length})</span>
               </h2>
             </div>
-            <table className="w-full min-w-[640px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-2.5">Control</th>
-                  <th className="px-4 py-2.5">Name</th>
-                  <th className="px-4 py-2.5">Owner</th>
-                  <th className="px-4 py-2.5">Next test due</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full min-w-[640px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-4 py-2.5">Control</TableHead>
+                  <TableHead className="px-4 py-2.5">Name</TableHead>
+                  <TableHead className="px-4 py-2.5">Owner</TableHead>
+                  <TableHead className="px-4 py-2.5">Next test due</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {d.overdueList.length === 0 ? (
-                  <tr>
-                    <td colSpan={4} className="px-4 py-8 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={4} className="px-4 py-8 text-center text-sm text-slate-400">
                       No tests overdue — testing is on schedule.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   d.overdueList.map((o) => (
-                    <tr key={o.controlCode} className="border-t border-slate-100 hover:bg-slate-50/70">
-                      <td className="px-4 py-2.5 font-mono text-xs font-medium text-slate-700">{o.controlCode}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{o.name}</td>
-                      <td className="px-4 py-2.5 text-xs text-slate-600">{o.owner ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-xs">
+                    <TableRow key={o.controlCode} className="border-t border-slate-100 hover:bg-slate-50/70">
+                      <TableCell className="px-4 py-2.5 font-mono text-xs font-medium text-slate-700">{o.controlCode}</TableCell>
+                      <TableCell className="px-4 py-2.5 text-slate-700">{o.name}</TableCell>
+                      <TableCell className="px-4 py-2.5 text-xs text-slate-600">{o.owner ?? "—"}</TableCell>
+                      <TableCell className="px-4 py-2.5 text-xs">
                         <span className="rounded border border-rose-200 bg-rose-50 px-2 py-0.5 font-medium text-rose-700">
                           {fmtDate(o.nextTestDueDate)}
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

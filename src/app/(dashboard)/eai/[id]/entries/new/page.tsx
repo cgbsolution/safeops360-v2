@@ -4,6 +4,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { ChevronLeft } from "lucide-react";
 import { EaiEntryCreateForm } from "./entry-create-form";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -81,10 +82,10 @@ export default async function EaiNewEntryPage(props: {
       />
 
       {!matrix ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           The study&apos;s impact matrix could not be loaded, so scoring is
           unavailable. Check that the study&apos;s impact matrix still exists.
-        </div>
+        </Alert>
       ) : (
         <EaiEntryCreateForm
           studyId={study.id}

@@ -22,6 +22,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const LOG_TYPES = ["DECISION", "ACTION", "COMMUNICATION", "STATUS_UPDATE"] as const;
 
@@ -102,9 +105,9 @@ export function CrisisWorkspace({
 
   if (!crisis) {
     return (
-      <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+      <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
         {serverError ?? "Crisis not found."} No cached copy is available on this device.
-      </div>
+      </Alert>
     );
   }
 
@@ -115,13 +118,13 @@ export function CrisisWorkspace({
   return (
     <div className="mx-auto max-w-2xl space-y-4 pb-24">
       {offline && (
-        <div className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
+        <Alert variant="warning" className="flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900">
           <WifiOff size={18} /> Offline — showing the last cached copy. Actions are disabled until you reconnect.
-        </div>
+        </Alert>
       )}
 
       {/* ── Status header ─────────────────────────────────────── */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-2xl border border-slate-200 bg-white p-4 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
             <div className="font-mono text-xs text-slate-500">{crisis.crisisCode}</div>
@@ -146,7 +149,7 @@ export function CrisisWorkspace({
 
         {/* Severity control */}
         <SeverityControl crisis={crisis} disabled={offline || crisis.status === "CLOSED"} />
-      </div>
+      </Card>
 
       {/* ── Recovery checklist ────────────────────────────────── */}
       <RecoverySection crisis={crisis} elapsedHours={elapsedHours} disabled={offline || crisis.status === "CLOSED"} />
@@ -371,7 +374,7 @@ function LogSection({ crisis, disabled }: { crisis: CrisisDetail; disabled: bool
           <p className="text-sm text-slate-400">No entries yet. Log decisions, actions and communications as they happen — the record is append-only.</p>
         ) : (
           entries.map((e) => (
-            <div key={e.id} className="rounded-lg border border-slate-100 bg-slate-50/60 p-2.5">
+            <Card key={e.id} className="rounded-lg border border-slate-100 bg-slate-50/60 p-2.5 shadow-none">
               <div className="mb-1 flex items-center justify-between gap-2">
                 <span className={"rounded border px-1.5 py-0.5 text-[10px] font-semibold " + (LOG_CHIP[e.entryType] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                   {e.entryType.replace(/_/g, " ")}
@@ -379,7 +382,7 @@ function LogSection({ crisis, disabled }: { crisis: CrisisDetail; disabled: bool
                 <span className="text-[11px] text-slate-400">{fmtTime(e.timestamp)} · {e.enteredByName ?? "—"}</span>
               </div>
               <p className="whitespace-pre-wrap text-sm text-slate-700">{e.content}</p>
-            </div>
+            </Card>
           ))
         )}
         <div ref={endRef} />
@@ -440,11 +443,11 @@ function RosterSection({ crisis }: { crisis: CrisisDetail }) {
     <Section title="Crisis team" icon={<Shield size={18} className="text-slate-400" />}>
       <div className="space-y-2">
         {roster.map((r, i) => (
-          <div key={i} className="rounded-xl border border-slate-200 p-3">
+          <Card key={i} className="rounded-xl border border-slate-200 p-3 shadow-none">
             <div className="text-sm font-semibold text-slate-900">{r.roleName}</div>
             <Contact label="Primary" name={r.primary} />
             <Contact label="Alternate" name={r.alternate} />
-          </div>
+          </Card>
         ))}
       </div>
     </Section>
@@ -505,12 +508,12 @@ function FserPanel({ fser }: { fser: any | null }) {
           <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Assembly points</div>
           <div className="space-y-1.5">
             {assembly.map((a, i) => (
-              <div key={i} className="rounded-lg border border-slate-200 p-2.5 text-sm">
+              <Card key={i} className="rounded-lg border border-slate-200 p-2.5 text-sm shadow-none">
                 <div className="font-medium text-slate-800">{a.name}</div>
                 <div className="text-xs text-slate-500">
                   {a.capacity != null ? `Capacity ${a.capacity}` : ""}{a.wardenRole ? ` · Warden: ${a.wardenRole}` : ""}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -521,7 +524,7 @@ function FserPanel({ fser }: { fser: any | null }) {
           <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Emergency contacts</div>
           <div className="space-y-1.5">
             {contacts.map((c, i) => (
-              <div key={i} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-2.5">
+              <Card key={i} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-2.5 shadow-none">
                 <div className="min-w-0 text-sm">
                   <div className="font-medium text-slate-800">{c.name}</div>
                   <div className="text-xs text-slate-500">{c.role}</div>
@@ -531,7 +534,7 @@ function FserPanel({ fser }: { fser: any | null }) {
                     <Phone size={15} /> {c.phone}
                   </a>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -573,13 +576,11 @@ function StandDownClose({ crisis, disabled, onDone, mode }: { crisis: CrisisDeta
 
   if (mode === "standdown") {
     return (
-      <button
+      <Button variant="ghost"
         onClick={run}
-        disabled={disabled || busy}
-        className="flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-sky-600 text-base font-semibold text-white hover:bg-sky-700 disabled:opacity-50"
-      >
+        disabled={disabled || busy} className="flex min-h-14 w-full gap-2 rounded-xl text-base text-white">
         {busy ? <Loader2 size={18} className="animate-spin" /> : null} Stand down
-      </button>
+      </Button>
     );
   }
 
@@ -607,17 +608,17 @@ function StandDownClose({ crisis, disabled, onDone, mode }: { crisis: CrisisDeta
             </p>
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Review note</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Review note</Label>
                 <Textarea value={reviewNote} onChange={(e) => setReviewNote(e.target.value)} rows={3} className="text-base" placeholder="Lessons learned / no actions required…" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Linked CAPA id (optional)</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Linked CAPA id (optional)</Label>
                 <Input value={reviewCapaId} onChange={(e) => setReviewCapaId(e.target.value)} className="text-base" placeholder="CAPA id" />
               </div>
               {err && (
-                <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-sm text-rose-800">
+                <Alert variant="destructive" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-sm text-rose-800">
                   <AlertTriangle size={16} className="mt-0.5 shrink-0" /> <span>{err}</span>
-                </div>
+                </Alert>
               )}
               <Button
                 type="button"
@@ -642,9 +643,9 @@ function StandDownClose({ crisis, disabled, onDone, mode }: { crisis: CrisisDeta
 // ── Section wrapper ───────────────────────────────────────────────────────
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-2xl border border-slate-200 bg-white p-4 shadow-none">
       <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-slate-900">{icon} {title}</h2>
       {children}
-    </div>
+    </Card>
   );
 }

@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { RcaDetail, SubCauseOut } from "../lib";
 import { RcaWorkspace } from "./detail-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +23,9 @@ export default async function RcaDetailPage(props: { params: Promise<{ id: strin
     return (
       <div>
         <PageHeader title="RCA" breadcrumbs={[{ label: "Enterprise Risk", href: "/erm" }, { label: "RCA", href: "/erm/rca" }, { label: "Analysis" }]} />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "RCA not found."} <Link href="/erm/rca" className="underline">Back to register</Link>.
-        </div>
+        </Alert>
       </div>
     );
   }

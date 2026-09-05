@@ -6,8 +6,11 @@ import { Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { CRITICALITY_CHIP } from "@/app/(dashboard)/erm/lib-p3";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type PlantOption = { id: string; name: string };
 
@@ -100,7 +103,7 @@ function NewProcessModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New business process (BIA)</h2>
           <Button
@@ -117,40 +120,40 @@ function NewProcessModal({ onClose, onCreated }: { onClose: () => void; onCreate
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Process name</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Process name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Extrusion Line 3 — Production" />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Site</label>
-              <Select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-                <option value="">Corporate (no plant)</option>
-                {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Site</Label>
+              <SelectField value={siteId} onChange={setSiteId}
+                placeholder="Corporate (no plant)"
+                options={plants.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Department</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Department</Label>
               <Input value={departmentName} onChange={(e) => setDepartmentName(e.target.value)} placeholder="e.g. Production" />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Process owner</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Process owner</Label>
             <UserPicker value={ownerId} onChange={(id) => setOwnerId(id)} placeholder="Select owner" />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">RTO (hours)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">RTO (hours)</Label>
               <Input type="number" min={0} value={rtoHours} onChange={(e) => setRtoHours(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">RPO (hours)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">RPO (hours)</Label>
               <Input type="number" min={0} value={rpoHours} onChange={(e) => setRpoHours(e.target.value)} placeholder="optional" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">MTPD (hours)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">MTPD (hours)</Label>
               <Input type="number" min={0} value={mtpdHours} onChange={(e) => setMtpdHours(e.target.value)} />
             </div>
           </div>
@@ -162,11 +165,11 @@ function NewProcessModal({ onClose, onCreated }: { onClose: () => void; onCreate
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Peak periods (optional)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Peak periods (optional)</Label>
             <Input value={peakPeriods} onChange={(e) => setPeakPeriods(e.target.value)} placeholder="e.g. Festive build Q3 + month-end" />
           </div>
 
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
@@ -175,7 +178,7 @@ function NewProcessModal({ onClose, onCreated }: { onClose: () => void; onCreate
             {busy ? "Creating…" : "Create process"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

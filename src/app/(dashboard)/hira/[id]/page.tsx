@@ -7,6 +7,9 @@ import { Can } from "@/components/auth/can";
 import { StudyActions } from "./study-actions";
 import { markRecordTasksReadForViewer } from "@/lib/workflow/read-state";
 import { Plus, FileText, FileSpreadsheet, Printer } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -116,7 +119,7 @@ export default async function HiraStudyDetailPage(
         action={
           <div className="flex items-center gap-2">
             <Can permission="HIRA.EXPORT">
-              <div className="inline-flex items-center divide-x divide-slate-200 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+              <Card className="inline-flex flex-row items-center divide-x divide-slate-200 overflow-hidden rounded-lg border-slate-200 p-0">
                 <a
                   href={`/api/hira/studies/${study.id}/export?format=csv`}
                   download
@@ -140,7 +143,7 @@ export default async function HiraStudyDetailPage(
                 >
                   <Printer size={15} className="text-slate-500" /> Print / PDF
                 </Link>
-              </div>
+              </Card>
             </Can>
             {["DRAFT", "IN_PROGRESS"].includes(study.status) && (
               <Can permission="HIRA.UPDATE">
@@ -158,7 +161,7 @@ export default async function HiraStudyDetailPage(
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1 space-y-4">
-          <Card title="Status">
+          <TitledPanel title="Status">
             <div className="flex items-center gap-2">
               <span
                 className={`inline-block px-2 py-0.5 text-sm rounded border ${
@@ -178,9 +181,9 @@ export default async function HiraStudyDetailPage(
                 ["Review frequency", study.reviewFrequency.replace(/_/g, " ")]
               ]}
             />
-          </Card>
+          </TitledPanel>
 
-          <Card title="Scope">
+          <TitledPanel title="Scope">
             <div className="flex flex-wrap gap-1.5">
               {scopeBits.map((b) => (
                 <span key={b} className="inline-block px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700">
@@ -194,10 +197,10 @@ export default async function HiraStudyDetailPage(
                 ["Process", study.processCode ?? "—"]
               ]}
             />
-          </Card>
+          </TitledPanel>
 
           {data.riskMatrix && (
-            <Card title="Methodology">
+            <TitledPanel title="Methodology">
               <DefList
                 items={[
                   ["Risk matrix", `${data.riskMatrix.name} (${data.riskMatrix.likelihoodLevels}×${data.riskMatrix.severityLevels})`],
@@ -215,10 +218,10 @@ export default async function HiraStudyDetailPage(
                   ))}
                 </div>
               </div>
-            </Card>
+            </TitledPanel>
           )}
 
-          <Card title="Team">
+          <TitledPanel title="Team">
             <div className="text-sm text-slate-700">
               <div className="font-medium">Leader: {data.teamLeaderName ?? "—"}</div>
               {study.team.length > 0 && (
@@ -232,40 +235,40 @@ export default async function HiraStudyDetailPage(
                 </ul>
               )}
             </div>
-          </Card>
+          </TitledPanel>
         </div>
 
         <div className="lg:col-span-2">
-          <Card title={`Entries (${data.entries.length})`} dense>
+          <TitledPanel title={`Entries (${data.entries.length})`} dense>
             {data.entries.length === 0 ? (
               <div className="py-8 text-center text-sm text-slate-500">
                 No entries yet. Add the first activity to begin the assessment.
               </div>
             ) : (
               <div className="overflow-x-auto -mx-3 -mb-3">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
-                    <tr>
-                      <th className="text-left px-3 py-2">#</th>
-                      <th className="text-left px-3 py-2">Activity</th>
-                      <th className="text-left px-3 py-2">Hazards</th>
-                      <th className="text-left px-3 py-2">Initial</th>
-                      <th className="text-left px-3 py-2">Residual</th>
-                      <th className="text-left px-3 py-2">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <Table className="w-full text-sm">
+                  <TableHeader className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
+                    <TableRow>
+                      <TableHead className="text-left px-3 py-2">#</TableHead>
+                      <TableHead className="text-left px-3 py-2">Activity</TableHead>
+                      <TableHead className="text-left px-3 py-2">Hazards</TableHead>
+                      <TableHead className="text-left px-3 py-2">Initial</TableHead>
+                      <TableHead className="text-left px-3 py-2">Residual</TableHead>
+                      <TableHead className="text-left px-3 py-2">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100">
                     {data.entries.map((e) => (
-                      <tr key={e.id} className="hover:bg-slate-50">
-                        <td className="px-3 py-2 text-slate-600">
+                      <TableRow key={e.id} className="hover:bg-slate-50">
+                        <TableCell className="px-3 py-2 text-slate-600">
                           <Link
                             href={`/hira/${study.id}/entries/${e.id}`}
                             className="text-primary-700 hover:underline"
                           >
                             {e.sequenceNumber}
                           </Link>
-                        </td>
-                        <td className="px-3 py-2">
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           <Link
                             href={`/hira/${study.id}/entries/${e.id}`}
                             className="block hover:text-primary-700"
@@ -275,12 +278,12 @@ export default async function HiraStudyDetailPage(
                               <div className="text-xs text-slate-500 mt-0.5">{e.groupLabel}</div>
                             )}
                           </Link>
-                        </td>
-                        <td className="px-3 py-2 text-slate-700">{e.hazardCount}</td>
-                        <td className="px-3 py-2">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-slate-700">{e.hazardCount}</TableCell>
+                        <TableCell className="px-3 py-2">
                           <RiskChip level={e.initialRiskLevel} score={e.initialRiskScore} />
-                        </td>
-                        <td className="px-3 py-2">
+                        </TableCell>
+                        <TableCell className="px-3 py-2">
                           {e.residualRiskLevel ? (
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1">
@@ -304,8 +307,8 @@ export default async function HiraStudyDetailPage(
                           ) : (
                             <span className="text-xs text-slate-400">not assessed</span>
                           )}
-                        </td>
-                        <td className="px-3 py-2 text-xs">
+                        </TableCell>
+                        <TableCell className="px-3 py-2 text-xs">
                           <div className="flex flex-col items-start gap-1">
                             <span
                               className={
@@ -325,19 +328,19 @@ export default async function HiraStudyDetailPage(
                               </span>
                             )}
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
-          </Card>
+          </TitledPanel>
 
           {study.aggregateMetrics ? (
-            <Card title="Risk Distribution" className="mt-4">
+            <TitledPanel title="Risk Distribution" className="mt-4">
               <AggregateDistribution metrics={study.aggregateMetrics} />
-            </Card>
+            </TitledPanel>
           ) : null}
         </div>
       </div>
@@ -345,7 +348,9 @@ export default async function HiraStudyDetailPage(
   );
 }
 
-function Card({
+/** A titled panel. Named TitledPanel, not Card: it used to shadow the shared
+ *  <TitledPanel>, which is what kept this file outside the design system. */
+function TitledPanel({
   title,
   children,
   dense,
@@ -357,12 +362,14 @@ function Card({
   className?: string;
 }) {
   return (
-    <div className={`rounded-xl border bg-white ${className ?? ""}`}>
-      <div className="px-4 py-2.5 border-b text-xs uppercase tracking-wider text-slate-600 font-medium">
-        {title}
-      </div>
-      <div className={dense ? "p-3" : "p-4"}>{children}</div>
-    </div>
+    <Card className={cn("shadow-none", className)}>
+      <CardHeader className="border-b p-0 px-4 py-2.5">
+        <CardTitle className="text-xs font-medium uppercase tracking-wider text-slate-600">
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className={dense ? "p-3" : "p-4"}>{children}</CardContent>
+    </Card>
   );
 }
 

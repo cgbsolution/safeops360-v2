@@ -26,6 +26,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
 import { UserRefLabel, type UserDirectory } from "@/lib/users/user-ref";
+import { Alert } from "@/components/ui/alert";
 import {
   fmtDate,
   type AmendmentRow, type ProgrammeCycleRow, type ReviewRow,
@@ -260,11 +261,10 @@ function CreateReviewDialog({
             {externals.length > 0 && (
               <div className="mt-1.5 flex flex-wrap gap-1">
                 {externals.map((x, i) => (
-                  <button key={i} type="button"
-                    onClick={() => setExternals((p) => p.filter((_, j) => j !== i))}
-                    className="rounded border border-slate-200 px-1.5 py-0.5 text-[11px] text-slate-700 hover:bg-rose-50">
+                  <Button variant="destructive" key={i} type="button"
+                    onClick={() => setExternals((p) => p.filter((_, j) => j !== i))} className="rounded px-1.5 py-0.5 text-[11px]">
                     {x.name}{x.organisation ? ` · ${x.organisation}` : ""} ×
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
@@ -299,16 +299,16 @@ function CreateReviewDialog({
                 Link the amendments this review decided — a review with no traceable consequence
                 is minutes, not a review.
               </p>
-              <div className="mt-1 max-h-32 overflow-y-auto rounded-md border border-slate-200">
+              <Card className="mt-1 max-h-32 overflow-y-auto rounded-md border border-slate-200 shadow-none">
                 {amendments.map((a) => {
                   const on = amendmentIds.includes(a.id);
                   return (
-                    <button key={a.id} type="button"
+                    <Button key={a.id} type="button" variant="ghost" aria-pressed={on}
                       onClick={() =>
                         setAmendmentIds((p) => (on ? p.filter((x) => x !== a.id) : [...p, a.id]))
                       }
                       className={cn(
-                        "flex w-full items-start gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50",
+                        "h-auto w-full items-start justify-start gap-2 rounded-none border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0",
                         on && "bg-violet-50/60",
                       )}>
                       <span className={cn(
@@ -321,10 +321,10 @@ function CreateReviewDialog({
                         </span>
                         <span className="ml-1 text-slate-700">{a.reason}</span>
                       </span>
-                    </button>
+                    </Button>
                   );
                 })}
-              </div>
+              </Card>
             </div>
           )}
 
@@ -338,9 +338,9 @@ function CreateReviewDialog({
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex justify-end gap-2">

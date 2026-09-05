@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { CoverageMatrix } from "@/components/programme/coverage-matrix";
 import { SlotManager } from "@/components/programme/slot-manager";
 import { RecommendationPanel } from "@/components/programme/recommendation-panel";
@@ -33,6 +33,7 @@ import { ScopeUnitManager } from "@/components/programme/scope-unit-manager";
 import { ReviewPanel } from "@/components/programme/review-panel";
 import { usePermission } from "@/components/auth/can";
 import { UserRefLabel, type UserDirectory } from "@/lib/users/user-ref";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import {
   CYCLE_STATUS_CHIP, ORIGIN_LABEL, SLOT_STATUS_CHIP,
   driftLabel, fmtDate,
@@ -95,18 +96,13 @@ export function ProgrammeDetailView({
     <div className="space-y-5">
       {/* Cycle switcher */}
       <Card className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 p-3">
-        <Select
+        <SelectField
           value={cycle.id}
-          onChange={(e) => router.push(`/cams/programme/${programme.id}?cycle=${e.target.value}`)}
+          onChange={(value) => router.push(`/cams/programme/${programme.id}?cycle=${value}`)}
           className="h-9 w-auto"
           aria-label="Cycle"
-        >
-          {programme.cycles.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.cycleLabel}
-            </option>
-          ))}
-        </Select>
+          options={programme.cycles.map((c) => ({ value: c.id, label: `${c.cycleLabel}` }))}
+        />
         <span className={cn("rounded border px-2 py-0.5 text-xs", CYCLE_STATUS_CHIP[cycle.status] ?? "")}>
           {cycle.status.replace(/_/g, " ").toLowerCase()}
         </span>
@@ -309,28 +305,28 @@ function VarianceTab({ rows }: { rows: VarianceRow[] }) {
 
       {/* Desktop */}
       <Card className="hidden overflow-x-auto rounded-xl border border-slate-200 lg:block">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left text-xs text-slate-500">
-            <tr>
-              <th className="px-3 py-2 font-medium">Slot</th>
-              <th className="px-3 py-2 font-medium">Planned window</th>
-              <th className="px-3 py-2 font-medium">Engagement</th>
-              <th className="px-3 py-2 font-medium">Drift</th>
-              <th className="px-3 py-2 font-medium">Scope variance</th>
-              <th className="px-3 py-2 font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-slate-50 text-left text-xs text-slate-500">
+            <TableRow>
+              <TableHead className="px-3 py-2 font-medium">Slot</TableHead>
+              <TableHead className="px-3 py-2 font-medium">Planned window</TableHead>
+              <TableHead className="px-3 py-2 font-medium">Engagement</TableHead>
+              <TableHead className="px-3 py-2 font-medium">Drift</TableHead>
+              <TableHead className="px-3 py-2 font-medium">Scope variance</TableHead>
+              <TableHead className="px-3 py-2 font-medium">Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-slate-100">
             {rows.map((r) => (
-              <tr key={r.slotId} className="hover:bg-slate-50/60">
-                <td className="px-3 py-2">
+              <TableRow key={r.slotId} className="hover:bg-slate-50/60">
+                <TableCell className="px-3 py-2">
                   <div className="font-medium text-slate-800">{r.slotCode}</div>
                   <div className="text-[10px] text-slate-400">{ORIGIN_LABEL[r.origin]}</div>
-                </td>
-                <td className="px-3 py-2 text-xs text-slate-600">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs text-slate-600">
                   {fmtDate(r.windowStart)} – {fmtDate(r.windowEnd)}
-                </td>
-                <td className="px-3 py-2 text-xs">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs">
                   {r.engagement ? (
                     <a
                       href={
@@ -345,11 +341,11 @@ function VarianceTab({ rows }: { rows: VarianceRow[] }) {
                   ) : (
                     <span className="text-slate-400">not materialised</span>
                   )}
-                </td>
-                <td className={cn("px-3 py-2 text-xs", r.isLate ? "text-amber-700" : "text-slate-600")}>
+                </TableCell>
+                <TableCell className={cn("px-3 py-2 text-xs", r.isLate ? "text-amber-700" : "text-slate-600")}>
                   {driftLabel(r.timingDriftDays)}
-                </td>
-                <td className="px-3 py-2 text-xs">
+                </TableCell>
+                <TableCell className="px-3 py-2 text-xs">
                   {r.hasScopeVariance ? (
                     <span className="text-amber-700" title={r.scopeVariance.join(", ")}>
                       {r.scopeVariance.length} planned scope unit(s) not assessed
@@ -357,8 +353,8 @@ function VarianceTab({ rows }: { rows: VarianceRow[] }) {
                   ) : (
                     <span className="text-slate-400">—</span>
                   )}
-                </td>
-                <td className="px-3 py-2">
+                </TableCell>
+                <TableCell className="px-3 py-2">
                   <span className={cn("rounded border px-1.5 py-0.5 text-[11px]", SLOT_STATUS_CHIP[r.status] ?? "")}>
                     {r.status.replace(/_/g, " ").toLowerCase()}
                   </span>
@@ -367,11 +363,11 @@ function VarianceTab({ rows }: { rows: VarianceRow[] }) {
                       {r.amendmentCount} amendment{r.amendmentCount === 1 ? "" : "s"}
                     </span>
                   )}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </Card>
 
       {/* 390px card list */}

@@ -6,7 +6,7 @@
 // ---------------
 // `FireRegisterViewConfig` was seeded with all three registers — extinguishers,
 // alarm panels, hydrant & sprinkler — and read by nothing. The extinguisher
-// register rendered from a hand-built table with seventeen hardcoded <td>s in
+// register rendered from a hand-built table with seventeen hardcoded <TableCell>s in
 // sheet order, and the other two had no screen at all. So the table's stated
 // purpose ("adding the next register is a seed entry, not a screen") was not
 // true: adding one meant forking a component.
@@ -30,6 +30,8 @@
 
 import * as React from "react";
 import { MX } from "../lib";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export type RegisterDocument = {
   documentNo?: string | null;
@@ -131,56 +133,56 @@ export function ConfigRegisterTable({
   const span = columns.length + (anyOverdue ? 1 : 0) + (rowActions ? 1 : 0);
 
   return (
-    <div className="overflow-x-auto rounded-xl border" style={{ borderColor: MX.iceLine }}>
-      <table className="w-full min-w-[900px] border-collapse text-[11.5px]">
-        <thead>
-          <tr>
+    <Card className="overflow-x-auto rounded-xl shadow-none" style={{ borderColor: MX.iceLine }}>
+      <Table className="w-full min-w-[900px] border-collapse text-[11.5px]">
+        <TableHeader>
+          <TableRow>
             {columns.map(([key, label]) => (
-              <th
+              <TableHead
                 key={key}
                 scope="col"
                 className="whitespace-nowrap border-b px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide"
                 style={{ borderColor: MX.iceLine, background: MX.ice, color: MX.navy }}
               >
                 {label || key}
-              </th>
+              </TableHead>
             ))}
             {anyOverdue && (
-              <th
+              <TableHead
                 scope="col"
                 className="whitespace-nowrap border-b px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wide"
                 style={{ borderColor: MX.iceLine, background: MX.ice, color: MX.navy }}
                 title="Not part of the controlled document — SafeOps360 checklist status"
               >
                 Checklist
-              </th>
+              </TableHead>
             )}
             {rowActions && (
-              <th
+              <TableHead
                 scope="col"
                 className="border-b px-2 py-2 text-right text-[10px] font-semibold uppercase tracking-wide"
                 style={{ borderColor: MX.iceLine, background: MX.ice, color: MX.navy }}
               >
                 {actionsLabel}
-              </th>
+              </TableHead>
             )}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {rows.length === 0 ? (
-            <tr>
-              <td colSpan={span} className="px-3 py-10 text-center text-[13px]" style={{ color: MX.muted }}>
+            <TableRow>
+              <TableCell colSpan={span} className="px-3 py-10 text-center text-[13px]" style={{ color: MX.muted }}>
                 {emptyMessage}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ) : (
             rows.map((row) => (
-              <tr key={row.id}>
+              <TableRow key={row.id}>
                 {columns.map(([key]) => {
                   const custom = renderCell?.(key, row);
                   if (custom !== undefined) return <React.Fragment key={key}>{custom}</React.Fragment>;
                   return (
-                    <td
+                    <TableCell
                       key={key}
                       className="border-b px-2 py-1.5 align-top"
                       style={{
@@ -189,24 +191,24 @@ export function ConfigRegisterTable({
                       }}
                     >
                       {registerCellText(row[key])}
-                    </td>
+                    </TableCell>
                   );
                 })}
                 {anyOverdue && (
-                  <td className="whitespace-nowrap border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }}>
+                  <TableCell className="whitespace-nowrap border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }}>
                     {row.overdueChecklist ? <OverdueBadge info={row.overdueChecklist} /> : null}
-                  </td>
+                  </TableCell>
                 )}
                 {rowActions && (
-                  <td className="whitespace-nowrap border-b px-2 py-1.5 text-right" style={{ borderColor: MX.iceLine }}>
+                  <TableCell className="whitespace-nowrap border-b px-2 py-1.5 text-right" style={{ borderColor: MX.iceLine }}>
                     {rowActions(row)}
-                  </td>
+                  </TableCell>
                 )}
-              </tr>
+              </TableRow>
             ))
           )}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Card>
   );
 }

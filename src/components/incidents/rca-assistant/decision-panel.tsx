@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Check, Edit3, X, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 
 export type DecisionPayload = {
   decision: "ACCEPT_AS_IS" | "ACCEPT_WITH_MODIFICATION" | "REJECT";
@@ -66,7 +67,7 @@ export function DecisionPanel({
   }
 
   return (
-    <div className="rounded-md border border-violet-200 bg-white p-3 space-y-3">
+    <Card className="space-y-3 rounded-md border-violet-200 p-3 shadow-none">
       <div className="text-[10px] uppercase tracking-wider font-semibold text-violet-800">
         Your Decision
       </div>
@@ -176,6 +177,6 @@ export function DecisionPanel({
           {pendingDecision === "REJECT" ? "Confirm Reject" : "Reject"}
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import {
   DIMENSION_LABEL,
   IMPACT_DIMENSIONS,
@@ -118,7 +119,7 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
   return (
     <div className="space-y-5">
       {/* Header strip */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div>
           <div className="flex items-center gap-2">
             <h2 className="font-semibold text-slate-900">{matrix.name}</h2>
@@ -139,7 +140,7 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
         <Button type="button" onClick={onSave} disabled={busy} className="gap-1.5">
           <Save size={16} /> {busy ? "Working…" : "Save matrix"}
         </Button>
-      </div>
+      </Card>
 
       {/* 1. Likelihood */}
       <section className="rounded-xl border border-slate-200 bg-white p-5">
@@ -271,12 +272,11 @@ export function MatrixEditor({ matrix }: { matrix: ScoringMatrix }) {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       {/* type=color has no Input equivalent — native swatch control, left raw */}
-                      <input
+                      <Input
                         type="color"
                         value={b.colorHex}
                         onChange={(e) => setBandField(i, { colorHex: e.target.value })}
-                        className="h-8 w-12 cursor-pointer rounded border border-slate-300"
-                      />
+                        className="h-8 w-12 cursor-pointer rounded border border-slate-300" />
                       <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-mono text-slate-600">
                         {b.colorHex}
                       </span>

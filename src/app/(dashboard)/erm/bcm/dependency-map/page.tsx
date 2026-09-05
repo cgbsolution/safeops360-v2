@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { DependencyMap } from "@/app/(dashboard)/erm/lib-p3";
 import { DepMapView } from "./dep-map-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +27,9 @@ export default async function DependencyMapPage() {
         description="How critical processes depend on shared systems, equipment, vendors, utilities and people. Red nodes are unmitigated single points of failure; shared dependencies fan in from multiple processes."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 3 (BCM) seed has been run and you are logged in with a BCM role.
-        </div>
+        </Alert>
       ) : (
         <DepMapView map={map} />
       )}

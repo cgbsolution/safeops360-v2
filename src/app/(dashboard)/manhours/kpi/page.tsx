@@ -17,6 +17,7 @@ import { hydrateRecords, inferDrillSourceForKpi } from "@/lib/manhours/drill-dow
 import { ArrowDownRight, ArrowUpRight, Camera, Compass, FileText, Minus, Printer } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 import { KpiDrillDownPrint } from "./print-button";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -150,9 +151,9 @@ export default async function KpiDrillDownPage(props: {
       />
 
       {scopeError && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 no-print">
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700 no-print">
           {scopeError}
-        </div>
+        </Alert>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -266,7 +267,7 @@ export default async function KpiDrillDownPage(props: {
           {records.length === 0 ? (
             <div className="text-sm text-slate-500 italic">No records to display.</div>
           ) : (
-            <div className="divide-y border rounded-md">
+            <Card className="divide-y border rounded-md shadow-none">
               {records.map((r) => (
                 <Link
                   key={r.id}
@@ -285,7 +286,7 @@ export default async function KpiDrillDownPage(props: {
                   )}
                 </Link>
               ))}
-            </div>
+            </Card>
           )}
         </CardContent>
       </Card>
@@ -364,10 +365,10 @@ function emptyResult(code: KpiCode, scope: KpiScope, period: KpiPeriod): KpiResu
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-md border bg-slate-50 p-3">
+    <Card className="rounded-md border bg-slate-50 p-3 shadow-none">
       <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
       <div className="text-lg font-bold tabular-nums text-slate-900 mt-0.5">{value}</div>
-    </div>
+    </Card>
   );
 }
 

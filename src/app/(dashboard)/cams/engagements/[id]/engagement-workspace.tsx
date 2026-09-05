@@ -17,6 +17,9 @@ import {
   type Engagement, type ChecklistRunner, type Finding, type Template, type RunnerQuestion,
 } from "../../lib-cams";
 import type { BookingsResponse } from "../../lib-calendar";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Perms = { schedule: boolean; execute: boolean; close: boolean; findingManage: boolean };
 type Answer = { value?: unknown; conformance?: string | null; note?: string; ncSeverity?: string | null; evidenceAttachmentIds?: string[] };
@@ -96,8 +99,8 @@ function EngagementHeader({ engagement, perms }: { engagement: Engagement; perms
   ];
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
-      {err && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
+      {err && <Alert variant="destructive" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
       <div className="flex flex-wrap items-center gap-2">
         <span className={"rounded border px-2 py-0.5 text-xs " + (ENGAGEMENT_STATUS_CHIP[engagement.status] ?? "")}>{labelize(engagement.status)}</span>
         <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600">{engagementTypeLabel(engagement.engagementType)}</span>
@@ -127,7 +130,7 @@ function EngagementHeader({ engagement, perms }: { engagement: Engagement; perms
         <Meta label="Findings" value={`${engagement.openFindingCount}/${engagement.findingCount} open`} />
       </dl>
       {engagement.scopeStatement && <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">{engagement.scopeStatement}</p>}
-    </div>
+    </Card>
   );
 }
 
@@ -179,26 +182,26 @@ function PlanTab({ engagement, approvedTemplates, perms, bookings }: { engagemen
           error box on an auditor's workspace is not. */}
       <ComplianceSnapshot engagementId={engagement.id} />
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <h3 className="mb-1 text-sm font-semibold text-slate-800">Checklist template</h3>
         <p className="mb-3 text-xs text-slate-500">The approved template snapshots onto the engagement when fieldwork starts; later template edits never alter a conducted audit.</p>
         {editable ? (
           <div className="flex items-center gap-2">
-            <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)} className="flex-1">
-              <option value="">— none —</option>
-              {approvedTemplates.map((t) => <option key={t.id} value={t.id}>{t.templateCode} · {t.name} (v{t.version})</option>)}
-            </Select>
+            <SelectField value={templateId} onChange={setTemplateId} className="flex-1"
+              placeholder="— none —"
+              options={approvedTemplates.map((t) => ({ value: t.id, label: `${t.templateCode} · ${t.name} (v${t.version})` }))}
+            />
             <Button type="button" variant="default" disabled={busy} onClick={saveTemplate} className="text-sm font-medium disabled:opacity-50">Save</Button>
           </div>
         ) : (
           <p className="text-sm text-slate-700">{engagement.templateName ?? "No template assigned."}</p>
         )}
-      </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+      </Card>
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-none">
         <h3 className="mb-2 text-sm font-semibold text-slate-800">Team & scope</h3>
         <p><span className="text-slate-400">Lead:</span> {engagement.leadAuditorName ?? "—"} · <span className="text-slate-400">Auditee owner:</span> {engagement.auditeeOwnerName ?? "—"}</p>
         <p className="mt-1">{engagement.scopeStatement || "No scope statement recorded."}</p>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -220,7 +223,7 @@ function ExecuteTab({ engagement, runner, perms }: { engagement: Engagement; run
   const [err, setErr] = useState<string | null>(null);
 
   if (!runner) {
-    return <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Assign an approved template on the Plan tab, then start fieldwork to execute the checklist.</div>;
+    return <Alert variant="warning" className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">Assign an approved template on the Plan tab, then start fieldwork to execute the checklist.</Alert>;
   }
   const canExecute = perms.execute && engagement.status === "IN_PROGRESS";
   const readOnly = !canExecute;
@@ -252,8 +255,8 @@ function ExecuteTab({ engagement, runner, perms }: { engagement: Engagement; run
 
   return (
     <div className="space-y-4">
-      {err && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
-      <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+      {err && <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
+      <Card className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm shadow-none">
         <span className="font-medium text-slate-700">{runner.templateName}</span>
         <span className="text-slate-400">·</span>
         <span className="tabular-nums text-slate-600">{answered}/{total} answered</span>
@@ -269,10 +272,10 @@ function ExecuteTab({ engagement, runner, perms }: { engagement: Engagement; run
           </div>
         )}
         {readOnly && <span className="ml-auto text-xs text-slate-400">Read-only ({labelize(engagement.status)})</span>}
-      </div>
+      </Card>
 
       {runner.sections.map((s) => (
-        <div key={s.id} className="rounded-xl border border-slate-200 bg-white">
+        <Card key={s.id} className="rounded-xl border border-slate-200 bg-white shadow-none">
           <div className="border-b border-slate-100 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800">
             {s.title} {s.weightPct != null && <span className="ml-1 text-xs font-normal text-slate-400">weight {s.weightPct}%</span>}
           </div>
@@ -281,7 +284,7 @@ function ExecuteTab({ engagement, runner, perms }: { engagement: Engagement; run
               <QuestionRow key={q.id} q={q} ans={answers[q.id] ?? {}} readOnly={readOnly} onChange={(p) => setAns(q.id, p)} />
             ))}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -323,10 +326,10 @@ function QuestionRow({ q, ans, readOnly, onChange }: { q: RunnerQuestion; ans: A
             <Input type="number" disabled={readOnly} value={(ans.value as number) ?? ""} onChange={(e) => onChange({ value: e.target.value === "" ? null : Number(e.target.value) })}
               className="w-32" placeholder="value" />
           ) : q.questionType === "SINGLE_SELECT" || q.questionType === "MULTI_SELECT" ? (
-            <Select disabled={readOnly} value={(ans.value as string) ?? ""} onChange={(e) => onChange({ value: e.target.value })}>
-              <option value="">— select —</option>
-              {(q.options ?? []).map((o) => <option key={o} value={o}>{o}</option>)}
-            </Select>
+            <SelectField disabled={readOnly} value={(ans.value as string) ?? ""} onChange={(value) => onChange({ value: value })}
+              placeholder="— select —"
+              options={(q.options ?? []).map((o) => ({ value: o, label: o }))}
+            />
           ) : (
             <Textarea disabled={readOnly} value={(ans.value as string) ?? ""} onChange={(e) => onChange({ value: e.target.value })} rows={2}
               placeholder={q.questionType.includes("PHOTO") || q.questionType === "SIGNATURE" ? "Capture stubbed — record a note" : "Response"} />
@@ -337,9 +340,9 @@ function QuestionRow({ q, ans, readOnly, onChange }: { q: RunnerQuestion; ans: A
       {ans.conformance === "NC" && (
         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-lg bg-rose-50/60 p-2">
           <span className="text-[11px] font-medium text-rose-700">NC severity</span>
-          <Select disabled={readOnly} value={ans.ncSeverity ?? "MINOR_NC"} onChange={(e) => onChange({ ncSeverity: e.target.value })} className="border-rose-200 text-xs">
-            {NC_SEVERITIES.map((s) => <option key={s} value={s}>{labelize(s)}</option>)}
-          </Select>
+          <SelectField disabled={readOnly} value={ans.ncSeverity ?? "MINOR_NC"} onChange={(value) => onChange({ ncSeverity: value })} className="border-rose-200 text-xs"
+            options={NC_SEVERITIES.map((s) => ({ value: s, label: labelize(s) }))}
+          />
           {q.ncTriggersFinding && <span className="text-[11px] text-rose-600">→ a finding will be raised on completion{q.evidenceRequiredOnNc ? " (evidence required)" : ""}</span>}
         </div>
       )}
@@ -367,12 +370,12 @@ function FindingsTab({ engagement, findings, perms }: { engagement: Engagement; 
   return (
     <div className="space-y-3">
       {findings.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400 shadow-none">
           No findings yet. Non-conforming checklist answers raise findings automatically when fieldwork completes.
-        </div>
+        </Card>
       ) : (
         findings.map((f) => (
-          <div key={f.id} className="rounded-xl border border-slate-200 bg-white p-4">
+          <Card key={f.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className="flex flex-wrap items-center gap-2">
               <Link href={`/cams/findings/${f.id}`} className="font-medium text-primary-700 hover:underline">{f.findingCode}</Link>
               <span className={"rounded border px-2 py-0.5 text-[11px] " + (SEVERITY_CHIP[f.severity] ?? "")}>{labelize(f.severity)}</span>
@@ -393,7 +396,7 @@ function FindingsTab({ engagement, findings, perms }: { engagement: Engagement; 
             <p className="mt-1.5 text-sm font-medium text-slate-800">{f.title}</p>
             {f.description && <p className="text-sm text-slate-600">{f.description}</p>}
             {f.capaRequired && !f.capaId && <p className="mt-1 text-[11px] text-rose-600">A CAPA is required before this {labelize(f.severity)} finding (and the engagement) can close.</p>}
-          </div>
+          </Card>
         ))
       )}
     </div>
@@ -405,7 +408,7 @@ function CapaTab({ engagement, findings }: { engagement: Engagement; findings: F
   const withCapa = findings.filter((f) => f.capaId);
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-none">
         <h3 className="mb-2 text-sm font-semibold text-slate-800">Corrective actions (AUDIT source)</h3>
         {withCapa.length === 0 ? (
           <p className="text-slate-500">No CAPAs raised from this engagement yet.</p>
@@ -420,11 +423,11 @@ function CapaTab({ engagement, findings }: { engagement: Engagement; findings: F
             ))}
           </ul>
         )}
-      </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+      </Card>
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-none">
         <h3 className="mb-1 text-sm font-semibold text-slate-800">Closure gate</h3>
         <p>An engagement can only reach <strong>Closed</strong> once every Major/Critical finding carries a CAPA and all findings are resolved. The same eight-source CAPA engine that runs incidents and risk treatments owns these actions — finding → root cause → corrective action → verification, one chain.</p>
-      </div>
+      </Card>
     </div>
   );
 }

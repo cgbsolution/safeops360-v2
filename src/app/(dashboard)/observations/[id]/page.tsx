@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { EditRecordIconButton } from "@/components/common/edit-icon-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
 import { ActionRecordPanel } from "@/components/workflow/action-record";
 import { PARTY_SELECT, toParty } from "@/lib/workflow/party";
@@ -179,22 +180,22 @@ export default async function ObservationDetailPage(
       />
 
       {justCreated && photoErrors === 0 && (
-        <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-start gap-2">
-          <Camera size={16} className="mt-0.5 flex-shrink-0" />
-          <div>
+        <Alert variant="success" size="lg" className="mb-4">
+          <Camera className="mt-0.5" />
+          <AlertDescription>
             <strong>Observation submitted.</strong> Photos uploaded with the report appear below. You can add more
             from the &ldquo;Photos &amp; Evidence&rdquo; section.
-          </div>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
       {justCreated && photoErrors > 0 && (
-        <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
-          <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
-          <div>
+        <Alert variant="warning" size="lg" className="mb-4">
+          <AlertCircle className="mt-0.5" />
+          <AlertDescription>
             <strong>Observation submitted, but {photoErrors} photo{photoErrors === 1 ? "" : "s"} failed to upload.</strong>{" "}
             Use the &ldquo;Photos &amp; Evidence&rdquo; section below to retry. The observation itself is saved.
-          </div>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* Workflow tracker — replaces the old static status pill.
@@ -244,17 +245,17 @@ export default async function ObservationDetailPage(
             status={instance.status}
           />
           {instance.status === "COMPLETED" && (
-            <div className="mt-3 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3 flex items-start gap-2">
-              <CheckCircle2Icon size={18} className="text-emerald-700 mt-0.5 flex-shrink-0" />
-              <div>
-                <div className="text-sm font-semibold text-emerald-900">Observation closed</div>
-                <div className="text-xs text-emerald-700">
+            <Alert variant="success" size="lg" className="mt-3 border-emerald-300">
+              <CheckCircle2Icon className="mt-0.5" />
+              <AlertDescription>
+                <AlertTitle className="text-sm text-emerald-900">Observation closed</AlertTitle>
+                <p className="text-xs text-emerald-700">
                   {instance.completedAt
                     ? <>Closed on {formatDate(instance.completedAt)} after HSE Manager Closure.</>
                     : <>Workflow completed after HSE Manager Closure.</>}
-                </div>
-              </div>
-            </div>
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
         </div>
       )}

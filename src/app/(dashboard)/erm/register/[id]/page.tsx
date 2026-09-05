@@ -7,6 +7,7 @@ import { AdvancedRiskPanel } from "./advanced-panel";
 import { AdvancedRiskEditor } from "./advanced-edit";
 import { RcaRiskPanel } from "@/components/erm/rca-risk-panel";
 import type { RiskDetail, ScoringMatrix } from "../../lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,9 @@ export default async function RiskDetailPage(props: { params: Promise<{ id: stri
     return (
       <div>
         <PageHeader title="Risk" breadcrumbs={[{ label: "Enterprise Risk", href: "/erm" }, { label: "Register", href: "/erm/register" }]} />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Risk not found"}. <Link href="/erm/register" className="underline">Back to register</Link>
-        </div>
+        </Alert>
       </div>
     );
   }

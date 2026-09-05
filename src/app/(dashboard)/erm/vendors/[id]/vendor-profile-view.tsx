@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import { AlertTriangle, Plus, Repeat, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,10 @@ import {
 } from "@/app/(dashboard)/erm/lib-t3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { AssessmentModal } from "./assessment-modal";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 const TIER_LABEL: Record<string, string> = { TIER_1: "Tier 1", TIER_2: "Tier 2", TIER_3: "Tier 3" };
 const ONBOARDING_STATES = [
@@ -61,7 +65,7 @@ function ScoreGauge({
   const chip = kind === "RISK" ? RISK_BAND_CHIP : ESG_BAND_CHIP;
   const color = band ? hex[band] ?? "#94a3b8" : "#cbd5e1";
   return (
-    <div className="flex min-w-[150px] flex-col items-center gap-1 rounded-xl border-2 bg-white px-5 py-3" style={{ borderColor: color }}>
+    <Card className="flex min-w-[150px] flex-col items-center gap-1 rounded-xl border-2 bg-white px-5 py-3 shadow-none" style={{ borderColor: color }}>
       <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
       <span className="text-3xl font-bold tabular-nums" style={{ color }}>
         {score != null ? score : "—"}
@@ -73,7 +77,7 @@ function ScoreGauge({
       ) : (
         <span className="text-[11px] text-slate-400">Not assessed</span>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -108,7 +112,7 @@ function AssessmentLensSection({
     <div className="space-y-4">
       {/* Domain radar + summary */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h3 className="mb-2 text-sm font-semibold text-slate-900">Domain Breakdown (latest)</h3>
           {radarData.length === 0 ? (
             <p className="py-8 text-center text-xs text-slate-400">No domain scores.</p>
@@ -123,8 +127,8 @@ function AssessmentLensSection({
               </RadarChart>
             </ResponsiveContainer>
           )}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        </Card>
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h3 className="mb-2 text-sm font-semibold text-slate-900">Current Assessment</h3>
           {current && (
             <dl className="space-y-1.5 text-sm">
@@ -149,14 +153,14 @@ function AssessmentLensSection({
               {current.summaryNotes && <p className="pt-1 text-xs text-slate-600">{current.summaryNotes}</p>}
             </dl>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Findings (across this lens) with raise-CAPA */}
       <FindingsList vendorId={vendorId} lensAssessments={lensAssessments} />
 
       {/* History */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h3 className="mb-3 text-sm font-semibold text-slate-900">Assessment History</h3>
         <ul className="space-y-2">
           {lensAssessments.map((a) => (
@@ -177,7 +181,7 @@ function AssessmentLensSection({
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -213,9 +217,9 @@ function FindingsList({ vendorId, lensAssessments }: { vendorId: string; lensAss
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
       <h3 className="mb-3 text-sm font-semibold text-slate-900">Findings</h3>
-      {error && <div className="mb-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+      {error && <Alert variant="destructive" className="mb-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
       {rows.length === 0 ? (
         <p className="text-xs text-slate-400">No findings recorded.</p>
       ) : (
@@ -257,7 +261,7 @@ function FindingsList({ vendorId, lensAssessments }: { vendorId: string; lensAss
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -293,7 +297,7 @@ function OnboardingModal({ vendorId, current, onClose }: { vendorId: string; cur
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Change Onboarding Status</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="h-8 w-8 text-slate-400 hover:text-slate-700">
@@ -302,23 +306,19 @@ function OnboardingModal({ vendorId, current, onClose }: { vendorId: string; cur
         </div>
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">New status</label>
-            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-              {ONBOARDING_STATES.map((s) => (
-                <option key={s} value={s}>
-                  {s.replace(/_/g, " ")}
-                </option>
-              ))}
-            </Select>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">New status</Label>
+            <SelectField value={status} onChange={setStatus}
+              options={ONBOARDING_STATES.map((s) => ({ value: s, label: `${s.replace(/_/g, " ")}` }))}
+            />
             <p className="mt-1 text-[11px] text-slate-400">
               APPROVING a Strategic/Critical vendor with an open CRITICAL_GAP is blocked; CONDITIONAL approval of such a vendor requires the CRO.
             </p>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Note</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Note</Label>
             <Textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} />
           </div>
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>
@@ -328,7 +328,7 @@ function OnboardingModal({ vendorId, current, onClose }: { vendorId: string; cur
             {busy ? "Saving…" : "Update"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -381,7 +381,7 @@ export function VendorProfileView({
   return (
     <div className="space-y-5">
       {/* Header: criticality + twin gauges + actions */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="flex items-center gap-4">
             <div>
@@ -426,15 +426,15 @@ export function VendorProfileView({
             <Repeat size={15} /> Change onboarding
           </Button>
           {raiseResult && (
-            <span className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+            <Badge variant="success" className="rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
               Enterprise risk {raiseResult} created
-            </span>
+            </Badge>
           )}
           {raiseError && (
-            <span className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs text-rose-700">{raiseError}</span>
+            <Badge variant="danger" className="rounded-md border border-rose-200 bg-rose-50 px-2.5 py-1 text-xs text-rose-700">{raiseError}</Badge>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
@@ -458,7 +458,7 @@ export function VendorProfileView({
 
       {tab === "overview" && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h3 className="mb-3 text-sm font-semibold text-slate-900">Profile</h3>
             <dl className="space-y-1.5 text-sm">
               <div className="flex justify-between gap-2">
@@ -505,10 +505,10 @@ export function VendorProfileView({
                 </dd>
               </div>
             </dl>
-          </div>
+          </Card>
 
           <div className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h3 className="mb-3 text-sm font-semibold text-slate-900">Linked Risks</h3>
               {vendor.linkedRisks.length === 0 ? (
                 <p className="text-xs text-slate-400">No linked enterprise risks.</p>
@@ -529,8 +529,8 @@ export function VendorProfileView({
                   ))}
                 </ul>
               )}
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            </Card>
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h3 className="mb-3 text-sm font-semibold text-slate-900">Linked Processes</h3>
               {vendor.linkedProcesses.length === 0 ? (
                 <p className="text-xs text-slate-400">No linked continuity processes.</p>
@@ -547,7 +547,7 @@ export function VendorProfileView({
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
           </div>
         </div>
       )}
@@ -556,7 +556,7 @@ export function VendorProfileView({
       {tab === "esg" && <AssessmentLensSection vendorId={vendor.id} lens="ESG" assessments={vendor.assessments} />}
 
       {tab === "audit" && (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
           <Table className="min-w-[720px]">
             <TableHeader>
               <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
@@ -602,7 +602,7 @@ export function VendorProfileView({
               )}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       )}
 
       {assessOpen && (

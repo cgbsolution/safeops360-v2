@@ -148,10 +148,9 @@ export default async function TrainingScheduleDetailPage(props: {
                 <div className="text-xs text-slate-500">No registrations yet.</div>
               ) : (
                 schedule.registrations.map((r: any) => (
-                  <div
+                  <Card
                     key={r.id}
-                    className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs"
-                  >
+                    className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs shadow-none">
                     <div>
                       <div className="font-medium">{r.user.name}</div>
                       <div className="text-slate-500 flex items-center gap-2">
@@ -174,7 +173,7 @@ export default async function TrainingScheduleDetailPage(props: {
                         </Badge>
                       )}
                     </div>
-                  </div>
+                  </Card>
                 ))
               )}
             </CardContent>

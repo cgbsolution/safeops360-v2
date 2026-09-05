@@ -40,6 +40,10 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { apiErrorMessage, fmtDate } from "../lib";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 // The form's own colours. Yellow is the auditor's half on the workbook; the
 // auditee's half is the accented one. Kept as constants because they appear on
@@ -213,7 +217,7 @@ const FLOW = [
 function CustodyStrip({ stage }: { stage: string }) {
   const at = FLOW.findIndex((f) => f.key === stage);
   return (
-    <div className="flex items-center gap-1 flex-wrap rounded-lg border bg-slate-50 px-3 py-2 text-xs">
+    <Card className="flex items-center gap-1 flex-wrap rounded-lg border bg-slate-50 px-3 py-2 text-xs shadow-none">
       {FLOW.map((f, i) => (
         <span key={f.key} className="flex items-center gap-1">
           <span
@@ -229,7 +233,7 @@ function CustodyStrip({ stage }: { stage: string }) {
           {i < FLOW.length - 1 && <ChevronRight size={12} className="text-slate-300" />}
         </span>
       ))}
-    </div>
+    </Card>
   );
 }
 
@@ -270,20 +274,20 @@ function gradeLabel(
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block">
+    <Label className="block">
       <span className="block text-[11px] font-medium uppercase tracking-wide text-slate-500 mb-1">
         {label}
       </span>
       {children}
-    </label>
+    </Label>
   );
 }
 
 function ReadOnly({ value }: { value: React.ReactNode }) {
   return (
-    <div className="rounded border bg-white/70 px-2.5 py-1.5 text-sm text-slate-800 min-h-[34px]">
+    <Card className="rounded border bg-white/70 px-2.5 py-1.5 text-sm text-slate-800 min-h-[34px] shadow-none">
       {value || <span className="text-slate-400">—</span>}
-    </div>
+    </Card>
   );
 }
 
@@ -378,15 +382,12 @@ function AuditorSection({
               showing the raw enum, which invited a typed value that no report,
               score or export could read back. */}
           {editable ? (
-            <Select
+            <SelectField
               value={draft.gradeText}
-              onChange={(e) => setDraft({ ...draft, gradeText: e.target.value })}
-            >
-              <option value="">— select —</option>
-              {(a.gradeOptions ?? []).map((g) => (
-                <option key={g.value} value={g.value}>{g.label}</option>
-              ))}
-            </Select>
+              onChange={(value) => setDraft({ ...draft, gradeText: value })}
+              placeholder="— select —"
+              options={(a.gradeOptions ?? []).map((g) => ({ value: g.value, label: g.label }))}
+            />
           ) : (
             <ReadOnly value={gradeLabel(a.grade, a.gradeOptions)} />
           )}
@@ -524,7 +525,7 @@ function AuditeeSection({
 
       {!notYet && (
         <>
-          <div className="rounded-lg border bg-white/70 p-3">
+          <Card className="rounded-lg border bg-white/70 p-3 shadow-none">
             <div className="flex items-baseline justify-between gap-2 flex-wrap">
               <h4 className="text-sm font-semibold text-slate-800">Root Cause Analysis</h4>
               {/* Not a picker. The form prescribes one technique. */}
@@ -614,7 +615,7 @@ function AuditeeSection({
                 Save analysis
               </Button>
             )}
-          </div>
+          </Card>
 
           <ActionBlock
             title="Correction"
@@ -716,7 +717,7 @@ function ActionBlock({
   }
 
   return (
-    <div className="rounded-lg border bg-white/70 p-3 mt-3">
+    <Card className="rounded-lg border bg-white/70 p-3 mt-3 shadow-none">
       <h4 className="text-sm font-semibold text-slate-800">{title}</h4>
       <p className="text-xs text-slate-500 mt-0.5">({prompt})</p>
 
@@ -729,27 +730,26 @@ function ActionBlock({
           {items.length === 0 ? (
             <p className="mt-2 text-xs text-slate-400">Nothing recorded yet.</p>
           ) : (
-            <table className="mt-2 w-full text-xs">
-              <thead className="text-slate-500">
-                <tr className="text-left">
-                  <th className="py-1 font-medium">Action</th>
-                  <th className="py-1 font-medium">Responsibility</th>
-                  <th className="py-1 font-medium">Target date</th>
-                  <th className="py-1 font-medium">Completed on</th>
-                  {editable ? <th className="py-1" /> : null}
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="mt-2 w-full text-xs">
+              <TableHeader className="text-slate-500">
+                <TableRow className="text-left">
+                  <TableHead className="py-1 font-medium">Action</TableHead>
+                  <TableHead className="py-1 font-medium">Responsibility</TableHead>
+                  <TableHead className="py-1 font-medium">Target date</TableHead>
+                  <TableHead className="py-1 font-medium">Completed on</TableHead>
+                  {editable ? <TableHead className="py-1" /> : null}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {items.map((it) => (
-                  <tr key={it.id} className="border-t align-top">
-                    <td className="py-1.5 pr-2 text-slate-800">{it.description}</td>
-                    <td className="py-1.5 pr-2">{name(it.responsibility)}</td>
-                    <td className="py-1.5 pr-2">{fmtDate(it.targetDate)}</td>
-                    <td className="py-1.5 pr-2">{fmtDate(it.completedOn)}</td>
+                  <TableRow key={it.id} className="border-t align-top">
+                    <TableCell className="py-1.5 pr-2 text-slate-800">{it.description}</TableCell>
+                    <TableCell className="py-1.5 pr-2">{name(it.responsibility)}</TableCell>
+                    <TableCell className="py-1.5 pr-2">{fmtDate(it.targetDate)}</TableCell>
+                    <TableCell className="py-1.5 pr-2">{fmtDate(it.completedOn)}</TableCell>
                     {editable ? (
-                      <td className="py-1.5 text-right">
-                        <button
-                          className="text-[11px] text-rose-600 hover:underline"
+                      <TableCell className="py-1.5 text-right">
+                        <Button variant="link" className="text-[11px] hover:underline"
                           disabled={!!busy}
                           onClick={async () => {
                             await fetch(
@@ -757,16 +757,15 @@ function ActionBlock({
                               { method: "DELETE" },
                             );
                             onReload();
-                          }}
-                        >
+                          }}>
                           Remove
-                        </button>
-                      </td>
+                        </Button>
+                      </TableCell>
                     ) : null}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
 
           {editable && !adding && (
@@ -776,7 +775,7 @@ function ActionBlock({
           )}
 
           {editable && adding && (
-            <div className="mt-2 space-y-2 rounded border bg-slate-50 p-2">
+            <Card className="mt-2 space-y-2 rounded border bg-slate-50 p-2 shadow-none">
               <Field label={title + " — " + prompt}>
                 <Textarea
                   rows={2}
@@ -820,11 +819,11 @@ function ActionBlock({
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setAdding(false)}>Cancel</Button>
               </div>
-            </div>
+            </Card>
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -875,15 +874,16 @@ function ClosureSection({
             onChange={(e) => setDetails(e.target.value)}
           />
           <div className="flex items-center gap-2 flex-wrap">
-            <Select
+            <SelectField
               className="w-auto"
-              value={result} onChange={(e) => setResult(e.target.value)}
-            >
-              <option value="EFFECTIVE">Effective</option>
-              <option value="PARTIALLY_EFFECTIVE">Partially effective</option>
-              <option value="INEFFECTIVE">Ineffective — send back to the auditee</option>
-              <option value="INCONCLUSIVE">Inconclusive</option>
-            </Select>
+              value={result} onChange={setResult}
+              options={[
+              { value: "EFFECTIVE", label: "Effective" },
+              { value: "PARTIALLY_EFFECTIVE", label: "Partially effective" },
+              { value: "INEFFECTIVE", label: "Ineffective — send back to the auditee" },
+              { value: "INCONCLUSIVE", label: "Inconclusive" }
+            ]}
+            />
             <Button
               size="sm" disabled={details.trim().length < 10 || !!busy}
               onClick={() => void act("verify", { verificationDetails: details, result })}

@@ -7,10 +7,12 @@ import { BandBadge } from "@/components/erm/shared";
 import { fmtDate, type RollupRule } from "@/app/(dashboard)/erm/lib";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 const SOURCE_MODULES = ["HIRA", "EAI", "QUALITY_NCR"] as const;
 const MIN_BANDS = ["", "HIGH", "CRITICAL"] as const;
@@ -136,16 +138,16 @@ export function RollupAdminView({ rules }: { rules: RollupRule[] }) {
       </div>
 
       {rules.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-sm text-slate-400 shadow-none">
           No rollup rules yet. Create one to auto-aggregate operational entries into enterprise risks.
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {rules.map((rule) => {
             const fc = rule.filterCriteria ?? {};
             const s = rule.lastRunSummary;
             return (
-              <div key={rule.id} className="rounded-xl border border-slate-200 bg-white p-5">
+              <Card key={rule.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
@@ -226,7 +228,7 @@ export function RollupAdminView({ rules }: { rules: RollupRule[] }) {
                     <Pencil size={13} /> Edit
                   </Button>
                 </div>
-              </div>
+              </Card>
             );
           })}
         </div>
@@ -393,7 +395,7 @@ function RuleEditor({
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Rule name (required)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Rule name (required)</Label>
             <Input
               value={f.name}
               onChange={(e) => setF({ ...f, name: e.target.value })}
@@ -402,23 +404,22 @@ function RuleEditor({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Source modules</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Source modules</Label>
             <div className="flex flex-wrap gap-2">
               {SOURCE_MODULES.map((m) => (
-                <label
+                <Label
                   key={m}
                   className={
                     "inline-flex cursor-pointer items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium " +
                     (f.sourceModules.includes(m) ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200 text-slate-600")
-                  }
-                >
+                  }>
                   <Checkbox
                     checked={f.sourceModules.includes(m)}
                     onChange={() => toggleModule(m)}
                     className="h-3.5 w-3.5"
                   />
                   {m}
-                </label>
+                </Label>
               ))}
             </div>
             <p className="mt-1 text-[11px] text-slate-400">Leave all unchecked to match every module.</p>
@@ -426,20 +427,15 @@ function RuleEditor({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Minimum residual band</label>
-              <Select
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Minimum residual band</Label>
+              <SelectField
                 value={f.minRiskBand}
-                onChange={(e) => setF({ ...f, minRiskBand: e.target.value })}
-              >
-                {MIN_BANDS.map((b) => (
-                  <option key={b} value={b}>
-                    {b === "" ? "Any (no minimum)" : b}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => setF({ ...f, minRiskBand: value })}
+                options={MIN_BANDS.map((b) => ({ value: b, label: `${b === "" ? "Any (no minimum)" : b}` }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Target sub-category code (required)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Target sub-category code (required)</Label>
               <Input
                 value={f.targetSubCategoryCode}
                 onChange={(e) => setF({ ...f, targetSubCategoryCode: e.target.value.toUpperCase() })}
@@ -451,7 +447,7 @@ function RuleEditor({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Aggregation mode</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Aggregation mode</Label>
               <div className="grid grid-cols-2 gap-1.5">
                 {AGG_MODES.map((m) => (
                   <Button
@@ -470,7 +466,7 @@ function RuleEditor({
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Scoring mode</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Scoring mode</Label>
               <div className="grid grid-cols-2 gap-1.5">
                 {SCORING_MODES.map((m) => (
                   <Button
@@ -491,7 +487,7 @@ function RuleEditor({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Site IDs (optional, comma-separated)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Site IDs (optional, comma-separated)</Label>
             <Input
               value={f.siteIds}
               onChange={(e) => setF({ ...f, siteIds: e.target.value })}
@@ -499,13 +495,13 @@ function RuleEditor({
             />
           </div>
 
-          <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+          <Label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
             <Checkbox
               checked={f.isActive}
               onChange={(e) => setF({ ...f, isActive: e.target.checked })}
             />
             Active
-          </label>
+          </Label>
 
           <div className="flex flex-wrap gap-2 border-t border-slate-100 pt-4">
             <Button

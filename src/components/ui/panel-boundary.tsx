@@ -13,6 +13,7 @@
 
 import { Component, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 type Props = {
   children: ReactNode;
@@ -44,7 +45,7 @@ export class PanelBoundary extends Component<Props, State> {
     if (!this.state.hasError) return this.props.children;
     if (this.props.fallback !== undefined) return this.props.fallback;
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 flex items-start gap-2">
+      <Alert variant="warning" size="lg" className="rounded-xl">
         <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
         <div>
           <div className="font-medium">
@@ -54,7 +55,7 @@ export class PanelBoundary extends Component<Props, State> {
             The rest of the page is unaffected. Try refreshing — if it keeps happening, report it.
           </div>
         </div>
-      </div>
+      </Alert>
     );
   }
 }

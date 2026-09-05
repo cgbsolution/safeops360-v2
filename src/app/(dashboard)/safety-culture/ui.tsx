@@ -4,6 +4,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { Card } from "@/components/ui/card";
+import { SelectField } from "@/components/ui/select-field";
 import {
   COMPONENT_META,
   PALETTE,
@@ -147,10 +149,9 @@ export function StageLegend() {
 /** Banner explaining that culture scores are live ERM KRIs (the differentiator). */
 export function KriBanner() {
   return (
-    <div
-      className="mb-5 flex items-start gap-3 rounded-xl border p-4 text-sm"
-      style={{ borderColor: PALETTE.gold, background: "linear-gradient(90deg,#0B1F4D,#122a5e)" }}
-    >
+    <Card
+      className="mb-5 flex items-start gap-3 rounded-xl border p-4 text-sm shadow-none"
+      style={{ borderColor: PALETTE.gold, background: "linear-gradient(90deg,#0B1F4D,#122a5e)" }}>
       <span className="mt-0.5 text-lg" style={{ color: PALETTE.gold }}>◆</span>
       <div className="text-white/90">
         <span className="font-semibold text-white">Live on the Enterprise Risk Register.</span>{" "}
@@ -158,7 +159,7 @@ export function KriBanner() {
         <span className="font-medium" style={{ color: PALETTE.gold }}>“Human Factor / Safety Culture Risk”</span>{" "}
         entry — no manual data entry, no disconnected culture app. A breach triggers the same escalation workflow as any operational risk KRI.
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -177,25 +178,26 @@ export function PlantSelect({
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
-  function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
+  // Takes the value, not a change event: the picker is a Radix listbox now and
+  // there is no DOM event behind the selection.
+  function onChange(plant: string) {
     const params = new URLSearchParams(search.toString());
-    params.set("plant", e.target.value);
+    params.set("plant", plant);
     router.push(`${pathname}?${params.toString()}`);
   }
   return (
-    <select
+    <SelectField
       value={current ?? ""}
       onChange={onChange}
-      className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-primary-500 focus:outline-none"
-    >
-      {!current && <option value="">Select a site…</option>}
-      {allowAll && <option value="all">◆ All sites (portfolio)</option>}
-      {plants.map((p) => (
-        <option key={p.id} value={p.id}>
-          {p.name}
-        </option>
-      ))}
-    </select>
+      ariaLabel="Site"
+      placeholder="Select a site…"
+      className="rounded-lg px-3 py-2 text-sm text-slate-700 shadow-sm"
+      options={[
+        // The portfolio row is offered only where a cross-site view makes sense.
+        ...(allowAll ? [{ value: "all", label: "◆ All sites (portfolio)" }] : []),
+        ...plants.map((p) => ({ value: p.id, label: p.name }))
+      ]}
+    />
   );
 }
 
@@ -266,7 +268,7 @@ export function SiteRollupTable({
   }
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
           {headlineLabel} — {rows.length} sites
@@ -283,7 +285,7 @@ export function SiteRollupTable({
           const width = (barVal / maxBar) * 100;
           const color = barColorMode === "score" ? scoreColor(barVal) : PALETTE.navy;
           return (
-            <div key={r.plantId} className="flex items-center gap-3 rounded-lg border border-slate-200 p-2.5">
+            <Card key={r.plantId} className="flex items-center gap-3 rounded-lg border border-slate-200 p-2.5 shadow-none">
               <span
                 className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
                 style={{ background: "#F1F5F9", color: PALETTE.navy }}
@@ -309,19 +311,19 @@ export function SiteRollupTable({
               <span className="w-20 shrink-0 text-right text-sm font-bold" style={{ color }}>
                 {fmtHead(r)}
               </span>
-            </div>
+            </Card>
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }
 
 export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
+    <Card className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center shadow-none">
       <p className="text-sm font-medium text-slate-700">{title}</p>
       {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
-    </div>
+    </Card>
   );
 }

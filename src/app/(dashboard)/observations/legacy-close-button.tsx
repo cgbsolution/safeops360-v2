@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2 } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 export function LegacyCloseButton({ id }: { id: string }) {
   const [open, setOpen] = useState(false);
@@ -29,7 +30,7 @@ export function LegacyCloseButton({ id }: { id: string }) {
   if (!open) return <Button onClick={() => setOpen(true)} variant="success"><CheckCircle2 size={16} /> Verify & Close</Button>;
 
   return (
-    <div className="bg-white border rounded-lg p-3 shadow-sm space-y-2 w-80">
+    <Card className="bg-white border rounded-lg p-3 shadow-sm space-y-2 w-80">
       <Textarea
         rows={3}
         placeholder="Closing remark (verification details)"
@@ -42,6 +43,6 @@ export function LegacyCloseButton({ id }: { id: string }) {
         </Button>
         <Button size="sm" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
       </div>
-    </div>
+    </Card>
   );
 }

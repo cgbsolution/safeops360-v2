@@ -14,6 +14,8 @@
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
 import { hazardTone, prettyLabel, statusTone } from "@/lib/chemicals/types";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -81,9 +83,9 @@ export function StatusBadge({ status }: { status: string }) {
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700">
+    <Alert variant="destructive" className="p-3">
       {message}
-    </div>
+    </Alert>
   );
 }
 
@@ -100,10 +102,10 @@ export function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="block text-xs font-medium text-slate-700">
+      <Label className="block text-xs font-medium text-slate-700">
         {label}
         {required && <span className="ml-0.5 text-rose-500">*</span>}
-      </label>
+      </Label>
       {children}
       {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
     </div>

@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 import { Trash2, Loader2 } from "lucide-react";
 import { Can } from "@/components/auth/can";
 import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
 
 export function DeleteTrainingIconButton({
   recordId,
@@ -57,15 +58,13 @@ export function DeleteTrainingIconButton({
 
   return (
     <Can permission="TRAINING.DELETE">
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={handleDelete}
         disabled={busy}
-        title={`Delete training record for ${label}`}
-        className="text-rose-600 hover:text-rose-800 disabled:opacity-50"
-      >
+        title={`Delete training record for ${label}`}>
         {busy ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
-      </button>
+      </Button>
     </Can>
   );
 }

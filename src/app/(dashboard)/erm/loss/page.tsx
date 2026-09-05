@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { LossView } from "./loss-view";
 import type { Category, RiskListResponse } from "@/app/(dashboard)/erm/lib";
 import type { LossListResponse, LossAnalytics } from "@/app/(dashboard)/erm/lib-p2";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -65,7 +66,7 @@ export default async function LossRegisterPage(props: {
         description="Every realised loss and near-miss — quantified in rupees, attributed to a risk category, and calibrated against the residual register. The feedback loop that keeps scoring honest."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <LossView
           tab={tab}

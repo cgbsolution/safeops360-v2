@@ -17,7 +17,7 @@ import { useRouter } from "next/navigation";
 import { Play, CheckCircle2, ArrowUpCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -189,16 +189,11 @@ export function AssignmentActions({
           <div className="space-y-3">
             <div className="space-y-1">
               <Label className="text-xs">Evidence type</Label>
-              <Select
+              <SelectField
                 value={evidenceType}
-                onChange={(e) => setEvidenceType(e.target.value as EvidenceType)}
-              >
-                {EVIDENCE_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => setEvidenceType(value as EvidenceType)}
+                options={EVIDENCE_OPTIONS.map((o) => ({ value: String(o.value), label: `${o.label}` }))}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Note (optional)</Label>

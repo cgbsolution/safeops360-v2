@@ -11,6 +11,8 @@ import { RedoFlraPanel } from "@/components/flra/redo-flra-panel";
 import { formatDate, formatDateTime, humanize } from "@/lib/utils";
 import { CheckCircle2, ArrowUpRight, AlertTriangle, Heart, Printer, ShieldAlert, XCircle } from "lucide-react";
 import { PrintButton } from "@/components/ui/print-button";
+import { Alert } from "@/components/ui/alert";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +119,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
 
       {/* Supersession banners */}
       {f.status === "SUPERSEDED" && f.supersededBy && (
-        <div className="mb-4 rounded-lg border border-slate-300 bg-slate-50 p-3 text-sm text-slate-700">
+        <Alert variant="muted" size="lg" className="mb-4 border-slate-300">
           <div className="flex items-center gap-2 font-medium">
             <AlertTriangle size={14} /> This FLRA was superseded
           </div>
@@ -128,10 +130,10 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
               {f.supersededBy.number}
             </Link>
           </div>
-        </div>
+        </Alert>
       )}
       {f.supersedes.length > 0 && (
-        <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3 text-xs text-slate-600">
+        <Card className="mb-4 p-3 text-xs text-slate-600 shadow-none">
           Supersedes: {f.supersedes.map((s: any, i: number) => (
             <span key={s.id}>
               <Link href={`/flra/${s.id}`} className="font-mono hover:underline text-slate-800">{s.number}</Link>
@@ -139,7 +141,7 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
               {i < f.supersedes.length - 1 ? ", " : ""}
             </span>
           ))}
-        </div>
+        </Card>
       )}
 
       <div className="grid lg:grid-cols-3 gap-4">
@@ -252,28 +254,28 @@ export default async function FLRADetailPage(props: { params: Promise<{ id: stri
             <Card>
               <CardHeader><CardTitle>Hazard Identification</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto p-0">
-                <table className="w-full text-sm">
-                  <thead className="bg-slate-50 border-y">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-700 text-xs uppercase">Step</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-700 text-xs uppercase">Hazard</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-700 text-xs uppercase">Initial</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-700 text-xs uppercase">Control</th>
-                      <th className="px-3 py-2 text-left font-semibold text-slate-700 text-xs uppercase">Residual</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader className="border-y bg-slate-50">
+                    <TableRow>
+                      <TableHead>Step</TableHead>
+                      <TableHead>Hazard</TableHead>
+                      <TableHead>Initial</TableHead>
+                      <TableHead>Control</TableHead>
+                      <TableHead>Residual</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {hazards.map((h: any, i: number) => (
-                      <tr key={i} className="border-b">
-                        <td className="px-3 py-2 align-top font-medium">{h.step}</td>
-                        <td className="px-3 py-2 align-top text-slate-700">{h.hazard}</td>
-                        <td className="px-3 py-2 align-top"><Badge className={RISK_COLORS[h.risk]}>{h.risk}</Badge></td>
-                        <td className="px-3 py-2 align-top text-slate-700">{h.control}</td>
-                        <td className="px-3 py-2 align-top"><Badge className={RISK_COLORS[h.residualRisk]}>{h.residualRisk}</Badge></td>
-                      </tr>
+                      <TableRow key={i}>
+                        <TableCell className="align-top font-medium">{h.step}</TableCell>
+                        <TableCell className="align-top text-slate-700">{h.hazard}</TableCell>
+                        <TableCell className="align-top"><Badge className={RISK_COLORS[h.risk]}>{h.risk}</Badge></TableCell>
+                        <TableCell className="align-top text-slate-700">{h.control}</TableCell>
+                        <TableCell className="align-top"><Badge className={RISK_COLORS[h.residualRisk]}>{h.residualRisk}</Badge></TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           )}

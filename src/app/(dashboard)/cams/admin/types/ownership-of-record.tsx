@@ -19,11 +19,13 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
 import type { DisciplineOwnerRow } from "../../lib-assurance";
 import type { PlantOption } from "@/lib/plant-context";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
 
 export function OwnershipOfRecord({
   owners, canConfig, plants,
@@ -70,41 +72,41 @@ export function OwnershipOfRecord({
         <>
           {/* Desktop table */}
           <Card className="hidden overflow-hidden rounded-xl border border-slate-200 sm:block">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Discipline</th>
-                  <th className="px-3 py-2 font-medium">Owner</th>
-                  <th className="px-3 py-2 font-medium">Scope</th>
-                  <th className="px-3 py-2 font-medium">Type</th>
-                  {canConfig && <th className="px-3 py-2" />}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+            <Table className="w-full text-sm">
+              <TableHeader className="bg-slate-50 text-left text-xs text-slate-500">
+                <TableRow>
+                  <TableHead className="px-3 py-2 font-medium">Discipline</TableHead>
+                  <TableHead className="px-3 py-2 font-medium">Owner</TableHead>
+                  <TableHead className="px-3 py-2 font-medium">Scope</TableHead>
+                  <TableHead className="px-3 py-2 font-medium">Type</TableHead>
+                  {canConfig && <TableHead className="px-3 py-2" />}
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
                 {owners.map((o) => (
-                  <tr key={o.id}>
-                    <td className="px-3 py-2">
+                  <TableRow key={o.id}>
+                    <TableCell className="px-3 py-2">
                       <div className="font-medium text-slate-800">
                         {o.disciplineLabel || o.disciplineCode}
                       </div>
                       <div className="text-[11px] text-slate-400">{o.disciplineCode}</div>
-                    </td>
-                    <td className="px-3 py-2 text-slate-700">{o.ownerName ?? o.ownerUserId}</td>
-                    <td className="px-3 py-2">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-slate-700">{o.ownerName ?? o.ownerUserId}</TableCell>
+                    <TableCell className="px-3 py-2">
                       <ScopeChip estateWide={o.estateWide} plantName={o.plantName} />
-                    </td>
-                    <td className="px-3 py-2 text-xs text-slate-600">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-xs text-slate-600">
                       {o.ownershipType === "ACCOUNTABLE" ? "Accountable" : "Responsible"}
-                    </td>
+                    </TableCell>
                     {canConfig && (
-                      <td className="px-3 py-2 text-right">
+                      <TableCell className="px-3 py-2 text-right">
                         <RemoveOwner id={o.id} />
-                      </td>
+                      </TableCell>
                     )}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </Card>
 
           {/* 390px card list — no horizontal-scroll tables */}
@@ -172,15 +174,13 @@ function RemoveOwner({ id }: { id: string }) {
   }
 
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={remove}
       disabled={busy}
-      className="text-slate-400 hover:text-rose-600 disabled:opacity-50"
-      aria-label="Remove ownership record"
-    >
+      aria-label="Remove ownership record">
       {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
-    </button>
+    </Button>
   );
 }
 
@@ -275,38 +275,34 @@ function AddOwnerDialog({
             <Label htmlFor="plant" className="text-xs">Site (blank = estate-wide)</Label>
             {/* Was a free-text box asking the admin to paste a plant cuid — the
                 one place on the platform that made a person handle an id. */}
-            <Select
+            <SelectField
               id="plant"
               value={plantId}
-              onChange={(e) => setPlantId(e.target.value)}
+              onChange={setPlantId}
               className="mt-1"
-            >
-              <option value="">Estate-wide — conflicts at every site</option>
-              {plants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
+              placeholder="Estate-wide — conflicts at every site"
+              options={plants.map((p) => ({ value: p.id, label: `${p.name}` }))}
+            />
           </div>
           <div>
             <Label htmlFor="own-type" className="text-xs">Ownership type</Label>
-            <Select
+            <SelectField
               id="own-type"
               value={ownershipType}
-              onChange={(e) => setOwnershipType(e.target.value)}
+              onChange={setOwnershipType}
               className="mt-1"
-            >
-              <option value="ACCOUNTABLE">Accountable — owns the outcome</option>
-              <option value="RESPONSIBLE">Responsible — runs it day to day</option>
-            </Select>
+              options={[
+              { value: "ACCOUNTABLE", label: "Accountable — owns the outcome" },
+              { value: "RESPONSIBLE", label: "Responsible — runs it day to day" }
+            ]}
+            />
           </div>
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex justify-end gap-2">

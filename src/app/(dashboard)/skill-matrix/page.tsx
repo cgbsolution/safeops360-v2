@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { SyncFromTrainingButton } from "./sync-from-training-button";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { SkillMatrixAnalyticsStrip } from "@/components/skill-matrix/analytics-strip";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -62,9 +64,9 @@ export default async function SkillMatrixPage(props: {
           title="Skill Matrix"
           description="Workforce competency status — person × competency, per ISO 45001 §7.2"
         />
-        <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
           Select a plant to view its skill matrix.
-        </div>
+        </Card>
       </div>
     );
   }
@@ -114,9 +116,9 @@ export default async function SkillMatrixPage(props: {
       </div>
 
       {data.persons.length === 0 || data.competencies.length === 0 ? (
-        <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
           No competency records for this plant yet.
-        </div>
+        </Card>
       ) : (
         <>
           <div className="mb-3 text-sm text-slate-600">
@@ -133,15 +135,15 @@ export default async function SkillMatrixPage(props: {
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border bg-white">
-            <table className="border-collapse text-sm">
-              <thead>
-                <tr className="bg-slate-50">
-                  <th className="sticky left-0 z-10 bg-slate-50 text-left px-3 py-2 border-b border-r min-w-[220px]">
+          <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+            <Table className="border-collapse text-sm">
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="sticky left-0 z-10 bg-slate-50 text-left px-3 py-2 border-b border-r min-w-[220px]">
                     <span className="text-xs uppercase tracking-wider text-slate-500">Person</span>
-                  </th>
+                  </TableHead>
                   {data.competencies.map((c) => (
-                    <th
+                    <TableHead
                       key={c.id}
                       className="border-b border-l px-1 py-2 align-bottom"
                       title={`${c.name} (${c.category})`}
@@ -149,21 +151,21 @@ export default async function SkillMatrixPage(props: {
                       <div className="mx-auto h-32 [writing-mode:vertical-rl] rotate-180 text-[11px] font-mono text-slate-600 whitespace-nowrap overflow-hidden">
                         {c.code}
                       </div>
-                    </th>
+                    </TableHead>
                   ))}
-                  <th className="border-b border-l px-2 py-2 text-xs uppercase tracking-wider text-slate-500 align-bottom">
+                  <TableHead className="border-b border-l px-2 py-2 text-xs uppercase tracking-wider text-slate-500 align-bottom">
                     <div className="mx-auto h-32 [writing-mode:vertical-rl] rotate-180 whitespace-nowrap">
                       Compliance
                     </div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.persons.map((p) => {
                   const pct = personCompliance(p);
                   return (
-                    <tr key={p.userId} className="hover:bg-slate-50/60">
-                      <td className="sticky left-0 z-10 bg-white px-3 py-1.5 border-b border-r min-w-[220px]">
+                    <TableRow key={p.userId} className="hover:bg-slate-50/60">
+                      <TableCell className="sticky left-0 z-10 bg-white px-3 py-1.5 border-b border-r min-w-[220px]">
                         <div className="font-medium text-slate-900 text-sm truncate max-w-[200px]">
                           {p.name}
                         </div>
@@ -171,12 +173,12 @@ export default async function SkillMatrixPage(props: {
                           {p.designation ?? p.role}
                           {p.department ? ` · ${p.department}` : ""}
                         </div>
-                      </td>
+                      </TableCell>
                       {data.competencies.map((c) => {
                         const cell = p.cells[c.id];
                         const meta = cell ? STATE_META[cell.state] : null;
                         return (
-                          <td key={c.id} className="border-b border-l p-1 text-center">
+                          <TableCell key={c.id} className="border-b border-l p-1 text-center">
                             {cell && meta ? (
                               <div
                                 className={cn(
@@ -194,10 +196,10 @@ export default async function SkillMatrixPage(props: {
                             ) : (
                               <div className="mx-auto h-6 w-6 rounded bg-slate-50" title="No record" />
                             )}
-                          </td>
+                          </TableCell>
                         );
                       })}
-                      <td className="border-b border-l px-2 py-1.5 text-center">
+                      <TableCell className="border-b border-l px-2 py-1.5 text-center">
                         <span
                           className={cn(
                             "text-xs font-semibold tabular-nums",
@@ -206,13 +208,13 @@ export default async function SkillMatrixPage(props: {
                         >
                           {pct}%
                         </span>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
 
           {/* Legend */}
           <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs">

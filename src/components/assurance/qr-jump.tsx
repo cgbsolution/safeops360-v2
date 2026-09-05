@@ -19,6 +19,7 @@
 import { useState } from "react";
 import { QrCode, ScanLine, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   QrScannerModal,
   parseQrPayload,
@@ -106,27 +107,24 @@ export function QrJumpButton({
             <div className="flex items-center gap-2">
               <ScanLine size={16} className="text-violet-700" />
               <h3 className="text-sm font-semibold text-slate-900">Enter the code</h3>
-              <button
+              <Button variant="ghost"
                 type="button"
-                onClick={() => setManual(false)}
-                className="ml-auto text-slate-400 hover:text-slate-700"
-                aria-label="Close"
-              >
+                onClick={() => setManual(false)} className="ml-auto"
+                aria-label="Close">
                 <X size={16} />
-              </button>
+              </Button>
             </div>
             <p className="mt-1 text-xs text-slate-500">
               {supported
                 ? "Type the code printed under the QR sticker."
                 : "This device has no camera available, so type the code printed under the sticker."}
             </p>
-            <input
+            <Input
               value={raw}
               onChange={(e) => setRaw(e.target.value)}
               placeholder="safeops:area:…"
               className="mt-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm"
-              autoFocus
-            />
+              autoFocus />
             {err && <p className="mt-1 text-[11px] text-rose-700">{err}</p>}
             <div className="mt-4 flex justify-end gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => setManual(false)}>

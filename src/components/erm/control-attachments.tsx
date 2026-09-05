@@ -1,6 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   AlertCircle,
   Download,
@@ -235,9 +241,9 @@ export function ControlAttachments({ controlId, canEdit }: { controlId: string; 
   // ── Storage not configured ──
   if (storageDisabled) {
     return (
-      <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+      <Alert variant="warning" className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
         File storage is not configured in this environment.
-      </div>
+      </Alert>
     );
   }
 
@@ -248,19 +254,14 @@ export function ControlAttachments({ controlId, canEdit }: { controlId: string; 
         <div className="space-y-2">
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="mb-1 block text-[11px] font-medium text-slate-600">Document type</label>
-              <select
+              <Label className="mb-1 block text-[11px] font-medium text-slate-600">Document type</Label>
+              <SelectField
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={setCategory}
                 disabled={uploading}
                 className="rounded-md border border-slate-300 px-3 py-2 text-sm outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 disabled:opacity-50"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                options={CATEGORIES.map((c) => ({ value: c.value, label: `${c.label}` }))}
+              />
             </div>
           </div>
 
@@ -292,19 +293,17 @@ export function ControlAttachments({ controlId, canEdit }: { controlId: string; 
               <>
                 <Upload size={20} className="mx-auto mb-2 text-slate-400" />
                 <p className="text-sm font-medium text-slate-700">Drag &amp; drop a file here</p>
-                <button
+                <Button variant="outline"
                   type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                >
+                  onClick={() => fileInputRef.current?.click()} className="mt-3 gap-1.5 rounded-md px-3 py-1.5 text-xs">
                   <Upload size={13} /> Choose file
-                </button>
+                </Button>
                 <p className="mt-2 text-[11px] text-slate-500">
                   PDF · PNG · JPEG · WEBP · DOCX · XLSX · CSV · TXT · MSG · up to 25 MB
                 </p>
               </>
             )}
-            <input
+            <Input
               ref={fileInputRef}
               type="file"
               accept={ACCEPT}
@@ -312,40 +311,39 @@ export function ControlAttachments({ controlId, canEdit }: { controlId: string; 
               onChange={(e) => {
                 if (e.target.files?.length) void handleFiles(e.target.files);
                 e.target.value = "";
-              }}
-            />
+              }} />
           </div>
 
           {uploadError && (
-            <div className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            <Alert variant="destructive" className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
               <AlertCircle size={14} className="shrink-0" /> {uploadError}
-            </div>
+            </Alert>
           )}
         </div>
       )}
 
       {/* Non-editors still see errors (e.g. from download) */}
       {!canEdit && uploadError && (
-        <div className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <Alert variant="destructive" className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           <AlertCircle size={14} className="shrink-0" /> {uploadError}
-        </div>
+        </Alert>
       )}
 
       {/* List */}
       {loadError ? (
-        <div className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <Alert variant="destructive" className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           <AlertCircle size={14} className="shrink-0" /> {loadError}
-        </div>
+        </Alert>
       ) : items === null ? (
         <div className="flex items-center justify-center gap-2 py-6 text-sm text-slate-500">
           <Loader2 size={16} className="animate-spin" /> Loading documents…
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-slate-200 py-8 text-center">
+        <Card className="flex flex-col items-center gap-1 rounded-lg border border-dashed border-slate-200 py-8 text-center shadow-none">
           <Paperclip size={20} className="text-slate-300" />
           <p className="text-sm text-slate-500">No documents attached yet.</p>
           {canEdit && <p className="text-[11px] text-slate-400">Upload evidence, workpapers or review documents above.</p>}
-        </div>
+        </Card>
       ) : (
         <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
           {items.map((att) => {
@@ -374,23 +372,19 @@ export function ControlAttachments({ controlId, canEdit }: { controlId: string; 
                   </p>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <button
+                  <Button variant="outline"
                     type="button"
-                    onClick={() => void download(att)}
-                    className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50"
-                  >
+                    onClick={() => void download(att)} className="gap-1 rounded-md px-2 py-1 text-[11px]">
                     <Download size={12} /> Download
-                  </button>
+                  </Button>
                   {canEdit && (
-                    <button
+                    <Button variant="outline"
                       type="button"
                       onClick={() => void remove(att)}
-                      disabled={busyId === att.id}
-                      className="inline-flex items-center rounded-md border border-slate-200 bg-white p-1.5 text-slate-300 hover:border-rose-200 hover:text-rose-600 disabled:opacity-50"
-                      aria-label="Delete document"
-                    >
+                      disabled={busyId === att.id} className="rounded-md p-1.5"
+                      aria-label="Delete document">
                       {busyId === att.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                    </button>
+                    </Button>
                   )}
                 </div>
               </li>

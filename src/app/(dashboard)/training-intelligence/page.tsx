@@ -13,6 +13,10 @@ import {
   type RiskBand
 } from "@/lib/training-intelligence";
 import { RunAnalysisButton } from "./run-analysis-button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -101,35 +105,35 @@ export default async function TrainingIntelligencePage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       ) : (
         <>
           {/* Explainer — the Events → Person risk → Training flow */}
-          <div className="mb-5 flex flex-col gap-3 rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 text-sm text-primary-900 sm:flex-row sm:items-center sm:justify-between">
+          <Card className="mb-5 flex flex-col gap-3 rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 text-sm text-primary-900 sm:flex-row sm:items-center sm:justify-between shadow-none">
             <p className="max-w-3xl">
               Every incident, near miss, and observation logged against a worker is scored. Workers
               who cross the threshold are automatically flagged and assigned the training their
               events point to.
             </p>
             <div className="flex shrink-0 items-center gap-1.5 text-xs font-semibold">
-              <span className="rounded-full bg-white/70 px-2.5 py-1">Events</span>
+              <Badge variant="neutral" className="rounded-full bg-white/70 px-2.5 py-1">Events</Badge>
               <ArrowRight size={14} className="text-primary-500" />
-              <span className="rounded-full bg-white/70 px-2.5 py-1">Person risk</span>
+              <Badge variant="neutral" className="rounded-full bg-white/70 px-2.5 py-1">Person risk</Badge>
               <ArrowRight size={14} className="text-primary-500" />
-              <span className="rounded-full bg-white/70 px-2.5 py-1">Training</span>
+              <Badge variant="neutral" className="rounded-full bg-white/70 px-2.5 py-1">Training</Badge>
             </div>
-          </div>
+          </Card>
 
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {KPIS.map((k) => (
-              <div key={k.label} className="rounded-xl border border-slate-200 bg-white p-4">
+              <Card key={k.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
                 <div className={cn("text-2xl font-bold tabular-nums", k.tone)}>{k.value}</div>
                 <div className="mt-1 text-[11px] uppercase tracking-wider text-slate-500">
                   {k.label}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
@@ -160,26 +164,26 @@ export default async function TrainingIntelligencePage(props: {
             </FilterTabsList>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-2.5 font-semibold">Worker</th>
-                  <th className="px-4 py-2.5 font-semibold">Risk band</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Score</th>
-                  <th className="px-4 py-2.5 font-semibold">Events</th>
-                  <th className="px-4 py-2.5 font-semibold">Recommended training</th>
-                  <th className="px-4 py-2.5 font-semibold">Status</th>
-                  <th className="px-4 py-2.5" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-4 py-2.5 font-semibold">Worker</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Risk band</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right font-semibold">Score</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Events</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Recommended training</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Status</TableHead>
+                  <TableHead className="px-4 py-2.5" />
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
                 {items.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">
                       No workers flagged — run the analysis or check back after events accumulate.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   items.map((f) => {
                     const bandMeta = RISK_BAND_META[f.riskBand];
@@ -189,8 +193,8 @@ export default async function TrainingIntelligencePage(props: {
                     const recs = f.recommendedCompetencies ?? [];
                     const extraRecs = Math.max(0, recs.length - 2);
                     return (
-                      <tr key={f.id} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-3 align-top">
+                      <TableRow key={f.id} className="hover:bg-slate-50/70">
+                        <TableCell className="px-4 py-3 align-top">
                           <Link href={href} className="font-medium text-slate-900 hover:text-primary-700">
                             {f.worker?.name ?? "—"}
                           </Link>
@@ -198,8 +202,8 @@ export default async function TrainingIntelligencePage(props: {
                             {f.worker?.role ? f.worker.role.replace(/_/g, " ") : ""}
                             {f.worker?.department ? ` · ${f.worker.department}` : ""}
                           </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           <span
                             className={cn(
                               "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold",
@@ -208,47 +212,46 @@ export default async function TrainingIntelligencePage(props: {
                           >
                             {bandMeta.label}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-right">
                           <span className={cn("text-sm font-bold tabular-nums", bandMeta.text)}>
                             {f.riskScore}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 tabular-nums">
+                            <Badge variant="neutral" className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600 tabular-nums">
                               <AlertTriangle size={11} className="text-rose-500" />
                               {f.incidentCount} INC · {f.nearMissCount} NM · {f.observationCount} OBS
-                            </span>
+                            </Badge>
                             {f.sifCount > 0 && (
-                              <span className="inline-flex rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800 tabular-nums">
+                              <Badge variant="danger" className="inline-flex rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800 tabular-nums">
                                 SIF {f.sifCount}
-                              </span>
+                              </Badge>
                             )}
                           </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           {recs.length === 0 ? (
                             <span className="text-slate-400">—</span>
                           ) : (
                             <div className="flex flex-wrap items-center gap-1.5">
                               {recs.slice(0, 2).map((c) => (
-                                <span
+                                <Badge variant="brand"
                                   key={c.competencyId}
-                                  className="inline-flex rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700"
-                                >
+                                  className="inline-flex rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">
                                   {c.name}
-                                </span>
+                                </Badge>
                               ))}
                               {extraRecs > 0 && (
-                                <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                                   +{extraRecs}
-                                </span>
+                                </Badge>
                               )}
                             </div>
                           )}
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           <span
                             className={cn(
                               "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold",
@@ -257,8 +260,8 @@ export default async function TrainingIntelligencePage(props: {
                           >
                             {statusMeta.label}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-right">
                           <Link
                             href={href}
                             className="inline-flex items-center text-slate-400 hover:text-primary-700"
@@ -266,14 +269,14 @@ export default async function TrainingIntelligencePage(props: {
                           >
                             <ChevronRight size={16} />
                           </Link>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

@@ -28,6 +28,7 @@ import {
   type FactoryProfileListResponse,
 } from "./lib";
 import { IndiaMap } from "./india-map";
+import { Card } from "@/components/ui/card";
 
 type View = "cards" | "table" | "map";
 
@@ -45,13 +46,13 @@ function Kpi({
   pending?: boolean;
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
         <Icon size={14} /> {label}
       </div>
       <div className={"mt-1 text-2xl font-bold " + (pending ? "text-slate-300" : "text-slate-900")}>{value}</div>
       {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -214,9 +215,9 @@ export function FacilitiesDashboard({
       </div>
 
       {data.items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
           No factory profiles yet. Use “Add Factory” to create one.
-        </div>
+        </Card>
       ) : view === "cards" ? (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {data.items.map((f) => (
@@ -224,7 +225,7 @@ export function FacilitiesDashboard({
           ))}
         </div>
       ) : view === "table" ? (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
           <Table className="w-full min-w-[900px] text-sm">
             <TableHeader className="bg-slate-50/95">
               <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
@@ -274,7 +275,7 @@ export function FacilitiesDashboard({
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       ) : (
         <IndiaMap factories={data.items} />
       )}
@@ -294,7 +295,7 @@ function GroupInsights({ data }: { data: FactoryProfileListResponse }) {
 
   return (
     <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <h3 className="mb-2 text-sm font-semibold text-slate-700">Compliance distribution</h3>
         <div className="space-y-1.5 text-xs">
           {([["green", "≥ 85%"], ["amber", "75–84%"], ["red", "< 75%"]] as const).map(([b, label]) => (
@@ -307,8 +308,8 @@ function GroupInsights({ data }: { data: FactoryProfileListResponse }) {
             </div>
           ))}
         </div>
-      </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      </Card>
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <h3 className="mb-2 text-sm font-semibold text-slate-700">Needs attention</h3>
         <ul className="space-y-1 text-xs text-slate-600">
           {laggards.map((f) => (
@@ -321,15 +322,15 @@ function GroupInsights({ data }: { data: FactoryProfileListResponse }) {
           ))}
           {laggards.length === 0 && <li className="text-slate-400">No scored factories yet.</li>}
         </ul>
-      </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      </Card>
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <h3 className="mb-2 text-sm font-semibold text-slate-700">Watch-list</h3>
         <div className="space-y-1 text-xs text-slate-600">
           <div className="flex justify-between"><span>Certs expiring/expired</span><span className="font-semibold text-amber-700">{expiring.length} factory(ies)</span></div>
           <div className="flex justify-between"><span>Overdue CAPAs / critical findings</span><span className="font-semibold text-rose-700">{overdueAudit.length} factory(ies)</span></div>
           <div className="flex justify-between"><span>Total employees</span><span className="font-semibold text-slate-700">{fmtNum(data.totalEmployees)}</span></div>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

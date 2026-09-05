@@ -46,6 +46,7 @@ import {
   type RcaSuggestion
 } from "./types";
 import type { RcaMethod } from "@/lib/rca/types";
+import { Alert } from "@/components/ui/alert";
 
 // ─── Constants ──────────────────────────────────────────────────────────
 const POLL_INTERVAL_MS = 2500;
@@ -449,7 +450,7 @@ export function RcaAssistantCard(props: RcaAssistantCardProps) {
         )}
 
         {status === "ERRORED" && (
-          <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-rose-900 text-sm flex items-start gap-2">
+          <Alert variant="destructive" size="lg" className="p-3">
             <AlertCircle size={14} className="mt-0.5" />
             <div className="space-y-1">
               <div className="font-medium">
@@ -464,7 +465,7 @@ export function RcaAssistantCard(props: RcaAssistantCardProps) {
                 {starting ? "Retrying…" : "Retry"}
               </Button>
             </div>
-          </div>
+          </Alert>
         )}
 
         {(status === "PENDING_REVIEW" ||
@@ -540,7 +541,7 @@ export function RcaAssistantCard(props: RcaAssistantCardProps) {
         </div>
 
         {inv.hallucinationFlagged && (
-          <div className="rounded-md border border-amber-300 bg-amber-50 p-2 text-amber-900 text-xs flex items-start gap-2">
+          <Alert variant="warning" className="border-amber-300 p-2">
             <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
             <div>
               <div className="font-medium">Hallucination flagged</div>
@@ -552,7 +553,7 @@ export function RcaAssistantCard(props: RcaAssistantCardProps) {
                   : "ask a reviewer with audit access for details."}
               </div>
             </div>
-          </div>
+          </Alert>
         )}
       </CardContent>
 
@@ -708,7 +709,7 @@ function ProgressList({
 
       {/* Surfaced error / overdue — no longer swallowed. Always recoverable. */}
       {(error || overdue) && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900 space-y-2">
+        <Alert variant="warning" className="space-y-2 p-2.5">
           <div className="flex items-start gap-1.5">
             <AlertCircle size={13} className="mt-0.5 flex-shrink-0" />
             <span>{error ?? "This is taking longer than usual — the result is often ready already."}</span>
@@ -721,7 +722,7 @@ function ProgressList({
               <Sparkles size={12} /> Start over
             </Button>
           </div>
-        </div>
+        </Alert>
       )}
     </div>
   );

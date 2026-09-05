@@ -10,6 +10,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { BREACH_STATUS_CHIP, type AppetiteBreach } from "@/app/(dashboard)/erm/lib-p2";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const BAND_LABEL: Record<string, string> = {
   MAX_RESIDUAL_SCORE: "Max residual score",
@@ -32,17 +35,15 @@ export function BreachesView({ breaches }: { breaches: AppetiteBreach[] }) {
   return (
     <div className="space-y-3">
       {breaches.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
           No appetite breaches recorded. Tolerance gauges are within appetite.
-        </div>
+        </Card>
       ) : (
         breaches.map((b) => (
-          <button
+          <Button variant="outline"
             key={b.id}
             type="button"
-            onClick={() => setOpenId(b.id)}
-            className="block w-full rounded-xl border border-slate-200 bg-white p-5 text-left transition-shadow hover:shadow-md"
-          >
+            onClick={() => setOpenId(b.id)} className="block w-full rounded-xl p-5 text-left transition-shadow hover:shadow-md">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +93,7 @@ export function BreachesView({ breaches }: { breaches: AppetiteBreach[] }) {
                 )}
               </div>
             </div>
-          </button>
+          </Button>
         ))
       )}
 
@@ -182,7 +183,7 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
 
         <div className="space-y-5 p-5">
           {/* Snapshot */}
-          <div className="grid grid-cols-3 gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-center">
+          <Card className="grid grid-cols-3 gap-3 rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-center shadow-none">
             <div>
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Observed</div>
               <div className="text-xl font-bold tabular-nums text-rose-700">{breach.observedValue}</div>
@@ -195,7 +196,7 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Age</div>
               <div className="text-xl font-bold tabular-nums text-slate-700">{breach.ageDays}d</div>
             </div>
-          </div>
+          </Card>
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-slate-500">Status</span>
@@ -243,7 +244,7 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
 
           {/* Existing decision */}
           {(breach.committeeDecision || breach.decisionByName || breach.reviewByDate) && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+            <Card className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 shadow-none">
               <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Committee decision
               </h3>
@@ -254,20 +255,20 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
                 {breach.decisionByName && <span>by {breach.decisionByName}</span>}
                 {breach.reviewByDate && <span>review by {fmtDate(breach.reviewByDate)}</span>}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Decision workflow (CRO only — backend enforces) */}
-          <div className="rounded-lg border border-slate-200 p-4">
+          <Card className="rounded-lg border border-slate-200 p-4 shadow-none">
             <h3 className="mb-2 text-sm font-semibold text-slate-800">Record committee decision</h3>
             <p className="mb-3 text-[11px] text-slate-400">
               Decisions are restricted to the CRO; the backend enforces the role.
             </p>
 
             {err && (
-              <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-sm text-rose-800">
+              <Alert variant="destructive" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-sm text-rose-800">
                 {err}
-              </div>
+              </Alert>
             )}
 
             <div className="mb-3 grid grid-cols-2 gap-1.5">
@@ -291,9 +292,9 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
 
             <div className="space-y-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">
+                <Label className="mb-1 block text-xs font-medium text-slate-600">
                   Committee decision (required)
-                </label>
+                </Label>
                 <Textarea
                   value={committeeDecision}
                   onChange={(e) => setCommitteeDecision(e.target.value)}
@@ -303,9 +304,9 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
               </div>
               {needsReviewBy && (
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <Label className="mb-1 block text-xs font-medium text-slate-600">
                     Review-by date (≤ 90 days)
-                  </label>
+                  </Label>
                   <Input
                     type="date"
                     value={reviewByDate}
@@ -319,7 +320,7 @@ function BreachDrawer({ breach, onClose }: { breach: AppetiteBreach; onClose: ()
                 {busy ? "Recording…" : "Record decision"}
               </Button>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>

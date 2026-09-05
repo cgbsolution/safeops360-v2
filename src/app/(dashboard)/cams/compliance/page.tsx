@@ -6,6 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { can } from "@/lib/auth/permissions";
 import type { ComplianceTracker, EngagementListResponse, FindingListResponse } from "../lib-cams";
 import { ComplianceView } from "./compliance-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +39,7 @@ export default async function ComplianceTrackerPage() {
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Compliance Tracker" }]}
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <ComplianceView
           tracker={tracker}

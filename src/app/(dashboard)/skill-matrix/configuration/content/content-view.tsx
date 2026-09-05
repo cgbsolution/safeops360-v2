@@ -13,7 +13,7 @@ import { Plus, Trash2, Pencil, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -27,6 +27,9 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { Can } from "@/components/auth/can";
 import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   CONTENT_TYPES,
   DELIVERY_MODES,
@@ -201,39 +204,38 @@ export function ContentView({
       </div>
 
       {groups.length === 0 ? (
-        <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
           No learning content configured yet.
-        </div>
+        </Card>
       ) : (
         <div className="space-y-5">
           {groups.map((g) => (
-            <div
+            <Card
               key={g.name}
-              className="overflow-hidden rounded-xl border border-slate-200 bg-white"
-            >
+              className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
               <div className="border-b border-slate-100 bg-slate-50 px-4 py-2.5">
                 <h2 className="text-sm font-semibold text-slate-800">{g.name}</h2>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                      <th className="px-4 py-2.5 font-semibold">Title</th>
-                      <th className="px-4 py-2.5 font-semibold">Type</th>
-                      <th className="px-4 py-2.5 font-semibold">Source</th>
-                      <th className="px-4 py-2.5" />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
+                <Table className="w-full text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-slate-100 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                      <TableHead className="px-4 py-2.5 font-semibold">Title</TableHead>
+                      <TableHead className="px-4 py-2.5 font-semibold">Type</TableHead>
+                      <TableHead className="px-4 py-2.5 font-semibold">Source</TableHead>
+                      <TableHead className="px-4 py-2.5" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="divide-y divide-slate-100">
                     {g.items.map((c) => (
-                      <tr key={c.id} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-3 align-top">
+                      <TableRow key={c.id} className="hover:bg-slate-50/70">
+                        <TableCell className="px-4 py-3 align-top">
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-slate-900">{c.title}</span>
                             {c.isPrimary && (
-                              <span className="inline-flex rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700">
+                              <Badge variant="brand" className="inline-flex rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700">
                                 Primary
-                              </span>
+                              </Badge>
                             )}
                           </div>
                           {c.contentRef && (
@@ -246,58 +248,54 @@ export function ContentView({
                               Open <ExternalLink size={11} />
                             </a>
                           )}
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           <div className="flex flex-wrap gap-1.5">
-                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+                            <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
                               {labelize(c.contentType)}
-                            </span>
-                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+                            </Badge>
+                            <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
                               {labelize(c.deliveryMode)}
-                            </span>
+                            </Badge>
                           </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           {c.vendorId ? (
-                            <span className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                            <Badge variant="success" className="inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
                               {c.vendorName ?? "Vendor"}
-                            </span>
+                            </Badge>
                           ) : (
-                            <span className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                            <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500">
                               Demo
-                            </span>
+                            </Badge>
                           )}
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-right">
                           <Can permission="SKILL_MATRIX.COMPETENCY_CONFIGURE">
                             <div className="flex items-center justify-end gap-1">
-                              <button
+                              <Button variant="ghost"
                                 type="button"
                                 onClick={() => openEdit(c)}
-                                disabled={busy}
-                                className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-primary-700 disabled:opacity-50"
-                                aria-label="Edit content"
-                              >
+                                disabled={busy} className="rounded p-1"
+                                aria-label="Edit content">
                                 <Pencil size={14} />
-                              </button>
-                              <button
+                              </Button>
+                              <Button variant="destructive"
                                 type="button"
                                 onClick={() => remove(c)}
-                                disabled={busy}
-                                className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
-                                aria-label="Delete content"
-                              >
+                                disabled={busy} className="rounded p-1"
+                                aria-label="Delete content">
                                 <Trash2 size={14} />
-                              </button>
+                              </Button>
                             </div>
                           </Can>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
@@ -314,17 +312,12 @@ export function ContentView({
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2 space-y-1">
               <Label className="text-xs">Competency</Label>
-              <Select
+              <SelectField
                 value={form.competencyId}
-                onChange={(e) => set("competencyId", e.target.value)}
-              >
-                <option value="">Select a competency…</option>
-                {competencies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} — {c.name}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("competencyId", value)}
+                placeholder="Select a competency…"
+                options={competencies.map((c) => ({ value: String(c.id), label: `${c.code} — ${c.name}` }))}
+              />
             </div>
             <div className="col-span-2 space-y-1">
               <Label className="text-xs">Title</Label>
@@ -332,26 +325,17 @@ export function ContentView({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Content type</Label>
-              <Select value={form.contentType} onChange={(e) => set("contentType", e.target.value)}>
-                {CONTENT_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {labelize(t)}
-                  </option>
-                ))}
-              </Select>
+              <SelectField value={form.contentType} onChange={(value) => set("contentType", value)}
+                options={CONTENT_TYPES.map((t) => ({ value: String(t), label: `${labelize(t)}` }))}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Delivery mode</Label>
-              <Select
+              <SelectField
                 value={form.deliveryMode}
-                onChange={(e) => set("deliveryMode", e.target.value)}
-              >
-                {DELIVERY_MODES.map((m) => (
-                  <option key={m} value={m}>
-                    {labelize(m)}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("deliveryMode", value)}
+                options={DELIVERY_MODES.map((m) => ({ value: String(m), label: `${labelize(m)}` }))}
+              />
             </div>
             <div className="col-span-2 space-y-1">
               <Label className="text-xs">Content reference (URL / package id)</Label>
@@ -397,7 +381,7 @@ export function ContentView({
               />
             </div>
             <div className="col-span-2">
-              <label className="flex items-center gap-2 text-sm">
+              <Label className="flex items-center gap-2 text-sm">
                 <Checkbox
                   checked={form.isPrimary}
                   onChange={(e) => set("isPrimary", e.target.checked)}
@@ -405,7 +389,7 @@ export function ContentView({
                 <span className="text-slate-700">
                   Primary content for this competency (what the engine assigns)
                 </span>
-              </label>
+              </Label>
             </div>
           </div>
 

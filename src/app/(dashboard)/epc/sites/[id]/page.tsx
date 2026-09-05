@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   Building2,
   Users,
@@ -232,9 +234,9 @@ export default function SiteDetailPage() {
 
   if (error || !site) {
     return (
-      <div className="rounded-xl border bg-white p-10 text-center text-sm text-rose-600">
+      <Alert variant="destructive" className="rounded-xl border bg-white p-10 text-center text-sm text-rose-600">
         {error ?? "Site not found."}
-      </div>
+      </Alert>
     );
   }
 
@@ -272,10 +274,10 @@ export default function SiteDetailPage() {
       </div>
 
       {/* Lifecycle progress */}
-      <div className="mb-5 rounded-xl border bg-white px-5 py-4 shadow-sm overflow-x-auto">
+      <Card className="mb-5 rounded-xl border bg-white px-5 py-4 shadow-sm overflow-x-auto">
         <p className="text-xs text-slate-500 font-medium mb-2">Project Lifecycle</p>
         <LifecycleProgress status={site.status} />
-      </div>
+      </Card>
 
       <Tabs defaultValue="overview">
         <TabsList className="mb-4">
@@ -293,7 +295,7 @@ export default function SiteDetailPage() {
         <TabsContent value="overview">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Site identity */}
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <Building2 size={15} /> Site Identity
               </h3>
@@ -306,11 +308,11 @@ export default function SiteDetailPage() {
                 <InfoRow label="District" value={site.district ?? "—"} />
                 <InfoRow label="State" value={site.state} />
               </dl>
-            </div>
+            </Card>
 
             {/* Client + dates */}
             <div className="space-y-4">
-              <div className="rounded-xl border bg-white shadow-sm p-5">
+              <Card className="rounded-xl border bg-white shadow-sm p-5">
                 <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                   <Mail size={15} /> Client Information
                 </h3>
@@ -319,9 +321,9 @@ export default function SiteDetailPage() {
                   <InfoRow label="Contact Name" value={site.clientContactName ?? "—"} />
                   <InfoRow label="Contact Email" value={site.clientContactEmail ?? "—"} />
                 </dl>
-              </div>
+              </Card>
 
-              <div className="rounded-xl border bg-white shadow-sm p-5">
+              <Card className="rounded-xl border bg-white shadow-sm p-5">
                 <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                   <Calendar size={15} /> Key Dates
                 </h3>
@@ -330,17 +332,17 @@ export default function SiteDetailPage() {
                   <InfoRow label="Planned Start" value={fmtDate(site.plannedStartDate)} />
                   <InfoRow label="Planned Completion" value={fmtDate(site.plannedCompletionDate)} />
                 </dl>
-              </div>
+              </Card>
             </div>
           </div>
 
           {/* Scope + Workforce */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <h3 className="text-sm font-semibold text-slate-700 mb-2">Scope Description</h3>
               <p className="text-sm text-slate-600 leading-relaxed">{site.scopeDescription || "—"}</p>
-            </div>
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            </Card>
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
                 <Users size={15} /> Workforce Status
               </h3>
@@ -355,13 +357,13 @@ export default function SiteDetailPage() {
                 />
               </div>
               <p className="text-xs text-slate-400 mt-1">Peak workforce planned: {site.peakWorkforcePlanned}</p>
-            </div>
+            </Card>
           </div>
         </TabsContent>
 
         {/* ── Workforce ── */}
         <TabsContent value="workforce">
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">Mobilized Workers ({mobilizations.length})</h3>
               <Link href="/epc/mobilization" className="text-xs text-cyan-700 hover:underline">+ New Mobilization</Link>
@@ -401,12 +403,12 @@ export default function SiteDetailPage() {
                 </TableBody>
               </Table>
             )}
-          </div>
+          </Card>
         </TabsContent>
 
         {/* ── Gate Today ── */}
         <TabsContent value="gate">
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">Today&apos;s Gate Log</h3>
               <Link href="/epc/gate" className="text-xs text-cyan-700 hover:underline">Open Gate Clearance</Link>
@@ -446,12 +448,12 @@ export default function SiteDetailPage() {
                 </TableBody>
               </Table>
             )}
-          </div>
+          </Card>
         </TabsContent>
 
         {/* ── Compliance Config ── */}
         <TabsContent value="compliance">
-          <div className="rounded-xl border bg-white shadow-sm p-6 max-w-lg">
+          <Card className="rounded-xl border bg-white shadow-sm p-6 max-w-lg">
             <h3 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
               <Settings2 size={15} /> Compliance Configuration
             </h3>
@@ -468,12 +470,12 @@ export default function SiteDetailPage() {
             ) : (
               <p className="text-sm text-slate-500">Compliance configuration not available. It will be loaded from the site record.</p>
             )}
-          </div>
+          </Card>
         </TabsContent>
 
         {/* ── Contractors ── */}
         <TabsContent value="contractors">
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">Contractor Companies at This Site</h3>
               <Link href="/epc/contractors" className="text-xs text-cyan-700 hover:underline">View All</Link>
@@ -514,7 +516,7 @@ export default function SiteDetailPage() {
                 </TableBody>
               </Table>
             )}
-          </div>
+          </Card>
           <p className="text-xs text-slate-400 mt-2">Derived from active mobilization records at this site.</p>
         </TabsContent>
 
@@ -527,15 +529,15 @@ export default function SiteDetailPage() {
               { label: "Induction Expired", value: inductionCompliance?.expired ?? 0, color: "text-rose-600" },
               { label: "Never Inducted", value: inductionCompliance?.never_inducted ?? 0, color: "text-amber-600" },
             ].map((card) => (
-              <div key={card.label} className="rounded-xl border bg-white shadow-sm p-4">
+              <Card key={card.label} className="rounded-xl border bg-white shadow-sm p-4">
                 <p className="text-xs text-slate-500 mb-1">{card.label}</p>
                 <p className={`text-3xl font-bold tabular-nums ${card.color}`}>{card.value}</p>
-              </div>
+              </Card>
             ))}
           </div>
 
           {inductionCompliance && (
-            <div className="rounded-xl border bg-white shadow-sm p-5 mb-4">
+            <Card className="rounded-xl border bg-white shadow-sm p-5 mb-4">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-slate-700">Overall Induction Compliance</span>
                 <span className="text-lg font-bold text-slate-900 tabular-nums">
@@ -551,11 +553,11 @@ export default function SiteDetailPage() {
                   style={{ width: `${Math.min(inductionCompliance.compliance_pct, 100)}%` }}
                 />
               </div>
-            </div>
+            </Card>
           )}
 
           {inductionCompliance && inductionCompliance.expiring_soon.length > 0 && (
-            <div className="rounded-xl border bg-amber-50 border-amber-200 shadow-sm p-5">
+            <Alert variant="warning" className="rounded-xl border bg-amber-50 border-amber-200 shadow-sm p-5">
               <h3 className="text-sm font-semibold text-amber-800 mb-3 flex items-center gap-2">
                 <AlertTriangle size={15} /> Inductions Expiring Within 30 Days ({inductionCompliance.expiring_soon.length})
               </h3>
@@ -569,14 +571,14 @@ export default function SiteDetailPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Alert>
           )}
 
           {!inductionCompliance && (
-            <div className="rounded-xl border bg-white shadow-sm p-10 text-center text-sm text-slate-500">
+            <Card className="rounded-xl border bg-white shadow-sm p-10 text-center text-sm text-slate-500">
               <GraduationCap size={32} className="mx-auto mb-2 text-slate-300" />
               Induction compliance data not available. Record inductions for workers at this site.
-            </div>
+            </Card>
           )}
 
           <div className="mt-4">
@@ -592,17 +594,17 @@ export default function SiteDetailPage() {
         {/* ── Safety Performance ── */}
         <TabsContent value="performance">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <p className="text-xs text-slate-500 mb-1">LTIFR (12-month rolling)</p>
               <p className="text-2xl font-bold text-slate-900">—</p>
               <p className="text-xs text-slate-400 mt-1">Requires incident data integration</p>
-            </div>
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            </Card>
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <p className="text-xs text-slate-500 mb-1">TRIR (12-month rolling)</p>
               <p className="text-2xl font-bold text-slate-900">—</p>
               <p className="text-xs text-slate-400 mt-1">Requires incident data integration</p>
-            </div>
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            </Card>
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <p className="text-xs text-slate-500 mb-1">Gate Rejection Rate (today)</p>
               <p className="text-2xl font-bold text-slate-900">
                 {gateLog.length > 0
@@ -610,11 +612,11 @@ export default function SiteDetailPage() {
                   : "—"}
               </p>
               <p className="text-xs text-slate-400 mt-1">{gateLog.filter(g => g.result === "not_cleared").length} rejected of {gateLog.length} today</p>
-            </div>
+            </Card>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">Gate Activity Breakdown (Today)</h3>
               {gateLog.length > 0 ? (
                 <div className="space-y-2">
@@ -638,9 +640,9 @@ export default function SiteDetailPage() {
               ) : (
                 <p className="text-sm text-slate-500">No gate activity today.</p>
               )}
-            </div>
+            </Card>
 
-            <div className="rounded-xl border bg-white shadow-sm p-5">
+            <Card className="rounded-xl border bg-white shadow-sm p-5">
               <h3 className="text-sm font-semibold text-slate-700 mb-3">Workforce Status Breakdown</h3>
               {mobilizations.length > 0 ? (
                 <div className="space-y-2">
@@ -658,7 +660,7 @@ export default function SiteDetailPage() {
               ) : (
                 <p className="text-sm text-slate-500">No workforce data.</p>
               )}
-            </div>
+            </Card>
           </div>
 
           <p className="text-xs text-slate-400 mt-4">
@@ -668,7 +670,7 @@ export default function SiteDetailPage() {
 
         {/* ── Audit Trail ── */}
         <TabsContent value="audit">
-          <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+          <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b">
               <h3 className="text-sm font-semibold text-slate-700">Mobilization History</h3>
               <p className="text-xs text-slate-400 mt-0.5">Record of all worker mobilizations and status changes at this site</p>
@@ -712,7 +714,7 @@ export default function SiteDetailPage() {
                 </TableBody>
               </Table>
             )}
-          </div>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

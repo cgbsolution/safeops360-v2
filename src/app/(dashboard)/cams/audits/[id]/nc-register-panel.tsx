@@ -23,7 +23,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
@@ -31,6 +31,9 @@ import { useToast } from "@/components/ui/toast";
 import { usePermission } from "@/components/auth/can";
 import { Chip, fmtDate, apiErrorMessage, STREAM_META, type StreamCode } from "../lib";
 import { NcReportForm } from "./nc-report-form";
+import { Label } from "@/components/ui/label";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 // Mirrors services/nc_rca_capa.NC_STAGES. Ordered as the work flows, so the
 // summary strip reads left-to-right as a pipeline rather than as a legend.
@@ -224,25 +227,25 @@ export function NcRegisterPanel({
           )}
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1080px] text-left text-[12px]">
-              <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 font-semibold">NCR</th>
-                  <th className="px-3 py-2 font-semibold">Department · Clause</th>
-                  <th className="px-3 py-2 font-semibold">Nonconformity</th>
-                  <th className="px-3 py-2 font-semibold">Stage</th>
-                  <th className="px-3 py-2 font-semibold">RCA</th>
-                  <th className="px-3 py-2 font-semibold">Correction / Preventive</th>
-                  <th className="px-3 py-2 font-semibold">Complete before</th>
-                  <th className="px-3 py-2 font-semibold text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+            <Table className="w-full min-w-[1080px] text-left text-[12px]">
+              <TableHeader className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-500">
+                <TableRow>
+                  <TableHead className="px-3 py-2 font-semibold">NCR</TableHead>
+                  <TableHead className="px-3 py-2 font-semibold">Department · Clause</TableHead>
+                  <TableHead className="px-3 py-2 font-semibold">Nonconformity</TableHead>
+                  <TableHead className="px-3 py-2 font-semibold">Stage</TableHead>
+                  <TableHead className="px-3 py-2 font-semibold">RCA</TableHead>
+                  <TableHead className="px-3 py-2 font-semibold">Correction / Preventive</TableHead>
+                  <TableHead className="px-3 py-2 font-semibold">Complete before</TableHead>
+                  <TableHead className="px-3 py-2 font-semibold text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
                 {reg.items.map((r) => {
                   const stage = STAGE_META[r.stage] ?? { label: r.stage, chip: "bg-slate-100 text-slate-600", who: "" };
                   return (
-                    <tr key={r.findingId} className="align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5 whitespace-nowrap">
+                    <TableRow key={r.findingId} className="align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5 whitespace-nowrap">
                         <div className="font-semibold tabular-nums text-slate-800">
                           {r.ncrNumber ? `NCR ${r.ncrNumber}` : "—"}
                         </div>
@@ -250,13 +253,13 @@ export function NcRegisterPanel({
                         <div className="mt-1 flex flex-wrap gap-1">
                           <Chip map={SEVERITY_CHIPS} value={r.severity} />
                           {r.isRepeatFinding && (
-                            <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-800">
+                            <Badge variant="danger" className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium text-rose-800">
                               Repeat
-                            </span>
+                            </Badge>
                           )}
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <div className="font-medium text-slate-700">{r.department ?? "—"}</div>
                         <div className="mt-0.5 flex items-center gap-1.5">
                           {r.streamCode && (
@@ -269,18 +272,18 @@ export function NcRegisterPanel({
                           )}
                           <span className="text-[11px] text-slate-500">{r.clauseRef ?? "—"}</span>
                         </div>
-                      </td>
-                      <td className="max-w-[280px] px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[280px] px-3 py-2.5">
                         <p className="line-clamp-3 text-slate-600">{r.nonconformity || r.requirement || "—"}</p>
                         <div className="mt-0.5 text-[10px] text-slate-400">
                           {r.checkpointCode} · owner {r.ownerId ? (userMap[r.ownerId] ?? "—") : "unassigned"}
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 whitespace-nowrap">
                         <Chip map={STAGE_CHIPS} value={r.stage} label={stage.label} />
                         <div className="mt-1 text-[10px] text-slate-400">{stage.who}</div>
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 whitespace-nowrap">
                         {r.rcaId ? (
                           <>
                             {/* Deliberately NOT a link. RCA.READ is held by no
@@ -295,8 +298,8 @@ export function NcRegisterPanel({
                             </div>
                           </>
                         ) : <span className="text-slate-400">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 whitespace-nowrap">
                         {r.capaId ? (
                           <>
                             {/* Linked only for people who can actually open it.
@@ -321,14 +324,14 @@ export function NcRegisterPanel({
                             </div>
                           </>
                         ) : <span className="text-slate-400">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 whitespace-nowrap">
                         <span className={cn(r.isOverdue && "font-semibold text-rose-600")}>{fmtDate(r.dueDate)}</span>
                         {r.closedAt && (
                           <div className="mt-0.5 text-[10px] text-emerald-600">closed {fmtDate(r.closedAt)}</div>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5 text-right whitespace-nowrap">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-right whitespace-nowrap">
                         {/* One door. Every stage of PIL/MR/F04-R1 is worked on
                             the form itself, which shows both halves and enables
                             only the one whose turn it is — so the register does
@@ -342,12 +345,12 @@ export function NcRegisterPanel({
                         ) : (
                           <span className="text-[11px] text-slate-400">Raise the NC report first</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </>
       )}
@@ -431,16 +434,18 @@ function VerifyDialog({
         </DialogHeader>
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Result</label>
-            <Select value={result} onChange={(e) => setResult(e.target.value)}>
-              <option value="EFFECTIVE">Effective — the nonconformity has not recurred</option>
-              <option value="PARTIALLY_EFFECTIVE">Partially effective</option>
-              <option value="INCONCLUSIVE">Inconclusive</option>
-              <option value="INEFFECTIVE">Ineffective — reopens the CAPA</option>
-            </Select>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Result</Label>
+            <SelectField value={result} onChange={setResult}
+              options={[
+              { value: "EFFECTIVE", label: "Effective — the nonconformity has not recurred" },
+              { value: "PARTIALLY_EFFECTIVE", label: "Partially effective" },
+              { value: "INCONCLUSIVE", label: "Inconclusive" },
+              { value: "INEFFECTIVE", label: "Ineffective — reopens the CAPA" }
+            ]}
+            />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Verification details</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Verification details</Label>
             <Textarea
               rows={4} value={details} onChange={(e) => setDetails(e.target.value)}
               placeholder="What you re-checked, when, and what you saw. e.g. Re-checked the FY26 objective register on 12 Aug; objectives updated and approved in the July MRM."

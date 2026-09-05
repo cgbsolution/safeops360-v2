@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { UserPicker } from "@/components/ui/user-picker";
 import { Save, Loader2, ClipboardCheck } from "lucide-react";
 
@@ -118,14 +119,13 @@ export function CapaEditPanel({
 
         <div className="space-y-2">
           <Label>Root Cause Category</Label>
-          <Select
+          <SelectField
             value={rootCauseCategory}
             disabled={!canEdit}
-            onChange={(e) => setRootCauseCategory(e.target.value)}
-          >
-            <option value="">— Select —</option>
-            {ROOT_CAUSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </Select>
+            onChange={setRootCauseCategory}
+            placeholder="— Select —"
+            options={ROOT_CAUSE_CATEGORIES.map((c) => ({ value: c, label: c }))}
+          />
         </div>
 
         <div className="space-y-2">
@@ -150,7 +150,11 @@ export function CapaEditPanel({
           />
         </div>
 
-        {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
+        {error && (
+          <Alert variant="destructive" size="lg">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
 
         {canEdit && (
           <div className="flex items-center gap-3 pt-1">

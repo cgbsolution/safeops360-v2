@@ -31,6 +31,7 @@ import { X } from "lucide-react";
 import jsQR from "jsqr";
 import type { Lang } from "@/lib/capture/i18n";
 import { t } from "@/lib/capture/i18n";
+import { Button } from "@/components/ui/button";
 
 type BarcodeDetectorLike = {
   detect: (source: CanvasImageSource) => Promise<{ rawValue: string }[]>;
@@ -165,14 +166,12 @@ export function QrScannerModal({
     <div className="fixed inset-0 z-50 flex flex-col bg-black">
       <div className="flex items-center justify-between p-4">
         <span className="text-lg font-semibold text-white">{t("scanQr", lang)}</span>
-        <button
+        <Button variant="ghost"
           type="button"
           aria-label="Close"
-          onClick={onClose}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-white/15 text-white active:scale-95"
-        >
+          onClick={onClose} className="flex h-14 w-14 rounded-full text-white active:scale-95">
           <X className="h-7 w-7" />
-        </button>
+        </Button>
       </div>
       <div className="relative flex-1 overflow-hidden">
         {/* eslint-disable-next-line jsx-a11y/media-has-caption */}

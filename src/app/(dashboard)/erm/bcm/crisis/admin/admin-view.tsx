@@ -11,6 +11,9 @@ import { Select } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import type { TeamRole, CallTree } from "@/app/(dashboard)/erm/lib-p3";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
 
 type Plant = { id: string; code: string; name: string };
 
@@ -47,13 +50,13 @@ export function AdminView({ roster, callTrees, plants }: { roster: TeamRole[]; c
         </div>
 
         {roster.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+          <Card className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-none">
             No crisis roles defined yet. Use <b>Add role</b> to build the roster.
-          </div>
+          </Card>
         ) : (
           <div className="space-y-5">
             {groupEntries.map(([key, g]) => (
-              <div key={key} className="rounded-xl border border-slate-200 bg-white">
+              <Card key={key} className="rounded-xl border border-slate-200 bg-white shadow-none">
                 <div className="border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-700">{g.siteName}</div>
                 <Table>
                   <TableHeader>
@@ -84,7 +87,7 @@ export function AdminView({ roster, callTrees, plants }: { roster: TeamRole[]; c
                     ))}
                   </TableBody>
                 </Table>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -102,9 +105,9 @@ export function AdminView({ roster, callTrees, plants }: { roster: TeamRole[]; c
         </div>
 
         {callTrees.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">
+          <Card className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-none">
             No call trees yet. Use <b>New call tree</b> to define a notification cascade.
-          </div>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             {callTrees.map((t) => (
@@ -143,7 +146,7 @@ function CallTreeCard({ tree, plants }: { tree: CallTree; plants: Plant[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="truncate font-semibold text-slate-900">{tree.name}</div>
@@ -170,7 +173,7 @@ function CallTreeCard({ tree, plants }: { tree: CallTree; plants: Plant[] }) {
       >
         {busy ? "Publishing…" : tree.publishedAt ? "Re-publish" : "Publish"}
       </Button>
-    </div>
+    </Card>
   );
 }
 
@@ -191,12 +194,10 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 function SiteSelect({ value, onChange, plants }: { value: string; onChange: (v: string) => void; plants: Plant[] }) {
   return (
-    <Select value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">Corporate (no single site)</option>
-      {plants.map((p) => (
-        <option key={p.id} value={p.id}>{p.name}</option>
-      ))}
-    </Select>
+    <SelectField value={value} onChange={onChange}
+      placeholder="Corporate (no single site)"
+      options={plants.map((p) => ({ value: p.id, label: p.name }))}
+    />
   );
 }
 
@@ -243,29 +244,29 @@ function AddRoleModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
     <Modal title="Add crisis role" onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Role name</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Role name</Label>
           <Input value={roleName} onChange={(e) => setRoleName(e.target.value)} placeholder="e.g. Site Incident Controller" />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Site</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Site</Label>
           <SiteSelect value={siteId} onChange={setSiteId} plants={plants} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Primary (required)</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Primary (required)</Label>
           <UserPicker value={primaryUserId} onChange={(id) => setPrimaryUserId(id)} placeholder="Select primary" />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Alternate (mandatory — no single-person roles)</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Alternate (mandatory — no single-person roles)</Label>
           <UserPicker value={alternateUserId} onChange={(id) => setAlternateUserId(id)} placeholder="Select alternate" />
         </div>
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-1">
-            <label className="mb-1 block text-xs font-medium text-slate-600">Escalation order</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Escalation order</Label>
             <Input type="number" min={0} value={escalationOrder} onChange={(e) => setEscalationOrder(e.target.value)} />
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Responsibilities</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Responsibilities</Label>
           <Textarea value={responsibilities} onChange={(e) => setResponsibilities(e.target.value)} rows={2} placeholder="What this role owns during a crisis…" />
         </div>
         {err && <p className="text-xs text-rose-600">{err}</p>}
@@ -330,17 +331,17 @@ function NewTreeModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
     <Modal title="New call tree" onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Tree name</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Tree name</Label>
           <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. North Works Tier-1 cascade" />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Site</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Site</Label>
           <SiteSelect value={siteId} onChange={setSiteId} plants={plants} />
         </div>
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="text-xs font-medium text-slate-600">Nodes</label>
+            <Label className="text-xs font-medium text-slate-600">Nodes</Label>
             <Button type="button" variant="ghost" onClick={() => setNodes((ns) => [...ns, newNode()])} className="gap-1 text-xs text-primary-700 hover:underline">
               <Plus size={12} /> Add node
             </Button>
@@ -352,7 +353,7 @@ function NewTreeModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
           ) : (
             <div className="space-y-2">
               {nodes.map((n, i) => (
-                <div key={n.id} className="rounded-lg border border-slate-200 p-2">
+                <Card key={n.id} className="rounded-lg border border-slate-200 p-2 shadow-none">
                   <div className="mb-1.5 flex items-center justify-between">
                     <span className="text-[11px] font-semibold text-slate-500">Node {i + 1}</span>
                     <Button type="button" variant="ghost" size="icon" onClick={() => setNodes((ns) => ns.filter((x) => x.id !== n.id))} className="h-8 w-8 text-slate-400 hover:text-rose-600">
@@ -366,17 +367,20 @@ function NewTreeModal({ plants, onClose, onDone }: { plants: Plant[]; onClose: (
                       <Input value={n.contactPhone} onChange={(e) => updateNode(n.id, { contactPhone: e.target.value })} placeholder="Phone" />
                       <Input value={n.contactEmail} onChange={(e) => updateNode(n.id, { contactEmail: e.target.value })} placeholder="Email" />
                     </div>
-                    <Select
+                    <SelectField
                       value={n.parentNodeId ?? ""}
-                      onChange={(e) => updateNode(n.id, { parentNodeId: e.target.value || null })}
-                    >
-                      <option value="">No parent (top of cascade)</option>
-                      {nodes.filter((o) => o.id !== n.id).map((o) => (
-                        <option key={o.id} value={o.id}>Parent: Node {nodes.findIndex((x) => x.id === o.id) + 1}{o.groupName ? ` (${o.groupName})` : ""}</option>
-                      ))}
-                    </Select>
+                      ariaLabel="Parent node"
+                      placeholder="No parent (top of cascade)"
+                      onChange={(value) => updateNode(n.id, { parentNodeId: value || null })}
+                      options={nodes
+                        .filter((o) => o.id !== n.id)
+                        .map((o) => ({
+                          value: o.id,
+                          label: `Parent: Node ${nodes.findIndex((x) => x.id === o.id) + 1}${o.groupName ? ` (${o.groupName})` : ""}`
+                        }))}
+                    />
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}

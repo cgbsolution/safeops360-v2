@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RotateCcw, AlertTriangle } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 // Shown on a rejected record's detail page to the original initiator.
 // Submitting routes the workflow back to the first review step (CHECKER).
@@ -56,7 +57,7 @@ export function ResubmitPanel({
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
         {rejectionReason && (
-          <div className="rounded-md border border-rose-200 bg-white p-3">
+          <Alert variant="destructive" className="rounded-md border border-rose-200 bg-white p-3">
             <div className="text-[10px] uppercase tracking-wider font-semibold text-rose-700 mb-1">Rejection reason</div>
             <p className="text-sm text-slate-800 whitespace-pre-wrap">{rejectionReason}</p>
             {(rejectedBy || rejectedAt) && (
@@ -66,7 +67,7 @@ export function ResubmitPanel({
                 {rejectedAt && <>On {formatDateTime(rejectedAt)}</>}
               </div>
             )}
-          </div>
+          </Alert>
         )}
 
         <div className="space-y-2">
@@ -79,7 +80,7 @@ export function ResubmitPanel({
           />
         </div>
 
-        {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
+        {error && <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</Alert>}
 
         <div className="flex gap-2 pt-1">
           <Button onClick={submit} disabled={busy} variant="success">

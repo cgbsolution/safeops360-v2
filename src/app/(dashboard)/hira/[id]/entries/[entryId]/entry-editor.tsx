@@ -20,6 +20,14 @@ import { Plus, Trash2, Save, ChevronDown, ShieldAlert, FileWarning } from "lucid
 import { RiskMatrixGrid } from "@/components/hira/risk-matrix-grid";
 import { UserPicker } from "@/components/ui/user-picker";
 import { parseApiError } from "@/lib/api-error";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type Likelihood = { id: string; score: number; label: string; description: string };
 type Severity = { id: string; score: number; label: string; description: string };
@@ -169,6 +177,11 @@ type EntryShape = {
   capas: Capa[];
   study: { riskMatrixId: string };
 };
+
+// Lifecycle of a recommended control. Hoisted so the array is built once
+// rather than per render, and so the wording lives in one place.
+const RECOMMENDED_STATUSES = ["PROPOSED", "APPROVED", "IN_PROGRESS", "IMPLEMENTED", "DEFERRED", "REJECTED"]
+  .map((s) => ({ value: s, label: s.replace(/_/g, " ") }));
 
 const INPUT =
   "flex h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600";
@@ -972,35 +985,33 @@ export function EntryEditor({
                 </div>
 
                 <div className="mt-2">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">
                     How this hazard manifests in this activity
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     className={TEXTAREA}
                     rows={2}
                     value={h.contextualDescription ?? ""}
                     onChange={(e) =>
                       updateHazard(h.id, { contextualDescription: e.target.value || null })
                     }
-                    placeholder="Optional context"
-                  />
+                    placeholder="Optional context" />
                 </div>
 
                 {/* Consequence — always rendered, never hidden when empty, so a
                     missing value is visible rather than silently absent. */}
                 <div className="mt-2">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">
                     Consequence <span className="text-rose-600">*</span>
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     className={`${TEXTAREA} ${
                       !h.consequence?.trim() ? "border-amber-400 bg-amber-50/40" : ""
                     }`}
                     rows={2}
                     value={h.consequence ?? ""}
                     onChange={(e) => updateHazard(h.id, { consequence: e.target.value || null })}
-                    placeholder="Worst credible outcome if this hazard is realised"
-                  />
+                    placeholder="Worst credible outcome if this hazard is realised" />
                   {!h.consequence?.trim() && (
                     <div className="mt-1 flex items-start gap-1 text-[11px] text-amber-800">
                       <FileWarning size={12} className="mt-0.5 shrink-0" />
@@ -1016,33 +1027,31 @@ export function EntryEditor({
                     Section 8 list, which cites the activity rather than the hazard. */}
                 <div className="mt-2 grid grid-cols-12 gap-2">
                   <div className="col-span-7">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">
                       Regulation (this hazard)
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       className={INPUT}
                       value={h.regulationRef ?? ""}
                       onChange={(e) => updateHazard(h.id, { regulationRef: e.target.value || null })}
-                      placeholder="e.g. Factories Act 1948"
-                    />
+                      placeholder="e.g. Factories Act 1948" />
                   </div>
                   <div className="col-span-5">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">
                       Section / rule
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       className={INPUT}
                       value={h.regulationSection ?? ""}
                       onChange={(e) =>
                         updateHazard(h.id, { regulationSection: e.target.value || null })
                       }
-                      placeholder="e.g. s. 36A"
-                    />
+                      placeholder="e.g. s. 36A" />
                   </div>
                 </div>
 
                 {h.hazardRequiresPermit && (
-                  <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-amber-50 px-2.5 py-2">
+                  <Alert variant="warning" className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded border border-amber-200 bg-amber-50 px-2.5 py-2">
                     <span className="text-xs text-amber-900">
                       This hazard requires a work permit
                       {h.hazardPermitTypes?.length
@@ -1062,7 +1071,7 @@ export function EntryEditor({
                         <ShieldAlert size={12} /> Create PTW
                       </a>
                     )}
-                  </div>
+                  </Alert>
                 )}
               </li>
             ))}
@@ -1097,158 +1106,133 @@ export function EntryEditor({
       <Section
         title={`4 — Existing Controls (${existingControls.length})`}
         cta={
-          <button
+          <Button variant="outline"
             type="button"
-            onClick={addExistingControl}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-slate-300 hover:border-primary-500 hover:text-primary-700"
-          >
+            onClick={addExistingControl} className="gap-1 px-2.5 py-1 text-xs rounded">
             <Plus size={12} /> Add control
-          </button>
+          </Button>
         }
       >
         {sortedExisting.length === 0 ? (
-          <div className="rounded border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">
+          <Card className="rounded border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 shadow-none">
             No controls recorded. Document what's in place today.
-          </div>
+          </Card>
         ) : (
           <div className="space-y-2">
             {sortedExisting.map((c) => (
-              <div key={c.id} className="rounded border bg-white p-3">
+              <Card key={c.id} className="rounded border bg-white p-3 shadow-none">
                 <div className="grid grid-cols-12 gap-2">
                   <div className="col-span-3">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Hierarchy</label>
-                    <select
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Hierarchy</Label>
+                    <SelectField
                       className={INPUT}
                       value={c.hierarchy}
-                      onChange={(e) => updateExistingControl(c.id, { hierarchy: e.target.value, controlId: null })}
-                    >
-                      {HIERARCHY.map((h) => (
-                        <option key={h.code} value={h.code}>
-                          {h.label}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(value) => updateExistingControl(c.id, { hierarchy: value, controlId: null })}
+                      options={HIERARCHY.map((h) => ({ value: h.code, label: `${h.label}` }))}
+                    />
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">From library</label>
-                    <select
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">From library</Label>
+                    <SelectField
                       className={INPUT}
                       value={c.controlId ?? ""}
-                      onChange={(e) => {
-                        const lib = controlLibrary.find((x) => x.id === e.target.value);
+                      ariaLabel="Control from library"
+                      placeholder="— Custom —"
+                      onChange={(value) => {
+                        const lib = controlLibrary.find((x) => x.id === value);
                         updateExistingControl(c.id, {
-                          controlId: e.target.value || null,
+                          controlId: value || null,
                           ...(lib
                             ? { hierarchy: lib.hierarchy, description: lib.description }
                             : {})
                         });
                       }}
-                    >
-                      <option value="">— Custom —</option>
-                      {controlLibrary
+                      options={controlLibrary
                         .filter((l) => l.hierarchy === c.hierarchy)
-                        .map((l) => (
-                          <option key={l.id} value={l.id}>
-                            {l.description.slice(0, 60)}
-                          </option>
-                        ))}
-                    </select>
+                        .map((l) => ({ value: l.id, label: l.description.slice(0, 60) }))}
+                    />
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Effectiveness</label>
-                    <select
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Effectiveness</Label>
+                    <SelectField
                       className={INPUT}
                       value={c.effectiveness ?? ""}
-                      onChange={(e) =>
-                        updateExistingControl(c.id, { effectiveness: e.target.value || null })
+                      onChange={(value) => updateExistingControl(c.id, { effectiveness: value || null })
                       }
-                    >
-                      <option value="">— Select —</option>
-                      {EFFECTIVENESS.map((e) => (
-                        <option key={e.code} value={e.code}>
-                          {e.label}
-                        </option>
-                      ))}
-                    </select>
+                      placeholder="— Select —"
+                      options={EFFECTIVENESS.map((e) => ({ value: e.code, label: `${e.label}` }))}
+                    />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Responsible role</label>
-                    <input
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Responsible role</Label>
+                    <Input
                       className={INPUT}
                       value={c.responsibleRole ?? ""}
                       placeholder="e.g. Supervisor"
                       onChange={(e) =>
                         updateExistingControl(c.id, { responsibleRole: e.target.value || null })
-                      }
-                    />
+                      } />
                   </div>
                   <div className="col-span-1 flex items-end justify-end">
-                    <button
+                    <Button variant="destructive"
                       type="button"
-                      onClick={() => removeExistingControl(c.id)}
-                      className="text-rose-600 hover:bg-rose-50 rounded p-1.5 mb-0.5"
-                      aria-label="Remove control"
-                    >
+                      onClick={() => removeExistingControl(c.id)} className="rounded p-1.5 mb-0.5"
+                      aria-label="Remove control">
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
-                <textarea
+                <Textarea
                   className={`${TEXTAREA} mt-2`}
                   rows={2}
                   placeholder="Control description"
                   value={c.description}
-                  onChange={(e) => updateExistingControl(c.id, { description: e.target.value })}
-                />
+                  onChange={(e) => updateExistingControl(c.id, { description: e.target.value })} />
                 <div className="grid grid-cols-12 gap-2 mt-2 items-end">
                   <div className="col-span-5">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Verification method</label>
-                    <input
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Verification method</Label>
+                    <Input
                       className={INPUT}
                       value={c.verificationMethod ?? ""}
                       onChange={(e) =>
                         updateExistingControl(c.id, { verificationMethod: e.target.value || null })
-                      }
-                    />
+                      } />
                   </div>
                   <div className="col-span-3">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Frequency</label>
-                    <input
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Frequency</Label>
+                    <Input
                       className={INPUT}
                       value={c.verificationFreq ?? ""}
                       placeholder="e.g. Quarterly"
                       onChange={(e) =>
                         updateExistingControl(c.id, { verificationFreq: e.target.value || null })
-                      }
-                    />
+                      } />
                   </div>
                   <div className="col-span-4 flex flex-col gap-1">
-                    <label className="inline-flex items-center gap-2 text-xs text-slate-700">
-                      <input
-                        type="checkbox"
+                    <Label className="inline-flex items-center gap-2 text-xs text-slate-700">
+                      <Checkbox
+                       
                         checked={c.evidenceAttached}
                         onChange={(e) =>
                           updateExistingControl(c.id, {
                             evidenceAttached: e.target.checked,
                             documentReference: e.target.checked ? c.documentReference : null
                           })
-                        }
-                      />
+                        } />
                       Evidence on file
-                    </label>
+                    </Label>
                     {c.evidenceAttached && (
-                      <input
+                      <Input
                         className={INPUT}
                         placeholder="Document / record reference"
                         value={c.documentReference ?? ""}
                         onChange={(e) =>
                           updateExistingControl(c.id, { documentReference: e.target.value || null })
-                        }
-                      />
+                        } />
                     )}
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -1257,7 +1241,7 @@ export function EntryEditor({
       {/* Section 5 — Residual risk */}
       <Section title="5 — Residual Risk (after controls)">
         {/* Auto-calc / manual-override mode bar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+        <Card className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
           <div className="flex items-center gap-2 flex-wrap">
             {autoResidual ? (
               <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded border bg-violet-100 text-violet-800 border-violet-300">
@@ -1275,21 +1259,19 @@ export function EntryEditor({
             </span>
           </div>
           {!autoResidual && (
-            <button
+            <Button variant="outline"
               type="button"
               onClick={() => {
                 setAutoResidual(true);
                 setIsDirty(true);
-              }}
-              className="text-xs px-2.5 py-1 rounded border border-violet-300 text-violet-700 hover:bg-violet-50"
-            >
+              }} className="text-xs px-2.5 py-1 rounded">
               ↺ Auto-calculate from controls
-            </button>
+            </Button>
           )}
-        </div>
+        </Card>
 
         {autoResidual && (
-          <div className="rounded-md border border-violet-200 bg-violet-50/60 px-3 py-2 text-xs text-violet-900">
+          <Alert variant="brand" className="rounded-md border border-violet-200 bg-violet-50/60 px-3 py-2 text-xs text-violet-900">
             {residualSuggestion.likelihoodReduction === 0 && residualSuggestion.severityReduction === 0 ? (
               <>
                 No reduction yet — the residual equals the initial rating. Add controls above (or raise their
@@ -1305,7 +1287,7 @@ export function EntryEditor({
                 controls reduce more. Click any cell to override this manually.
               </>
             )}
-          </div>
+          </Alert>
         )}
 
         <p className="text-sm text-slate-600 mb-3">
@@ -1331,10 +1313,9 @@ export function EntryEditor({
         />
 
         {residualCell && (
-          <div
-            className="mt-3 rounded-md border p-3"
-            style={{ backgroundColor: residualCell.colorHex + "22" }}
-          >
+          <Card
+            className="mt-3 rounded-md border p-3 shadow-none"
+            style={{ backgroundColor: residualCell.colorHex + "22" }}>
             <div className="flex items-center justify-between gap-2">
               <div>
                 <div className="text-sm font-medium" style={{ color: residualCell.colorHex }}>
@@ -1366,31 +1347,29 @@ export function EntryEditor({
                 {regionMeta.blurb}
               </div>
             )}
-          </div>
+          </Card>
         )}
 
         <Grid>
           <Field label="Likelihood rationale">
-            <textarea
+            <Textarea
               className={TEXTAREA}
               rows={2}
               value={residualLRationale}
-              onChange={(e) => { setResidualLRationale(e.target.value); setIsDirty(true); }}
-            />
+              onChange={(e) => { setResidualLRationale(e.target.value); setIsDirty(true); }} />
           </Field>
           <Field label="Severity rationale">
-            <textarea
+            <Textarea
               className={TEXTAREA}
               rows={2}
               value={residualSRationale}
-              onChange={(e) => { setResidualSRationale(e.target.value); setIsDirty(true); }}
-            />
+              onChange={(e) => { setResidualSRationale(e.target.value); setIsDirty(true); }} />
           </Field>
         </Grid>
 
         {/* ALARP demonstration — the reasonably-practicable test for a tolerable residual */}
         {residualRegion === "TOLERABLE" && (
-          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50/40 p-3">
+          <Alert variant="warning" className="mt-4 rounded-md border border-amber-300 bg-amber-50/40 p-3">
             <div className="flex items-center justify-between mb-2 gap-2">
               <h4 className="text-sm font-semibold text-amber-900">ALARP demonstration</h4>
               <span
@@ -1415,28 +1394,31 @@ export function EntryEditor({
                     { v: true, l: "Yes" },
                     { v: false, l: "No" }
                   ].map((o) => (
-                    <button
+                    <Button
                       key={o.l}
                       type="button"
+                      variant="outline"
+                      size="sm"
+                      aria-pressed={alarpFurtherConsidered === o.v}
                       onClick={() => {
                         setAlarpFurtherConsidered(o.v);
                         setIsDirty(true);
                       }}
-                      className={`px-3 py-1.5 text-sm rounded border ${
-                        alarpFurtherConsidered === o.v
-                          ? "bg-primary-600 text-white border-primary-600"
-                          : "bg-white text-slate-700 border-slate-300 hover:border-primary-400"
-                      }`}
+                      className={cn(
+                        "px-3 py-1.5 text-sm",
+                        alarpFurtherConsidered === o.v &&
+                          "border-primary-600 bg-primary-600 text-white hover:bg-primary-700 hover:text-white"
+                      )}
                     >
                       {o.l}
-                    </button>
+                    </Button>
                   ))}
                 </div>
               </Field>
 
               {alarpFurtherConsidered && (
                 <Field label="Which further controls were evaluated?">
-                  <textarea
+                  <Textarea
                     className={TEXTAREA}
                     rows={2}
                     value={alarpFurtherDesc}
@@ -1444,15 +1426,14 @@ export function EntryEditor({
                       setAlarpFurtherDesc(e.target.value);
                       setIsDirty(true);
                     }}
-                    placeholder="e.g. full local exhaust ventilation, interlocked guarding, process automation…"
-                  />
+                    placeholder="e.g. full local exhaust ventilation, interlocked guarding, process automation…" />
                 </Field>
               )}
 
               {/* Additional risk-reduction benefit — quantified from the forecast */}
               <Field label="Additional risk-reduction benefit (from the forecast target)">
                 {alarpGuidance.benefit ? (
-                  <div className="rounded border border-slate-200 bg-white px-2.5 py-2 text-xs">
+                  <Card className="rounded border border-slate-200 bg-white px-2.5 py-2 text-xs shadow-none">
                     <div className="font-medium text-slate-800">
                       Residual {alarpGuidance.benefit.residualLevel} ({alarpGuidance.benefit.residualScore}) → Target{" "}
                       {alarpGuidance.benefit.targetLevel} ({alarpGuidance.benefit.targetScore})
@@ -1465,24 +1446,22 @@ export function EntryEditor({
                         {alarpGuidance.benefit.bandImproved ? ", band improves" : ""})
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      className="mt-1 text-[11px] text-primary-600 hover:underline"
+                    <Button variant="link"
+                      type="button" className="mt-1 text-[11px] hover:underline"
                       onClick={() => {
                         setAlarpBenefit(benefitSummaryText);
                         setIsDirty(true);
-                      }}
-                    >
+                      }}>
                       Use this in the record
-                    </button>
-                  </div>
+                    </Button>
+                  </Card>
                 ) : (
-                  <div className="rounded border border-dashed border-amber-300 bg-amber-50/60 px-2.5 py-2 text-xs text-amber-800">
+                  <Alert variant="warning" className="rounded border border-dashed border-amber-300 bg-amber-50/60 px-2.5 py-2 text-xs text-amber-800">
                     Set a <strong>Target risk</strong> forecast (in the Recommended Controls section) to quantify the
                     benefit empirically.
-                  </div>
+                  </Alert>
                 )}
-                <textarea
+                <Textarea
                   className={`${TEXTAREA} mt-2`}
                   rows={2}
                   value={alarpBenefit}
@@ -1490,38 +1469,30 @@ export function EntryEditor({
                     setAlarpBenefit(e.target.value);
                     setIsDirty(true);
                   }}
-                  placeholder="Optional note on the benefit (or click “Use this in the record” above)…"
-                />
+                  placeholder="Optional note on the benefit (or click “Use this in the record” above)…" />
               </Field>
 
               <Field label="Cost / effort band of further controls">
-                <select
+                <SelectField
                   className={INPUT}
                   value={alarpCostBand}
-                  onChange={(e) => {
-                    setAlarpCostBand(e.target.value);
+                  onChange={(value) => {
+                    setAlarpCostBand(value);
                     setIsDirty(true);
                   }}
-                >
-                  <option value="">— select —</option>
-                  {COST_BANDS.map((b) => (
-                    <option key={b.code} value={b.code}>
-                      {b.label}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="— select —"
+                  options={COST_BANDS.map((b) => ({ value: b.code, label: `${b.label}` }))}
+                />
                 {alarpGuidance.suggestedCost && alarpCostBand !== alarpGuidance.suggestedCost && (
-                  <button
-                    type="button"
-                    className="mt-1 text-[11px] text-primary-600 hover:underline"
+                  <Button variant="link"
+                    type="button" className="mt-1 text-[11px] hover:underline"
                     onClick={() => {
                       setAlarpCostBand(alarpGuidance.suggestedCost!);
                       setIsDirty(true);
-                    }}
-                  >
+                    }}>
                     Suggested: {COST_BANDS.find((b) => b.code === alarpGuidance.suggestedCost)?.label} — from the
                     recommended controls. Apply
-                  </button>
+                  </Button>
                 )}
               </Field>
 
@@ -1548,7 +1519,7 @@ export function EntryEditor({
                   )
                 )}
                 <div className="flex flex-wrap gap-2">
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => {
                       setAlarpGrossly(true);
@@ -1560,14 +1531,13 @@ export function EntryEditor({
                         : alarpGuidance.suggestion?.grossly === true
                           ? "bg-white text-slate-700 border-emerald-400 ring-1 ring-emerald-300"
                           : "bg-white text-slate-700 border-slate-300 hover:border-emerald-400"
-                    }`}
-                  >
+                    }`}>
                     Yes — risk is ALARP (accept)
                     {alarpGuidance.suggestion?.grossly === true && alarpGrossly !== true && (
                       <span className="ml-1 text-[10px] text-emerald-600">★ suggested</span>
                     )}
-                  </button>
-                  <button
+                  </Button>
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => {
                       setAlarpGrossly(false);
@@ -1579,25 +1549,24 @@ export function EntryEditor({
                         : alarpGuidance.suggestion?.grossly === false
                           ? "bg-white text-slate-700 border-sky-400 ring-1 ring-sky-300"
                           : "bg-white text-slate-700 border-slate-300 hover:border-rose-400"
-                    }`}
-                  >
+                    }`}>
                     No — further reduction is practicable
                     {alarpGuidance.suggestion?.grossly === false && alarpGrossly !== false && (
                       <span className="ml-1 text-[10px] text-sky-600">★ suggested</span>
                     )}
-                  </button>
+                  </Button>
                 </div>
               </Field>
 
               {alarpGrossly === false && (
-                <div className="rounded border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs text-rose-800">
+                <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs text-rose-800">
                   Further reduction is reasonably practicable — add the control(s) as recommended actions below and
                   re-assess the residual. This residual is not yet ALARP.
-                </div>
+                </Alert>
               )}
 
               <Field label="ALARP justification">
-                <textarea
+                <Textarea
                   className={TEXTAREA}
                   rows={2}
                   value={alarpJustification}
@@ -1605,8 +1574,7 @@ export function EntryEditor({
                     setAlarpJustification(e.target.value);
                     setIsDirty(true);
                   }}
-                  placeholder="Record the reasoning for the verdict above — basis for gross disproportion, standards / good practice relied on, residual accepted…"
-                />
+                  placeholder="Record the reasoning for the verdict above — basis for gross disproportion, standards / good practice relied on, residual accepted…" />
               </Field>
 
               {entry.alarpDemonstratedAt && alarpStatus === "DEMONSTRATED" && (
@@ -1615,7 +1583,7 @@ export function EntryEditor({
                 </div>
               )}
             </div>
-          </div>
+          </Alert>
         )}
 
         {/* Unacceptable region — warn-only: allow save but require a rationale */}
@@ -1623,7 +1591,7 @@ export function EntryEditor({
             is an elevated, time-bounded override; there is no free-text
             'acceptance'. */}
         {residualRegion === "UNACCEPTABLE" && (
-          <div className="mt-4 rounded-md border-2 border-rose-400 bg-rose-50 p-3">
+          <Alert variant="destructive" className="mt-4 rounded-md border-2 border-rose-400 bg-rose-50 p-3">
             <div className="flex items-start gap-2">
               <ShieldAlert size={16} className="mt-0.5 shrink-0 text-rose-700" />
               <div className="flex-1">
@@ -1636,7 +1604,7 @@ export function EntryEditor({
                 </div>
 
                 {overrideActive ? (
-                  <div className="mt-2 rounded border border-rose-300 bg-white px-2.5 py-2 text-xs text-rose-900">
+                  <Alert variant="destructive" className="mt-2 rounded border border-rose-300 bg-white px-2.5 py-2 text-xs text-rose-900">
                     <span className="font-semibold">⚠ Override in force</span>
                     {overrideExpiresAt && (
                       <> — expires {new Date(overrideExpiresAt).toLocaleDateString()}, then auto-flags for review.</>
@@ -1644,32 +1612,27 @@ export function EntryEditor({
                     {entry.unacceptableOverrideJustification && (
                       <div className="mt-1 text-rose-800 italic">“{entry.unacceptableOverrideJustification}”</div>
                     )}
-                  </div>
+                  </Alert>
                 ) : canOverride ? (
                   <div className="mt-2 space-y-2">
                     <div className="text-xs font-medium text-rose-900">
                       Elevated override (Plant Head / Corporate HSE)
                     </div>
-                    <textarea
+                    <Textarea
                       className={TEXTAREA}
                       rows={2}
                       value={overrideJustification}
                       onChange={(e) => setOverrideJustification(e.target.value)}
-                      placeholder="Justification for accepting an Unacceptable residual (min 10 chars) — compensating measures, statutory basis, time-bound plan to reduce…"
-                    />
+                      placeholder="Justification for accepting an Unacceptable residual (min 10 chars) — compensating measures, statutory basis, time-bound plan to reduce…" />
                     <div className="flex flex-wrap items-center gap-2">
-                      <label className="text-xs text-rose-900">Auto-review after</label>
-                      <select
-                        className="h-9 rounded-md border border-rose-300 bg-white px-2 text-sm"
-                        value={overrideDays}
-                        onChange={(e) => setOverrideDays(Number(e.target.value))}
-                      >
-                        {[30, 60, 90, 180].map((d) => (
-                          <option key={d} value={d}>
-                            {d} days
-                          </option>
-                        ))}
-                      </select>
+                      <Label className="text-xs text-rose-900">Auto-review after</Label>
+                      <SelectField
+                        className="h-9 rounded-md border-rose-300 px-2 text-sm"
+                        value={String(overrideDays)}
+                        ariaLabel="Auto-review after"
+                        onChange={(value) => setOverrideDays(Number(value))}
+                        options={[30, 60, 90, 180].map((d) => ({ value: String(d), label: `${d} days` }))}
+                      />
                       <Button onClick={authorizeOverride} disabled={pending} variant="destructive">
                         {pending ? "Authorising…" : "Authorise override"}
                       </Button>
@@ -1683,7 +1646,7 @@ export function EntryEditor({
                 )}
               </div>
             </div>
-          </div>
+          </Alert>
         )}
       </Section>
 
@@ -1692,58 +1655,45 @@ export function EntryEditor({
         <Section
           title={`6 — Recommended Additional Controls (${recommendedControls.length})`}
           cta={
-            <button
+            <Button variant="outline"
               type="button"
-              onClick={addRecommendedControl}
-              className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-slate-300 hover:border-primary-500 hover:text-primary-700"
-            >
+              onClick={addRecommendedControl} className="gap-1 px-2.5 py-1 text-xs rounded">
               <Plus size={12} /> Add proposal
-            </button>
+            </Button>
           }
         >
           {recommendedControls.length === 0 ? (
-            <div className="rounded border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500">
+            <Card className="rounded border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 shadow-none">
               Residual risk exceeds the acceptability threshold. Propose additional controls.
-            </div>
+            </Card>
           ) : (
             <div className="space-y-2">
               {recommendedControls.map((rc) => (
-                <div key={rc.id} className="rounded border bg-white p-3">
+                <Card key={rc.id} className="rounded border bg-white p-3 shadow-none">
                   <div className="grid grid-cols-12 gap-2">
                     <div className="col-span-3">
-                      <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Hierarchy</label>
-                      <select
+                      <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Hierarchy</Label>
+                      <SelectField
                         className={INPUT}
                         value={rc.hierarchy}
-                        onChange={(e) => updateRecommendedControl(rc.id, { hierarchy: e.target.value })}
-                      >
-                        {HIERARCHY.map((h) => (
-                          <option key={h.code} value={h.code}>
-                            {h.label}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(value) => updateRecommendedControl(rc.id, { hierarchy: value })}
+                        options={HIERARCHY.map((h) => ({ value: h.code, label: `${h.label}` }))}
+                      />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Cost band</label>
-                      <select
+                      <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Cost band</Label>
+                      <SelectField
                         className={INPUT}
                         value={rc.estimatedCostBand ?? ""}
-                        onChange={(e) =>
-                          updateRecommendedControl(rc.id, { estimatedCostBand: e.target.value || null })
+                        onChange={(value) => updateRecommendedControl(rc.id, { estimatedCostBand: value || null })
                         }
-                      >
-                        <option value="">— —</option>
-                        {COST_BANDS.map((cb) => (
-                          <option key={cb.code} value={cb.code}>
-                            {cb.label}
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="— —"
+                        options={COST_BANDS.map((cb) => ({ value: cb.code, label: `${cb.label}` }))}
+                      />
                     </div>
                     <div className="col-span-3">
-                      <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Proposed date</label>
-                      <input
+                      <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Proposed date</Label>
+                      <Input
                         type="date"
                         className={INPUT}
                         value={rc.proposedImplementationDate ? new Date(rc.proposedImplementationDate).toISOString().slice(0, 10) : ""}
@@ -1751,50 +1701,41 @@ export function EntryEditor({
                           updateRecommendedControl(rc.id, {
                             proposedImplementationDate: e.target.value ? new Date(e.target.value) : null
                           })
-                        }
-                      />
+                        } />
                     </div>
                     <div className="col-span-3">
-                      <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Status</label>
-                      <select
+                      <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Status</Label>
+                      <SelectField
                         className={INPUT}
                         value={rc.status}
-                        onChange={(e) => updateRecommendedControl(rc.id, { status: e.target.value })}
-                      >
-                        {["PROPOSED", "APPROVED", "IN_PROGRESS", "IMPLEMENTED", "DEFERRED", "REJECTED"].map((s) => (
-                          <option key={s} value={s}>
-                            {s.replace(/_/g, " ")}
-                          </option>
-                        ))}
-                      </select>
+                        ariaLabel="Proposal status"
+                        onChange={(value) => updateRecommendedControl(rc.id, { status: value })}
+                        options={RECOMMENDED_STATUSES}
+                      />
                     </div>
                     <div className="col-span-1 flex items-end justify-end">
-                      <button
+                      <Button variant="destructive"
                         type="button"
-                        onClick={() => removeRecommendedControl(rc.id)}
-                        className="text-rose-600 hover:bg-rose-50 rounded p-1.5 mb-0.5"
-                        aria-label="Remove proposal"
-                      >
+                        onClick={() => removeRecommendedControl(rc.id)} className="rounded p-1.5 mb-0.5"
+                        aria-label="Remove proposal">
                         <Trash2 size={14} />
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                  <textarea
+                  <Textarea
                     className={`${TEXTAREA} mt-2`}
                     rows={2}
                     placeholder="Proposed control"
                     value={rc.description}
-                    onChange={(e) => updateRecommendedControl(rc.id, { description: e.target.value })}
-                  />
-                  <textarea
+                    onChange={(e) => updateRecommendedControl(rc.id, { description: e.target.value })} />
+                  <Textarea
                     className={`${TEXTAREA} mt-2`}
                     rows={2}
                     placeholder="Rationale — why this would close the gap"
                     value={rc.rationale ?? ""}
-                    onChange={(e) => updateRecommendedControl(rc.id, { rationale: e.target.value || null })}
-                  />
+                    onChange={(e) => updateRecommendedControl(rc.id, { rationale: e.target.value || null })} />
                   <div className="mt-2">
-                    <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Responsible person</label>
+                    <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Responsible person</Label>
                     <UserPicker
                       value={rc.responsibleId ?? null}
                       onChange={(userId) => updateRecommendedControl(rc.id, { responsibleId: userId })}
@@ -1807,22 +1748,21 @@ export function EntryEditor({
                       pair. Deliberately NOT conditional on status=COMPLETED:
                       evidence often lands before the status is moved, and a
                       status-gated field just loses it. */}
-                  <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-2.5 py-2">
-                    <label className="flex items-center gap-2 text-xs text-slate-700">
-                      <input
-                        type="checkbox"
+                  <Card className="mt-2 rounded border border-slate-200 bg-slate-50 px-2.5 py-2 shadow-none">
+                    <Label className="flex items-center gap-2 text-xs text-slate-700">
+                      <Checkbox
+                       
                         checked={rc.evidenceAttached}
                         onChange={(e) =>
                           updateRecommendedControl(rc.id, {
                             evidenceAttached: e.target.checked,
                             documentReference: e.target.checked ? rc.documentReference : null
                           })
-                        }
-                      />
+                        } />
                       Evidence on file
-                    </label>
+                    </Label>
                     {rc.evidenceAttached && (
-                      <input
+                      <Input
                         className={`${INPUT} mt-1.5`}
                         placeholder="Document / record reference"
                         value={rc.documentReference ?? ""}
@@ -1830,23 +1770,22 @@ export function EntryEditor({
                           updateRecommendedControl(rc.id, {
                             documentReference: e.target.value || null
                           })
-                        }
-                      />
+                        } />
                     )}
-                  </div>
+                  </Card>
 
                   {rc.capaId && (
                     <div className="mt-2 text-xs text-slate-500">
                       Linked CAPA: <code className="px-1 rounded bg-slate-100">{rc.capaId.slice(0, 8)}…</code>
                     </div>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
           )}
 
           {/* Target (forecast) risk — projected residual once these controls land */}
-          <div className="mt-4 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
+          <Alert variant="brand" className="mt-4 rounded-md border border-indigo-200 bg-indigo-50/40 p-3">
             <h4 className="text-sm font-semibold text-indigo-900">Target risk — forecast after these controls</h4>
             <p className="text-xs text-indigo-800 mt-0.5 mb-3">
               Where will the residual land once the recommended controls are implemented? This projects the ALARP
@@ -1874,41 +1813,38 @@ export function EntryEditor({
             />
 
             {targetL && targetS && (
-              <button
+              <Button variant="ghost"
                 type="button"
-                onClick={() => { setTargetL(undefined); setTargetS(undefined); setIsDirty(true); }}
-                className="mt-2 text-xs text-slate-500 hover:text-rose-600"
-              >
+                onClick={() => { setTargetL(undefined); setTargetS(undefined); setIsDirty(true); }} className="mt-2 text-xs">
                 Clear target
-              </button>
+              </Button>
             )}
 
             {targetWorseThanResidual && (
-              <div className="mt-2 rounded border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
+              <Alert variant="warning" className="mt-2 rounded border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
                 Target risk is higher than today&apos;s residual — a forecast should reduce risk, not raise it. Re-check the
                 target cell.
-              </div>
+              </Alert>
             )}
             {targetRegion === "BROADLY_ACCEPTABLE" && !targetWorseThanResidual && (
-              <div className="mt-2 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs text-emerald-800">
+              <Alert variant="success" className="mt-2 rounded border border-emerald-200 bg-emerald-50 px-2.5 py-1.5 text-xs text-emerald-800">
                 ✓ These controls are forecast to bring the risk into the Broadly Acceptable region.
-              </div>
+              </Alert>
             )}
 
             {targetCell && (
               <div className="mt-3">
                 <Field label="What gets us there? (controls / assumptions)">
-                  <textarea
+                  <Textarea
                     className={TEXTAREA}
                     rows={2}
                     value={targetRationale}
                     onChange={(e) => { setTargetRationale(e.target.value); setIsDirty(true); }}
-                    placeholder="Which recommended controls drive this target, and any assumptions (effectiveness, timeline)…"
-                  />
+                    placeholder="Which recommended controls drive this target, and any assumptions (effectiveness, timeline)…" />
                 </Field>
               </div>
             )}
-          </div>
+          </Alert>
         </Section>
       )}
 
@@ -1931,27 +1867,25 @@ export function EntryEditor({
           emptyHint="Which inspection templates this hazard should trigger. Add from the list."
         />
         <div className="mt-3 flex flex-col gap-2">
-          <label className="inline-flex items-center gap-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
+          <Label className="inline-flex items-center gap-2 text-sm text-slate-700">
+            <Checkbox
+             
               checked={influencesPtw}
-              onChange={(e) => { setInfluencesPtw(e.target.checked); setIsDirty(true); }}
-            />
+              onChange={(e) => { setInfluencesPtw(e.target.checked); setIsDirty(true); }} />
             This entry influences PTW risk level for permits in this area
-          </label>
+          </Label>
           {influencesPtw && (
             <div className="ml-6 flex flex-wrap gap-2">
               {PERMIT_TYPES.map((p) => (
-                <label
+                <Label
                   key={p}
                   className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-full border cursor-pointer ${
                     ptwPermitTypes.includes(p)
                       ? "bg-primary-100 text-primary-800 border-primary-300"
                       : "bg-white text-slate-700 border-slate-300"
-                  }`}
-                >
-                  <input
-                    type="checkbox"
+                  }`}>
+                  <Checkbox
+                   
                     className="sr-only"
                     checked={ptwPermitTypes.includes(p)}
                     onChange={(e) => {
@@ -1959,10 +1893,9 @@ export function EntryEditor({
                         e.target.checked ? [...arr, p] : arr.filter((x) => x !== p)
                       );
                       setIsDirty(true);
-                    }}
-                  />
+                    }} />
                   {p.replace(/_/g, " ")}
-                </label>
+                </Label>
               ))}
             </div>
           )}
@@ -1975,13 +1908,11 @@ export function EntryEditor({
         defaultOpen={regulationRefs.length > 0}
         title={`8 — Regulatory References (${regulationRefs.length})`}
         cta={
-          <button
+          <Button variant="outline"
             type="button"
-            onClick={addRegRef}
-            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-slate-300 hover:border-primary-500 hover:text-primary-700"
-          >
+            onClick={addRegRef} className="gap-1 px-2.5 py-1 text-xs rounded">
             <Plus size={12} /> Add reference
-          </button>
+          </Button>
         }
       >
         {regulationRefs.length === 0 ? (
@@ -1989,44 +1920,39 @@ export function EntryEditor({
         ) : (
           <div className="space-y-2">
             {regulationRefs.map((r) => (
-              <div key={r.id} className="rounded border bg-white p-3 grid grid-cols-12 gap-2 items-end">
+              <Card key={r.id} className="rounded border bg-white p-3 grid grid-cols-12 gap-2 items-end shadow-none">
                 <div className="col-span-4">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Regulation</label>
-                  <input
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Regulation</Label>
+                  <Input
                     className={INPUT}
                     value={r.regulation}
                     onChange={(e) => updateRegRef(r.id, { regulation: e.target.value })}
-                    placeholder="e.g. Factories Act 1948"
-                  />
+                    placeholder="e.g. Factories Act 1948" />
                 </div>
                 <div className="col-span-3">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Section</label>
-                  <input
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Section</Label>
+                  <Input
                     className={INPUT}
                     value={r.section ?? ""}
                     onChange={(e) => updateRegRef(r.id, { section: e.target.value || null })}
-                    placeholder="e.g. §41B"
-                  />
+                    placeholder="e.g. §41B" />
                 </div>
                 <div className="col-span-4">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Requirement summary</label>
-                  <input
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Requirement summary</Label>
+                  <Input
                     className={INPUT}
                     value={r.requirementSummary ?? ""}
-                    onChange={(e) => updateRegRef(r.id, { requirementSummary: e.target.value || null })}
-                  />
+                    onChange={(e) => updateRegRef(r.id, { requirementSummary: e.target.value || null })} />
                 </div>
                 <div className="col-span-1 flex justify-end">
-                  <button
+                  <Button variant="destructive"
                     type="button"
-                    onClick={() => removeRegRef(r.id)}
-                    className="text-rose-600 hover:bg-rose-50 rounded p-1.5"
-                    aria-label="Remove reference"
-                  >
+                    onClick={() => removeRegRef(r.id)} className="rounded p-1.5"
+                    aria-label="Remove reference">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         )}
@@ -2063,33 +1989,30 @@ export function EntryEditor({
       {/* Sticky save bar */}
       <div className="sticky bottom-0 -mx-4 px-4 py-3 bg-white border-t border-slate-200">
         {error && (
-          <div
+          <Alert variant="destructive"
             role="alert"
             aria-live="assertive"
-            className="mb-2 rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900"
-          >
+            className="mb-2 rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">
             {error}
-          </div>
+          </Alert>
         )}
         {success && (
-          <div
+          <Alert variant="success"
             role="status"
             aria-live="polite"
-            className="mb-2 rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-900"
-          >
+            className="mb-2 rounded border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-sm text-emerald-900">
             Saved. {savedVersion ? `Version ${savedVersion} created.` : ""}
-          </div>
+          </Alert>
         )}
 
         {/* Ready-for-approval gate. A DRAFT entry that has a residual and, where
             the region demands it, a completed ALARP demonstration is ready to be
             handed to the approver. */}
         {(entryStatus === "DRAFT" || entryStatus === "FLAGGED_FOR_REVIEW") && (
-          <div
+          <Alert variant="info"
             role="status"
             aria-live="polite"
-            className="mb-2 rounded border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-900"
-          >
+            className="mb-2 rounded border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-900">
             <div className="flex items-start gap-2">
               <FileWarning size={15} className="mt-0.5 shrink-0" />
               <div className="flex-1">
@@ -2113,18 +2036,17 @@ export function EntryEditor({
               </Button>
             </div>
             {isDirty && <div className="mt-1.5 pl-6 text-xs">Save your pending changes first.</div>}
-          </div>
+          </Alert>
         )}
 
         {/* Re-approval gate. A material change (risk scores, hazard rows,
             control effectiveness, proposal status) drops the entry out of
             APPROVED server-side; this is the way back. */}
         {(entryStatus === "IN_REVIEW" || entryStatus === "PENDING_REAPPROVAL") && (
-          <div
+          <Alert variant="warning"
             role="status"
             aria-live="polite"
-            className="mb-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
-          >
+            className="mb-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             <div className="flex items-start gap-2">
               <ShieldAlert size={15} className="mt-0.5 shrink-0" />
               <div className="flex-1">
@@ -2166,17 +2088,16 @@ export function EntryEditor({
                 You do not hold HIRA.APPROVE — route this to the study approver.
               </div>
             )}
-          </div>
+          </Alert>
         )}
 
         {requireChangeReason && (
           <div className="mb-2">
-            <input
+            <Input
               className={INPUT}
               placeholder="Change reason (required — captured on the new version)"
               value={changeReason}
-              onChange={(e) => setChangeReason(e.target.value)}
-            />
+              onChange={(e) => setChangeReason(e.target.value)} />
           </div>
         )}
         <div className="flex gap-2 items-center">
@@ -2236,14 +2157,16 @@ function Section({
     <section className="rounded-xl border bg-white p-5">
       <div className={`flex items-center justify-between ${isOpen ? "mb-4" : ""}`}>
         {collapsible ? (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            aria-expanded={isOpen}
             onClick={() => setOpen((o) => !o)}
-            className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-slate-600 hover:text-slate-800"
+            className="h-auto gap-2 p-0 text-sm font-semibold uppercase tracking-wider text-slate-600 hover:bg-transparent hover:text-slate-800"
           >
             <ChevronDown size={14} className={`transition-transform ${isOpen ? "" : "-rotate-90"}`} />
             {title}
-          </button>
+          </Button>
         ) : (
           <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-600">{title}</h2>
         )}
@@ -2320,7 +2243,7 @@ function PickerList({
   const available = options.filter((o) => !values.includes(o.id));
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      <Label className="block text-xs font-medium text-slate-600 mb-1">{label}</Label>
       <div className="flex flex-wrap gap-1 mb-1.5">
         {values.length === 0 && <span className="text-xs text-slate-400">{emptyHint ?? "None selected."}</span>}
         {values.map((v) => (
@@ -2329,32 +2252,25 @@ function PickerList({
             className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-primary-50 text-primary-800 border border-primary-200"
           >
             {nameById.get(v) ?? v}
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => onChange(values.filter((x) => x !== v))}
-              className="text-primary-400 hover:text-rose-600"
-              aria-label="Remove"
-            >
+              aria-label="Remove">
               ×
-            </button>
+            </Button>
           </span>
         ))}
       </div>
-      <select
+      <SelectField
         className={INPUT}
         value=""
-        onChange={(e) => {
-          const id = e.target.value;
+        onChange={(value) => {
+          const id = value;
           if (id && !values.includes(id)) onChange([...values, id]);
         }}
-      >
-        <option value="">+ Add…</option>
-        {available.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.name}
-          </option>
-        ))}
-      </select>
+        placeholder="+ Add…"
+        options={available.map((o) => ({ value: o.id, label: `${o.name}` }))}
+      />
     </div>
   );
 }
@@ -2366,7 +2282,7 @@ function Grid({ children }: { children: React.ReactNode }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      <Label className="block text-xs font-medium text-slate-600 mb-1">{label}</Label>
       {children}
     </div>
   );
@@ -2413,7 +2329,7 @@ function ChipList({
   const [input, setInput] = useState("");
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      <Label className="block text-xs font-medium text-slate-600 mb-1">{label}</Label>
       <div className="flex flex-wrap gap-1 mb-1.5">
         {values.map((v) => (
           <span
@@ -2421,18 +2337,16 @@ function ChipList({
             className="inline-flex items-center gap-1 px-2 py-0.5 text-xs rounded bg-slate-100 text-slate-700 border"
           >
             {v}
-            <button
+            <Button variant="ghost"
               type="button"
               onClick={() => onChange(values.filter((x) => x !== v))}
-              className="text-slate-400 hover:text-rose-600"
-              aria-label="Remove"
-            >
+              aria-label="Remove">
               ×
-            </button>
+            </Button>
           </span>
         ))}
       </div>
-      <input
+      <Input
         className={INPUT}
         value={input}
         placeholder={placeholder}
@@ -2443,8 +2357,7 @@ function ChipList({
             if (!values.includes(input.trim())) onChange([...values, input.trim()]);
             setInput("");
           }
-        }}
-      />
+        }} />
     </div>
   );
 }

@@ -125,9 +125,10 @@ export function AttendanceCapture({
               {presentCount} of {rows.length} marked present
             </p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-800">
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close"
+            className="h-auto w-auto p-0 text-slate-500 hover:bg-transparent hover:text-slate-800">
             <X size={20} />
-          </button>
+          </Button>
         </CardHeader>
 
         <CardContent className="flex-1 overflow-y-auto space-y-2 p-3">
@@ -136,10 +137,9 @@ export function AttendanceCapture({
             if (!row) return null;
             const sig = !!row.signatureUrl;
             return (
-              <div
+              <Card
                 key={person.registrationId}
-                className="rounded-md border border-slate-200 bg-white p-3 space-y-2"
-              >
+                className="rounded-md border border-slate-200 bg-white p-3 space-y-2 shadow-none">
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-medium text-sm">{person.userName}</div>
@@ -183,7 +183,7 @@ export function AttendanceCapture({
                     <PenTool size={12} /> {sig ? "Re-sign" : "Capture signature"}
                   </Button>
                 )}
-              </div>
+              </Card>
             );
           })}
         </CardContent>

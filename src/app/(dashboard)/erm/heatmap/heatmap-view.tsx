@@ -6,6 +6,7 @@ import { Download, Printer, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { HeatMap, BandBadge } from "@/components/erm/shared";
+import { Card } from "@/components/ui/card";
 import {
   bandForScore,
   type DashboardSummary,
@@ -129,8 +130,8 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
   return (
     <div className="space-y-5">
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 print:hidden">
-        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
+      <Card className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 print:hidden shadow-none">
+        <Card className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium shadow-none">
           {(["INHERENT", "RESIDUAL", "BOTH"] as const).map((m) => (
             <Button
               key={m}
@@ -147,7 +148,7 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
               {m === "INHERENT" ? "Inherent" : m === "RESIDUAL" ? "Residual" : "Both (side-by-side)"}
             </Button>
           ))}
-        </div>
+        </Card>
 
         <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
           <Filter size={13} /> Category
@@ -216,12 +217,12 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
             <Printer size={14} /> Export PNG (print)
           </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Matrices */}
       <div className={"grid gap-5 " + (mode === "BOTH" ? "lg:grid-cols-2" : "grid-cols-1")}>
         {showResidual && (
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="mb-4">
               <h2 className="text-sm font-semibold text-slate-900">Residual Exposure</h2>
               <p className="text-xs text-slate-500">
@@ -232,11 +233,11 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
             <div className="flex justify-center py-2">
               <HeatMap cells={residualCells} onCellClick={onCell} activeCell={activeCell} />
             </div>
-          </div>
+          </Card>
         )}
 
         {showInherent && (
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="mb-4">
               <h2 className="text-sm font-semibold text-slate-900">Inherent Exposure</h2>
               <p className="text-xs text-slate-500">
@@ -247,7 +248,7 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
             <div className="flex justify-center py-2">
               <HeatMap cells={inherentCells} onCellClick={mode === "INHERENT" ? onCell : undefined} activeCell={mode === "INHERENT" ? activeCell : undefined} />
             </div>
-          </div>
+          </Card>
         )}
       </div>
 
@@ -257,7 +258,7 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
 
       {/* Cell drilldown */}
       {activeCell && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">
               Cell L{activeCell.likelihood} × I{activeCell.impact}
@@ -266,9 +267,9 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
                 <span className="font-medium">{bandForScore(activeCell.likelihood * activeCell.impact)}</span>
               </span>
             </h2>
-            <button onClick={() => setActiveCell(null)} className="text-xs text-slate-400 hover:text-slate-600">
+            <Button variant="ghost" onClick={() => setActiveCell(null)} className="text-xs">
               Clear
-            </button>
+            </Button>
           </div>
           {mode === "INHERENT" ? (
             <p className="py-4 text-center text-xs text-slate-400">
@@ -292,7 +293,7 @@ export function HeatmapExplorer({ summary, risks }: { summary: DashboardSummary;
               ))}
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

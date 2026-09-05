@@ -7,7 +7,7 @@ import { Plus, X, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
@@ -19,6 +19,9 @@ import {
   type PolicyDetail,
 } from "@/app/(dashboard)/erm/lib-t3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const CLAIM_STATUSES = [
   "INTIMATED",
@@ -61,7 +64,7 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
       )}
 
       {/* Header */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className={"rounded border px-2 py-0.5 text-[11px] " + (POLICY_STATUS_CHIP[detail.status] ?? "")}>{detail.status.replace(/_/g, " ")}</span>
@@ -83,13 +86,13 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
             { label: "Coverage start", value: fmtDate(detail.coverageStartDate) },
             { label: "Coverage end", value: fmtDate(detail.coverageEndDate) },
           ].map((m) => (
-            <div key={m.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <Card key={m.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{m.label}</p>
               <p className="truncate text-sm font-semibold text-slate-800">{m.value}</p>
-            </div>
+            </Card>
           ))}
         </div>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
@@ -114,7 +117,7 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
 
       {/* Overview */}
       {tab === "overview" && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-2 text-sm font-semibold text-slate-900">Key exclusions</h2>
           {detail.keyExclusions.length === 0 ? (
             <p className="text-sm text-slate-400">No exclusions recorded.</p>
@@ -127,13 +130,13 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Coverage */}
       {tab === "coverage" && (
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-2 text-sm font-semibold text-slate-900">Covered risks <span className="text-slate-400">({detail.coveredRisks.length})</span></h2>
             {detail.coveredRisks.length === 0 ? (
               <p className="text-sm text-slate-400">No risks linked to this policy.</p>
@@ -149,8 +152,8 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
                 ))}
               </ul>
             )}
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          </Card>
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-2 text-sm font-semibold text-slate-900">Covered processes <span className="text-slate-400">({detail.coveredProcesses.length})</span></h2>
             {detail.coveredProcesses.length === 0 ? (
               <p className="text-sm text-slate-400">No processes linked to this policy.</p>
@@ -164,13 +167,13 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Claims */}
       {tab === "claims" && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Claims <span className="text-slate-400">({detail.claims.length})</span></h2>
             <Button
@@ -206,29 +209,29 @@ export function PolicyDetailView({ detail }: { detail: PolicyDetail }) {
               </Table>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Renewal */}
       {tab === "renewal" && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Renewal</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <Card className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Coverage end</p>
               <p className="text-sm font-semibold text-slate-800">{fmtDate(detail.coverageEndDate)}</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            </Card>
+            <Card className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Renewal lead</p>
               <p className="text-sm font-semibold text-slate-800">{detail.renewalLeadDays} days</p>
-            </div>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            </Card>
+            <Card className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Days to expiry</p>
               <p className="text-sm font-semibold text-slate-800">{detail.daysToExpiry != null ? `${detail.daysToExpiry}` : "—"}</p>
-            </div>
+            </Card>
           </div>
           <div className="mt-3">{expiryNote(detail.daysToExpiry)}</div>
-        </div>
+        </Card>
       )}
 
       {newClaimOpen && (
@@ -337,7 +340,7 @@ function ClaimStatusForm({ claim, setBanner, onClose, onDone }: { claim: Claim; 
   }
 
   return (
-    <div className="rounded-md border border-slate-200 bg-white p-3">
+    <Card className="rounded-md border border-slate-200 bg-white p-3 shadow-none">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-800">Update claim {claim.claimCode}</h3>
         <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">
@@ -346,34 +349,32 @@ function ClaimStatusForm({ claim, setBanner, onClose, onDone }: { claim: Claim; 
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Status</label>
-          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-            {CLAIM_STATUSES.map((s) => (
-              <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-            ))}
-          </Select>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Status</Label>
+          <SelectField value={status} onChange={setStatus}
+            options={CLAIM_STATUSES.map((s) => ({ value: s, label: s.replace(/_/g, " ") }))}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Settled amount (₹){needsSettled && <span className="text-rose-600"> *</span>}</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Settled amount (₹){needsSettled && <span className="text-rose-600"> *</span>}</Label>
           <Input type="number" min={0} value={settledAmountInr} onChange={(e) => setSettledAmountInr(e.target.value)} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Settlement date</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Settlement date</Label>
           <Input type="date" value={settlementDate} onChange={(e) => setSettlementDate(e.target.value)} />
         </div>
       </div>
       <div className="mt-3">
-        <label className="mb-1 block text-xs font-medium text-slate-600">Remarks</label>
+        <Label className="mb-1 block text-xs font-medium text-slate-600">Remarks</Label>
         <Textarea value={remarks} onChange={(e) => setRemarks(e.target.value)} rows={2} />
       </div>
-      {error && <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+      {error && <Alert variant="destructive" className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
       <div className="mt-3 flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
         <Button type="button" size="sm" onClick={submit} disabled={busy}>
           {busy ? "Saving…" : "Save"}
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -431,7 +432,7 @@ function NewClaimModal({ policyId, onClose, onDone }: { policyId: string; onClos
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New claim</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">
@@ -441,29 +442,27 @@ function NewClaimModal({ policyId, onClose, onDone }: { policyId: string; onClos
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Claim date</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Claim date</Label>
               <Input type="date" value={claimDate} onChange={(e) => setClaimDate(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Claimed amount (₹)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Claimed amount (₹)</Label>
               <Input type="number" min={0} value={claimedAmountInr} onChange={(e) => setClaimedAmountInr(e.target.value)} />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Linked loss event (optional)</label>
-            <Select value={lossEventId} onChange={(e) => setLossEventId(e.target.value)}>
-              <option value="">None — standalone claim</option>
-              {losses.map((l) => (
-                <option key={l.id} value={l.id}>{l.lossEventCode}{l.title ? ` · ${l.title}` : ""}</option>
-              ))}
-            </Select>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Linked loss event (optional)</Label>
+            <SelectField value={lossEventId} onChange={setLossEventId}
+              placeholder="None — standalone claim"
+              options={losses.map((l) => ({ value: l.id, label: `${l.lossEventCode}${l.title ? ` · ${l.title}` : ""}` }))}
+            />
             <p className="mt-1 text-[11px] text-slate-400">Linking a loss event enables reconciling the settled amount as a recovery once SETTLED.</p>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Description</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
           </div>
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -471,7 +470,7 @@ function NewClaimModal({ policyId, onClose, onDone }: { policyId: string; onClos
             {busy ? "Logging…" : "Log claim"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

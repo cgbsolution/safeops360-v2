@@ -23,6 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   CONFLICT_SOURCE_LABEL,
   type IndependenceConflict,
@@ -259,7 +261,7 @@ export function IndependenceCheck({
   if (!userIds.length) return null;
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+    <Card className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 shadow-none">
       <div className="flex items-center gap-2 text-xs font-semibold text-slate-700">
         <ShieldCheck size={13} className="text-violet-700" />
         Auditor independence
@@ -314,7 +316,7 @@ export function IndependenceCheck({
           }}
         />
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -381,12 +383,12 @@ export function WaiverDialog({
           <strong>printed in the audit report</strong>.
         </p>
 
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-[12px] text-rose-800">
+        <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-2.5 text-[12px] text-rose-800">
           <div className="font-semibold">
             {verdict.userName || verdict.userId} — conflict being waived
           </div>
           <div className="mt-0.5">{blocking?.reason ?? verdict.summary}</div>
-        </div>
+        </Alert>
 
         <div className="mt-4 space-y-3">
           <div>
@@ -427,9 +429,9 @@ export function WaiverDialog({
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex justify-end gap-2">

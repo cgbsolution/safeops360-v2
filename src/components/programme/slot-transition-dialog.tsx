@@ -26,11 +26,12 @@ import { Loader2, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
 import type { SlotRow } from "@/app/(dashboard)/cams/programme/lib-programme";
+import { Alert } from "@/components/ui/alert";
 
 // Transitions that require reason + approver and write an amendment.
 const NEEDS_AMENDMENT = ["DEFERRED", "CANCELLED", "WAIVED"];
@@ -99,18 +100,16 @@ export function SlotTransitionDialog({
         <div className="mt-3 space-y-3">
           <div>
             <Label htmlFor="target" className="text-xs">Move to</Label>
-            <Select id="target" value={target} onChange={(e) => setTarget(e.target.value)} className="mt-1">
-              {targets.map((t) => (
-                <option key={t} value={t}>{t.replace(/_/g, " ").toLowerCase()}</option>
-              ))}
-            </Select>
+            <SelectField id="target" value={target} onChange={setTarget} className="mt-1"
+              options={targets.map((t) => ({ value: t, label: t.replace(/_/g, " ").toLowerCase() }))}
+            />
             <p className="mt-1 text-[11px] text-slate-400">
               Only transitions legal from <strong>{slot.status.toLowerCase()}</strong> are offered.
             </p>
           </div>
 
           {needsMaterialise && (
-            <div className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-[11px] text-violet-900">
+            <Alert variant="brand" className="rounded-lg border border-violet-200 bg-violet-50 p-3 text-[11px] text-violet-900">
               <p>
                 A slot becomes <strong>scheduled</strong> by producing an engagement, not by being
                 told it has one. Materialise creates the engagement from this slot&rsquo;s scope,
@@ -121,7 +120,7 @@ export function SlotTransitionDialog({
                   <Zap size={13} /> Materialise instead
                 </Button>
               )}
-            </div>
+            </Alert>
           )}
 
           {isDefer && (
@@ -144,10 +143,10 @@ export function SlotTransitionDialog({
 
           {needsAmendment && (
             <>
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
+              <Alert variant="warning" className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
                 This writes a <strong>programme amendment</strong>. A certification body asks why a
                 planned audit did not happen; this record is the answer, so both fields are required.
-              </div>
+              </Alert>
               <div>
                 <Label htmlFor="reason" className="text-xs">
                   Reason <span className="text-rose-600">*</span>
@@ -172,9 +171,9 @@ export function SlotTransitionDialog({
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex justify-end gap-2">

@@ -2,6 +2,7 @@
 
 import { Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { RISK_BAND_HEX, ESG_BAND_HEX } from "@/app/(dashboard)/erm/lib-t3";
+import { Card } from "@/components/ui/card";
 
 const RISK_ORDER = ["LOW", "MEDIUM", "HIGH", "CRITICAL"] as const;
 const ESG_ORDER = ["LEADING", "ADEQUATE", "DEVELOPING", "LAGGING"] as const;
@@ -50,22 +51,22 @@ export function DualBandDonuts({
 }) {
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="mb-1 flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: RISK_BAND_HEX.CRITICAL }} />
           <h2 className="text-sm font-semibold text-slate-900">Risk Band Distribution</h2>
         </div>
         <p className="mb-2 text-xs text-slate-500">Third-party risk lens — higher band is worse.</p>
         <BandDonut distribution={riskBandDistribution} order={RISK_ORDER} hex={RISK_BAND_HEX} />
-      </div>
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      </Card>
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="mb-1 flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: ESG_BAND_HEX.LEADING }} />
           <h2 className="text-sm font-semibold text-slate-900">ESG Band Distribution</h2>
         </div>
         <p className="mb-2 text-xs text-slate-500">Supplier ESG posture lens — higher band is better.</p>
         <BandDonut distribution={esgBandDistribution} order={ESG_ORDER} hex={ESG_BAND_HEX} />
-      </div>
+      </Card>
     </div>
   );
 }

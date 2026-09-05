@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { PALETTE, scoreColor, cultureGet, cultureSend } from "../lib";
 import { Sparkline } from "../ui";
 import { formatUserRefText, type UserDirectory } from "@/lib/users/user-ref";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const HAZARD_CATEGORIES = [
   "PPE",
@@ -212,14 +218,14 @@ function KpiTile({
   sub?: string;
 }) {
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-3xl font-bold" style={{ color: color ?? PALETTE.navy }}>
         {value}
         {suffix && <span className="text-lg font-semibold text-slate-400">{suffix}</span>}
       </p>
       {sub && <p className="mt-1 text-xs text-slate-500">{sub}</p>}
-    </div>
+    </Card>
   );
 }
 
@@ -227,7 +233,7 @@ function KpiTile({
 
 function WalkFormulaCard() {
   return (
-    <div className="rounded-xl border p-4 text-sm" style={{ borderColor: PALETTE.gold, background: "#FBF7EC" }}>
+    <Card className="rounded-xl border p-4 text-sm shadow-none" style={{ borderColor: PALETTE.gold, background: "#FBF7EC" }}>
       <div className="mb-2 flex items-center gap-2">
         <span className="text-lg" style={{ color: PALETTE.gold }}>
           ◆
@@ -250,7 +256,7 @@ function WalkFormulaCard() {
         A structured checklist (hazard categories, worker-interaction topics, PPE spot-check, housekeeping) is captured on
         completion; any hazard can be raised into the same BBS closure loop (Logged → Linked → Verified).
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -315,71 +321,64 @@ function Scheduler({
   }
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <p className="mb-1 text-sm font-semibold" style={{ color: PALETTE.navy }}>
         Leadership Walk Scheduler
       </p>
       <p className="mb-4 text-xs text-slate-500">Commit a leader to a dated shop-floor walk.</p>
       <form onSubmit={submit} className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Leader</label>
-          <select
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Leader</Label>
+          <SelectField
             value={leaderId}
-            onChange={(e) => setLeaderId(e.target.value)}
+            onChange={(value) => setLeaderId(value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          >
-            <option value="">Select a leader…</option>
-            {options.map((id) => (
-              <option key={id} value={id}>
-                {leaderLabel(id)}
-              </option>
-            ))}
-          </select>
+            placeholder="Select a leader…"
+            options={options.map((id) => ({ value: String(id), label: `${leaderLabel(id)}` }))}
+          />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</label>
-            <input
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</Label>
+            <Input
               type="date"
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-            />
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Cadence</label>
-            <select
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Cadence</Label>
+            <SelectField
               value={cadence}
-              onChange={(e) => setCadence(e.target.value)}
+              onChange={(value) => setCadence(value)}
               className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-            >
-              <option value="">One-off</option>
-              <option value="WEEKLY">Weekly</option>
-              <option value="MONTHLY">Monthly</option>
-            </select>
+              placeholder="One-off"
+              options={[
+              { value: "WEEKLY", label: "Weekly" },
+              { value: "MONTHLY", label: "Monthly" }
+            ]}
+            />
           </div>
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Area</label>
-          <input
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Area</Label>
+          <Input
             type="text"
             value={area}
             onChange={(e) => setArea(e.target.value)}
             placeholder="e.g. Cutting hall, Line 3"
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          />
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
         </div>
 
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Notes</label>
-          <textarea
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Notes</Label>
+          <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={2}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          />
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
         </div>
 
         {error && <p className="text-xs text-rose-600">{error}</p>}
@@ -393,7 +392,7 @@ function Scheduler({
           {busy ? "Scheduling…" : "Schedule walk"}
         </button>
       </form>
-    </div>
+    </Card>
   );
 }
 
@@ -416,7 +415,7 @@ function WalksPanel({
   const [raiseId, setRaiseId] = React.useState<string | null>(null);
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <p className="mb-3 text-sm font-semibold" style={{ color: PALETTE.navy }}>
         {title}
         <span className="ml-2 text-xs font-normal text-slate-400">({walks.length})</span>
@@ -427,7 +426,7 @@ function WalksPanel({
       ) : (
         <div className="space-y-2">
           {walks.map((w) => (
-            <div key={w.id} className="rounded-lg border border-slate-200 p-3">
+            <Card key={w.id} className="rounded-lg border border-slate-200 p-3 shadow-none">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium text-slate-800">{leaderLabel(w.leaderId)}</p>
@@ -498,11 +497,11 @@ function WalksPanel({
               {raiseId === w.id && (
                 <RaiseHazardForm walk={w} onDone={() => setRaiseId(null)} onCancel={() => setRaiseId(null)} />
               )}
-            </div>
+            </Card>
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -584,7 +583,7 @@ function CompletionForm({
 
       {/* §Fix 3 structured checklist */}
       <div>
-        <label className="mb-1 block text-[11px] font-medium text-slate-600">Hazard categories observed</label>
+        <Label className="mb-1 block text-[11px] font-medium text-slate-600">Hazard categories observed</Label>
         <div className="flex flex-wrap gap-1.5">
           {HAZARD_CATEGORIES.map((cat) => {
             const on = hazardCats.includes(cat);
@@ -607,61 +606,52 @@ function CompletionForm({
         </div>
       </div>
       <div>
-        <label className="mb-1 block text-[11px] font-medium text-slate-600">Worker-interaction topic</label>
-        <input
+        <Label className="mb-1 block text-[11px] font-medium text-slate-600">Worker-interaction topic</Label>
+        <Input
           type="text"
           value={interactionTopic}
           onChange={(e) => setInteractionTopic(e.target.value)}
           placeholder="e.g. Discussed line-3 lockout with 4 operators"
-          className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-        />
+          className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
       </div>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-[11px] font-medium text-slate-600">PPE compliance (%)</label>
-          <input
+          <Label className="mb-1 block text-[11px] font-medium text-slate-600">PPE compliance (%)</Label>
+          <Input
             type="number"
             min={0}
             max={100}
             value={ppe}
             onChange={(e) => setPpe(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          />
+            className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
         </div>
         <div>
-          <label className="mb-1 block text-[11px] font-medium text-slate-600">Housekeeping (1-5)</label>
-          <select
+          <Label className="mb-1 block text-[11px] font-medium text-slate-600">Housekeeping (1-5)</Label>
+          <SelectField
             value={housekeeping}
-            onChange={(e) => setHousekeeping(e.target.value)}
+            onChange={(value) => setHousekeeping(value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          >
-            <option value="">—</option>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
+            placeholder="—"
+            options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: `${n}` }))}
+          />
         </div>
       </div>
 
       <div>
-        <label className="mb-1 block text-[11px] font-medium text-slate-600">Area</label>
-        <input
+        <Label className="mb-1 block text-[11px] font-medium text-slate-600">Area</Label>
+        <Input
           type="text"
           value={area}
           onChange={(e) => setArea(e.target.value)}
-          className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-        />
+          className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
       </div>
       <div>
-        <label className="mb-1 block text-[11px] font-medium text-slate-600">Notes</label>
-        <textarea
+        <Label className="mb-1 block text-[11px] font-medium text-slate-600">Notes</Label>
+        <Textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={2}
-          className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-        />
+          className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
       </div>
       {error && <p className="text-xs text-rose-600">{error}</p>}
       <div className="flex items-center gap-2">
@@ -673,13 +663,11 @@ function CompletionForm({
         >
           {busy ? "Saving…" : "Save completion"}
         </button>
-        <button
+        <Button variant="ghost"
           type="button"
-          onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
-        >
+          onClick={onCancel} className="rounded-lg px-3 py-1.5 text-xs">
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -696,14 +684,13 @@ function NumberField({
 }) {
   return (
     <div>
-      <label className="mb-1 block text-[11px] font-medium text-slate-600">{label}</label>
-      <input
+      <Label className="mb-1 block text-[11px] font-medium text-slate-600">{label}</Label>
+      <Input
         type="number"
         min={0}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-      />
+        className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
     </div>
   );
 }
@@ -766,41 +753,30 @@ function RaiseHazardForm({ walk, onDone, onCancel }: { walk: Walk; onDone: () =>
   return (
     <form onSubmit={submit} className="mt-3 space-y-3 rounded-lg bg-slate-50 p-3">
       <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">Raise a hazard from this walk</p>
-      <textarea
+      <Textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         rows={2}
         placeholder="Describe the hazard observed during the walk…"
-        className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-      />
+        className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none" />
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-[11px] font-medium text-slate-600">Category</label>
-          <select
+          <Label className="mb-1 block text-[11px] font-medium text-slate-600">Category</Label>
+          <SelectField
             value={category}
-            onChange={(e) => setCategory(e.target.value)}
+            onChange={(value) => setCategory(value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          >
-            {OBS_CATEGORIES.map((c) => (
-              <option key={c} value={c}>
-                {c.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
+            options={OBS_CATEGORIES.map((c) => ({ value: String(c), label: `${c.replace(/_/g, " ")}` }))}
+          />
         </div>
         <div>
-          <label className="mb-1 block text-[11px] font-medium text-slate-600">Severity</label>
-          <select
+          <Label className="mb-1 block text-[11px] font-medium text-slate-600">Severity</Label>
+          <SelectField
             value={severity}
-            onChange={(e) => setSeverity(e.target.value)}
+            onChange={(value) => setSeverity(value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-          >
-            {SEVERITIES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+            options={SEVERITIES.map((s) => ({ value: String(s), label: `${s}` }))}
+          />
         </div>
       </div>
       {error && <p className="text-xs text-rose-600">{error}</p>}
@@ -814,13 +790,11 @@ function RaiseHazardForm({ walk, onDone, onCancel }: { walk: Walk; onDone: () =>
         >
           {busy ? "Raising…" : "Raise + link CAPA"}
         </button>
-        <button
+        <Button variant="ghost"
           type="button"
-          onClick={onCancel}
-          className="rounded-lg px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-100"
-        >
+          onClick={onCancel} className="rounded-lg px-3 py-1.5 text-xs">
           Cancel
-        </button>
+        </Button>
       </div>
     </form>
   );
@@ -857,24 +831,19 @@ function LeaderScorecardCard({
   }
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <p className="mb-1 text-sm font-semibold" style={{ color: PALETTE.navy }}>
         Leader Scorecard
       </p>
       <p className="mb-4 text-xs text-slate-500">Per-leader transparency on walk discipline and impact.</p>
 
-      <select
+      <SelectField
         value={leaderId}
-        onChange={(e) => onSelect(e.target.value)}
+        onChange={(value) => onSelect(value)}
         className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-primary-500 focus:outline-none"
-      >
-        <option value="">Select a leader…</option>
-        {leaderIds.map((id) => (
-          <option key={id} value={id}>
-            {leaderLabel(id)}
-          </option>
-        ))}
-      </select>
+        placeholder="Select a leader…"
+        options={leaderIds.map((id) => ({ value: String(id), label: `${leaderLabel(id)}` }))}
+      />
 
       {busy && <p className="mt-4 text-sm text-slate-500">Loading scorecard…</p>}
       {error && <p className="mt-4 text-sm text-rose-600">{error}</p>}
@@ -899,7 +868,7 @@ function LeaderScorecardCard({
           </div>
 
           {card.complianceTrend && card.complianceTrend.length >= 2 && (
-            <div className="rounded-lg border border-slate-200 p-3">
+            <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
               <div className="mb-1 flex items-center justify-between">
                 <p className="text-[11px] uppercase tracking-wide text-slate-500">Compliance trend (6 mo)</p>
                 <span className="text-[11px] text-slate-400">
@@ -907,7 +876,7 @@ function LeaderScorecardCard({
                 </span>
               </div>
               <Sparkline values={card.complianceTrend.map((t) => t.complianceToSchedule)} width={220} height={44} />
-            </div>
+            </Card>
           )}
 
           <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
@@ -927,10 +896,9 @@ function LeaderScorecardCard({
             ) : (
               <div className="space-y-1.5">
                 {card.recentWalks.map((r) => (
-                  <div
+                  <Card
                     key={r.id}
-                    className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-xs"
-                  >
+                    className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-xs shadow-none">
                     <div className="min-w-0">
                       <span className="text-slate-700">
                         {fmtDate(r.completedDate ?? r.scheduledDate)}
@@ -945,14 +913,14 @@ function LeaderScorecardCard({
                       </span>
                       <StatusChip status={r.status} />
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

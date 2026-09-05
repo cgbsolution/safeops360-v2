@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, ChevronRight, Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 // ── Risk audit-trail timeline ────────────────────────────────────────────────
 // GET /api/erm/risks/{riskId}/history → { entries: [...], total }
@@ -146,7 +149,7 @@ export function RiskHistory({ riskId, riskCode }: { riskId: string; riskCode?: s
   }, [riskId]);
 
   if (error) {
-    return <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">Failed to load history: {error}</div>;
+    return <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">Failed to load history: {error}</Alert>;
   }
   if (entries === null) {
     return (
@@ -172,7 +175,7 @@ export function RiskHistory({ riskId, riskCode }: { riskId: string; riskCode?: s
           return (
             <li key={e.id} className="relative pb-5">
               <span className={"absolute -left-[31px] top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white " + dotClass(e.action)} />
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
+              <Card className="rounded-lg border border-slate-200 bg-white p-3 shadow-none">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={"rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ring-1 " + badgeClass(e.action)}>
                     {e.action.replace(/_/g, " ")}
@@ -208,30 +211,30 @@ export function RiskHistory({ riskId, riskCode }: { riskId: string; riskCode?: s
                       {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />} {open ? "Hide changes" : "View changes"}
                     </button>
                     {open && (
-                      <div className="mt-2 overflow-x-auto rounded-md border border-slate-100 bg-slate-50/60">
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr className="border-b border-slate-200 text-left text-[10px] uppercase tracking-wider text-slate-400">
-                              <th className="px-2 py-1.5">Field</th>
-                              <th className="px-2 py-1.5">Before</th>
-                              <th className="px-2 py-1.5">After</th>
-                            </tr>
-                          </thead>
-                          <tbody>
+                      <Card className="mt-2 overflow-x-auto rounded-md border border-slate-100 bg-slate-50/60 shadow-none">
+                        <Table className="w-full text-xs">
+                          <TableHeader>
+                            <TableRow className="border-b border-slate-200 text-left text-[10px] uppercase tracking-wider text-slate-400">
+                              <TableHead className="px-2 py-1.5">Field</TableHead>
+                              <TableHead className="px-2 py-1.5">Before</TableHead>
+                              <TableHead className="px-2 py-1.5">After</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
                             {changed.map((f) => (
-                              <tr key={f} className="border-b border-slate-100 last:border-0 align-top">
-                                <td className="px-2 py-1.5 font-medium text-slate-600">{humanizeField(f)}</td>
-                                <td className="px-2 py-1.5 text-rose-700">{fmtValue(e.before ? e.before[f] : null)}</td>
-                                <td className="px-2 py-1.5 text-emerald-700">{fmtValue(e.after ? e.after[f] : null)}</td>
-                              </tr>
+                              <TableRow key={f} className="border-b border-slate-100 last:border-0 align-top">
+                                <TableCell className="px-2 py-1.5 font-medium text-slate-600">{humanizeField(f)}</TableCell>
+                                <TableCell className="px-2 py-1.5 text-rose-700">{fmtValue(e.before ? e.before[f] : null)}</TableCell>
+                                <TableCell className="px-2 py-1.5 text-emerald-700">{fmtValue(e.after ? e.after[f] : null)}</TableCell>
+                              </TableRow>
                             ))}
-                          </tbody>
-                        </table>
-                      </div>
+                          </TableBody>
+                        </Table>
+                      </Card>
                     )}
                   </>
                 )}
-              </div>
+              </Card>
             </li>
           );
         })}

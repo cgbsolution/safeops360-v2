@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import type { WizardSubmission } from "./wizard-types";
 import { putVisitors, fetchSubmission } from "./wizard-api";
+import { Alert } from "@/components/ui/alert";
 
 export function StepVisitors({
   submission,
@@ -84,13 +85,11 @@ export function StepVisitors({
           />
           <div className="text-[11px] text-slate-500">
             Default rule of thumb: 2 hours per visit. {suggested != null && (
-              <button
-                type="button"
-                className="text-primary-700 underline"
-                onClick={() => setHours(suggested)}
-              >
+              <Button variant="link"
+                type="button" className="underline"
+                onClick={() => setHours(suggested)}>
                 Use {suggested} ({count} × 2)
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -108,7 +107,7 @@ export function StepVisitors({
       </div>
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</Alert>
       )}
 
       <div className="flex items-center justify-between pt-2">

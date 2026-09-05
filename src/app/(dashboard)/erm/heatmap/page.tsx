@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { HeatmapExplorer } from "./heatmap-view";
 import type { DashboardSummary, RiskListResponse } from "../lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -54,9 +55,9 @@ export default async function ErmHeatmapPage() {
         description="The enterprise 5×5 — inherent vs residual. Click any cell to see the risks sitting on it. Board-pack quality, ready to export."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM seed has been run and you are logged in with an ERM role.
-        </div>
+        </Alert>
       ) : (
         <HeatmapExplorer summary={summary} risks={risks} />
       )}

@@ -8,6 +8,8 @@ import {
   type EsgPortfolio,
 } from "@/app/(dashboard)/erm/lib-t3";
 import { ExportButton, SpendByBandChart } from "./esg-charts";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -34,40 +36,40 @@ export default async function EsgPortfolioPage() {
       />
 
       {error || !data ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "No portfolio data"}. Ensure the ERM Tier 3 seed has been run, and you are logged in with a vendor role.
-        </div>
+        </Alert>
       ) : (
         <div className="space-y-5">
           {/* Headline lagging-spend number */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-5">
+            <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-5">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-700">Spend with LAGGING vendors</span>
               <div className="mt-1 text-4xl font-bold tabular-nums text-rose-700">
                 {(data.laggingSpendPct ?? 0).toFixed(1)}%
               </div>
               <p className="mt-1 text-xs text-rose-600">The headline supply-chain ESG exposure number.</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            </Alert>
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total tracked spend</span>
               <div className="mt-1 text-3xl font-bold tabular-nums text-slate-900">{inrCompact(data.totalSpend)}</div>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            </Card>
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">LAGGING vendors on watch</span>
               <div className="mt-1 text-3xl font-bold tabular-nums text-slate-900">{data.laggingWatchlist.length}</div>
-            </div>
+            </Card>
           </div>
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Spend-by-band bar */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-1 text-sm font-semibold text-slate-900">Spend by ESG Band</h2>
               <p className="mb-3 text-xs text-slate-500">Annual spend distributed across supplier ESG posture bands.</p>
               <SpendByBandChart spendByBand={data.spendByBand ?? []} />
-            </div>
+            </Card>
 
             {/* Spend-by-category table */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">Spend by Category</h2>
               {data.spendByCategory.length === 0 ? (
                 <p className="text-xs text-slate-400">No category spend data.</p>
@@ -91,11 +93,11 @@ export default async function EsgPortfolioPage() {
                   </TableBody>
                 </Table>
               )}
-            </div>
+            </Card>
           </div>
 
           {/* LAGGING watchlist */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
               <h2 className="text-sm font-semibold text-slate-900">LAGGING Watchlist</h2>
               <span
@@ -136,7 +138,7 @@ export default async function EsgPortfolioPage() {
                 )}
               </TableBody>
             </Table>
-          </div>
+          </Card>
 
           <p className="text-center text-[11px] text-slate-400">
             <Link href="/erm/vendors" className="text-primary-700 underline">

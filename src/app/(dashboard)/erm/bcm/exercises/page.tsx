@@ -9,6 +9,9 @@ import {
 } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { ScheduleExerciseButton } from "./schedule-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -75,9 +78,9 @@ export default async function ExerciseProgrammePage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 3 (BCM) seed has been run and you are logged in with a BCM role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -93,45 +96,45 @@ export default async function ExerciseProgrammePage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.items.length} shown</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1000px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Title</th>
-                  <th className="px-3 py-2.5">Type</th>
-                  <th className="px-3 py-2.5">Scheduled</th>
-                  <th className="px-3 py-2.5">Facilitator</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Outcome</th>
-                  <th className="px-3 py-2.5">RTO Achieved</th>
-                  <th className="px-3 py-2.5">Findings</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1000px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Title</TableHead>
+                  <TableHead className="px-3 py-2.5">Type</TableHead>
+                  <TableHead className="px-3 py-2.5">Scheduled</TableHead>
+                  <TableHead className="px-3 py-2.5">Facilitator</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5">Outcome</TableHead>
+                  <TableHead className="px-3 py-2.5">RTO Achieved</TableHead>
+                  <TableHead className="px-3 py-2.5">Findings</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={9} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={9} className="px-3 py-10 text-center text-sm text-slate-400">
                       No exercises match the current filter. Use “Schedule Exercise” to plan one.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((ex) => (
-                    <tr key={ex.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={ex.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/bcm/exercises/${ex.id}`} className="font-medium text-primary-700 hover:underline">
                           {ex.exerciseCode}
                         </Link>
-                      </td>
-                      <td className="max-w-[260px] px-3 py-2.5 text-slate-700">{ex.title}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[260px] px-3 py-2.5 text-slate-700">{ex.title}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
                           {TYPE_LABEL[ex.exerciseType] ?? ex.exerciseType.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(ex.scheduledDate)}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{ex.facilitatorName ?? "—"}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(ex.scheduledDate)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{ex.facilitatorName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span
                           className={
                             "inline-block rounded border px-2 py-0.5 text-[11px] " +
@@ -140,14 +143,14 @@ export default async function ExerciseProgrammePage(props: {
                         >
                           {ex.status.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">
                         {ex.outcome ? ex.outcome.replace(/_/g, " ") : "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums text-slate-600">
                         {ex.rtoAchievedHours != null ? fmtRto(ex.rtoAchievedHours) : "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums">
                         {ex.findings.length > 0 ? (
                           <span className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-800">
                             {ex.findings.length}
@@ -155,13 +158,13 @@ export default async function ExerciseProgrammePage(props: {
                         ) : (
                           <span className="text-slate-400">0</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

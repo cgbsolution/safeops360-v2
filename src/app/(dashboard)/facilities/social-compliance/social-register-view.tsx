@@ -20,6 +20,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { cn } from "@/lib/utils";
 import { downloadCsv, stamp } from "../csv";
 import { workforceRegisterCsv } from "../registers-csv";
+import { Card } from "@/components/ui/card";
 import {
   fmtNum,
   SOCIAL_FLAG_CHIP,
@@ -86,11 +87,11 @@ function Kpi({ label, value, sub, tone }: { label: string; value: string; sub?: 
   const toneCls =
     tone === "rose" ? "text-rose-700" : tone === "amber" ? "text-amber-700" : tone === "emerald" ? "text-emerald-700" : "text-slate-900";
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5">
+    <Card className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-none">
       <div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div>
       <div className={"text-lg font-bold tabular-nums " + toneCls}>{value}</div>
       {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -255,7 +256,7 @@ export function SocialRegisterView({ data }: { data: SocialComplianceRegisterRes
       </div>
 
       {/* Register table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="w-full min-w-[1180px] text-sm">
           <TableHeader className="bg-slate-50/95">
             <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
@@ -340,7 +341,7 @@ export function SocialRegisterView({ data }: { data: SocialComplianceRegisterRes
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       {/* Legend / exception summary */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-slate-500">

@@ -8,6 +8,12 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { RcaEditor } from "@/components/incidents/rca-editor";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   CAPA_RCA_METHODS,
   deriveCapaCauses,
@@ -18,6 +24,10 @@ import {
   type CapaRcaMethod,
   type RcaMethod
 } from "@/lib/rca/types";
+
+// How sure the analyst is about a root cause. One list so the picker and
+// any later summary cannot disagree about the wording.
+const CONFIDENCE_OPTIONS = ["LOW", "MEDIUM", "HIGH"].map((c) => ({ value: c, label: c }));
 
 const INPUT =
   "flex h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600";
@@ -179,20 +189,16 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
   }
 
   return (
-    <div className="mt-4 rounded-xl border bg-slate-50 p-4 space-y-3">
+    <Card className="mt-4 rounded-xl border bg-slate-50 p-4 space-y-3 shadow-none">
       <h3 className="text-sm font-semibold">Submit RCA</h3>
       {error && (
-        <div className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</Alert>
       )}
       <Field label="Methodology" required>
-        <select className={INPUT} value={methodology} onChange={(e) => pickMethod(e.target.value)}>
-          <option value="">— Pick a method to load its template —</option>
-          {CAPA_RCA_METHODS.map((m) => (
-            <option key={m.code} value={m.code}>
-              {m.label}
-            </option>
-          ))}
-        </select>
+        <SelectField className={INPUT} value={methodology} onChange={pickMethod}
+          placeholder="— Pick a method to load its template —"
+          options={CAPA_RCA_METHODS.map((m) => ({ value: m.code, label: `${m.label}` }))}
+        />
         <p className="mt-1 text-xs text-slate-500">
           5-Why for simple causal chains. Fishbone (Ishikawa) across the 6M categories. FTA for
           gate logic, Bowtie for barriers, TapRoot for high-severity events, Cause Map for
@@ -201,9 +207,9 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
       </Field>
 
       {templatedMethod && (
-        <div className="rounded-lg border bg-white p-3">
+        <Card className="rounded-lg border bg-white p-3 shadow-none">
           <RcaEditor method={templatedMethod} value={analysis} onChange={setAnalysis} readOnly={false} />
-        </div>
+        </Card>
       )}
       {!!methodology && !templatedMethod && methodology !== "NONE_REQUIRED" && (
         <p className="rounded-md border border-dashed border-slate-300 bg-white px-3 py-2 text-xs text-slate-600">
@@ -214,14 +220,13 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
       )}
 
       <Field label="Why this methodology?">
-        <input
+        <Input
           className={INPUT}
           value={methodologyRationale}
-          onChange={(e) => setMethodologyRationale(e.target.value)}
-        />
+          onChange={(e) => setMethodologyRationale(e.target.value)} />
       </Field>
       <Field label="RCA summary" required={methodology !== "NONE_REQUIRED"}>
-        <textarea
+        <Textarea
           className={TEXTAREA}
           rows={3}
           value={effectiveSummary}
@@ -229,8 +234,7 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
             setSummaryTouched(true);
             setRcaSummary(e.target.value);
           }}
-          placeholder="Conclusion of the analysis — what does the team believe caused the problem?"
-        />
+          placeholder="Conclusion of the analysis — what does the team believe caused the problem?" />
         {!summaryTouched && generatedSummary && (
           <p className="mt-1 text-[11px] text-slate-500">
             Drafted from the analysis above and kept in step with it. Edit to write your own.
@@ -239,7 +243,7 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
       </Field>
 
       {!!derived?.contributingFactors.length && (
-        <div className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2">
+        <Alert variant="brand" className="rounded-md border border-violet-200 bg-violet-50 px-3 py-2">
           <div className="text-[10px] font-semibold uppercase tracking-wider text-violet-800">
             Contributing levels read from the analysis ({derived.contributingFactors.length})
           </div>
@@ -253,7 +257,7 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
           <p className="mt-1 text-[11px] text-violet-700">
             Saved with the CAPA as the chain above the root cause.
           </p>
-        </div>
+        </Alert>
       )}
 
       {methodology !== "NONE_REQUIRED" && (
@@ -263,70 +267,56 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
               Identified root causes <span className="text-rose-600">*</span>
             </div>
             {!!derived?.rootCauses.length && (
-              <button
+              <Button variant="link"
                 type="button"
-                onClick={pullRootCausesFromAnalysis}
-                className="text-[11px] text-primary-700 hover:underline"
-              >
+                onClick={pullRootCausesFromAnalysis} className="text-[11px] hover:underline">
                 Fill from analysis ({derived.rootCauses.length})
-              </button>
+              </Button>
             )}
           </div>
           <div className="space-y-2">
             {rootCauses.map((rc, i) => (
-              <div key={i} className="rounded border bg-white p-2 grid grid-cols-12 gap-2 items-end">
+              <Card key={i} className="rounded border bg-white p-2 grid grid-cols-12 gap-2 items-end shadow-none">
                 <div className="col-span-6">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Description</label>
-                  <input
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Description</Label>
+                  <Input
                     className={INPUT}
                     value={rc.description}
-                    onChange={(e) => updateRootCause(i, { description: e.target.value })}
-                  />
+                    onChange={(e) => updateRootCause(i, { description: e.target.value })} />
                 </div>
                 <div className="col-span-3">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Category</label>
-                  <select
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Category</Label>
+                  <SelectField
                     className={INPUT}
                     value={rc.category}
-                    onChange={(e) => updateRootCause(i, { category: e.target.value })}
-                  >
-                    {ROOT_CAUSE_CATEGORIES.map((c) => (
-                      <option key={c} value={c}>
-                        {c}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(value) => updateRootCause(i, { category: value })}
+                    options={ROOT_CAUSE_CATEGORIES.map((c) => ({ value: c, label: `${c}` }))}
+                  />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Confidence</label>
-                  <select
+                  <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Confidence</Label>
+                  <SelectField
                     className={INPUT}
                     value={rc.confidence}
-                    onChange={(e) => updateRootCause(i, { confidence: e.target.value })}
-                  >
-                    <option>LOW</option>
-                    <option>MEDIUM</option>
-                    <option>HIGH</option>
-                  </select>
+                    ariaLabel="Confidence"
+                    onChange={(value) => updateRootCause(i, { confidence: value })}
+                    options={CONFIDENCE_OPTIONS}
+                  />
                 </div>
                 <div className="col-span-1 flex justify-end">
-                  <button
+                  <Button variant="link"
                     type="button"
-                    onClick={() => removeRootCause(i)}
-                    className="text-rose-600 text-xs hover:underline"
-                  >
+                    onClick={() => removeRootCause(i)} className="text-xs hover:underline">
                     ✕
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             ))}
-            <button
+            <Button variant="link"
               type="button"
-              onClick={addRootCause}
-              className="text-xs text-primary-700 hover:underline"
-            >
+              onClick={addRootCause} className="text-xs hover:underline">
               + Add another root cause
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -338,7 +328,7 @@ export function RcaSubmitForm({ capaId, currentState }: { capaId: string; curren
           Cancel
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -400,68 +390,61 @@ export function AddActionForm({
 
   if (!open) {
     return (
-      <button
+      <Button variant="link"
         type="button"
-        onClick={() => setOpen(true)}
-        className="text-xs text-primary-700 hover:underline"
-      >
+        onClick={() => setOpen(true)} className="text-xs hover:underline">
         + Add action
-      </button>
+      </Button>
     );
   }
 
   return (
-    <div className="rounded border bg-slate-50 p-3 space-y-2">
+    <Card className="rounded border bg-slate-50 p-3 space-y-2 shadow-none">
       <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-700">Add Action</h3>
       {error && (
-        <div className="rounded border border-rose-300 bg-rose-50 px-2 py-1 text-xs text-rose-900">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-300 bg-rose-50 px-2 py-1 text-xs text-rose-900">{error}</Alert>
       )}
       <div className="grid grid-cols-12 gap-2">
         <div className="col-span-4">
-          <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Action type</label>
-          <select className={INPUT} value={actionType} onChange={(e) => setActionType(e.target.value)}>
-            <option value="IMMEDIATE_CONTAINMENT">Immediate Containment</option>
-            <option value="CORRECTIVE">Corrective</option>
-            <option value="PREVENTIVE">Preventive</option>
-          </select>
+          <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Action type</Label>
+          <SelectField className={INPUT} value={actionType} onChange={setActionType}
+            options={[
+            { value: "IMMEDIATE_CONTAINMENT", label: "Immediate Containment" },
+            { value: "CORRECTIVE", label: "Corrective" },
+            { value: "PREVENTIVE", label: "Preventive" }
+          ]}
+          />
         </div>
         <div className="col-span-5">
-          <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Owner</label>
-          <select className={INPUT} value={ownerUserId} onChange={(e) => setOwnerUserId(e.target.value)}>
-            <option value="">— Select —</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+          <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Owner</Label>
+          <SelectField className={INPUT} value={ownerUserId} onChange={setOwnerUserId}
+            placeholder="— Select —"
+            options={users.map((u) => ({ value: u.id, label: `${u.name}` }))}
+          />
         </div>
         <div className="col-span-3">
-          <label className="block text-[10px] uppercase text-slate-500 mb-0.5">Due date</label>
-          <input type="date" className={INPUT} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <Label className="block text-[10px] uppercase text-slate-500 mb-0.5">Due date</Label>
+          <Input type="date" className={INPUT} value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </div>
       </div>
-      <textarea
+      <Textarea
         className={TEXTAREA}
         rows={2}
         placeholder="Action description"
         value={description}
-        onChange={(e) => setDescription(e.target.value)}
-      />
-      <textarea
+        onChange={(e) => setDescription(e.target.value)} />
+      <Textarea
         className={TEXTAREA}
         rows={2}
         placeholder="Rationale (optional)"
         value={rationale}
-        onChange={(e) => setRationale(e.target.value)}
-      />
-      <input
+        onChange={(e) => setRationale(e.target.value)} />
+      <Input
         type="number"
         className={INPUT}
         placeholder="Cost estimate (optional)"
         value={costEstimate}
-        onChange={(e) => setCostEstimate(e.target.value)}
-      />
+        onChange={(e) => setCostEstimate(e.target.value)} />
       <div className="flex gap-2">
         <Button onClick={submit} disabled={pending}>
           {pending ? "Adding…" : "Add Action"}
@@ -470,7 +453,7 @@ export function AddActionForm({
           Cancel
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -519,63 +502,52 @@ export function ActionStatusControls({
       {error && <div className="text-[10px] text-rose-700 mt-1">{error}</div>}
       <div className="flex gap-1 mt-1">
         {currentStatus === "PROPOSED" && (
-          <button
+          <Button variant="outline"
             type="button"
             disabled={pending}
-            onClick={() => patch({ status: "APPROVED" })}
-            className="text-[10px] px-1.5 py-0.5 rounded border border-blue-300 text-blue-700 hover:bg-blue-50"
-          >
+            onClick={() => patch({ status: "APPROVED" })} className="text-[10px] px-1.5 py-0.5 rounded">
             Approve
-          </button>
+          </Button>
         )}
         {(currentStatus === "APPROVED" || currentStatus === "PROPOSED") && (
-          <button
+          <Button variant="outline"
             type="button"
             disabled={pending}
-            onClick={() => patch({ status: "IN_PROGRESS" })}
-            className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 text-amber-700 hover:bg-amber-50"
-          >
+            onClick={() => patch({ status: "IN_PROGRESS" })} className="text-[10px] px-1.5 py-0.5 rounded">
             Start
-          </button>
+          </Button>
         )}
         {currentStatus !== "COMPLETED" && currentStatus !== "CANCELLED" && (
-          <button
+          <Button variant="success"
             type="button"
             disabled={pending}
-            onClick={() => setShowEvidence(true)}
-            className="text-[10px] px-1.5 py-0.5 rounded border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-          >
+            onClick={() => setShowEvidence(true)} className="text-[10px] px-1.5 py-0.5 rounded">
             Mark complete
-          </button>
+          </Button>
         )}
       </div>
       {showEvidence && (
-        <div className="mt-2 rounded border bg-white p-2 space-y-1">
-          <label className="block text-[10px] uppercase text-slate-500">Evidence of completion</label>
-          <textarea
+        <Card className="mt-2 rounded border bg-white p-2 space-y-1 shadow-none">
+          <Label className="block text-[10px] uppercase text-slate-500">Evidence of completion</Label>
+          <Textarea
             className={TEXTAREA}
             rows={2}
             value={evidence}
-            onChange={(e) => setEvidence(e.target.value)}
-          />
+            onChange={(e) => setEvidence(e.target.value)} />
           <div className="flex gap-1">
-            <button
+            <Button variant="success"
               type="button"
               disabled={pending || !evidence.trim()}
-              onClick={() => patch({ status: "COMPLETED", evidenceOfCompletion: evidence.trim() })}
-              className="text-[10px] px-2 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-            >
+              onClick={() => patch({ status: "COMPLETED", evidenceOfCompletion: evidence.trim() })} className="text-[10px] px-2 py-0.5 rounded text-white">
               Confirm
-            </button>
-            <button
+            </Button>
+            <Button variant="outline"
               type="button"
-              onClick={() => setShowEvidence(false)}
-              className="text-[10px] px-2 py-0.5 rounded border border-slate-300 hover:bg-slate-50"
-            >
+              onClick={() => setShowEvidence(false)} className="text-[10px] px-2 py-0.5 rounded">
               Cancel
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -640,56 +612,45 @@ export function VerifySubmitForm({
   }
 
   return (
-    <div className="mt-4 rounded-xl border bg-slate-50 p-4 space-y-3">
+    <Card className="mt-4 rounded-xl border bg-slate-50 p-4 space-y-3 shadow-none">
       <h3 className="text-sm font-semibold">Submit Effectiveness Verification</h3>
       {error && (
-        <div className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</Alert>
       )}
       <div className="grid grid-cols-2 gap-3">
         <Field label="Verification method">
-          <select className={INPUT} value={methodCode} onChange={(e) => setMethodCode(e.target.value)}>
-            {verificationMethods.map((m) => (
-              <option key={m.code} value={m.code}>
-                {m.name}
-              </option>
-            ))}
-          </select>
+          <SelectField className={INPUT} value={methodCode} onChange={setMethodCode}
+            options={verificationMethods.map((m) => ({ value: m.code, label: `${m.name}` }))}
+          />
         </Field>
         <Field label="Measurement period (days)">
-          <input
+          <Input
             type="number"
             className={INPUT}
             value={measurementDays}
-            onChange={(e) => setMeasurementDays(e.target.value)}
-          />
+            onChange={(e) => setMeasurementDays(e.target.value)} />
         </Field>
       </div>
       <Field label="Success criteria">
-        <textarea
+        <Textarea
           className={TEXTAREA}
           rows={2}
           value={successCriteria}
           onChange={(e) => setSuccessCriteria(e.target.value)}
-          placeholder="What does success look like? What metric / observation / test confirms it?"
-        />
+          placeholder="What does success look like? What metric / observation / test confirms it?" />
       </Field>
       <Field label="Result" required>
-        <select className={INPUT} value={result} onChange={(e) => setResult(e.target.value)}>
-          {VERIFICATION_RESULTS.map((r) => (
-            <option key={r.code} value={r.code}>
-              {r.label}
-            </option>
-          ))}
-        </select>
+        <SelectField className={INPUT} value={result} onChange={setResult}
+          options={VERIFICATION_RESULTS.map((r) => ({ value: r.code, label: `${r.label}` }))}
+        />
       </Field>
       <Field label="Evidence" required>
-        <textarea
+        <Textarea
           className={TEXTAREA}
           rows={3}
           value={evidence}
           onChange={(e) => setEvidence(e.target.value)}
-          placeholder="Document what you observed / measured / reviewed and what it showed."
-        />
+          placeholder="Document what you observed / measured / reviewed and what it showed." />
       </Field>
       <div className="flex gap-2 pt-2 border-t">
         <Button onClick={submit} disabled={pending}>
@@ -699,7 +660,7 @@ export function VerifySubmitForm({
           Cancel
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -741,27 +702,25 @@ export function CloseCapaForm({ capaId, currentState }: { capaId: string; curren
     return <Button onClick={() => setOpen(true)}>Close CAPA</Button>;
   }
   return (
-    <div className="rounded-xl border bg-emerald-50 border-emerald-200 p-4 space-y-3">
+    <Alert variant="success" className="rounded-xl border bg-emerald-50 border-emerald-200 p-4 space-y-3">
       <h3 className="text-sm font-semibold text-emerald-900">Close CAPA</h3>
       {error && (
-        <div className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</Alert>
       )}
       <Field label="Closure notes">
-        <textarea
+        <Textarea
           className={TEXTAREA}
           rows={3}
           value={closureNotes}
           onChange={(e) => setClosureNotes(e.target.value)}
-          placeholder="Final summary for the audit trail."
-        />
+          placeholder="Final summary for the audit trail." />
       </Field>
       <Field label="Actual cost (INR)">
-        <input
+        <Input
           type="number"
           className={INPUT}
           value={finalCost}
-          onChange={(e) => setFinalCost(e.target.value)}
-        />
+          onChange={(e) => setFinalCost(e.target.value)} />
       </Field>
       <div className="flex gap-2">
         <Button onClick={submit} disabled={pending}>
@@ -771,7 +730,7 @@ export function CloseCapaForm({ capaId, currentState }: { capaId: string; curren
           Cancel
         </Button>
       </div>
-    </div>
+    </Alert>
   );
 }
 
@@ -823,7 +782,7 @@ export function RecurrenceCheckForm({
     );
   }
   return (
-    <div className="rounded-xl border bg-slate-50 p-4 space-y-3">
+    <Card className="rounded-xl border bg-slate-50 p-4 space-y-3 shadow-none">
       <h3 className="text-sm font-semibold">Recurrence Check</h3>
       <div className="text-xs text-slate-600">
         {dueDate
@@ -831,30 +790,28 @@ export function RecurrenceCheckForm({
           : "Has the same issue recurred since closure?"}
       </div>
       {error && (
-        <div className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-300 bg-rose-50 px-3 py-1.5 text-sm text-rose-900">{error}</Alert>
       )}
       <div className="flex gap-2">
         {(["no", "yes"] as const).map((v) => (
-          <label
+          <Label
             key={v}
             className={`flex-1 rounded-md border px-3 py-2 cursor-pointer text-sm ${
               recurred === v ? "bg-primary-50 border-primary-500" : "border-slate-300"
-            }`}
-          >
-            <input
+            }`}>
+            <Input
               type="radio"
               name="recurred"
               value={v}
               checked={recurred === v}
               onChange={() => setRecurred(v)}
-              className="mr-2"
-            />
+              className="mr-2" />
             {v === "no" ? "No recurrence — CAPA stays closed" : "Recurred — flag for re-investigation"}
-          </label>
+          </Label>
         ))}
       </div>
       <Field label="Notes">
-        <textarea className={TEXTAREA} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <Textarea className={TEXTAREA} rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />
       </Field>
       <div className="flex gap-2">
         <Button onClick={submit} disabled={pending}>
@@ -864,7 +821,7 @@ export function RecurrenceCheckForm({
           Cancel
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -879,9 +836,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">
+      <Label className="block text-xs font-medium text-slate-600 mb-1">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );

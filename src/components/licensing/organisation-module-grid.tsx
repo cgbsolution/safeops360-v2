@@ -24,6 +24,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { SECTIONS } from "@/components/layout/app-sidebar";
 import { moduleForPath } from "@/lib/licensing/route-map";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 
 type OrgModule = {
   code: string;
@@ -180,16 +183,16 @@ export function OrganisationModuleGrid() {
         </p>
 
         {error && (
-          <div className="mb-4 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+          <Alert variant="destructive" className="mb-4 flex items-start gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
             <AlertTriangle size={16} className="mt-0.5 shrink-0" />
             <span>{error}</span>
-          </div>
+          </Alert>
         )}
         {message && (
-          <div className="mb-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          <Alert variant="success" className="mb-4 flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
             <Info size={16} className="mt-0.5 shrink-0" />
             <span>{message}</span>
-          </div>
+          </Alert>
         )}
 
         <div className="space-y-3">
@@ -199,11 +202,11 @@ export function OrganisationModuleGrid() {
             const none = on === 0;
             const isCollapsed = collapsed[section.key] ?? false;
             return (
-              <div key={section.key} className="overflow-hidden rounded-lg border border-slate-200">
+              <Card key={section.key} className="overflow-hidden rounded-lg border border-slate-200 shadow-none">
                 {/* ── Section row: the parent switch ── */}
                 <div className="flex items-center gap-3 border-b border-slate-200 bg-slate-50 px-3 py-2">
-                  <input
-                    type="checkbox"
+                  <Checkbox
+                   
                     className="h-4 w-4 accent-primary-600"
                     checked={all}
                     // Partially-on reads as indeterminate rather than as a lie
@@ -212,15 +215,12 @@ export function OrganisationModuleGrid() {
                       if (el) el.indeterminate = !all && !none;
                     }}
                     onChange={(e) => setSection(section.items, e.target.checked)}
-                    aria-label={`Toggle all screens in ${section.label ?? section.key}`}
-                  />
-                  <button
-                    type="button"
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    aria-label={`Toggle all screens in ${section.label ?? section.key}`} />
+                  <Button variant="ghost"
+                    type="button" className="flex min-w-0 flex-1 gap-2 text-left"
                     onClick={() =>
                       setCollapsed((p) => ({ ...p, [section.key]: !isCollapsed }))
-                    }
-                  >
+                    }>
                     <ChevronRight
                       size={14}
                       className={`shrink-0 text-slate-400 transition-transform ${
@@ -237,7 +237,7 @@ export function OrganisationModuleGrid() {
                     <span className="shrink-0 text-xs text-slate-400">
                       {on}/{section.items.length}
                     </span>
-                  </button>
+                  </Button>
                   {none && (
                     <span className="flex shrink-0 items-center gap-1 text-xs font-medium text-amber-700">
                       <ShieldOff size={13} /> hidden
@@ -252,18 +252,16 @@ export function OrganisationModuleGrid() {
                       const enabled = !!screens[item.href];
                       const { code, licensed } = licenceStateFor(item.href);
                       return (
-                        <label
+                        <Label
                           key={item.href}
-                          className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-slate-50"
-                        >
-                          <input
-                            type="checkbox"
+                          className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-slate-50">
+                          <Checkbox
+                           
                             className="h-4 w-4 accent-primary-600"
                             checked={enabled}
                             onChange={(e) =>
                               setScreens((p) => ({ ...p, [item.href]: e.target.checked }))
-                            }
-                          />
+                            } />
                           <span className="min-w-0 flex-1">
                             <span
                               className={`flex items-center gap-2 text-sm ${
@@ -285,12 +283,12 @@ export function OrganisationModuleGrid() {
                               {code ? ` · ${code}` : ""}
                             </span>
                           </span>
-                        </label>
+                        </Label>
                       );
                     })}
                   </div>
                 )}
-              </div>
+              </Card>
             );
           })}
         </div>

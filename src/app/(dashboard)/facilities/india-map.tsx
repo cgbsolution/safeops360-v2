@@ -14,6 +14,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
 import { BAND_HEX, complianceBand, fmtNum, type FactoryProfile } from "./lib";
+import { Card } from "@/components/ui/card";
 
 const GEO_URL = "/geo/india-states.json";
 
@@ -59,7 +60,7 @@ export function IndiaMap({
   );
 
   return (
-    <div className="relative rounded-xl border border-slate-200 bg-white p-2" style={{ width: "100%" }}>
+    <Card className="relative rounded-xl border border-slate-200 bg-white p-2 shadow-none" style={{ width: "100%" }}>
       {/* legend */}
       <div className="absolute left-4 top-3 z-10 flex flex-wrap gap-3 text-[11px] text-slate-500">
         {(["green", "amber", "red", "none"] as const).map((b) => (
@@ -140,6 +141,6 @@ export function IndiaMap({
           {unplottable} factory{unplottable > 1 ? "ies" : "y"} without geo-coordinates not shown.
         </div>
       )}
-    </div>
+    </Card>
   );
 }

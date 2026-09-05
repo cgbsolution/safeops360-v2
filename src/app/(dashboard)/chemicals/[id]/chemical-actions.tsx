@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import type { Chemical } from "@/lib/chemicals/types";
@@ -199,12 +199,14 @@ export function ChemicalActions({ chemical }: { chemical: Chemical }) {
                 <Input type="date" value={revisionDate} onChange={(e) => setRevisionDate(e.target.value)} />
               </Field>
               <Field label="Validity (years)">
-                <Select value={validity} onChange={(e) => setValidity(e.target.value)}>
-                  <option value="1">1 year</option>
-                  <option value="2">2 years</option>
-                  <option value="3">3 years (default)</option>
-                  <option value="5">5 years</option>
-                </Select>
+                <SelectField value={validity} onChange={setValidity}
+                  options={[
+                  { value: "1", label: "1 year" },
+                  { value: "2", label: "2 years" },
+                  { value: "3", label: "3 years (default)" },
+                  { value: "5", label: "5 years" }
+                ]}
+                />
               </Field>
             </div>
           </div>
@@ -229,12 +231,14 @@ export function ChemicalActions({ chemical }: { chemical: Chemical }) {
           <div className="space-y-4">
             <FormError message={error} />
             <Field label="New status">
-              <Select value={newStatus} onChange={(e) => setNewStatus(e.target.value)}>
-                <option value="ACTIVE">Active</option>
-                <option value="RESTRICTED">Restricted</option>
-                <option value="INACTIVE">Inactive</option>
-                <option value="PENDING_SDS">Pending SDS</option>
-              </Select>
+              <SelectField value={newStatus} onChange={setNewStatus}
+                options={[
+                { value: "ACTIVE", label: "Active" },
+                { value: "RESTRICTED", label: "Restricted" },
+                { value: "INACTIVE", label: "Inactive" },
+                { value: "PENDING_SDS", label: "Pending SDS" }
+              ]}
+              />
             </Field>
             {newStatus === "RESTRICTED" && (
               <Field label="Restriction reason" required hint="Shown to anyone who tries to receive this chemical.">

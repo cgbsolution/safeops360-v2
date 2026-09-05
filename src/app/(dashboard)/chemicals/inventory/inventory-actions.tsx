@@ -29,6 +29,8 @@ import { useToast } from "@/components/ui/toast";
 import type { Chemical, InventoryItem, StorageLocation } from "@/lib/chemicals/types";
 import { fmtQty } from "@/lib/chemicals/types";
 import { apiSend, Field, FormError } from "../_client";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 type TriggerSummary = {
   fired: { rule: string; reason: string; mocId: string | null }[];
@@ -177,22 +179,21 @@ export function NewBatchDialog({
             <FormError message={error} />
 
             {receivable.length === 0 && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <Alert variant="warning" className="p-3">
                 No ACTIVE chemicals at this site yet. A chemical must have its Safety Data Sheet
                 attached and be approved before stock can be received against it.
-              </div>
+              </Alert>
             )}
 
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Chemical" required>
-                <Select value={chemicalId} onChange={(e) => setChemicalId(e.target.value)}>
-                  <option value="">Select…</option>
-                  {receivable.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}{c.casNumber ? ` (${c.casNumber})` : ""}
-                    </option>
-                  ))}
-                </Select>
+                <SelectField value={chemicalId} onChange={setChemicalId}
+                  placeholder="Select…"
+                  options={receivable.map((c) => ({
+                    value: c.id,
+                    label: `${c.name}${c.casNumber ? ` (${c.casNumber})` : ""}`
+                  }))}
+                />
               </Field>
               <Field label="Batch / lot number" required>
                 <Input value={batch} onChange={(e) => setBatch(e.target.value)} placeholder="TOL-2026-014" />
@@ -201,22 +202,22 @@ export function NewBatchDialog({
                 <Input type="number" min="0" step="any" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="500" />
               </Field>
               <Field label="Unit" hint="Transactions must use the batch's own unit.">
-                <Select value={unit} onChange={(e) => setUnit(e.target.value)}>
-                  <option value="KG">KG — kilograms</option>
-                  <option value="G">G — grams</option>
-                  <option value="T">T — tonnes</option>
-                  <option value="L">L — litres</option>
-                  <option value="ML">ML — millilitres</option>
-                  <option value="KL">KL — kilolitres</option>
-                </Select>
+                <SelectField value={unit} onChange={setUnit}
+                  options={[
+                  { value: "KG", label: "KG — kilograms" },
+                  { value: "G", label: "G — grams" },
+                  { value: "T", label: "T — tonnes" },
+                  { value: "L", label: "L — litres" },
+                  { value: "ML", label: "ML — millilitres" },
+                  { value: "KL", label: "KL — kilolitres" }
+                ]}
+                />
               </Field>
               <Field label="Storage location">
-                <Select value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-                  <option value="">Unassigned</option>
-                  {locations.map((l) => (
-                    <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
-                  ))}
-                </Select>
+                <SelectField value={locationId} onChange={setLocationId}
+                  placeholder="Unassigned"
+                  options={locations.map((l) => ({ value: l.id, label: "{l.name} ({l.code})" }))}
+                />
               </Field>
               <Field label="Expiry date">
                 <Input type="date" value={expiry} onChange={(e) => setExpiry(e.target.value)} />
@@ -230,7 +231,7 @@ export function NewBatchDialog({
             </div>
 
             {blocking.length > 0 && (
-              <div className="rounded-lg border border-rose-300 bg-rose-50 p-3">
+              <Alert variant="destructive" size="lg" className="border-rose-300 p-3">
                 <div className="text-xs font-semibold text-rose-800">
                   Incompatible co-storage — this location cannot be used
                 </div>
@@ -241,11 +242,11 @@ export function NewBatchDialog({
                   This is a hard constraint — the save will be rejected by the database, not just
                   by this form. Choose a different location.
                 </div>
-              </div>
+              </Alert>
             )}
 
             {warning.length > 0 && (
-              <div className="space-y-2 rounded-lg border border-amber-300 bg-amber-50 p-3">
+              <Alert variant="warning" size="lg" className="space-y-2 border-amber-300 p-3">
                 <div className="text-xs font-semibold text-amber-800">Co-storage warning</div>
                 <ul className="space-y-0.5 text-[11px] text-amber-700">
                   {warning.map((c, i) => <li key={i}>{c.message}</li>)}
@@ -254,7 +255,7 @@ export function NewBatchDialog({
                   <Textarea rows={2} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)}
                     placeholder="e.g. Segregated bund, 3 m separation verified by CSO" />
                 </Field>
-              </div>
+              </Alert>
             )}
           </div>
 
@@ -271,6 +272,10 @@ export function NewBatchDialog({
 }
 
 // ── Per-row actions ──────────────────────────────────────────────────────────
+// Shared geometry for the five inventory row actions. They sit in a dense
+// table cell, so they are tighter than a default ghost Button.
+const ROW_ACTION = "h-auto gap-1 rounded px-1.5 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-900";
+
 export function RowActions({
   item,
   locations,
@@ -420,26 +425,25 @@ export function RowActions({
     } finally { setBusy(false); }
   }
 
-  const btn = "inline-flex items-center gap-1 rounded px-1.5 py-1 text-[11px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900";
 
   return (
     <>
       <div className="flex flex-wrap items-center gap-0.5">
-        <button className={btn} onClick={() => { setTxnType("ISSUE"); setMode("TXN"); }} title="Issue, receive or adjust">
+        <Button variant="ghost" size="sm" className={ROW_ACTION} onClick={() => { setTxnType("ISSUE"); setMode("TXN"); }} title="Issue, receive or adjust">
           <MinusCircle size={13} /> Issue
-        </button>
-        <button className={btn} onClick={() => { setTxnType("RECEIPT"); setMode("TXN"); }} title="Receive more of this batch">
+        </Button>
+        <Button variant="ghost" size="sm" className={ROW_ACTION} onClick={() => { setTxnType("RECEIPT"); setMode("TXN"); }} title="Receive more of this batch">
           <PlusCircle size={13} /> Receive
-        </button>
-        <button className={btn} onClick={() => setMode("MOVE")} title="Assign or change storage location">
+        </Button>
+        <Button variant="ghost" size="sm" className={ROW_ACTION} onClick={() => setMode("MOVE")} title="Assign or change storage location">
           <Warehouse size={13} /> Move
-        </button>
-        <button className={btn} onClick={() => setMode("TRANSFER")} title="Transfer to another site">
+        </Button>
+        <Button variant="ghost" size="sm" className={ROW_ACTION} onClick={() => setMode("TRANSFER")} title="Transfer to another site">
           <ArrowRightLeft size={13} /> Transfer
-        </button>
-        <button className={btn} onClick={() => setMode("DISPOSAL")} title="Record disposal with manifest">
+        </Button>
+        <Button variant="ghost" size="sm" className={ROW_ACTION} onClick={() => setMode("DISPOSAL")} title="Record disposal with manifest">
           <Trash2 size={13} /> Dispose
-        </button>
+        </Button>
       </div>
 
       {/* ── transaction ── */}
@@ -456,11 +460,13 @@ export function RowActions({
             <FormError message={error} />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Transaction type">
-                <Select value={txnType} onChange={(e) => setTxnType(e.target.value as any)}>
-                  <option value="ISSUE">Issue — stock leaves the store</option>
-                  <option value="RECEIPT">Receipt — more stock arrives</option>
-                  <option value="ADJUSTMENT">Adjustment — correct a discrepancy</option>
-                </Select>
+                <SelectField value={txnType} onChange={(value) => setTxnType(value as any)}
+                  options={[
+                  { value: "ISSUE", label: "Issue — stock leaves the store" },
+                  { value: "RECEIPT", label: "Receipt — more stock arrives" },
+                  { value: "ADJUSTMENT", label: "Adjustment — correct a discrepancy" }
+                ]}
+                />
               </Field>
               <Field label={`Quantity (${item.unit})`} required>
                 <Input type="number" min="0" step="any" value={qty} onChange={(e) => setQty(e.target.value)} />
@@ -468,10 +474,12 @@ export function RowActions({
             </div>
             {txnType === "ADJUSTMENT" && (
               <Field label="Direction">
-                <Select value={adjSign} onChange={(e) => setAdjSign(e.target.value)}>
-                  <option value="-1">Write down — physical count is lower</option>
-                  <option value="1">Write up — physical count is higher</option>
-                </Select>
+                <SelectField value={adjSign} onChange={setAdjSign}
+                  options={[
+                  { value: "-1", label: "Write down — physical count is lower" },
+                  { value: "1", label: "Write up — physical count is higher" }
+                ]}
+                />
               </Field>
             )}
             <Field label="Reference document" hint="Issue slip, GRN, invoice number.">
@@ -501,12 +509,10 @@ export function RowActions({
           <div className="space-y-4">
             <FormError message={error} />
             <Field label="Storage location" required>
-              <Select value={locationId} onChange={(e) => setLocationId(e.target.value)}>
-                <option value="">Select…</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name} ({l.code}) — {l.itemCount} batches</option>
-                ))}
-              </Select>
+              <SelectField value={locationId} onChange={setLocationId}
+                placeholder="Select…"
+                options={locations.map((l) => ({ value: l.id, label: "{l.name} ({l.code}) — {l.itemCount} batches" }))}
+              />
             </Field>
             <Field label="Override reason" hint="Required only if a WARN-severity conflict is found.">
               <Textarea rows={2} value={overrideReason} onChange={(e) => setOverrideReason(e.target.value)} />
@@ -533,12 +539,10 @@ export function RowActions({
             <FormError message={error} />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Destination site" required>
-                <Select value={toPlant} onChange={(e) => setToPlant(e.target.value)}>
-                  <option value="">Select…</option>
-                  {plants.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-                  ))}
-                </Select>
+                <SelectField value={toPlant} onChange={setToPlant}
+                  placeholder="Select…"
+                  options={plants.map((p) => ({ value: p.id, label: "{p.name} ({p.code})" }))}
+                />
               </Field>
               <Field label={`Quantity (${item.unit})`} required>
                 <Input type="number" min="0" step="any" value={qty} onChange={(e) => setQty(e.target.value)} />

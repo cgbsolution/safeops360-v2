@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/page-header";
 import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export type Phase2Capability = {
   icon: LucideIcon;
@@ -194,7 +195,7 @@ export function Phase2Scaffold({ module, capabilities, mockMetrics, list }: Phas
             {capabilities.map((c, i) => {
               const CIcon = c.icon;
               return (
-                <div key={i} className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 bg-white">
+                <Card key={i} className="flex items-start gap-3 p-3 rounded-lg border border-slate-200 bg-white shadow-none">
                   <div className={cn("w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0", accent.capIconWrap)}>
                     <CIcon size={15} />
                   </div>
@@ -202,7 +203,7 @@ export function Phase2Scaffold({ module, capabilities, mockMetrics, list }: Phas
                     <div className="text-sm font-semibold text-slate-900">{c.title}</div>
                     <div className="text-xs text-slate-600 mt-0.5 leading-snug">{c.description}</div>
                   </div>
-                </div>
+                </Card>
               );
             })}
           </div>
@@ -218,34 +219,34 @@ export function Phase2Scaffold({ module, capabilities, mockMetrics, list }: Phas
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 border-y">
-                  <tr>
+              <Table className="w-full text-sm">
+                <TableHeader className="bg-slate-50 border-y">
+                  <TableRow>
                     {list.columns.map((c) => (
-                      <th key={c} className="text-left px-4 py-2 font-semibold text-slate-700 text-xs uppercase tracking-wider">{c}</th>
+                      <TableHead key={c} className="text-left px-4 py-2 font-semibold text-slate-700 text-xs uppercase tracking-wider">{c}</TableHead>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {list.rows.map((row, i) => (
-                    <tr key={i} className="border-b last:border-b-0 hover:bg-slate-50/50">
+                    <TableRow key={i} className="border-b last:border-b-0 hover:bg-slate-50/50">
                       {list.columns.map((c) => {
                         const v = row[c];
                         const isStatus = list.statusKey === c;
                         return (
-                          <td key={c} className="px-4 py-2.5 text-slate-700">
+                          <TableCell key={c} className="px-4 py-2.5 text-slate-700">
                             {isStatus ? (
                               <Badge className={statusBadgeCls(String(v))}>{v}</Badge>
                             ) : (
                               <span>{v}</span>
                             )}
-                          </td>
+                          </TableCell>
                         );
                       })}
-                    </tr>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             <div className="px-4 py-3 border-t bg-slate-50/50 text-[11px] text-slate-500">
               Sample data — full create/edit experience ships with Phase 2 ({module.availability}).

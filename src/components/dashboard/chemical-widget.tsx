@@ -17,6 +17,8 @@ import { AlertTriangle, FlaskConical, FileWarning, Layers } from "lucide-react";
 import { backendFetch } from "@/lib/backend/fetch";
 import type { ChemicalDashboard } from "@/lib/chemicals/types";
 import { fmtQty } from "@/lib/chemicals/types";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 function Row({
   href,
@@ -64,7 +66,7 @@ export async function ChemicalWidget({ plantId }: { plantId?: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="flex items-center gap-2 text-sm font-semibold text-slate-900">
           <FlaskConical size={15} className="text-slate-400" />
@@ -76,10 +78,10 @@ export async function ChemicalWidget({ plantId }: { plantId?: string }) {
       </div>
 
       {error || !d ? (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-700">
+        <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-700">
           Could not load chemical signals ({error}). This is a load failure — do not read it as
           &ldquo;nothing outstanding&rdquo;.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="divide-y divide-slate-100">
@@ -128,17 +130,17 @@ export async function ChemicalWidget({ plantId }: { plantId?: string }) {
           {/* The single most urgent item, spelled out. A count tells you there is
               a problem; this tells you which one to open first. */}
           {d.failedTriggers.items[0] && (
-            <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-2.5">
+            <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-2.5">
               <div className="text-[11px] font-semibold text-rose-800">
                 Most recent failure — {d.failedTriggers.items[0].scheduleReference ?? "threshold trigger"}
               </div>
               <div className="mt-0.5 text-[11px] text-rose-700">
                 {d.failedTriggers.items[0].failureReason}
               </div>
-            </div>
+            </Alert>
           )}
           {!d.failedTriggers.items.length && d.thresholds.items[0] && (
-            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+            <Card className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-2.5 shadow-none">
               <div className="text-[11px] font-semibold text-slate-700">
                 Closest to a limit — {d.thresholds.items[0].scheduleReference}
               </div>
@@ -146,11 +148,11 @@ export async function ChemicalWidget({ plantId }: { plantId?: string }) {
                 {fmtQty(d.thresholds.items[0].currentQuantity, d.thresholds.items[0].unit)} of{" "}
                 {fmtQty(d.thresholds.items[0].thresholdQuantity, d.thresholds.items[0].unit)}
               </div>
-            </div>
+            </Card>
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 }
 

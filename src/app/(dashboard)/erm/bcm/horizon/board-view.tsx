@@ -6,10 +6,13 @@ import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { cn } from "@/lib/utils";
 import { SIGNAL_CHIP, SCENARIO_CATEGORIES, type HorizonItem } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const SIGNALS = ["WEAK", "EMERGING", "STRONG"] as const;
 type Signal = (typeof SIGNALS)[number];
@@ -62,7 +65,7 @@ export function HorizonBoard({ items }: { items: HorizonItem[] }) {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {SIGNALS.map((sig) => (
-          <div key={sig} className="rounded-xl border border-slate-200 bg-slate-50/40 p-3">
+          <Card key={sig} className="rounded-xl border border-slate-200 bg-slate-50/40 p-3 shadow-none">
             <div className="mb-3 flex items-center justify-between">
               <span
                 className={
@@ -79,11 +82,9 @@ export function HorizonBoard({ items }: { items: HorizonItem[] }) {
                 <p className="py-6 text-center text-xs text-slate-400">No {SIGNAL_LABEL[sig].toLowerCase()} signals.</p>
               ) : (
                 bySignal[sig].map((it) => (
-                  <button
+                  <Button variant="outline"
                     key={it.id}
-                    onClick={() => setActive(it)}
-                    className="block w-full rounded-lg border border-slate-200 bg-white p-3 text-left transition-shadow hover:shadow-md"
-                  >
+                    onClick={() => setActive(it)} className="block w-full rounded-lg p-3 text-left transition-shadow hover:shadow-md">
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="text-sm font-semibold text-slate-900">{it.title}</h3>
                       {it.disposition && (
@@ -107,11 +108,11 @@ export function HorizonBoard({ items }: { items: HorizonItem[] }) {
                         <span className="rounded bg-rose-100 px-1.5 py-0.5 font-semibold text-rose-700">OVERDUE</span>
                       )}
                     </div>
-                  </button>
+                  </Button>
                 ))
               )}
             </div>
-          </div>
+          </Card>
         ))}
       </div>
 
@@ -141,7 +142,7 @@ function ModalShell({
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">{title}</h2>
           <Button
@@ -156,7 +157,7 @@ function ModalShell({
           </Button>
         </div>
         {children}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -203,7 +204,7 @@ function WatchItemModal({ onClose, onDone }: { onClose: () => void; onDone: () =
     <ModalShell title="Watch item" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Title</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Title</Label>
           <Input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -212,32 +213,24 @@ function WatchItemModal({ onClose, onDone }: { onClose: () => void; onDone: () =
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
-            <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-              {SCENARIO_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {CATEGORY_LABEL[c] ?? c.replace(/_/g, " ")}
-                </option>
-              ))}
-            </Select>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Category</Label>
+            <SelectField value={category} onChange={setCategory}
+              options={SCENARIO_CATEGORIES.map((c) => ({ value: c, label: `${CATEGORY_LABEL[c] ?? c.replace(/_/g, " ")}` }))}
+            />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Signal strength</label>
-            <Select value={signalStrength} onChange={(e) => setSignalStrength(e.target.value)}>
-              {SIGNALS.map((s) => (
-                <option key={s} value={s}>
-                  {SIGNAL_LABEL[s]}
-                </option>
-              ))}
-            </Select>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Signal strength</Label>
+            <SelectField value={signalStrength} onChange={setSignalStrength}
+              options={SIGNALS.map((s) => ({ value: s, label: `${SIGNAL_LABEL[s]}` }))}
+            />
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Review date</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Review date</Label>
           <Input type="date" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Description</Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -246,7 +239,7 @@ function WatchItemModal({ onClose, onDone }: { onClose: () => void; onDone: () =
           />
         </div>
         {error && (
-          <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>
+          <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>
         )}
         <Button type="button" onClick={submit} disabled={busy || !title.trim()} className="w-full">
           {busy ? "Saving…" : "Add to watchlist"}
@@ -323,7 +316,7 @@ function ItemDrawer({
         </p>
 
         {disposed ? (
-          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <Card className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-none">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Disposition (audit trail)</p>
             <p className="mt-1 text-sm">
               <span
@@ -341,10 +334,10 @@ function ItemDrawer({
               </p>
             )}
             {item.dispositionNote && <p className="mt-1 text-xs italic text-slate-500">{item.dispositionNote}</p>}
-          </div>
+          </Card>
         ) : (
-          <div className="rounded-lg border border-slate-200 p-3">
-            <label className="mb-1.5 block text-xs font-medium text-slate-600">Disposition</label>
+          <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
+            <Label className="mb-1.5 block text-xs font-medium text-slate-600">Disposition</Label>
             <div className="grid grid-cols-1 gap-1.5">
               {DISPOSITIONS.map((d) => (
                 <Button
@@ -361,7 +354,7 @@ function ItemDrawer({
                 </Button>
               ))}
             </div>
-            <label className="mb-1 mt-3 block text-xs font-medium text-slate-600">Note</label>
+            <Label className="mb-1 mt-3 block text-xs font-medium text-slate-600">Note</Label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -369,14 +362,14 @@ function ItemDrawer({
               placeholder="Rationale for the disposition…"
             />
             {error && (
-              <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+              <Alert variant="destructive" className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
                 {error}
-              </div>
+              </Alert>
             )}
             <Button type="button" onClick={submit} disabled={busy} className="mt-3 w-full">
               {busy ? "Saving…" : "Apply disposition"}
             </Button>
-          </div>
+          </Card>
         )}
       </div>
     </ModalShell>

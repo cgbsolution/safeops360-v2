@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
 
 /**
  * Inline % completion editor for the Treatment Tracker rows. Lets a user set
@@ -47,7 +48,7 @@ export function TreatmentProgressCell({
           style={{ width: `${pct}%` }}
         />
       </div>
-      <input
+      <Input
         type="number"
         min={0}
         max={100}
@@ -55,8 +56,7 @@ export function TreatmentProgressCell({
         value={pct}
         onChange={(e) => setPct(Math.min(Math.max(Number(e.target.value) || 0, 0), 100))}
         className="w-14 rounded border border-slate-300 px-1 py-0.5 text-xs tabular-nums"
-        aria-label="Completion percent"
-      />
+        aria-label="Completion percent" />
       <span className="text-[11px] text-slate-400">%</span>
       {dirty && (
         <button

@@ -7,6 +7,10 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { KpiTile } from "@/components/erm/shared";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { SelectField } from "@/components/ui/select-field";
 import {
   fmtInr,
   type EnterpriseExposure, type CorrelatedExposure, type FrameworkCoverage, type MonteCarlo, type ReverseStress,
@@ -14,13 +18,13 @@ import {
 
 function Section({ title, icon, children, right }: { title: string; icon: React.ReactNode; children: React.ReactNode; right?: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
       <div className="mb-3 flex items-center gap-1.5">
         <h2 className="flex items-center gap-1.5 text-sm font-semibold text-slate-900">{icon} {title}</h2>
         {right && <div className="ml-auto">{right}</div>}
       </div>
       {children}
-    </div>
+    </Card>
   );
 }
 
@@ -115,11 +119,17 @@ export function ExposureView({
         title="Monte-Carlo Loss Distribution & Value-at-Risk"
         icon={<Activity size={15} className="text-slate-400" />}
         right={
-          <Select value={iterations} onChange={(e) => setIterations(Number(e.target.value))} className="text-xs">
-            <option value={5000}>5,000 trials</option>
-            <option value={10000}>10,000 trials</option>
-            <option value={50000}>50,000 trials</option>
-          </Select>
+          <SelectField
+            value={String(iterations)}
+            onChange={(value) => setIterations(Number(value))}
+            ariaLabel="Simulation trials"
+            className="text-xs"
+            options={[
+              { value: "5000", label: "5,000 trials" },
+              { value: "10000", label: "10,000 trials" },
+              { value: "50000", label: "50,000 trials" }
+            ]}
+          />
         }
       >
         {!mc ? (
@@ -143,13 +153,13 @@ export function ExposureView({
               <span>₹0</span><span>annual aggregate loss →</span><span>{fmtInr(mc.distribution[mc.distribution.length - 1]?.bucketFromInr)}+</span>
             </div>
             {mc.correlated && (mc.contagionTailUpliftInr ?? 0) > 0 && (
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs">
+              <Alert variant="destructive" className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs">
                 <span className="font-semibold text-rose-700">Correlation-aware</span>
                 <span className="text-slate-600">VaR 99% independent <span className="font-medium tabular-nums">{fmtInr(mc.independentP99LossInr)}</span></span>
                 <span className="text-slate-600">→ with contagion <span className="font-medium tabular-nums">{fmtInr(mc.p99LossInr)}</span></span>
                 <span className="rounded bg-rose-600 px-2 py-0.5 font-semibold text-white">+{fmtInr(mc.contagionTailUpliftInr)} tail uplift</span>
                 <span className="text-slate-500">({mc.linkageCount} linkages drive induced firing + amplification)</span>
-              </div>
+              </Alert>
             )}
             <p className="mt-2 text-[11px] text-slate-500">Each of {mc.iterations.toLocaleString("en-IN")} trials fires every risk by its annualised probability; severity sampled from triangular(best, expected, worst) over {mc.riskCount} risks{mc.correlated ? ", with RiskLinkage contagion inside the simulation" : ""}.</p>
           </>
@@ -163,7 +173,7 @@ export function ExposureView({
           <div className="mb-3 flex items-center gap-2">
             <span className="text-xs text-slate-500">₹</span>
             <Input type="number" value={threshold} onChange={(e) => setThreshold(Number(e.target.value))} className="w-40 text-xs tabular-nums" />
-            <button onClick={runReverseStress} className="rounded bg-slate-900 px-3 py-1 text-xs font-semibold text-white hover:bg-slate-700">Run</button>
+            <Button variant="default" onClick={runReverseStress} className="rounded px-3 py-1 text-xs text-white">Run</Button>
             <span className="text-[11px] text-slate-400">({fmtInr(threshold)})</span>
           </div>
           {rs && (
@@ -215,7 +225,7 @@ export function ExposureView({
         <Section title="Regulatory Framework Alignment" icon={<ShieldCheck size={15} className="text-slate-400" />} right={<span className="text-xs font-semibold text-emerald-600">{frameworks.overallCoveragePct}% overall</span>}>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {frameworks.frameworks.map((f) => (
-              <div key={f.framework} className="rounded-lg border border-slate-200 p-3">
+              <Card key={f.framework} className="rounded-lg border border-slate-200 p-3 shadow-none">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-800">{f.framework}</span>
                   <span className="text-xs font-bold tabular-nums text-emerald-600">{f.coveragePct}%</span>
@@ -229,7 +239,7 @@ export function ExposureView({
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Card>
             ))}
           </div>
         </Section>

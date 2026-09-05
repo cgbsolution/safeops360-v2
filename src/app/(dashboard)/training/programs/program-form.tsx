@@ -35,6 +35,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
+import { Checkbox } from "@/components/ui/checkbox";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 // ─── Constants ────────────────────────────────────────────────────────
 
@@ -521,9 +524,9 @@ export function ProgramForm({ plants, initial }: ProgramFormProps) {
       )}
 
       {error && (
-        <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">
+        <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">
           {error}
-        </div>
+        </Alert>
       )}
 
       {/* Sticky bottom nav */}
@@ -643,19 +646,15 @@ function Tab1Identity(props: any) {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs">Category *</Label>
-            <Select value={props.category} onChange={(e) => props.setCategory(e.target.value)}>
-              {CATEGORIES.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </Select>
+            <SelectField value={props.category} onChange={(value) => props.setCategory(value)}
+              options={CATEGORIES.map((c) => ({ value: String(c), label: c }))}
+            />
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Type *</Label>
-            <Select value={props.type} onChange={(e) => props.setType(e.target.value)}>
-              {TYPES.map((t) => (
-                <option key={t}>{t}</option>
-              ))}
-            </Select>
+            <SelectField value={props.type} onChange={(value) => props.setType(value)}
+              options={TYPES.map((t) => ({ value: String(t), label: t }))}
+            />
           </div>
         </div>
         <div className="grid sm:grid-cols-2 gap-3">
@@ -670,14 +669,13 @@ function Tab1Identity(props: any) {
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Plant Scope</Label>
-            <Select value={props.plantId} onChange={(e) => props.setPlantId(e.target.value)}>
-              <option value="">— All plants (cross-plant program) —</option>
-              {props.plants.map((p: Plant) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
+            <SelectField
+              value={props.plantId}
+              onChange={props.setPlantId}
+              ariaLabel="Plant scope"
+              placeholder="— All plants (cross-plant program) —"
+              options={props.plants.map((p: Plant) => ({ value: p.id, label: p.name }))}
+            />
           </div>
         </div>
       </CardContent>
@@ -699,20 +697,19 @@ function Tab2Statutory(props: any) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3">
-        <label className="flex items-start gap-2 p-2 rounded-md border border-rose-200 bg-rose-50/50 cursor-pointer">
-          <input
-            type="checkbox"
+        <Label className="flex items-start gap-2 p-2 rounded-md border border-rose-200 bg-rose-50/50 cursor-pointer">
+          <Checkbox
+           
             checked={props.isStatutory}
             onChange={(e) => props.setIsStatutory(e.target.checked)}
-            className="mt-0.5"
-          />
+            className="mt-0.5" />
           <div>
             <div className="text-xs font-medium text-rose-900">This is a statutory training program</div>
             <div className="text-[11px] text-rose-700">
               Tracked in the statutory compliance register; visible to inspectors.
             </div>
           </div>
-        </label>
+        </Label>
 
         {props.isStatutory && (
           <div className="space-y-1.5">
@@ -872,18 +869,17 @@ function Tab4Prereqs(props: any) {
             />
           </div>
           <div className="space-y-1.5 flex items-end">
-            <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white text-xs w-full cursor-pointer">
-              <input
-                type="checkbox"
+            <Label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white text-xs w-full cursor-pointer">
+              <Checkbox
+               
                 checked={props.medicalFitnessRequired}
                 onChange={(e) => props.setMedicalFitnessRequired(e.target.checked)}
-                className="mt-0.5"
-              />
+                className="mt-0.5" />
               <div>
                 <div className="font-medium">Medical fitness required</div>
                 <div className="text-slate-600">User must have a current medical fitness certificate.</div>
               </div>
-            </label>
+            </Label>
           </div>
         </div>
       </CardContent>
@@ -928,34 +924,30 @@ function Tab5Assessment(props: any) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
-          <input
-            type="checkbox"
+        <Label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
+          <Checkbox
+           
             checked={props.hasAssessment}
             onChange={(e) => props.setHasAssessment(e.target.checked)}
-            className="mt-0.5"
-          />
+            className="mt-0.5" />
           <div className="text-xs">
             <div className="font-medium">This program has an assessment</div>
             <div className="text-slate-600">
               Workers must pass the assessment to receive a certificate.
             </div>
           </div>
-        </label>
+        </Label>
 
         {props.hasAssessment && (
           <>
             <div className="grid sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Assessment Type</Label>
-                <Select
+                <SelectField
                   value={props.assessmentType}
-                  onChange={(e) => props.setAssessmentType(e.target.value)}
-                >
-                  {ASSESSMENT_TYPES.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </Select>
+                  onChange={(value) => props.setAssessmentType(value)}
+                  options={ASSESSMENT_TYPES.map((t) => ({ value: String(t), label: t }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Passing Score (%)</Label>
@@ -1004,10 +996,9 @@ function Tab5Assessment(props: any) {
               </div>
 
               {props.questions.map((q: QuestionDraft, idx: number) => (
-                <div
+                <Card
                   key={idx}
-                  className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2"
-                >
+                  className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2 shadow-none">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-semibold text-slate-700">Question {idx + 1}</div>
                     <button
@@ -1024,18 +1015,14 @@ function Tab5Assessment(props: any) {
                     placeholder="Question text"
                   />
                   <div className="grid sm:grid-cols-3 gap-2">
-                    <Select
+                    <SelectField
                       value={q.questionType}
-                      onChange={(e) =>
-                        updateQuestion(idx, {
-                          questionType: e.target.value as QuestionDraft["questionType"],
+                      onChange={(value) => updateQuestion(idx, {
+                          questionType: value as QuestionDraft["questionType"],
                         })
                       }
-                    >
-                      {QUESTION_TYPES.map((t) => (
-                        <option key={t}>{t}</option>
-                      ))}
-                    </Select>
+                      options={QUESTION_TYPES.map((t) => ({ value: String(t), label: t }))}
+                    />
                     <Input
                       type="number"
                       min="1"
@@ -1043,29 +1030,27 @@ function Tab5Assessment(props: any) {
                       onChange={(e) => updateQuestion(idx, { marks: parseInt(e.target.value) || 1 })}
                       placeholder="Marks"
                     />
-                    <label className="flex items-center gap-1.5 text-xs">
-                      <input
-                        type="checkbox"
+                    <Label className="flex items-center gap-1.5 text-xs">
+                      <Checkbox
+                       
                         checked={q.isCritical}
-                        onChange={(e) => updateQuestion(idx, { isCritical: e.target.checked })}
-                      />
+                        onChange={(e) => updateQuestion(idx, { isCritical: e.target.checked })} />
                       <span>Critical (must answer correctly)</span>
-                    </label>
+                    </Label>
                   </div>
                   {(q.questionType === "MCQ_SINGLE" || q.questionType === "MCQ_MULTI") && (
                     <div className="space-y-1">
                       <Label className="text-[11px]">Options</Label>
                       {q.options.map((opt, oIdx) => (
                         <div key={oIdx} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
+                          <Checkbox
+                           
                             checked={opt.isCorrect}
                             onChange={(e) => {
                               const next = [...q.options];
                               next[oIdx] = { ...next[oIdx], isCorrect: e.target.checked };
                               updateQuestion(idx, { options: next });
-                            }}
-                          />
+                            }} />
                           <Input
                             value={opt.text}
                             onChange={(e) => {
@@ -1117,7 +1102,7 @@ function Tab5Assessment(props: any) {
                     onChange={(e) => updateQuestion(idx, { explanation: e.target.value })}
                     placeholder="Explanation (shown to learner after assessment)"
                   />
-                </div>
+                </Card>
               ))}
             </div>
           </>
@@ -1138,20 +1123,19 @@ function Tab6Certification(props: any) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
-          <input
-            type="checkbox"
+        <Label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
+          <Checkbox
+           
             checked={props.issuesCertificate}
             onChange={(e) => props.setIssuesCertificate(e.target.checked)}
-            className="mt-0.5"
-          />
+            className="mt-0.5" />
           <div className="text-xs">
             <div className="font-medium">Issues certificate</div>
             <div className="text-slate-600">
               Generates a verifiable PDF certificate with QR on successful completion.
             </div>
           </div>
-        </label>
+        </Label>
 
         {props.issuesCertificate && (
           <>
@@ -1267,10 +1251,9 @@ function Tab7Content(props: any) {
             </Button>
           </div>
           {props.materials.map((m: MaterialDraft, idx: number) => (
-            <div
+            <Card
               key={idx}
-              className="rounded-md border border-slate-200 bg-slate-50 p-2 space-y-2"
-            >
+              className="rounded-md border border-slate-200 bg-slate-50 p-2 space-y-2 shadow-none">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-slate-700">
                   Material {idx + 1}
@@ -1296,45 +1279,38 @@ function Tab7Content(props: any) {
                 placeholder="Material title"
               />
               <div className="grid sm:grid-cols-3 gap-2">
-                <Select
+                <SelectField
                   value={m.type}
-                  onChange={(e) => {
+                  onChange={(value) => {
                     const next = [...props.materials];
                     next[idx] = {
                       ...next[idx],
-                      type: e.target.value as MaterialDraft["type"],
+                      type: value as MaterialDraft["type"],
                     };
                     props.setMaterials(next);
                   }}
-                >
-                  {MATERIAL_TYPES.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </Select>
-                <Select
+                  options={MATERIAL_TYPES.map((t) => ({ value: String(t), label: t }))}
+                />
+                <SelectField
                   value={m.language}
-                  onChange={(e) => {
+                  onChange={(value) => {
                     const next = [...props.materials];
-                    next[idx] = { ...next[idx], language: e.target.value };
+                    next[idx] = { ...next[idx], language: value };
                     props.setMaterials(next);
                   }}
-                >
-                  {LANGUAGES.map((l) => (
-                    <option key={l}>{l}</option>
-                  ))}
-                </Select>
-                <label className="flex items-center gap-1.5 text-xs">
-                  <input
-                    type="checkbox"
+                  options={LANGUAGES.map((l) => ({ value: String(l), label: l }))}
+                />
+                <Label className="flex items-center gap-1.5 text-xs">
+                  <Checkbox
+                   
                     checked={m.isMandatory}
                     onChange={(e) => {
                       const next = [...props.materials];
                       next[idx] = { ...next[idx], isMandatory: e.target.checked };
                       props.setMaterials(next);
-                    }}
-                  />
+                    }} />
                   Mandatory
-                </label>
+                </Label>
               </div>
               <Input
                 value={m.type === "LINK" ? m.externalUrl : m.fileUrl}
@@ -1348,7 +1324,7 @@ function Tab7Content(props: any) {
                 }}
                 placeholder={m.type === "LINK" ? "External URL" : "File URL"}
               />
-            </div>
+            </Card>
           ))}
         </div>
       </CardContent>
@@ -1380,18 +1356,17 @@ function Tab8Trainers(props: any) {
             Only these users can deliver this program (unless external trainer allowed).
           </p>
         </div>
-        <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
-          <input
-            type="checkbox"
+        <Label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
+          <Checkbox
+           
             checked={props.externalTrainerAllowed}
             onChange={(e) => props.setExternalTrainerAllowed(e.target.checked)}
-            className="mt-0.5"
-          />
+            className="mt-0.5" />
           <div className="text-xs">
             <div className="font-medium">External trainers allowed</div>
             <div className="text-slate-600">Vendor / consultant trainers can deliver this program.</div>
           </div>
-        </label>
+        </Label>
         <div className="space-y-1.5">
           <Label className="text-xs">Trainer Qualifications</Label>
           <Textarea
@@ -1417,20 +1392,19 @@ function Tab9Evaluation(props: any) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
-          <input
-            type="checkbox"
+        <Label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white cursor-pointer">
+          <Checkbox
+           
             checked={props.evaluatesEffectiveness}
             onChange={(e) => props.setEvaluatesEffectiveness(e.target.checked)}
-            className="mt-0.5"
-          />
+            className="mt-0.5" />
           <div className="text-xs">
             <div className="font-medium">Evaluates effectiveness post-training</div>
             <div className="text-slate-600">
               Schedules an effectiveness review N months after certificate issue.
             </div>
           </div>
-        </label>
+        </Label>
         {props.evaluatesEffectiveness && (
           <div className="space-y-1.5">
             <Label className="text-xs">Effectiveness Review After (months)</Label>
@@ -1483,11 +1457,11 @@ function Tab10Gates(props: any) {
         />
 
         {(props.blocksPtw || props.blocksRole || props.blocksContractor) && (
-          <div className="text-xs rounded-md border border-amber-200 bg-amber-50 p-2 mt-2">
+          <Alert variant="warning" className="text-xs rounded-md border border-amber-200 bg-amber-50 p-2 mt-2">
             <strong>Heads-up:</strong> enabling SafeOps gates on this program means failure to
             complete it will block real operations. Make sure scheduling capacity exists before
             enabling.
-          </div>
+          </Alert>
         )}
       </CardContent>
     </Card>
@@ -1506,23 +1480,21 @@ function GateToggle({
   onChange: (b: boolean) => void;
 }) {
   return (
-    <label
+    <Label
       className={[
         "flex items-start gap-2 p-3 rounded-md border cursor-pointer",
         checked ? "bg-amber-50 border-amber-300" : "bg-white border-slate-200",
-      ].join(" ")}
-    >
-      <input
-        type="checkbox"
+      ].join(" ")}>
+      <Checkbox
+       
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="mt-0.5"
-      />
+        className="mt-0.5" />
       <div className="text-xs">
         <div className="font-medium">{label}</div>
         <div className="text-slate-600 mt-0.5">{help}</div>
       </div>
-    </label>
+    </Label>
   );
 }
 

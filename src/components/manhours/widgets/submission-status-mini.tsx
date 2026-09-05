@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const MONTH_SHORT = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -52,32 +53,32 @@ export function SubmissionStatusMini({
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="text-[10px] w-full">
-            <thead>
-              <tr>
-                <th className="sticky left-0 z-10 bg-white px-2 py-1 text-left text-[10px] uppercase tracking-wider text-slate-500">
+          <Table className="text-[10px] w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="sticky left-0 z-10 bg-white px-2 py-1 text-left text-[10px] uppercase tracking-wider text-slate-500">
                   Plant
-                </th>
+                </TableHead>
                 {monthsAxis.map((m) => (
-                  <th key={`${m.year}-${m.month}`} className="px-1 py-1 text-center text-[9px] uppercase tracking-wider text-slate-500">
+                  <TableHead key={`${m.year}-${m.month}`} className="px-1 py-1 text-center text-[9px] uppercase tracking-wider text-slate-500">
                     {m.label}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {plants.map((p) => (
-                <tr key={p.id}>
-                  <td className="sticky left-0 z-10 bg-white px-2 py-1 font-medium text-slate-800 text-xs whitespace-nowrap">
+                <TableRow key={p.id}>
+                  <TableCell className="sticky left-0 z-10 bg-white px-2 py-1 font-medium text-slate-800 text-xs whitespace-nowrap">
                     {p.code}
-                  </td>
+                  </TableCell>
                   {monthsAxis.map((m) => {
                     const cell = cellMap.get(`${p.id}::${m.year}-${m.month}`);
                     const status = cell?.status ?? "NOT_STARTED";
                     const style = CELL_STYLE[status] ?? CELL_STYLE.NOT_STARTED;
                     const initial = status.charAt(0); // D / U / A / L / R
                     return (
-                      <td key={`${p.id}::${m.year}-${m.month}`} className="px-0.5 py-0.5 text-center">
+                      <TableCell key={`${p.id}::${m.year}-${m.month}`} className="px-0.5 py-0.5 text-center">
                         <Link
                           href={`/manhours/${p.id}/${m.year}/${m.month}/edit`}
                           title={`${p.name} · ${MONTH_SHORT[m.month]} ${m.year} · ${status.replace(/_/g, " ")}`}
@@ -88,13 +89,13 @@ export function SubmissionStatusMini({
                         >
                           {initial}
                         </Link>
-                      </td>
+                      </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
           <LegendChip label="Locked" code="L" style={CELL_STYLE.LOCKED} />

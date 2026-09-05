@@ -19,6 +19,7 @@ import {
 import { ScoreDial } from "../ui";
 import { PALETTE, scoreColor, type LeadingLaggingDetail } from "../lib";
 import { Table, TableBody, TableRow, TableCell } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 const GREEN = "#1F7A4D";
 const AMBER = "#C9761F";
@@ -47,7 +48,7 @@ export function LeadingLaggingView({ detail }: { detail: LeadingLaggingDetail })
     <div className="space-y-6">
       {/* Hero */}
       <div className="grid gap-4 lg:grid-cols-[auto,1fr]">
-        <div className="flex items-center gap-5 rounded-xl border bg-white p-5">
+        <Card className="flex items-center gap-5 rounded-xl border bg-white p-5 shadow-none">
           <ScoreDial score={detail.score} label="LL Score" />
           <div className="max-w-md">
             <p className="text-xs uppercase tracking-wide text-slate-500">Leading : Lagging</p>
@@ -64,7 +65,7 @@ export function LeadingLaggingView({ detail }: { detail: LeadingLaggingDetail })
               {detail.industryVertical ? ` (${detail.industryVertical} benchmark)` : ""}.
             </p>
           </div>
-        </div>
+        </Card>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           <KpiTile label="Leading (90d)" value={detail.leading.toLocaleString()} hint="Proactive actions" accent={GREEN} />
@@ -80,10 +81,9 @@ export function LeadingLaggingView({ detail }: { detail: LeadingLaggingDetail })
 
       {/* Under-reporting caveat */}
       {detail.underReporting && (
-        <div
-          className="flex items-start gap-2 rounded-xl border p-4 text-sm"
-          style={{ borderColor: AMBER, background: "#FBF7EC", color: "#7A6320" }}
-        >
+        <Card
+          className="flex items-start gap-2 rounded-xl border p-4 text-sm shadow-none"
+          style={{ borderColor: AMBER, background: "#FBF7EC", color: "#7A6320" }}>
           <span className="mt-0.5" style={{ color: AMBER }}>
             ⚠
           </span>
@@ -93,11 +93,11 @@ export function LeadingLaggingView({ detail }: { detail: LeadingLaggingDetail })
             means leading activity — near-miss and observation reporting — is being under-recorded, not that the site is
             unusually safe.
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Trend */}
-      <div className="rounded-xl border bg-white p-5">
+      <Card className="rounded-xl border bg-white p-5 shadow-none">
         <div className="mb-3 flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
             6-month ratio trend
@@ -135,7 +135,7 @@ export function LeadingLaggingView({ detail }: { detail: LeadingLaggingDetail })
             </ResponsiveContainer>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Breakdown table (transparency — mirrors BBS's component → count pattern) */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -160,13 +160,13 @@ export function LeadingLaggingView({ detail }: { detail: LeadingLaggingDetail })
 
 function KpiTile({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: string }) {
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <p className="text-[11px] uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold" style={{ color: accent ?? PALETTE.navy }}>
         {value}
       </p>
       {hint && <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p>}
-    </div>
+    </Card>
   );
 }
 
@@ -184,7 +184,7 @@ function BreakdownCard({
   accent: string;
 }) {
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-3">
         <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
           {title}
@@ -209,6 +209,6 @@ function BreakdownCard({
           </TableRow>
         </TableBody>
       </Table>
-    </div>
+    </Card>
   );
 }

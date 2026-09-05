@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const TRIGGER_COLOR: Record<string, string> = {
   SCHEDULE: "bg-blue-100 text-blue-800 border-blue-200",
@@ -78,7 +82,7 @@ export function BulkReviewPanel({ cycles }: { cycles: Cycle[] }) {
   return (
     <div>
       {selected.size > 0 && (
-        <div className="mb-3 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm">
+        <Alert variant="success" className="mb-3 flex items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm">
           <span className="font-medium text-emerald-800">{selected.size} selected</span>
           <button
             onClick={submitBulkNoChange}
@@ -87,52 +91,50 @@ export function BulkReviewPanel({ cycles }: { cycles: Cycle[] }) {
           >
             {pending ? "Submitting…" : "Submit No Change for selected"}
           </button>
-        </div>
+        </Alert>
       )}
       {bulkError && (
-        <div className="mb-3 rounded border border-rose-300 bg-rose-50 px-4 py-2 text-sm text-rose-800">
+        <Alert variant="destructive" className="mb-3 rounded border border-rose-300 bg-rose-50 px-4 py-2 text-sm text-rose-800">
           {bulkError}
-        </div>
+        </Alert>
       )}
 
-      <div className="overflow-x-auto rounded-xl border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
-            <tr>
-              <th className="px-4 py-3 w-8">
-                <input
-                  type="checkbox"
+      <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
+            <TableRow>
+              <TableHead className="px-4 py-3 w-8">
+                <Checkbox
+                 
                   checked={selected.size === actionable.length && actionable.length > 0}
                   onChange={toggleAll}
                   disabled={pending}
-                  title="Select all actionable"
-                />
-              </th>
-              <th className="text-left px-4 py-3">Entry / Study</th>
-              <th className="text-left px-4 py-3">Trigger</th>
-              <th className="text-left px-4 py-3">Status</th>
-              <th className="text-left px-4 py-3">Scheduled</th>
-              <th className="text-left px-4 py-3">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+                  title="Select all actionable" />
+              </TableHead>
+              <TableHead className="text-left px-4 py-3">Entry / Study</TableHead>
+              <TableHead className="text-left px-4 py-3">Trigger</TableHead>
+              <TableHead className="text-left px-4 py-3">Status</TableHead>
+              <TableHead className="text-left px-4 py-3">Scheduled</TableHead>
+              <TableHead className="text-left px-4 py-3">Action</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y">
             {cycles.map((c) => {
               const overdue = c.status === "SCHEDULED" && new Date(c.scheduledFor) < now;
               const awaitingReapproval = c.outcome === "MAJOR_REVISION";
               const isActionable = ["SCHEDULED", "IN_PROGRESS"].includes(c.status);
               return (
-                <tr key={c.id} className={overdue ? "bg-rose-50/40" : "hover:bg-slate-50"}>
-                  <td className="px-4 py-3">
+                <TableRow key={c.id} className={overdue ? "bg-rose-50/40" : "hover:bg-slate-50"}>
+                  <TableCell className="px-4 py-3">
                     {isActionable && (
-                      <input
-                        type="checkbox"
+                      <Checkbox
+                       
                         checked={selected.has(c.id)}
                         onChange={() => toggle(c.id)}
-                        disabled={pending}
-                      />
+                        disabled={pending} />
                     )}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <Link
                       href={`/eai/reviews/${c.id}`}
                       className="font-medium text-emerald-700 hover:underline text-sm"
@@ -159,8 +161,8 @@ export function BulkReviewPanel({ cycles }: { cycles: Cycle[] }) {
                         )}
                       </div>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <span
                       className={`inline-block px-2 py-0.5 text-xs rounded border ${
                         TRIGGER_COLOR[c.triggeredBy] ?? "bg-slate-100 text-slate-700 border-slate-200"
@@ -168,8 +170,8 @@ export function BulkReviewPanel({ cycles }: { cycles: Cycle[] }) {
                     >
                       {c.triggeredBy.replace(/_/g, " ")}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-xs">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-xs">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span>{c.status.replace(/_/g, " ")}</span>
                       {overdue && (
@@ -181,11 +183,11 @@ export function BulkReviewPanel({ cycles }: { cycles: Cycle[] }) {
                         </span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-xs text-slate-700">
                     {new Date(c.scheduledFor).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     {isActionable && (
                       <Link
                         href={`/eai/reviews/${c.id}`}
@@ -194,18 +196,18 @@ export function BulkReviewPanel({ cycles }: { cycles: Cycle[] }) {
                         Open review
                       </Link>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
       {!hasActionable && cycles.length > 0 && (
-        <div className="mt-2 rounded border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500">
+        <Card className="mt-2 rounded border border-slate-200 bg-slate-50 px-4 py-2 text-xs text-slate-500 shadow-none">
           All cycles in this view are completed or skipped. No actions available.
-        </div>
+        </Card>
       )}
     </div>
   );

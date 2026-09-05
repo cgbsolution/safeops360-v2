@@ -12,6 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import type { Bowtie, BowtieBarrier, RiskDetail } from "../../lib";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
+import { SCORE_1_TO_5 } from "@/lib/score-options";
 
 const BAR_STATUS = ["WORKED", "UNTESTED", "FAILED", "ABSENT"] as const;
 const uid = () =>
@@ -20,14 +24,14 @@ const uid = () =>
 function Section({ icon: Icon, title, children, defaultOpen = false }: { icon: any; title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
+    <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
       <Button type="button" variant="ghost" onClick={() => setOpen((o) => !o)} className="h-auto w-full justify-start gap-2 px-4 py-3 text-left">
         <Icon size={16} className="text-primary-600" />
         <span className="text-sm font-semibold text-slate-800">{title}</span>
         {open ? <ChevronDown size={16} className="ml-auto text-slate-400" /> : <ChevronRight size={16} className="ml-auto text-slate-400" />}
       </Button>
       {open && <div className="border-t border-slate-100 p-4">{children}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -82,22 +86,30 @@ function TargetForm({ risk, onSaved, put }: { risk: RiskDetail; onSaved: () => v
   return (
     <Section icon={Target} title="Target Risk Level" defaultOpen>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <label className="text-xs text-slate-500">Likelihood
-          <Select value={l} onChange={(e) => setL(Number(e.target.value))} className="mt-1">
-            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-          </Select>
-        </label>
-        <label className="text-xs text-slate-500">Impact
-          <Select value={i} onChange={(e) => setI(Number(e.target.value))} className="mt-1">
-            {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-          </Select>
-        </label>
-        <label className="text-xs text-slate-500">Target Date
+        <Label className="text-xs text-slate-500">Likelihood
+          <SelectField
+            value={String(l)}
+            onChange={(value) => setL(Number(value))}
+            ariaLabel="Likelihood"
+            className="mt-1"
+            options={SCORE_1_TO_5}
+          />
+        </Label>
+        <Label className="text-xs text-slate-500">Impact
+          <SelectField
+            value={String(i)}
+            onChange={(value) => setI(Number(value))}
+            ariaLabel="Impact"
+            className="mt-1"
+            options={SCORE_1_TO_5}
+          />
+        </Label>
+        <Label className="text-xs text-slate-500">Target Date
           <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="mt-1" />
-        </label>
-        <label className="text-xs text-slate-500">Target ₹ impact (expected)
+        </Label>
+        <Label className="text-xs text-slate-500">Target ₹ impact (expected)
           <Input type="number" min={0} value={fin} onChange={(e) => setFin(e.target.value)} placeholder="e.g. 5000000" className="mt-1" />
-        </label>
+        </Label>
       </div>
       <div className="mt-2 text-xs text-slate-500">Target score = <span className="font-semibold text-slate-700 tabular-nums">{l * i}</span> (must be ≤ current residual {risk.residualScore ?? "—"})</div>
       <Textarea value={rationale} onChange={(e) => setRationale(e.target.value)} rows={2} placeholder="Why this target, and how will we steer to it?" className="mt-2" />
@@ -135,9 +147,9 @@ function ThreeLinesForm({ risk, onSaved, put }: { risk: RiskDetail; onSaved: () 
           <span className="text-xs font-medium text-slate-500">2nd line (oversight)</span>
           <UserPicker value={second} onChange={(id) => setSecond(id)} placeholder="Risk / compliance" />
         </div>
-        <label className="text-xs font-medium text-slate-500">3rd line (independent assurance)
+        <Label className="text-xs font-medium text-slate-500">3rd line (independent assurance)
           <Input value={third} onChange={(e) => setThird(e.target.value)} placeholder="e.g. Internal Audit — FY26 plan" className="mt-1" />
-        </label>
+        </Label>
       </div>
       {err && <div className="mt-2 text-xs text-rose-600">{err}</div>}
       <Button type="button" onClick={save} disabled={busy} className="mt-3 gap-1">
@@ -163,13 +175,12 @@ function BarrierRows({ barriers, type, onChange }: { barriers: BowtieBarrier[]; 
             placeholder={`${type === "PREVENTIVE" ? "Preventive" : "Mitigating"} barrier`}
             className="flex-1 text-xs"
           />
-          <Select
+          <SelectField
             value={b.status}
-            onChange={(e) => onChange(barriers.map((x) => (x.id === b.id ? { ...x, status: e.target.value as BowtieBarrier["status"] } : x)))}
+            onChange={(value) => onChange(barriers.map((x) => (x.id === b.id ? { ...x, status: value as BowtieBarrier["status"] } : x)))}
             className="text-xs"
-          >
-            {BAR_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-          </Select>
+            options={BAR_STATUS.map((s) => ({ value: s, label: s }))}
+          />
           <Button type="button" variant="ghost" size="icon" onClick={() => onChange(barriers.filter((x) => x.id !== b.id))} className="h-6 w-6 text-slate-400 hover:text-rose-600"><X size={13} /></Button>
         </div>
       ))}
@@ -199,40 +210,40 @@ function BowtieForm({ risk, onSaved, put }: { risk: RiskDetail; onSaved: () => v
 
   return (
     <Section icon={GitBranch} title="Bow-tie (causes → event → consequences)">
-      <label className="text-xs font-medium text-slate-500">Top event
+      <Label className="text-xs font-medium text-slate-500">Top event
         <Input value={bt.topEvent} onChange={(e) => setBt({ ...bt, topEvent: e.target.value })} placeholder="The risk event at the centre of the bow-tie" className="mt-1" />
-      </label>
+      </Label>
 
       <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2">
         {/* Threats / preventive side */}
-        <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-2">
+        <Card className="rounded-lg border border-slate-100 bg-slate-50/60 p-2 shadow-none">
           <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Threats → preventive barriers</div>
           {bt.threats.map((t) => (
-            <div key={t.id} className="mb-2 rounded border border-slate-200 bg-white p-2">
+            <Card key={t.id} className="mb-2 rounded border border-slate-200 bg-white p-2 shadow-none">
               <div className="flex items-center gap-1">
                 <Input value={t.description} onChange={(e) => setBt({ ...bt, threats: bt.threats.map((x) => (x.id === t.id ? { ...x, description: e.target.value } : x)) })} placeholder="Threat / cause" className="flex-1 text-xs font-medium" />
                 <Button type="button" variant="ghost" size="icon" onClick={() => setBt({ ...bt, threats: bt.threats.filter((x) => x.id !== t.id) })} className="h-6 w-6 text-slate-400 hover:text-rose-600"><X size={13} /></Button>
               </div>
               <BarrierRows barriers={t.preventiveBarriers} type="PREVENTIVE" onChange={(b) => setBt({ ...bt, threats: bt.threats.map((x) => (x.id === t.id ? { ...x, preventiveBarriers: b } : x)) })} />
-            </div>
+            </Card>
           ))}
           <Button type="button" variant="ghost" onClick={() => setBt({ ...bt, threats: [...bt.threats, { id: uid(), description: "", preventiveBarriers: [] }] })} className="h-auto gap-1 text-xs font-medium text-primary-600 hover:underline"><Plus size={12} /> threat</Button>
-        </div>
+        </Card>
 
         {/* Consequences / mitigating side */}
-        <div className="rounded-lg border border-slate-100 bg-slate-50/60 p-2">
+        <Card className="rounded-lg border border-slate-100 bg-slate-50/60 p-2 shadow-none">
           <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Consequences → mitigating barriers</div>
           {bt.consequences.map((c) => (
-            <div key={c.id} className="mb-2 rounded border border-slate-200 bg-white p-2">
+            <Card key={c.id} className="mb-2 rounded border border-slate-200 bg-white p-2 shadow-none">
               <div className="flex items-center gap-1">
                 <Input value={c.description} onChange={(e) => setBt({ ...bt, consequences: bt.consequences.map((x) => (x.id === c.id ? { ...x, description: e.target.value } : x)) })} placeholder="Consequence" className="flex-1 text-xs font-medium" />
                 <Button type="button" variant="ghost" size="icon" onClick={() => setBt({ ...bt, consequences: bt.consequences.filter((x) => x.id !== c.id) })} className="h-6 w-6 text-slate-400 hover:text-rose-600"><X size={13} /></Button>
               </div>
               <BarrierRows barriers={c.mitigatingBarriers} type="MITIGATING" onChange={(b) => setBt({ ...bt, consequences: bt.consequences.map((x) => (x.id === c.id ? { ...x, mitigatingBarriers: b } : x)) })} />
-            </div>
+            </Card>
           ))}
           <Button type="button" variant="ghost" onClick={() => setBt({ ...bt, consequences: [...bt.consequences, { id: uid(), description: "", mitigatingBarriers: [] }] })} className="h-auto gap-1 text-xs font-medium text-primary-600 hover:underline"><Plus size={12} /> consequence</Button>
-        </div>
+        </Card>
       </div>
 
       <p className="mt-2 text-[11px] text-slate-400">A FAILED or ABSENT barrier flags the risk for reassessment (control-alert).</p>

@@ -4,6 +4,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import type { Item } from "../../page";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +34,7 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
     return (
       <div>
         <PageHeader title="PPE Item" />
-        <div className="rounded-xl border bg-white p-8 text-sm text-slate-600">Item not found or you don’t have access.</div>
+        <Card className="rounded-xl border bg-white p-8 text-sm text-slate-600 shadow-none">Item not found or you don’t have access.</Card>
       </div>
     );
   }
@@ -54,7 +55,7 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Left column */}
         <div className="space-y-5 lg:col-span-1">
-          <Card title="Identity">
+          <TitledPanel title="Identity">
             <Row k="Type" v={`${it.ppeTypeName} (${it.ppeTypeCode})`} />
             <Row k="Manufacturer" v={it.manufacturer || "—"} />
             <Row k="Batch / lot" v={it.batchLotNumber || "—"} />
@@ -64,9 +65,9 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
             <Row k="Condition" v={it.condition.replace(/_/g, " ")} />
             {detail.holderName && <Row k="Current holder" v={detail.holderName} />}
             <Row k="Version" v={`v${it.versionNumber}`} />
-          </Card>
+          </TitledPanel>
 
-          <Card title="Service life">
+          <TitledPanel title="Service life">
             <div className="mb-2 flex justify-between text-xs text-slate-500">
               <span>Commissioned</span><span>{fmt(it.serviceLifeEndDate)}</span>
             </div>
@@ -76,21 +77,21 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
             <div className="mt-2 text-xs font-medium text-slate-600">
               {it.serviceLifeExceeded ? <span className="text-rose-600">Service life exceeded</span> : `${it.serviceLifeRemainingDays} days remaining`}
             </div>
-          </Card>
+          </TitledPanel>
 
           {detail.type && (
-            <Card title="Specification">
+            <TitledPanel title="Specification">
               <Row k="Category" v={(detail.type.category ?? "").replace(/_/g, " ")} />
               <Row k="Service life" v={`${detail.type.serviceLifeYears ?? "—"} years`} />
               {detail.type.requiresCompetencyToUse && <Row k="Competency" v={detail.type.requiresCompetencyToUse} />}
               {detail.type.applicableStandards.length > 0 && <Row k="Standards" v={detail.type.applicableStandards.map((s) => s.standard).join(", ")} />}
-            </Card>
+            </TitledPanel>
           )}
         </div>
 
         {/* Right column */}
         <div className="space-y-5 lg:col-span-2">
-          <Card title="Inspection history">
+          <TitledPanel title="Inspection history">
             {detail.inspections.length === 0 ? <Muted>No inspections recorded.</Muted> : (
               <Table className="w-full text-sm">
                 <TableHeader className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -111,9 +112,9 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
                 </TableBody>
               </Table>
             )}
-          </Card>
+          </TitledPanel>
 
-          <Card title="Issuance history">
+          <TitledPanel title="Issuance history">
             {detail.issuances.length === 0 ? <Muted>Never issued.</Muted> : (
               <Table className="w-full text-sm">
                 <TableHeader className="text-[10px] uppercase tracking-wider text-slate-400">
@@ -132,9 +133,9 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
                 </TableBody>
               </Table>
             )}
-          </Card>
+          </TitledPanel>
 
-          <Card title="Audit trail">
+          <TitledPanel title="Audit trail">
             <ol className="relative space-y-3 border-l border-slate-200 pl-4">
               {detail.stateHistory.map((h, idx) => (
                 <li key={idx} className="relative">
@@ -146,19 +147,19 @@ export default async function PpeItemDetail(props: { params: Promise<{ id: strin
                 </li>
               ))}
             </ol>
-          </Card>
+          </TitledPanel>
         </div>
       </div>
     </div>
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+function TitledPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
+    <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
       <div className="border-b px-4 py-2.5 text-sm font-semibold text-slate-800">{title}</div>
       <div className="p-4">{children}</div>
-    </div>
+    </Card>
   );
 }
 function Row({ k, v }: { k: string; v: string }) {

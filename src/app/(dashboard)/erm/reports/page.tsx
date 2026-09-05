@@ -1,5 +1,6 @@
 import { FileDown, ShieldCheck } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -109,9 +110,9 @@ function ReportGrid({ cards }: { cards: ReportCard[] }) {
               {r.icon ? <span className="text-lg leading-none">{r.icon}</span> : <FileDown size={18} />}
             </div>
             {r.emphasis && (
-              <span className="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
+              <Badge variant="brand" className="inline-flex items-center gap-1 rounded-full border border-primary-200 bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">
                 <ShieldCheck size={12} /> Auditors ask for this one
-              </span>
+              </Badge>
             )}
           </div>
           <div className="flex-1">

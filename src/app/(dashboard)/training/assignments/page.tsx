@@ -13,6 +13,12 @@ import {
   type Tone
 } from "@/lib/training-engine";
 import { RunEngineButton } from "./run-engine-button";
+import { SelectField } from "@/components/ui/select-field";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -100,21 +106,21 @@ export default async function TrainingAssignmentsPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
             {KPIS.map((k) => (
-              <div key={k.label} className="rounded-xl border border-slate-200 bg-white p-4">
+              <Card key={k.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
                 <div className={cn("text-2xl font-bold tabular-nums", KPI_TONE[k.tone])}>
                   {k.value}
                 </div>
                 <div className="mt-1 text-[11px] uppercase tracking-wider text-slate-500">
                   {k.label}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
@@ -139,62 +145,57 @@ export default async function TrainingAssignmentsPage(props: {
               {sp.personUserId && (
                 <input type="hidden" name="personUserId" value={sp.personUserId} />
               )}
-              <select
+              <SelectField
                 name="source"
                 defaultValue={source}
                 className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
-              >
-                <option value="all">All sources</option>
-                {Object.entries(SOURCE_META).map(([k, m]) => (
-                  <option key={k} value={k}>
-                    {m.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+                options={[
+                  { value: "all", label: "All sources" },
+                  ...Object.entries(SOURCE_META).map(([k, m]) => ({ value: String(k), label: String(m) }))
+                ]}
+              />
+              <Button variant="outline"
+                type="submit" className="h-9 rounded-md px-3 text-sm">
                 Apply
-              </button>
+              </Button>
             </form>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-2.5 font-semibold">Worker</th>
-                  <th className="px-4 py-2.5 font-semibold">Competency</th>
-                  <th className="px-4 py-2.5 font-semibold">Source</th>
-                  <th className="px-4 py-2.5 font-semibold">Source record</th>
-                  <th className="px-4 py-2.5 font-semibold">Due</th>
-                  <th className="px-4 py-2.5 font-semibold">Status</th>
-                  <th className="px-4 py-2.5" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-4 py-2.5 font-semibold">Worker</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Competency</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Source</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Source record</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Due</TableHead>
+                  <TableHead className="px-4 py-2.5 font-semibold">Status</TableHead>
+                  <TableHead className="px-4 py-2.5" />
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
                       No assignments match this filter.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((a) => {
                     const meta = ASSIGNMENT_STATUS_META[a.status] ?? ASSIGNMENT_STATUS_META.assigned;
                     const srcMeta = SOURCE_META[a.source] ?? SOURCE_META.manual;
                     const srcHref = sourceRecordHref(a.sourceModule, a.sourceRecordId);
                     return (
-                      <tr key={a.id} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-3 align-top">
+                      <TableRow key={a.id} className="hover:bg-slate-50/70">
+                        <TableCell className="px-4 py-3 align-top">
                           <div className="font-medium text-slate-900">{a.worker?.name ?? "—"}</div>
                           <div className="text-[11px] text-slate-500">
                             {a.worker?.role ? a.worker.role.replace(/_/g, " ") : ""}
                             {a.worker?.department ? ` · ${a.worker.department}` : ""}
                           </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           <Link
                             href={`/training/assignments/${a.id}`}
                             className="font-medium text-primary-700 hover:underline"
@@ -202,12 +203,12 @@ export default async function TrainingAssignmentsPage(props: {
                             {a.competencyName}
                           </Link>
                           {a.isMandatory && (
-                            <span className="ml-2 inline-flex rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
+                            <Badge variant="danger" className="ml-2 inline-flex rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[10px] font-semibold text-rose-700">
                               Mandatory
-                            </span>
+                            </Badge>
                           )}
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           <span
                             className={cn(
                               "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-medium",
@@ -216,8 +217,8 @@ export default async function TrainingAssignmentsPage(props: {
                           >
                             {srcMeta.label}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-slate-600">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-slate-600">
                           {a.sourceRecordRef ? (
                             srcHref ? (
                               <Link
@@ -233,11 +234,11 @@ export default async function TrainingAssignmentsPage(props: {
                           ) : (
                             <span className="text-slate-400">—</span>
                           )}
-                        </td>
-                        <td className="px-4 py-3 align-top tabular-nums text-slate-600">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top tabular-nums text-slate-600">
                           {fmtDate(a.dueDate)}
-                        </td>
-                        <td className="px-4 py-3 align-top">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top">
                           <span
                             className={cn(
                               "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold",
@@ -246,8 +247,8 @@ export default async function TrainingAssignmentsPage(props: {
                           >
                             {meta.label}
                           </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-right">
                           <Link
                             href={`/training/assignments/${a.id}`}
                             className="inline-flex items-center text-slate-400 hover:text-primary-700"
@@ -255,14 +256,14 @@ export default async function TrainingAssignmentsPage(props: {
                           >
                             <ChevronRight size={16} />
                           </Link>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

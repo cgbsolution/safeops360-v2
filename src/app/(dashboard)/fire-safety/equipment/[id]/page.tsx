@@ -14,6 +14,8 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { AssetQrButton } from "./qr-button";
 import { TriggerInspectionButton } from "./trigger-inspection";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -153,7 +155,7 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
             { label: "Equipment", href: "/fire-safety/equipment" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" size="lg" className="rounded-xl p-6">{error}</Alert>
       </div>
     );
   }
@@ -195,12 +197,12 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
       {/* An open CRITICAL defect is the single most important fact about an
           asset, so it sits above the fold rather than in the defects panel. */}
       {openDefects.some((d) => d.severity === "CRITICAL_NC") && (
-        <div className="mb-4 rounded-xl border border-rose-300 bg-rose-50 p-4">
+        <Alert variant="destructive" size="lg" className="mb-4 rounded-xl border-rose-300 p-4">
           <div className="text-sm font-semibold text-rose-900">Open CRITICAL defect</div>
           <div className="mt-0.5 text-xs text-rose-800">
             This asset is NON_COMPLIANT until the defect is closed with a verification inspection.
           </div>
-        </div>
+        </Alert>
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -316,32 +318,32 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
               Never inspected. Trigger the first inspection above.
             </p>
           ) : (
-            <table className="w-full text-xs">
-              <thead className="text-left text-[10px] uppercase tracking-wider text-slate-400">
-                <tr>
-                  <th className="py-1.5">Engagement</th>
-                  <th className="py-1.5">Planned</th>
-                  <th className="py-1.5">Status</th>
-                  <th className="py-1.5 text-right">Score</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-xs">
+              <TableHeader className="text-left text-[10px] uppercase tracking-wider text-slate-400">
+                <TableRow>
+                  <TableHead className="py-1.5">Engagement</TableHead>
+                  <TableHead className="py-1.5">Planned</TableHead>
+                  <TableHead className="py-1.5">Status</TableHead>
+                  <TableHead className="py-1.5 text-right">Score</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {eq.inspectionHistory.map((i) => (
-                  <tr key={i.id} className="border-t border-slate-100">
-                    <td className="py-1.5">
+                  <TableRow key={i.id} className="border-t border-slate-100">
+                    <TableCell className="py-1.5">
                       <Link href={`/cams/engagements/${i.id}`} className="text-primary-700 hover:underline">
                         {i.engagementCode}
                       </Link>
-                    </td>
-                    <td className="py-1.5 text-slate-500">{fmt(i.plannedDate)}</td>
-                    <td className="py-1.5 text-slate-600">{i.status}</td>
-                    <td className="py-1.5 text-right tabular-nums text-slate-600">
+                    </TableCell>
+                    <TableCell className="py-1.5 text-slate-500">{fmt(i.plannedDate)}</TableCell>
+                    <TableCell className="py-1.5 text-slate-600">{i.status}</TableCell>
+                    <TableCell className="py-1.5 text-right tabular-nums text-slate-600">
                       {i.scorePercent != null ? `${i.scorePercent}%` : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
 
@@ -352,22 +354,22 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
           ) : !defects.length ? (
             <p className="py-6 text-center text-xs text-slate-400">No defects raised against this asset.</p>
           ) : (
-            <table className="w-full text-xs">
-              <thead className="text-left text-[10px] uppercase tracking-wider text-slate-400">
-                <tr>
-                  <th className="py-1.5">Code</th>
-                  <th className="py-1.5">Title</th>
-                  <th className="py-1.5">Severity</th>
-                  <th className="py-1.5">Status</th>
-                  <th className="py-1.5">CAPA</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-xs">
+              <TableHeader className="text-left text-[10px] uppercase tracking-wider text-slate-400">
+                <TableRow>
+                  <TableHead className="py-1.5">Code</TableHead>
+                  <TableHead className="py-1.5">Title</TableHead>
+                  <TableHead className="py-1.5">Severity</TableHead>
+                  <TableHead className="py-1.5">Status</TableHead>
+                  <TableHead className="py-1.5">CAPA</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {defects.map((d) => (
-                  <tr key={d.id} className="border-t border-slate-100">
-                    <td className="py-1.5 font-medium text-slate-700">{d.findingCode}</td>
-                    <td className="py-1.5 text-slate-600">{d.title}</td>
-                    <td className="py-1.5">
+                  <TableRow key={d.id} className="border-t border-slate-100">
+                    <TableCell className="py-1.5 font-medium text-slate-700">{d.findingCode}</TableCell>
+                    <TableCell className="py-1.5 text-slate-600">{d.title}</TableCell>
+                    <TableCell className="py-1.5">
                       <span
                         className={
                           "rounded border px-1.5 py-0.5 text-[10px] " +
@@ -376,9 +378,9 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
                       >
                         {d.severity.replace(/_/g, " ")}
                       </span>
-                    </td>
-                    <td className="py-1.5 text-slate-600">{d.status}</td>
-                    <td className="py-1.5">
+                    </TableCell>
+                    <TableCell className="py-1.5 text-slate-600">{d.status}</TableCell>
+                    <TableCell className="py-1.5">
                       {d.capaId ? (
                         <Link href={`/capa/${d.capaId}`} className="text-primary-700 hover:underline">
                           Linked
@@ -392,11 +394,11 @@ export default async function FireEquipmentDetailPage(props: { params: Promise<{
                       ) : (
                         <span className="text-slate-400">—</span>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
       </div>

@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import type { WizardSubmission } from "./wizard-types";
 import { patchSubmission } from "./wizard-api";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const MONTHS = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
@@ -61,7 +63,7 @@ export function StepPeriod({
       </div>
 
       {/* Period — fixed at submission creation, displayed for context */}
-      <div className="grid sm:grid-cols-3 gap-4 rounded-md bg-slate-50 border p-4">
+      <Card className="grid sm:grid-cols-3 gap-4 rounded-md bg-slate-50 border p-4 shadow-none">
         <Field label="Plant">
           <div className="text-sm font-medium">{submission.plant.name}</div>
           <div className="text-xs text-slate-500">{submission.plant.code}</div>
@@ -79,7 +81,7 @@ export function StepPeriod({
             ).toLocaleDateString("en-IN")}
           </div>
         </Field>
-      </div>
+      </Card>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <NumField
@@ -113,9 +115,9 @@ export function StepPeriod({
       </div>
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="flex items-center justify-between pt-2">

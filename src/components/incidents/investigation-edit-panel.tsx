@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { UserPicker } from "@/components/ui/user-picker";
 import { RcaEditor, useRcaMethodSwitcher } from "@/components/incidents/rca-editor";
 import {
@@ -17,6 +17,7 @@ import {
   normaliseRcaMethod
 } from "@/lib/rca/types";
 import { Save, Loader2, ClipboardCheck } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 // Editable by HSE_MANAGER / ADMIN while the incident workflow is open.
 // Captures classification + investigation team + RCA + CAPA in one panel.
@@ -136,10 +137,10 @@ export function InvestigationEditPanel({
           </div>
           <div className="space-y-2">
             <Label>Root-Cause Method</Label>
-            <Select
+            <SelectField
               value={rcaMethod ?? ""}
-              onChange={(e) => {
-                const v = e.target.value as RcaMethod;
+              onChange={(raw) => {
+                const v = raw as RcaMethod;
                 if (!v) {
                   setRcaMethod(null);
                   setRcaData(null);
@@ -153,10 +154,9 @@ export function InvestigationEditPanel({
                 }
               }}
               disabled={!canEdit}
-            >
-              <option value="">— Select —</option>
-              {RCA_METHODS_LIST.map((m) => <option key={m.code} value={m.code}>{m.label}</option>)}
-            </Select>
+              placeholder="— Select —"
+              options={RCA_METHODS_LIST.map((m) => ({ value: m.code, label: m.label }))}
+            />
           </div>
         </div>
 
@@ -209,7 +209,7 @@ export function InvestigationEditPanel({
           </div>
         </div>
 
-        {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
+        {error && <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</Alert>}
 
         {canEdit && (
           <div className="flex items-center gap-3 pt-1">

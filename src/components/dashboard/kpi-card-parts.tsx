@@ -22,6 +22,8 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { KpiBand, KpiBenchmarks } from "@/lib/manhours/kpi-registry";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 // ─── DeltaIndicator ───────────────────────────────────────────────
 
@@ -388,13 +390,11 @@ export function KpiCardMenu({ primary, secondary, stopPropagation = true }: KpiC
           if (stopPropagation) e.stopPropagation();
         }}
       >
-        <button
-          type="button"
-          className="flex h-6 w-6 items-center justify-center rounded text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-1 focus:ring-primary-400"
-          aria-label="KPI options"
-        >
+        <Button variant="ghost"
+          type="button" className="flex h-6 w-6 rounded"
+          aria-label="KPI options">
           <MoreHorizontal size={14} />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
         {primary?.length ? (
@@ -460,14 +460,12 @@ export function KpiCardInfoButton({ formula, description }: { formula?: string; 
     <TooltipProvider delayDuration={300}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
+          <Button variant="ghost"
             type="button"
-            onClick={(e) => e.stopPropagation()}
-            className="flex h-4 w-4 items-center justify-center rounded text-slate-300 transition hover:text-slate-600"
-            aria-label="KPI definition"
-          >
+            onClick={(e) => e.stopPropagation()} className="flex h-4 w-4 rounded"
+            aria-label="KPI definition">
             <InfoIcon size={12} />
-          </button>
+          </Button>
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-xs">
           <div className="space-y-1 text-[11px]">
@@ -486,8 +484,8 @@ export function KpiCardInfoButton({ formula, description }: { formula?: string; 
 
 export function StaleBadge() {
   return (
-    <span className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-1.5 py-0.5 text-[10px] font-medium text-warning-dark">
+    <Badge variant="neutral" className="inline-flex items-center gap-1 rounded-full bg-warning-bg px-1.5 py-0.5 text-[10px] font-medium text-warning-dark">
       <AlertCircle size={10} /> Stale
-    </span>
+    </Badge>
   );
 }

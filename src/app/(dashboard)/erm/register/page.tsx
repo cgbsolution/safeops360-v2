@@ -5,6 +5,9 @@ import { PageHeader } from "@/components/page-header";
 import { BandBadge } from "@/components/erm/shared";
 import { STATE_CHIP, VELOCITY_LABEL, fmtDate, fmtInr, type RiskListResponse } from "../lib";
 import { RegisterFilters } from "./register-filters";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +83,7 @@ export default async function RegisterPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           <div className="mb-3">
@@ -95,40 +98,40 @@ export default async function RegisterPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.total} risk(s)</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Title</th>
-                  <th className="px-3 py-2.5">Category</th>
-                  <th className="px-3 py-2.5">Level / Site</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                  <th className="px-3 py-2.5">Inherent</th>
-                  <th className="px-3 py-2.5">Residual</th>
-                  <th className="px-3 py-2.5">₹ Exposure</th>
-                  <th className="px-3 py-2.5">State</th>
-                  <th className="px-3 py-2.5">Next Review</th>
-                  <th className="px-3 py-2.5">Src</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1100px] text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Title</TableHead>
+                  <TableHead className="px-3 py-2.5">Category</TableHead>
+                  <TableHead className="px-3 py-2.5">Level / Site</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                  <TableHead className="px-3 py-2.5">Inherent</TableHead>
+                  <TableHead className="px-3 py-2.5">Residual</TableHead>
+                  <TableHead className="px-3 py-2.5">₹ Exposure</TableHead>
+                  <TableHead className="px-3 py-2.5">State</TableHead>
+                  <TableHead className="px-3 py-2.5">Next Review</TableHead>
+                  <TableHead className="px-3 py-2.5">Src</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
                       No risks match the current filter.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((r) => (
-                    <tr key={r.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={r.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/register/${r.id}`} className="font-medium text-primary-700 hover:underline">
                           {r.riskCode}
                         </Link>
-                      </td>
-                      <td className="max-w-[260px] px-3 py-2.5 text-slate-700">{r.title}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[260px] px-3 py-2.5 text-slate-700">{r.title}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span
                           className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
                           style={{ backgroundColor: r.categoryColor ?? "#64748b" }}
@@ -136,16 +139,16 @@ export default async function RegisterPage(props: {
                           {r.categoryCode}
                         </span>
                         {r.subCategoryCode && <span className="ml-1 text-[10px] text-slate-400">{r.subCategoryCode}</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">
                         {r.orgLevel}
                         {r.plantName && <span className="block text-[11px] text-slate-400">{r.plantName}</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{r.riskOwnerName ?? "—"}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{r.riskOwnerName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <BandBadge band={r.inherentBand} score={r.inherentScore} />
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <div className="flex items-center gap-1">
                           <BandBadge band={r.residualBand} score={r.residualScore} />
                           {r.residualIsOverride && (
@@ -161,32 +164,32 @@ export default async function RegisterPage(props: {
                             <span title="LTI/Critical incident at this site — review recommended" className="rounded bg-orange-100 px-1 text-[9px] font-bold text-orange-700">I</span>
                           )}
                         </div>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums text-slate-600">
                         {fmtInr(r.residualExpectedLossInr)}
                         {r.targetExpectedLossInr != null && (
                           <span className="block text-[10px] text-emerald-600">→ {fmtInr(r.targetExpectedLossInr)}</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (STATE_CHIP[r.lifecycleState] ?? "")}>
                           {r.lifecycleState.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs">
                         <span className="text-slate-500">{fmtDate(r.nextReviewDate)}</span>
                         {r.reviewBadge === "AMBER" && <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">{r.reviewOverdueDays}d</span>}
                         {r.reviewBadge === "RED" && <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">{r.reviewOverdueDays}d</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-center text-base text-slate-500" title={r.sourceType}>
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-center text-base text-slate-500" title={r.sourceType}>
                         {SOURCE_ICON[r.sourceType] ?? "•"}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

@@ -18,6 +18,10 @@ import {
   type PersonRiskDetail
 } from "@/lib/training-intelligence";
 import { AssignTrainingButton, WorkerRiskActions } from "./worker-risk-actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -45,9 +49,9 @@ export default async function WorkerRiskDetailPage(props: {
             { label: "Worker risk" }
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Worker risk detail not found."}
-        </div>
+        </Alert>
       </div>
     );
   }
@@ -76,16 +80,16 @@ export default async function WorkerRiskDetailPage(props: {
           { label: worker.name }
         ]}
         action={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
+          <Badge variant="neutral" className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-600">
             <User size={13} className="text-slate-400" />
             {worker.designation ?? worker.role.replace(/_/g, " ")}
             {worker.department ? ` · ${worker.department}` : ""}
-          </span>
+          </Badge>
         }
       />
 
       {/* Risk banner: band + score + reasons */}
-      <div className="mb-5 rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="mb-5 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
             <div
@@ -121,30 +125,29 @@ export default async function WorkerRiskDetailPage(props: {
         {reasons.length > 0 && (
           <div className="mt-4 flex flex-wrap gap-2">
             {reasons.map((r, i) => (
-              <span
+              <Badge variant="neutral"
                 key={i}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600"
-              >
+                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-medium text-slate-600">
                 <CircleDot size={11} className={bandMeta.text} />
                 {r}
-              </span>
+              </Badge>
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Counts */}
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
         {TILES.map((t) => (
-          <div key={t.label} className="rounded-xl border border-slate-200 bg-white p-4">
+          <Card key={t.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className={cn("text-2xl font-bold tabular-nums", t.tone)}>{t.value}</div>
             <div className="mt-1 text-[11px] uppercase tracking-wider text-slate-500">{t.label}</div>
-          </div>
+          </Card>
         ))}
       </div>
 
       {/* Recommended training */}
-      <div className="mb-5 overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <Card className="mb-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
         <div className="flex items-center justify-between gap-2 border-b border-slate-100 px-4 py-3">
           <div className="flex items-center gap-2">
             <GraduationCap size={16} className="text-slate-500" />
@@ -164,15 +167,17 @@ export default async function WorkerRiskDetailPage(props: {
           ) : (
             <div className="flex flex-wrap gap-2">
               {recommendedCompetencies.map((c) => (
-                <span
+                <Badge variant="brand"
                   key={c.competencyId}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700"
-                >
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700">
                   {c.name}
-                  <span className="rounded-full bg-primary-100 px-1.5 text-[10px] font-bold tabular-nums text-primary-700">
+                  {/* A count bubble inside the chip, not a chip of its own —
+                      nesting a Badge in a Badge would double the border and
+                      padding. */}
+                  <Badge variant="brand" className="rounded-full bg-primary-100 px-1.5 text-[10px] font-bold tabular-nums text-primary-700">
                     {c.fromEvents}
-                  </span>
-                </span>
+                  </Badge>
+                </Badge>
               ))}
             </div>
           )}
@@ -185,43 +190,43 @@ export default async function WorkerRiskDetailPage(props: {
             </div>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Contributing events timeline */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
           <ListChecks size={16} className="text-slate-500" />
           <h2 className="text-sm font-semibold text-slate-800">Contributing events</h2>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+          <Badge variant="neutral" className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
             {contributingRecords.length}
-          </span>
+          </Badge>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-2.5 font-semibold">Module</th>
-                <th className="px-4 py-2.5 font-semibold">Record</th>
-                <th className="px-4 py-2.5 font-semibold">Date</th>
-                <th className="px-4 py-2.5 font-semibold">Role</th>
-                <th className="px-4 py-2.5 font-semibold">Severity</th>
-                <th className="px-4 py-2.5 font-semibold">SIF</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                <TableHead className="px-4 py-2.5 font-semibold">Module</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Record</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Date</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Role</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Severity</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">SIF</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {contributingRecords.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
+                <TableRow>
+                  <TableCell colSpan={6} className="px-4 py-8 text-center text-sm text-slate-400">
                     No contributing events on record.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 contributingRecords.map((rec, i) => {
                   const meta = EVENT_MODULE_META[rec.module];
                   const href = sourceRecordHref(rec.module, rec.id);
                   return (
-                    <tr key={`${rec.module}-${rec.id}-${i}`} className="hover:bg-slate-50/70">
-                      <td className="px-4 py-3 align-top">
+                    <TableRow key={`${rec.module}-${rec.id}-${i}`} className="hover:bg-slate-50/70">
+                      <TableCell className="px-4 py-3 align-top">
                         <span
                           className={cn(
                             "inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold",
@@ -230,8 +235,8 @@ export default async function WorkerRiskDetailPage(props: {
                         >
                           {meta ? meta.label : labelize(rec.module)}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 align-top">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 align-top">
                         {rec.ref ? (
                           href ? (
                             <Link
@@ -247,34 +252,34 @@ export default async function WorkerRiskDetailPage(props: {
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3 align-top tabular-nums text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 align-top tabular-nums text-slate-600">
                         {fmtDate(rec.date)}
-                      </td>
-                      <td className="px-4 py-3 align-top text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 align-top text-slate-600">
                         {rec.role ? labelize(rec.role) : "—"}
-                      </td>
-                      <td className="px-4 py-3 align-top text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 align-top text-slate-600">
                         {rec.severity ? labelize(rec.severity) : "—"}
-                      </td>
-                      <td className="px-4 py-3 align-top">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 align-top">
                         {rec.sif ? (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
+                          <Badge variant="danger" className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
                             <AlertTriangle size={11} />
                             SIF
-                          </span>
+                          </Badge>
                         ) : (
                           <span className="text-slate-400">—</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -6,6 +6,14 @@ import { Check, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import { UserPicker } from "@/components/ui/user-picker";
 import { type Category, type ScoringMatrix } from "../../lib";
 import { AssessForm } from "../[id]/detail-view";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const ORG_LEVELS = ["ENTERPRISE", "BUSINESS_UNIT", "FUNCTION", "SITE"] as const;
 const VELOCITIES = ["SLOW", "MODERATE", "FAST", "VERY_FAST"] as const;
@@ -176,7 +184,7 @@ export function NewRiskWizard({ categories, matrix }: { categories: Category[]; 
   return (
     <div className="space-y-4">
       {/* Stepper */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <ol className="flex flex-wrap items-center gap-2">
           {STEPS.map((label, i) => {
             const done = i < step;
@@ -208,13 +216,13 @@ export function NewRiskWizard({ categories, matrix }: { categories: Category[]; 
             );
           })}
         </ol>
-      </div>
+      </Card>
 
       {error && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{error}</Alert>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         {step === 0 && (
           <IdentifyStep
             title={title}
@@ -280,26 +288,22 @@ export function NewRiskWizard({ categories, matrix }: { categories: Category[]; 
             setWantResidual={setWantResidual}
           />
         )}
-      </div>
+      </Card>
 
       {/* Button row */}
       <div className="flex items-center justify-between">
-        <button
+        <Button variant="outline"
           type="button"
           onClick={back}
-          disabled={step === 0 || busy}
-          className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-primary-500 disabled:opacity-40"
-        >
+          disabled={step === 0 || busy} className="gap-1 rounded-lg px-4 py-2 text-sm">
           <ChevronLeft size={16} /> Back
-        </button>
+        </Button>
         {step < 3 ? (
-          <button
+          <Button variant="default"
             type="button"
-            onClick={next}
-            className="inline-flex items-center gap-1 rounded-lg bg-primary-700 px-4 py-2 text-sm font-medium text-white hover:bg-primary-800"
-          >
+            onClick={next} className="gap-1 rounded-lg px-4 py-2 text-sm text-white">
             Next <ChevronRight size={16} />
-          </button>
+          </Button>
         ) : (
           <button
             type="button"
@@ -369,7 +373,7 @@ function IdentifyStep(props: {
   return (
     <div className="space-y-4">
       <Field label="Risk title" required>
-        <input
+        <Input
           value={title}
           onChange={(e) => setTitle(e.target.value.slice(0, 160))}
           maxLength={160}
@@ -377,119 +381,87 @@ function IdentifyStep(props: {
             "w-full rounded-lg border p-2 text-sm " +
             (touched && !title.trim() ? "border-rose-300" : "border-slate-300")
           }
-          placeholder="e.g. Single-source dependency on key polymer supplier"
-        />
+          placeholder="e.g. Single-source dependency on key polymer supplier" />
         <span className="mt-1 block text-right text-[10px] text-slate-400">{title.length}/160</span>
       </Field>
 
       <Field label="Risk statement / description">
-        <textarea
+        <Textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          placeholder="Due to [cause], [event] may occur, resulting in [consequence]"
-        />
+          placeholder="Due to [cause], [event] may occur, resulting in [consequence]" />
       </Field>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label="Category" required>
-          <select
+          <SelectField
             value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
+            onChange={setCategoryId}
             className={
               "w-full rounded-lg border p-2 text-sm " +
               (touched && !categoryId ? "border-rose-300" : "border-slate-300")
             }
-          >
-            <option value="">Select a category…</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.code} — {c.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Sub-category">
-          <select
-            value={subCategoryId}
-            onChange={(e) => setSubCategoryId(e.target.value)}
-            disabled={!subCategories.length}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
-          >
-            <option value="">{subCategories.length ? "Select a sub-category…" : "—"}</option>
-            {subCategories.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.code} — {s.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Org level">
-          <select
-            value={orgLevel}
-            onChange={(e) => setOrgLevel(e.target.value as (typeof ORG_LEVELS)[number])}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          >
-            {ORG_LEVELS.map((o) => (
-              <option key={o} value={o}>
-                {o.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Business unit">
-          <select
-            value={businessUnit}
-            onChange={(e) => setBusinessUnit(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          >
-            <option value="">Select a business unit…</option>
-            {businessUnit && !businessUnits.includes(businessUnit) && (
-              <option value={businessUnit}>{businessUnit}</option>
-            )}
-            {businessUnits.map((bu) => (
-              <option key={bu} value={bu}>
-                {bu}
-              </option>
-            ))}
-          </select>
-        </Field>
-
-        <Field label="Plant / site id">
-          <input
-            value={plantId}
-            onChange={(e) => setPlantId(e.target.value)}
-            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-            placeholder="Optional"
+            placeholder="Select a category…"
+            options={categories.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
           />
         </Field>
 
-        <Field label="Velocity">
-          <select
-            value={velocity}
-            onChange={(e) => setVelocity(e.target.value as (typeof VELOCITIES)[number])}
+        <Field label="Sub-category">
+          <SelectField
+            value={subCategoryId}
+            onChange={setSubCategoryId}
+            disabled={!subCategories.length}
+            className="w-full rounded-lg border border-slate-300 p-2 text-sm disabled:bg-slate-50 disabled:text-slate-400"
+            placeholder={subCategories.length ? "Select a sub-category…" : "—"}
+            options={subCategories.map((s) => ({ value: s.id, label: `${s.code} — ${s.name}` }))}
+          />
+        </Field>
+
+        <Field label="Org level">
+          <SelectField
+            value={orgLevel}
+            onChange={(value) => setOrgLevel(value as (typeof ORG_LEVELS)[number])}
             className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          >
-            {VELOCITIES.map((v) => (
-              <option key={v} value={v}>
-                {VELOCITY_LABEL[v]}
-              </option>
-            ))}
-          </select>
+            options={ORG_LEVELS.map((o) => ({ value: o, label: `${o.replace(/_/g, " ")}` }))}
+          />
+        </Field>
+
+        <Field label="Business unit">
+          <SelectField
+            value={businessUnit}
+            onChange={setBusinessUnit}
+            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            placeholder="Select a business unit…"
+            options={businessUnits.map((bu) => ({ value: bu, label: `${bu}` }))}
+          />
+        </Field>
+
+        <Field label="Plant / site id">
+          <Input
+            value={plantId}
+            onChange={(e) => setPlantId(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            placeholder="Optional" />
+        </Field>
+
+        <Field label="Velocity">
+          <SelectField
+            value={velocity}
+            onChange={(value) => setVelocity(value as (typeof VELOCITIES)[number])}
+            className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            options={VELOCITIES.map((v) => ({ value: v, label: `${VELOCITY_LABEL[v]}` }))}
+          />
         </Field>
       </div>
 
       <Field label="Tags (comma-separated)">
-        <input
+        <Input
           value={tagsRaw}
           onChange={(e) => setTagsRaw(e.target.value)}
           className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          placeholder="e.g. supply-chain, single-source, ESG"
-        />
+          placeholder="e.g. supply-chain, single-source, ESG" />
         {tags.length > 0 && (
           <div className="mt-2 flex flex-wrap gap-1.5">
             {tags.map((t, i) => (
@@ -564,7 +536,7 @@ function ChipInput({
     <div>
       <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</h3>
       <div className="flex gap-1.5">
-        <input
+        <Input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -574,16 +546,13 @@ function ChipInput({
             }
           }}
           className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          placeholder={placeholder}
-        />
-        <button
+          placeholder={placeholder} />
+        <Button variant="outline"
           type="button"
-          onClick={add}
-          className="inline-flex shrink-0 items-center rounded-lg border border-slate-300 bg-white px-2 text-slate-600 hover:border-primary-500"
-          aria-label={`Add ${label}`}
-        >
+          onClick={add} className="shrink-0 rounded-lg px-2"
+          aria-label={`Add ${label}`}>
           <Plus size={16} />
-        </button>
+        </Button>
       </div>
       <div className="mt-2 flex flex-wrap gap-1.5">
         {items.length === 0 ? (
@@ -592,14 +561,12 @@ function ChipInput({
           items.map((c, i) => (
             <span key={i} className={"inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs " + tone}>
               {c}
-              <button
+              <Button variant="ghost"
                 type="button"
-                onClick={() => setItems(items.filter((_, j) => j !== i))}
-                className="opacity-60 hover:opacity-100"
-                aria-label={`Remove ${c}`}
-              >
+                onClick={() => setItems(items.filter((_, j) => j !== i))} className="opacity-60 hover:opacity-100"
+                aria-label={`Remove ${c}`}>
                 <X size={12} />
-              </button>
+              </Button>
             </span>
           ))
         )}
@@ -645,14 +612,13 @@ function OwnershipStep(props: {
       </Field>
 
       <Field label="Review override (days)">
-        <input
+        <Input
           type="number"
           min={1}
           value={reviewOverrideDays}
           onChange={(e) => setReviewOverrideDays(e.target.value)}
           className="w-40 rounded-lg border border-slate-300 p-2 text-sm"
-          placeholder="Optional"
-        />
+          placeholder="Optional" />
         <span className="mt-1 block text-xs text-slate-400">
           Overrides the band-derived review cadence. Leave blank to use the default.
         </span>
@@ -674,7 +640,7 @@ function AssessStep(props: {
   const { matrix, inherent, setInherent, residual, setResidual, wantResidual, setWantResidual } = props;
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-slate-200 p-4">
+      <Card className="rounded-lg border border-slate-200 p-4 shadow-none">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-800">
             Inherent assessment <span className="text-rose-600">*</span>
@@ -682,26 +648,25 @@ function AssessStep(props: {
           {inherent && <span className="text-xs font-medium text-emerald-600">✓ captured</span>}
         </div>
         <AssessForm matrix={matrix} forceType="INHERENT" busy={false} onSubmit={(b) => setInherent(b)} />
-      </div>
+      </Card>
 
-      <label className="flex items-center gap-2 text-sm text-slate-700">
-        <input
-          type="checkbox"
+      <Label className="flex items-center gap-2 text-sm text-slate-700">
+        <Checkbox
+         
           checked={wantResidual}
           onChange={(e) => setWantResidual(e.target.checked)}
-          className="h-4 w-4 rounded border-slate-300"
-        />
+          className="h-4 w-4 rounded border-slate-300" />
         Also capture an initial residual assessment (optional — reflects controls already in place)
-      </label>
+      </Label>
 
       {wantResidual && (
-        <div className="rounded-lg border border-slate-200 p-4">
+        <Card className="rounded-lg border border-slate-200 p-4 shadow-none">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Residual assessment</h3>
             {residual && <span className="text-xs font-medium text-emerald-600">✓ captured</span>}
           </div>
           <AssessForm matrix={matrix} forceType="RESIDUAL" busy={false} onSubmit={(b) => setResidual(b)} />
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -710,10 +675,10 @@ function AssessStep(props: {
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">
+      <Label className="mb-1 block text-xs font-medium text-slate-600">
         {label}
         {required && <span className="ml-0.5 text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );

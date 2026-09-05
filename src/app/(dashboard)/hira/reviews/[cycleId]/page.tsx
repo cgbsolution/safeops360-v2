@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { AccessRestricted } from "@/components/access-restricted";
 import { requirePermission } from "@/lib/auth/server";
 import { ReviewForm } from "./review-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -88,7 +89,7 @@ export default async function HiraReviewCyclePage(
           />
         </div>
         <div className="lg:col-span-1 space-y-4">
-          <Card title="Review Context">
+          <TitledPanel title="Review Context">
             <DefList
               items={[
                 ["Trigger", cycle.triggeredBy.replace(/_/g, " ")],
@@ -97,9 +98,9 @@ export default async function HiraReviewCyclePage(
                 ["Trigger reference", cycle.triggerReferenceId ?? "—"]
               ]}
             />
-          </Card>
+          </TitledPanel>
 
-          <Card title="Current Hazards">
+          <TitledPanel title="Current Hazards">
             {entry.hazards.length === 0 ? (
               <div className="text-xs text-slate-500">No hazards on file.</div>
             ) : (
@@ -115,9 +116,9 @@ export default async function HiraReviewCyclePage(
                 })}
               </ul>
             )}
-          </Card>
+          </TitledPanel>
 
-          <Card title="Current Controls">
+          <TitledPanel title="Current Controls">
             {entry.existingControls.length === 0 ? (
               <div className="text-xs text-slate-500">No controls on file.</div>
             ) : (
@@ -133,7 +134,7 @@ export default async function HiraReviewCyclePage(
                 ))}
               </ul>
             )}
-          </Card>
+          </TitledPanel>
 
           <Link
             href={`/hira/${entry.studyId}/entries/${entry.id}`}
@@ -147,12 +148,16 @@ export default async function HiraReviewCyclePage(
   );
 }
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
+/** A titled panel. Named TitledPanel, not Card, so it no longer shadows the
+ *  shared <TitledPanel> this file now builds on. */
+function TitledPanel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border bg-white">
-      <div className="px-4 py-2.5 border-b text-xs uppercase tracking-wider text-slate-600">{title}</div>
-      <div className="p-4">{children}</div>
-    </div>
+    <Card className="shadow-none">
+      <CardHeader className="border-b p-0 px-4 py-2.5">
+        <CardTitle className="text-xs font-normal uppercase tracking-wider text-slate-600">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">{children}</CardContent>
+    </Card>
   );
 }
 

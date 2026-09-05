@@ -19,6 +19,9 @@ const TERMINAL_STATES = new Set(["VERIFIED", "CLOSED", "CLOSED_RECURRED", "CANCE
 import { PanelBoundary } from "@/components/ui/panel-boundary";
 import { UserRefLabel, type UserDirectory } from "@/lib/users/user-ref";
 import { markRecordTasksReadForViewer } from "@/lib/workflow/read-state";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -338,7 +341,7 @@ function ExecutionTab({ capa, capaId }: { capa: CapaOut; capaId: string }) {
 function ClosureTab({ capa }: { capa: CapaOut }) {
   return (
     <div className="space-y-4">
-      <Card title="Closure Status">
+      <TitledPanel title="Closure Status">
         <DefList
           items={[
             ["Current state", capa.state.replace(/_/g, " ")],
@@ -346,12 +349,12 @@ function ClosureTab({ capa }: { capa: CapaOut }) {
           ]}
         />
         {capa.state === "VERIFIED" && (
-          <div className="mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          <Alert variant="warning" className="mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
             CAPA is verified and ready for closure. The closure authority must sign off.
-          </div>
+          </Alert>
         )}
-      </Card>
-      <Card title="Recurrence Check">
+      </TitledPanel>
+      <TitledPanel title="Recurrence Check">
         <DefList
           items={[
             ["Due", capa.recurrenceCheckDueDate ? new Date(capa.recurrenceCheckDueDate).toLocaleDateString() : "—"],
@@ -360,11 +363,11 @@ function ClosureTab({ capa }: { capa: CapaOut }) {
           ]}
         />
         {capa.state === "CLOSED" && capa.recurrenceCheckDueDate && new Date(capa.recurrenceCheckDueDate) < new Date() && capa.recurrenceDetected === null && (
-          <div className="mt-3 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900">
+          <Alert variant="destructive" className="mt-3 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900">
             Recurrence check is overdue. Run the check to confirm whether the issue has recurred.
-          </div>
+          </Alert>
         )}
-      </Card>
+      </TitledPanel>
     </div>
   );
 }
@@ -372,7 +375,7 @@ function ClosureTab({ capa }: { capa: CapaOut }) {
 function LinkagesTab({ capa }: { capa: CapaOut }) {
   return (
     <div className="space-y-4">
-      <Card title="Related Records">
+      <TitledPanel title="Related Records">
         <div className="text-sm text-slate-700">
           {capa.legacySource ? (
             <div className="mb-2">
@@ -395,8 +398,8 @@ function LinkagesTab({ capa }: { capa: CapaOut }) {
             <div className="text-xs text-slate-500 italic">No source record reference.</div>
           )}
         </div>
-      </Card>
-      <Card title="Contributors">
+      </TitledPanel>
+      <TitledPanel title="Contributors">
         {capa.contributors.length === 0 ? (
           <div className="text-xs text-slate-500">No contributors added.</div>
         ) : (
@@ -409,8 +412,8 @@ function LinkagesTab({ capa }: { capa: CapaOut }) {
             ))}
           </ul>
         )}
-      </Card>
-      <Card title="Attachments">
+      </TitledPanel>
+      <TitledPanel title="Attachments">
         {capa.attachments.length === 0 ? (
           <div className="text-xs text-slate-500">No attachments.</div>
         ) : (
@@ -425,7 +428,7 @@ function LinkagesTab({ capa }: { capa: CapaOut }) {
             ))}
           </ul>
         )}
-      </Card>
+      </TitledPanel>
     </div>
   );
 }
@@ -434,7 +437,7 @@ function CostTab({ capa }: { capa: CapaOut }) {
   const actionCostSum = capa.actions.reduce((sum, a) => sum + (a.costEstimate ?? 0), 0);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      <Card title="Cost Summary">
+      <TitledPanel title="Cost Summary">
         <DefList
           items={[
             ["Estimated problem cost", capa.estimatedProblemCost?.toLocaleString() ?? "—"],
@@ -443,29 +446,29 @@ function CostTab({ capa }: { capa: CapaOut }) {
             ["Actual cost (recorded at closure)", capa.actualCost?.toLocaleString() ?? "Not yet recorded"]
           ]}
         />
-      </Card>
-      <Card title="Per-Action Cost Breakdown">
+      </TitledPanel>
+      <TitledPanel title="Per-Action Cost Breakdown">
         {capa.actions.length === 0 ? (
           <div className="text-xs text-slate-500">No actions.</div>
         ) : (
-          <table className="w-full text-xs">
-            <thead className="border-b">
-              <tr className="text-left text-slate-500 uppercase tracking-wider text-[10px]">
-                <th className="py-1">Action</th>
-                <th className="py-1 text-right">Est. cost</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
+          <Table className="w-full text-xs">
+            <TableHeader className="border-b">
+              <TableRow className="text-left text-slate-500 uppercase tracking-wider text-[10px]">
+                <TableHead className="py-1">Action</TableHead>
+                <TableHead className="py-1 text-right">Est. cost</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {capa.actions.map((a) => (
-                <tr key={a.id}>
-                  <td className="py-1.5 pr-2 line-clamp-1">{a.description}</td>
-                  <td className="py-1.5 text-right font-mono">{a.costEstimate?.toLocaleString() ?? "—"}</td>
-                </tr>
+                <TableRow key={a.id}>
+                  <TableCell className="py-1.5 pr-2 line-clamp-1">{a.description}</TableCell>
+                  <TableCell className="py-1.5 text-right font-mono">{a.costEstimate?.toLocaleString() ?? "—"}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </Card>
+      </TitledPanel>
     </div>
   );
 }
@@ -510,7 +513,7 @@ function AuditTrailTab({ capa }: { capa: CapaOut }) {
   events.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   return (
-    <Card title={`Audit Trail (${events.length} events)`}>
+    <TitledPanel title={`Audit Trail (${events.length} events)`}>
       {events.length === 0 ? (
         <div className="text-xs text-slate-500">No events recorded.</div>
       ) : (
@@ -533,14 +536,14 @@ function AuditTrailTab({ capa }: { capa: CapaOut }) {
           ))}
         </ul>
       )}
-    </Card>
+    </TitledPanel>
   );
 }
 
 function OverviewTab({ capa }: { capa: CapaOut }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <Card title="Problem Statement" className="lg:col-span-2">
+      <TitledPanel title="Problem Statement" className="lg:col-span-2">
         <p className="text-sm text-slate-800 whitespace-pre-wrap">{capa.problemDescription}</p>
         {capa.problemImpact && (
           <div className="mt-3 pt-3 border-t">
@@ -548,8 +551,8 @@ function OverviewTab({ capa }: { capa: CapaOut }) {
             <p className="text-sm text-slate-800 whitespace-pre-wrap">{capa.problemImpact}</p>
           </div>
         )}
-      </Card>
-      <Card title="Classification">
+      </TitledPanel>
+      <TitledPanel title="Classification">
         <DefList
           items={[
             ["Source type", capa.sourceTypeCode.replace(/_/g, " ")],
@@ -559,8 +562,8 @@ function OverviewTab({ capa }: { capa: CapaOut }) {
             ["Recurring?", capa.isRecurring ? "Yes" : "No"]
           ]}
         />
-      </Card>
-      <Card title="Key Dates">
+      </TitledPanel>
+      <TitledPanel title="Key Dates">
         <DefList
           items={[
             ["Detected", new Date(capa.detectedAt).toLocaleDateString()],
@@ -571,8 +574,8 @@ function OverviewTab({ capa }: { capa: CapaOut }) {
             ["Recurrence check due", capa.recurrenceCheckDueDate ? new Date(capa.recurrenceCheckDueDate).toLocaleDateString() : "—"]
           ]}
         />
-      </Card>
-      <Card title="Ownership">
+      </TitledPanel>
+      <TitledPanel title="Ownership">
         <DefList
           items={[
             ["Raised by", <UserRefLabel key="raised" dir={capa.userDirectory} id={capa.raisedByUserId} />],
@@ -580,9 +583,9 @@ function OverviewTab({ capa }: { capa: CapaOut }) {
             ["Contributors", String(capa.contributors.length)]
           ]}
         />
-      </Card>
+      </TitledPanel>
       {(capa.estimatedProblemCost || capa.estimatedActionsCost || capa.actualCost) && (
-        <Card title="Cost">
+        <TitledPanel title="Cost">
           <DefList
             items={[
               ["Estimated problem cost", capa.estimatedProblemCost?.toLocaleString() ?? "—"],
@@ -590,7 +593,7 @@ function OverviewTab({ capa }: { capa: CapaOut }) {
               ["Actual cost", capa.actualCost?.toLocaleString() ?? "—"]
             ]}
           />
-        </Card>
+        </TitledPanel>
       )}
     </div>
   );
@@ -642,7 +645,7 @@ function SourceTab({ capa }: { capa: CapaOut }) {
 
   return (
     <div className="space-y-4">
-      <Card title="Source Context">
+      <TitledPanel title="Source Context">
         <DefList
           items={[
             ["Source type", capa.sourceTypeCode.replace(/_/g, " ")],
@@ -650,9 +653,9 @@ function SourceTab({ capa }: { capa: CapaOut }) {
             ["Reference summary", capa.sourceReferenceSummary ?? "—"]
           ]}
         />
-      </Card>
+      </TitledPanel>
       {(metaEntries.length > 0 || progressLog.length > 0) && (
-        <Card title="Source Metadata">
+        <TitledPanel title="Source Metadata">
           {metaEntries.length > 0 && (
             <DefList items={metaEntries.map(([k, v]) => [humanizeMetaKey(k), formatMetaValue(v)])} />
           )}
@@ -672,13 +675,13 @@ function SourceTab({ capa }: { capa: CapaOut }) {
               </ul>
             </div>
           )}
-        </Card>
+        </TitledPanel>
       )}
       {capa.legacySource && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+        <Alert variant="warning" className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
           This CAPA was backfilled from the legacy <code className="px-1 rounded bg-amber-100">{capa.legacySource}</code> table.
           The original record is preserved at the parent module&apos;s detail page.
-        </div>
+        </Alert>
       )}
     </div>
   );
@@ -688,17 +691,17 @@ function RcaTab({ capa }: { capa: CapaOut }) {
   const analysisMethod = normaliseRcaMethod(capa.rcaMethodology);
   return (
     <div className="space-y-4">
-      <Card title="Methodology">
+      <TitledPanel title="Methodology">
         {/* Three chips rather than a definition list. The list rendered each
             label hard left and its value hard right across the full card, so
             "Methodology ......... FIVE_WHY" read as two unrelated columns. */}
         <div className="flex flex-wrap items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-800">
+          <Badge variant="violet" className="gap-1.5 py-1 text-xs font-medium text-violet-800">
             {/* Legacy rows hold 5_WHY / FAULT_TREE / TAP_ROOT, which rendered
                 as "5-WHY" and "FAULT-TREE" — codes, not the name of the
                 technique the analyst actually used. */}
             {capaRcaMethodLabel(capa.rcaMethodology)}
-          </span>
+          </Badge>
           <span
             className={
               "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium " +
@@ -721,11 +724,11 @@ function RcaTab({ capa }: { capa: CapaOut }) {
             <p className="text-sm text-slate-800 whitespace-pre-wrap">{capa.rcaMethodologyRationale}</p>
           </div>
         )}
-      </Card>
+      </TitledPanel>
       {capa.rcaSummary && (
-        <Card title="RCA Summary">
+        <TitledPanel title="RCA Summary">
           <p className="text-sm text-slate-800 whitespace-pre-wrap">{capa.rcaSummary}</p>
-        </Card>
+        </TitledPanel>
       )}
       {/* The analysis as it was drawn. Read-only: this tab is the record, and
           the form below is where it gets written. RcaEditor renders every
@@ -740,7 +743,7 @@ function RcaTab({ capa }: { capa: CapaOut }) {
         </div>
       )}
       {(capa.contributingFactors?.length ?? 0) > 0 && (
-        <Card title={`Why-Why Analysis (${(capa.contributingFactors?.length ?? 0) + capa.rootCauses.length} levels)`}>
+        <TitledPanel title={`Why-Why Analysis (${(capa.contributingFactors?.length ?? 0) + capa.rootCauses.length} levels)`}>
           {/* The chain, in order, ending on the root cause. Showing only the
               conclusion — as this page used to — presents an answer with no
               reasoning behind it, on a record whose entire revision was
@@ -772,9 +775,9 @@ function RcaTab({ capa }: { capa: CapaOut }) {
             Each level answers Why of the one above it. The final level is the
             system failure the NC report asks for.
           </p>
-        </Card>
+        </TitledPanel>
       )}
-      <Card title={`Identified Root Causes (${capa.rootCauses.length})`}>
+      <TitledPanel title={`Identified Root Causes (${capa.rootCauses.length})`}>
         {capa.rootCauses.length === 0 ? (
           <div className="text-sm text-slate-500">No root causes recorded yet.</div>
         ) : (
@@ -792,7 +795,7 @@ function RcaTab({ capa }: { capa: CapaOut }) {
             ))}
           </ul>
         )}
-      </Card>
+      </TitledPanel>
     </div>
   );
 }
@@ -866,7 +869,7 @@ function ActionGroup({
   // report cannot show.
   if (hidden) return null;
   return (
-    <Card title={`${title} (${actions.length})`}>
+    <TitledPanel title={`${title} (${actions.length})`}>
       {actions.length === 0 ? (
         <div className="text-sm text-slate-500 mb-3">None.</div>
       ) : (
@@ -914,14 +917,14 @@ function ActionGroup({
       ) : (
         <AddActionForm capaId={capaId} defaultActionType={defaultActionType} users={users} />
       )}
-    </Card>
+    </TitledPanel>
   );
 }
 
 function VerificationTab({ capa }: { capa: CapaOut }) {
   return (
     <div className="space-y-4">
-      <Card title="Verification Plan">
+      <TitledPanel title="Verification Plan">
         <DefList
           items={[
             ["Success criteria", capa.verificationSuccessCriteria ?? "—"],
@@ -936,15 +939,15 @@ function VerificationTab({ capa }: { capa: CapaOut }) {
             <p className="text-sm text-slate-800 whitespace-pre-wrap">{capa.verificationEvidence}</p>
           </div>
         )}
-      </Card>
-      <Card title="Recurrence Check">
+      </TitledPanel>
+      <TitledPanel title="Recurrence Check">
         <DefList
           items={[
             ["Due", capa.recurrenceCheckDueDate ? new Date(capa.recurrenceCheckDueDate).toLocaleDateString() : "—"],
             ["Recurred?", capa.recurrenceDetected === null ? "Not yet checked" : capa.recurrenceDetected ? "Yes" : "No"]
           ]}
         />
-      </Card>
+      </TitledPanel>
     </div>
   );
 }
@@ -957,7 +960,7 @@ function CapaAccessDenied() {
         description="This record is outside your access scope"
         breadcrumbs={[{ label: "CAPA", href: "/capa" }, { label: "Restricted" }]}
       />
-      <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-6 text-sm text-amber-900 max-w-2xl">
+      <Alert variant="warning" className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-6 text-sm text-amber-900 max-w-2xl">
         <div className="font-semibold mb-1">You don&apos;t have access to this CAPA.</div>
         <p className="text-amber-800">
           It belongs to a plant or scope your role isn&apos;t permitted to view. If you believe
@@ -969,12 +972,12 @@ function CapaAccessDenied() {
         >
           ← Back to CAPA list
         </Link>
-      </div>
+      </Alert>
     </div>
   );
 }
 
-function Card({
+function TitledPanel({
   title,
   children,
   className

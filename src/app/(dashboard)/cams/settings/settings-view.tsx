@@ -18,9 +18,12 @@ import { useRouter } from "next/navigation";
 import { Bell, Loader2, Languages, Zap, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { readApiError } from "@/lib/client-errors";
 import type { LanguageRow, PreferenceRow } from "./page";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 
 const FREQ_LABEL: Record<string, string> = {
   IMMEDIATE: "Email immediately",
@@ -110,10 +113,9 @@ function NotificationPreferences({
 
       <div className="mt-3 space-y-2">
         {rows.map((row) => (
-          <div
+          <Card
             key={row.eventClass}
-            className="rounded-lg border border-slate-200 p-3"
-          >
+            className="rounded-lg border border-slate-200 p-3 shadow-none">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-medium text-slate-800">{row.label}</span>
               <span className="text-[11px] text-slate-400">
@@ -135,28 +137,22 @@ function NotificationPreferences({
             </div>
 
             <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
-              <label className="flex items-center gap-2 text-xs text-slate-700">
-                <input
-                  type="checkbox"
+              <Label className="flex items-center gap-2 text-xs text-slate-700">
+                <Checkbox
+                 
                   checked={row.inAppEnabled}
                   onChange={(e) => save(row, { inAppEnabled: e.target.checked })}
-                  disabled={busy === row.eventClass}
-                />
+                  disabled={busy === row.eventClass} />
                 Show in the notification bell
-              </label>
-              <Select
+              </Label>
+              <SelectField
                 value={row.emailFrequency}
-                onChange={(e) => save(row, { emailFrequency: e.target.value })}
+                onChange={(value) => save(row, { emailFrequency: value })}
                 disabled={busy === row.eventClass}
                 className="h-8 w-full text-xs sm:ml-auto sm:w-52"
                 aria-label={`Email frequency for ${row.label}`}
-              >
-                {frequencies.map((f) => (
-                  <option key={f} value={f}>
-                    {FREQ_LABEL[f] ?? f}
-                  </option>
-                ))}
-              </Select>
+                options={frequencies.map((f) => ({ value: f, label: `${FREQ_LABEL[f] ?? f}` }))}
+              />
             </div>
 
             {/* The honesty clause: these bypass the digest whatever you choose. */}
@@ -172,14 +168,14 @@ function NotificationPreferences({
                 </span>
               </p>
             )}
-          </div>
+          </Card>
         ))}
       </div>
 
       {err && (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
           {err}
-        </div>
+        </Alert>
       )}
     </Card>
   );

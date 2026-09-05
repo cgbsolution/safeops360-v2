@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Plus, ChevronLeft } from "lucide-react";
 import { Can } from "@/components/auth/can";
 import { StudyActions } from "./study-actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -124,7 +126,7 @@ export default async function EaiStudyDetailPage(
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-2 rounded-xl border bg-white p-4">
+        <Card className="lg:col-span-2 rounded-xl border bg-white p-4 shadow-none">
           <h3 className="text-sm font-semibold text-slate-800 mb-3">Study Overview</h3>
           <dl className="grid grid-cols-2 gap-3 text-xs">
             <KV label="Description" value={study.description ?? "—"} />
@@ -158,9 +160,9 @@ export default async function EaiStudyDetailPage(
               }
             />
           </dl>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border bg-white p-4">
+        <Card className="rounded-xl border bg-white p-4 shadow-none">
           <h3 className="text-sm font-semibold text-slate-800 mb-3">Applicable Regulations</h3>
           {study.applicableRegulations && study.applicableRegulations.length > 0 ? (
             <ul className="space-y-1">
@@ -175,10 +177,10 @@ export default async function EaiStudyDetailPage(
           ) : (
             <div className="text-xs text-slate-400">None specified.</div>
           )}
-        </div>
+        </Card>
       </div>
 
-      <div className="rounded-xl border bg-white">
+      <Card className="rounded-xl border bg-white shadow-none">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h3 className="text-sm font-semibold text-slate-800">Entries</h3>
           <div className="text-xs text-slate-500">{entries.items.length} total</div>
@@ -188,39 +190,39 @@ export default async function EaiStudyDetailPage(
             No entries yet. Add the first entry to start identifying environmental aspects.
           </div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-700">
-              <tr>
-                <th className="text-left px-4 py-2">#</th>
-                <th className="text-left px-4 py-2">Activity</th>
-                <th className="text-left px-4 py-2">Occurrence</th>
-                <th className="text-left px-4 py-2">Initial</th>
-                <th className="text-left px-4 py-2">Residual</th>
-                <th className="text-left px-4 py-2">Compliance</th>
-                <th className="text-left px-4 py-2">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-xs uppercase tracking-wider text-slate-700">
+              <TableRow>
+                <TableHead className="text-left px-4 py-2">#</TableHead>
+                <TableHead className="text-left px-4 py-2">Activity</TableHead>
+                <TableHead className="text-left px-4 py-2">Occurrence</TableHead>
+                <TableHead className="text-left px-4 py-2">Initial</TableHead>
+                <TableHead className="text-left px-4 py-2">Residual</TableHead>
+                <TableHead className="text-left px-4 py-2">Compliance</TableHead>
+                <TableHead className="text-left px-4 py-2">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {entries.items.map((e) => (
-                <tr key={e.id} className="hover:bg-emerald-50/40">
-                  <td className="px-4 py-2 text-slate-500">{e.sequenceNumber}</td>
-                  <td className="px-4 py-2">
+                <TableRow key={e.id} className="hover:bg-emerald-50/40">
+                  <TableCell className="px-4 py-2 text-slate-500">{e.sequenceNumber}</TableCell>
+                  <TableCell className="px-4 py-2">
                     <Link
                       href={`/eai/entry/${e.id}`}
                       className="text-emerald-700 hover:underline line-clamp-2"
                     >
                       {e.activityDescription}
                     </Link>
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
                     <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                       {e.occurrence}
                     </span>
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
                     <Chip level={e.initialImpactLevel} score={e.initialImpactScore} />
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
                     {e.residualImpactLevel ? (
                       <Chip
                         level={e.residualImpactLevel}
@@ -229,8 +231,8 @@ export default async function EaiStudyDetailPage(
                     ) : (
                       <span className="text-xs text-slate-400">pending</span>
                     )}
-                  </td>
-                  <td className="px-4 py-2 text-xs">
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs">
                     {e.legalComplianceStatus ? (
                       <span
                         className={`px-2 py-0.5 rounded border ${
@@ -246,16 +248,16 @@ export default async function EaiStudyDetailPage(
                     ) : (
                       <span className="text-slate-400">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-2 text-xs text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-slate-700">
                     {e.status.replace(/_/g, " ")}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

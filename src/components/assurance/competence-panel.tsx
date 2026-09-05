@@ -65,7 +65,7 @@ export function CompetenceSnapshotPanel({ rows }: { rows: CompetenceSnapshotRow[
 
       <div className="mt-3 space-y-3">
         {[...byUser.entries()].map(([userId, list]) => (
-          <div key={userId} className="rounded-lg border border-slate-100 bg-slate-50/60 p-2.5">
+          <Card key={userId} className="rounded-lg border border-slate-100 bg-slate-50/60 p-2.5 shadow-none">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-[13px] font-medium text-slate-800">
                 {list[0].userName ?? userId}
@@ -106,7 +106,7 @@ export function CompetenceSnapshotPanel({ rows }: { rows: CompetenceSnapshotRow[
                 </li>
               ))}
             </ul>
-          </div>
+          </Card>
         ))}
       </div>
     </Card>

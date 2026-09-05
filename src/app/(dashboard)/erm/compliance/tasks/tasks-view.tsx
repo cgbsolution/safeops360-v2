@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fmtDate } from "../../lib";
 import { TASK_STATUS_CHIP, type ComplianceTask } from "../../lib-p2";
 import { TaskActions } from "../[id]/detail-view";
+import { Card } from "@/components/ui/card";
 
 function typeLabel(token: string | null | undefined): string {
   if (!token) return "—";
@@ -17,7 +18,7 @@ export function ComplianceTasksView({ tasks, view }: { tasks: ComplianceTask[]; 
   return (
     <div className="space-y-4">
       {/* Toggle */}
-      <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
+      <Card className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium shadow-none">
         <Link
           href="/erm/compliance/tasks?view=mine"
           className={"rounded-md px-3 py-1.5 transition-all " + (view === "mine" ? "bg-white text-primary-700 shadow-sm" : "text-slate-500 hover:text-slate-700")}
@@ -30,16 +31,16 @@ export function ComplianceTasksView({ tasks, view }: { tasks: ComplianceTask[]; 
         >
           Verification queue
         </Link>
-      </div>
+      </Card>
 
       {tasks.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
           {view === "verify" ? "Nothing awaiting verification — the queue is clear." : "No compliance tasks assigned to you right now."}
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {tasks.map((t) => (
-            <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card key={t.id} className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
@@ -80,7 +81,7 @@ export function ComplianceTasksView({ tasks, view }: { tasks: ComplianceTask[]; 
               <div className="mt-3 border-t border-slate-100 pt-3">
                 <TaskActions task={t} onChanged={() => router.refresh()} />
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

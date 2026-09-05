@@ -63,6 +63,9 @@ import { AttachmentStrip } from "../../attachment-tile";
 // than introducing a second markup surface or a second QR scheme.
 import { PhotoAnnotator } from "@/components/assurance/photo-annotator";
 import { QrJumpButton } from "@/components/assurance/qr-jump";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type Resp = CheckpointResponse;
 /** "ungraded" filters on the absence of a grade; the rest are grade codes. */
@@ -863,7 +866,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
     // content rather than occupying flow space.
     <div className="mx-auto max-w-6xl pb-28">
       {/* Header + overall progress */}
-      <div className="sticky top-0 z-20 -mx-4 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-t-xl">
+      <Card className="sticky top-0 z-20 -mx-4 border-b border-slate-200 bg-white/95 px-4 py-2 backdrop-blur sm:mx-0 sm:rounded-t-xl shadow-none">
         <div className="flex items-center gap-2">
           {/* Back is a BUTTON, not a bare link: leaving is the moment a
               700ms debounce gets thrown away, so it flushes first and refuses
@@ -896,7 +899,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
         <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
           <div className="h-full rounded-full bg-violet-600 transition-all" style={{ width: `${pct}%` }} />
         </div>
-      </div>
+      </Card>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[230px_1fr]">
         {/* Department / discipline navigator. The label follows the data: on a
@@ -918,7 +921,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
               and each is issued against its own standards — so the auditor
               needs to see where each of them stands, not only the total. */}
           {isDeptAudit && (
-            <div className="!mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-2">
+            <Card className="!mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-2 shadow-none">
               <div className="mb-1.5 px-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 Reports
               </div>
@@ -940,7 +943,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
                   );
                 })}
               </div>
-            </div>
+            </Card>
           )}
 
           <Button type="button" variant="outline" onClick={() => setShowAdd(true)}
@@ -1016,7 +1019,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
               </div>
             </div>
             {disciplineId !== "ALL" && selectedDisc && (
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px]">
+              <Card className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-[12px] shadow-none">
                 <span className="font-medium text-slate-700">{selectedDisc.categoryName}</span>
                 <span className="text-slate-400">{selectedDisc.answered}/{selectedDisc.total} graded</span>
                 {selectedDisc.scoreAllotted > 0 && (
@@ -1024,11 +1027,11 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
                     {selectedDisc.scoreObtained}/{selectedDisc.scoreAllotted} pts · {selectedDisc.scorePct}%
                   </span>
                 )}
-                {selectedDisc.failed > 0 && <span className="rounded-full bg-rose-100 px-1.5 text-rose-700">{selectedDisc.failed}✕</span>}
+                {selectedDisc.failed > 0 && <Badge variant="danger" className="rounded-full bg-rose-100 px-1.5 text-rose-700">{selectedDisc.failed}✕</Badge>}
                 {selectedDisc.repeatFindings > 0 && (
-                  <span className="rounded-full bg-rose-200 px-1.5 font-medium text-rose-900">
+                  <Badge variant="danger" className="rounded-full bg-rose-200 px-1.5 font-medium text-rose-900">
                     {selectedDisc.repeatFindings} repeat
-                  </span>
+                  </Badge>
                 )}
                 <div className="ml-auto flex items-center gap-1.5">
                   <span className="text-[11px] text-slate-400">Mark remaining:</span>
@@ -1040,7 +1043,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
                     N/A
                   </Button>
                 </div>
-              </div>
+              </Card>
             )}
           </div>
 
@@ -1048,10 +1051,10 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
           {loading ? (
             <div className="flex items-center justify-center py-16 text-sm text-slate-400"><Loader2 size={18} className="mr-2 animate-spin" /> Loading…</div>
           ) : items.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">
+            <Card className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400 shadow-none">
               <ListChecks size={22} className="mx-auto mb-2 text-slate-300" />
               No checkpoints match this filter.
-            </div>
+            </Card>
           ) : (
             <div className="space-y-3">
               <div className="text-[11px] text-slate-400">
@@ -1201,7 +1204,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
               after submission. Saying so here is what stops "I submitted it,
               where is the EnMS report?" */}
           {isDeptAudit && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px] text-slate-600">
+            <Card className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px] text-slate-600 shadow-none">
               <div className="mb-1 font-medium text-slate-700">Two reports will be issued from this audit</div>
               {streams.map((s) => (
                 <div key={s.code} className="flex items-center gap-1.5">
@@ -1210,7 +1213,7 @@ export function ConductScreen({ audit, users = [] }: { audit: AuditDetail; users
                   <span className="text-slate-400">· {s.answered}/{s.total} answered · {s.standards}</span>
                 </div>
               ))}
-            </div>
+            </Card>
           )}
           <DialogFooter>
             <Button type="button" variant="outline" size="sm" onClick={() => setShowSubmit(false)}>
@@ -1295,7 +1298,7 @@ function DiscButton({ label, color, active, answered, total, failed, onClick }: 
         active ? "border-violet-500 bg-violet-50" : "border-slate-200 bg-white hover:bg-slate-50")}>
       <span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: color || "#94a3b8" }} />
       <span className="min-w-0 flex-1 truncate font-medium text-slate-700">{label}</span>
-      {failed > 0 && <span className="rounded-full bg-rose-100 px-1 text-[10px] font-bold text-rose-700">{failed}✕</span>}
+      {failed > 0 && <Badge variant="danger" className="rounded-full bg-rose-100 px-1 text-[10px] font-bold text-rose-700">{failed}✕</Badge>}
       {done && failed === 0 ? <Check size={13} className="text-emerald-600" /> : <span className="text-[10px] tabular-nums text-slate-400">{cpct}%</span>}
     </Button>
   );
@@ -1387,7 +1390,7 @@ function CheckpointCard({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       {/* The IMS / EnMS toggle. Each side shows its own answered state, so the
           auditor can see at a glance that they have done one and not the other
           — the failure this card exists to prevent. */}
@@ -1423,7 +1426,7 @@ function CheckpointCard({
       )}
 
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <span className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">{item.checkpointCode}</span>
+        <Badge variant="neutral" className="rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-600">{item.checkpointCode}</Badge>
         {/* On an unpaired row the stream is still worth naming — it decides
             which of the two reports this finding will be printed in. */}
         {item.streamCode && !isPaired && (
@@ -1442,7 +1445,7 @@ function CheckpointCard({
           {item.criticality === "critical" && <AlertTriangle size={11} />} {item.criticality}
         </span>
         {item.isAdHoc && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-violet-700"><Sparkles size={11} /> Custom</span>
+          <Badge variant="violet" className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-violet-700"><Sparkles size={11} /> Custom</Badge>
         )}
         {/* The save badge reports the ROW, not the last request.
             It used to read `auditorResponse.is_saved`, which a server echoes
@@ -1466,8 +1469,8 @@ function CheckpointCard({
       <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
         {item.requirementReference && <span>📋 {item.requirementReference}</span>}
         {item.standard && <span>· {item.standard}</span>}
-        {item.linkedSafeopsModule && <span className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sky-700"><Link2 size={11} /> {item.linkedSafeopsModule}</span>}
-        {ownerName(item.assignedOwnerId) && <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-slate-500"><UserRound size={11} /> {ownerName(item.assignedOwnerId)}</span>}
+        {item.linkedSafeopsModule && <Badge variant="info" className="inline-flex items-center gap-1 rounded-full bg-sky-50 px-2 py-0.5 text-sky-700"><Link2 size={11} /> {item.linkedSafeopsModule}</Badge>}
+        {ownerName(item.assignedOwnerId) && <Badge variant="neutral" className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-slate-500"><UserRound size={11} /> {ownerName(item.assignedOwnerId)}</Badge>}
       </div>
 
       {isTristate ? (
@@ -1477,9 +1480,9 @@ function CheckpointCard({
            need no branch of their own. */
         <div className="mt-3">
           <div className="mb-1 flex items-center justify-between">
-            <label className="block text-xs font-medium text-slate-600">
+            <Label className="block text-xs font-medium text-slate-600">
               Conformance <span className="text-rose-500">*</span>
-            </label>
+            </Label>
             {/* N/A is an APPLICABILITY flag, not a fourth conformance parameter
                 — a checkpoint that does not apply to this department was never
                 conforming or non-conforming. Kept visually secondary for that
@@ -1521,7 +1524,7 @@ function CheckpointCard({
       ) : (
         /* Column C — Grade Awarded. The one control that drives the rest. */
         <div className="mt-3">
-          <label className="mb-1 block text-xs font-medium text-slate-600">Grade Awarded <span className="text-rose-500">*</span></label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Grade Awarded <span className="text-rose-500">*</span></Label>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             {GRADE_ORDER.map((g) => {
               const meta = GRADE_META[g]; const on = grade === g;
@@ -1584,14 +1587,14 @@ function CheckpointCard({
           so a dropdown offering seven statuses would let an auditor write a row
           the card cannot render back. */}
       {grade && !isTristate && (
-        <div className="mt-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2">
+        <Card className="mt-3 grid gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3 sm:grid-cols-2 shadow-none">
           {/* Column F — Status */}
           <div className="space-y-1">
             <Label className="text-[11px] font-medium text-slate-600">Status</Label>
-            <Select value={item.complianceStatus ?? ""} onChange={(e) => onStatus(item, e.target.value as ComplianceStatus)} className="h-8 text-xs">
-              <option value="">— select —</option>
-              {STATUS_ORDER.map((s) => <option key={s} value={s}>{STATUS_META[s].label}</option>)}
-            </Select>
+            <SelectField value={item.complianceStatus ?? ""} onChange={(value) => onStatus(item, value as ComplianceStatus)} className="h-8 text-xs"
+              placeholder="— select —"
+              options={STATUS_ORDER.map((s) => ({ value: s, label: STATUS_META[s].label }))}
+            />
             {item.complianceStatus && STATUS_META[item.complianceStatus].isRepeat && (
               <p className="text-[10px] font-medium text-rose-600">Repeat finding — scored −1.</p>
             )}
@@ -1603,11 +1606,11 @@ function CheckpointCard({
               Score {item.scoreAllotted === null ? <span className="text-slate-400">(not scored)</span> : <span className="text-slate-400">out of {item.scoreAllotted}</span>}
             </Label>
             {item.scoreAllotted === null ? (
-              <div className="flex h-8 items-center rounded-md border border-slate-200 bg-slate-100 px-2 text-xs text-slate-500">NA</div>
+              <Card className="flex h-8 items-center rounded-md border border-slate-200 bg-slate-100 px-2 text-xs text-slate-500 shadow-none">NA</Card>
             ) : (
-              <Select value={String(item.scoreObtained ?? "")} onChange={(e) => onScore(item, Number(e.target.value))} className="h-8 text-xs">
-                {SCORE_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
-              </Select>
+              <SelectField value={String(item.scoreObtained ?? "")} onChange={(value) => onScore(item, Number(value))} className="h-8 text-xs"
+                options={SCORE_CHOICES.map((n) => ({ value: String(n), label: String(n) }))}
+              />
             )}
             {scoreOverridden && item.scoreAllotted !== null && (
               <p className="text-[10px] text-amber-700">Overridden — the grade suggests {suggestScore(grade, item.complianceStatus ?? null)}.</p>
@@ -1633,7 +1636,7 @@ function CheckpointCard({
               {riskMissing && <p className="text-[10px] text-rose-600">A risk grade is required before this audit can be submitted.</p>}
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Column G — Audit Findings (the auditor's comment).
@@ -1644,7 +1647,7 @@ function CheckpointCard({
           verdict. */}
       {(isAdverse || (item.auditorResponse?.text_observation ?? "").length > 0) && (
         <div className="mt-3">
-          <label className="mb-1 block text-xs font-medium text-slate-600">Audit Findings {isAdverse && <span className="text-rose-500">*</span>}</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Audit Findings {isAdverse && <span className="text-rose-500">*</span>}</Label>
           <Textarea key={item.checkpointCode}
             defaultValue={item.auditorResponse?.text_observation ?? ""} onChange={(e) => onObservation(item, e.target.value)} rows={2}
             placeholder={isAdverse
@@ -1673,8 +1676,8 @@ function CheckpointCard({
           both would cost the auditor a tap on every single photograph. */}
       <div className="mt-2.5">
         <AttachmentStrip attachments={photos} onRemove={(i) => onRemovePhoto(item, i)} className="mb-2" />
-        <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} capture="environment" className="hidden" onChange={onPhoto} />
-        <input ref={docRef} type="file" accept={DOCUMENT_ACCEPT} className="hidden" onChange={onPhoto} />
+        <Input ref={fileRef} type="file" accept={IMAGE_ACCEPT} capture="environment" className="hidden" onChange={onPhoto} />
+        <Input ref={docRef} type="file" accept={DOCUMENT_ACCEPT} className="hidden" onChange={onPhoto} />
         <div className="flex flex-wrap items-center gap-2">
           <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading} className={cn(needsPhoto && "border-rose-300 bg-rose-50 text-rose-700 hover:bg-rose-100")}>
             {uploading ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />} {uploading ? "Uploading…" : "Add photo"}
@@ -1690,7 +1693,7 @@ function CheckpointCard({
           {needsPhoto && <span className="text-[11px] text-rose-600">Evidence required for this grade — a photo or a document</span>}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -1741,7 +1744,7 @@ function ReplicateDialog({ item, targets, busy, onClose, onConfirm }: {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px]">
+        <Card className="rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[12px] shadow-none">
           <div className="font-mono text-[11px] text-slate-500">{item.checkpointCode}</div>
           <div className="mt-0.5 font-medium leading-snug text-slate-800">{item.checkpointQuestion}</div>
           <div className="mt-1.5 flex items-center gap-1.5">
@@ -1752,40 +1755,40 @@ function ReplicateDialog({ item, targets, busy, onClose, onConfirm }: {
             )}
             <span className="text-slate-400">from {item.categoryName}</span>
           </div>
-        </div>
+        </Card>
 
         <div className="space-y-1.5">
           {open.map((t) => (
-            <label key={t.departmentId}
+            <Label key={t.departmentId}
               className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-2.5 py-2 text-[13px] hover:bg-slate-50">
               <Checkbox checked={selected.includes(t.departmentId)} onChange={() => toggle(t.departmentId)} />
               <span className="flex-1 font-medium text-slate-700">{t.departmentName}</span>
               {t.wouldOverwrite ? (
-                <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+                <Badge variant="warning" className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
                   already {t.conformance ? CONFORMANCE_META[t.conformance].short : "graded"}
-                </span>
+                </Badge>
               ) : (
                 <span className="text-[11px] text-slate-400">not answered</span>
               )}
-            </label>
+            </Label>
           ))}
           {/* A finding already with its auditee is not replaceable at all —
               re-grading underneath a live iteration would rewrite the question
               they are currently answering. Listed rather than hidden, so the
               auditor knows why a department is absent from the list. */}
           {locked.map((t) => (
-            <div key={t.departmentId}
-              className="flex items-center gap-2 rounded-lg border border-dashed border-slate-200 px-2.5 py-2 text-[13px] text-slate-400">
+            <Card key={t.departmentId}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-slate-200 px-2.5 py-2 text-[13px] text-slate-400 shadow-none">
               <span className="flex-1">{t.departmentName}</span>
               <span className="text-[11px]">with its auditee — can&apos;t be changed</span>
-            </div>
+            </Card>
           ))}
         </div>
 
-        <label className="flex items-center gap-2 text-[13px] text-slate-600">
+        <Label className="flex items-center gap-2 text-[13px] text-slate-600">
           <Checkbox checked={includeFindings} onChange={(e) => setIncludeFindings(e.target.checked)} />
           Copy the audit findings text too
-        </label>
+        </Label>
         {includeFindings && (
           <p className="-mt-2 pl-6 text-[11px] text-slate-400">
             A Non-Conformance copied without the sentence explaining it is a finding nobody can act
@@ -1794,7 +1797,7 @@ function ReplicateDialog({ item, targets, busy, onClose, onConfirm }: {
         )}
 
         {clashes.length > 0 && (
-          <label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-[13px] text-amber-900">
+          <Label className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-[13px] text-amber-900">
             <Checkbox checked={overwrite} onChange={(e) => setOverwrite(e.target.checked)} className="mt-0.5" />
             <span>
               Replace the {clashes.length} department{clashes.length === 1 ? "" : "s"} already answered
@@ -1803,7 +1806,7 @@ function ReplicateDialog({ item, targets, busy, onClose, onConfirm }: {
                 overwritten.
               </span>
             </span>
-          </label>
+          </Label>
         )}
 
         <DialogFooter>
@@ -1870,9 +1873,9 @@ function AddCheckpointDialog({ auditId, disciplines, defaultDiscipline, axisLabe
           <div className={cn("grid gap-3", streams.length ? "grid-cols-3" : "grid-cols-2")}>
             <div className="space-y-1">
               <Label className="text-xs">{axisLabel}</Label>
-              <Select value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)}>
-                {disciplines.map((d) => <option key={d.code} value={d.code}>{d.name}</option>)}
-              </Select>
+              <SelectField value={disciplineId} onChange={setDisciplineId}
+                options={disciplines.map((d) => ({ value: d.code, label: d.name }))}
+              />
             </div>
             {/* Which report this line joins. Asked rather than inferred: on a
                 department audit "add a checkpoint" is genuinely ambiguous, and
@@ -1881,16 +1884,16 @@ function AddCheckpointDialog({ auditId, disciplines, defaultDiscipline, axisLabe
             {streams.length > 0 && (
               <div className="space-y-1">
                 <Label className="text-xs">Report</Label>
-                <Select value={streamCode} onChange={(e) => setStreamCode(e.target.value as StreamCode)}>
-                  {streams.map((s) => <option key={s.code} value={s.code}>{s.label}</option>)}
-                </Select>
+                <SelectField value={streamCode} onChange={(value) => setStreamCode(value as StreamCode)}
+                  options={streams.map((s) => ({ value: s.code, label: s.label }))}
+                />
               </div>
             )}
             <div className="space-y-1">
               <Label className="text-xs">Severity</Label>
-              <Select value={severity} onChange={(e) => setSeverity(e.target.value as (typeof SEVERITIES)[number])}>
-                {SEVERITIES.map((s) => <option key={s} value={s} className="capitalize">{s}</option>)}
-              </Select>
+              <SelectField value={severity} onChange={(value) => setSeverity(value as (typeof SEVERITIES)[number])}
+                options={SEVERITIES.map((s) => ({ value: s, label: s }))}
+              />
             </div>
           </div>
           <div className="space-y-1">
@@ -1905,15 +1908,15 @@ function AddCheckpointDialog({ auditId, disciplines, defaultDiscipline, axisLabe
             <Label className="text-xs">Standard / clause reference (optional)</Label>
             <Input value={standardClauseRef} onChange={(e) => setStandard(e.target.value)} placeholder="e.g. ISO 45001 §8.1.2 · NFPA 101" />
           </div>
-          <label className="flex items-center gap-2 text-[13px] text-slate-600">
+          <Label className="flex items-center gap-2 text-[13px] text-slate-600">
             <Checkbox checked={evidenceRequiredOnFail} onChange={(e) => setEvidence(e.target.checked)} />
             Require an evidence photo on a fail / partial
-          </label>
+          </Label>
           {canPromote && (
-            <label className="flex items-center gap-2 text-[13px] text-slate-600">
+            <Label className="flex items-center gap-2 text-[13px] text-slate-600">
               <Checkbox checked={promoteToTemplate} onChange={(e) => setPromote(e.target.checked)} />
               Also save to the template (forks a new version for future audits)
-            </label>
+            </Label>
           )}
         </div>
         <DialogFooter>

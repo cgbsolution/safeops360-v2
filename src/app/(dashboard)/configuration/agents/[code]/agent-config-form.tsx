@@ -13,11 +13,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { Save, AlertCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type AgentForForm = {
   code: string;
@@ -95,7 +98,7 @@ export function AgentConfigForm({
   }
 
   return (
-    <div className="border border-slate-200 rounded-md bg-white p-4 space-y-4">
+    <Card className="border border-slate-200 rounded-md bg-white p-4 space-y-4 shadow-none">
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <Label>
@@ -105,18 +108,12 @@ export function AgentConfigForm({
             </span>
           </Label>
           {canEdit ? (
-            <Select
+            <SelectField
               value={form.currentAuthorityLevel}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, currentAuthorityLevel: e.target.value }))
+              onChange={(value) => setForm((f) => ({ ...f, currentAuthorityLevel: value }))
               }
-            >
-              {allowedLevels.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
-              ))}
-            </Select>
+              options={allowedLevels.map((l) => ({ value: String(l), label: `${l}` }))}
+            />
           ) : (
             <ReadOnlyValue value={form.currentAuthorityLevel} />
           )}
@@ -236,10 +233,10 @@ export function AgentConfigForm({
       </div>
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-rose-900 text-xs flex items-start gap-2">
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-2 text-rose-900 text-xs flex items-start gap-2">
           <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
           {error}
-        </div>
+        </Alert>
       )}
 
       {canEdit && (
@@ -250,7 +247,7 @@ export function AgentConfigForm({
           </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -294,15 +291,14 @@ function BooleanToggle({
       <Label>{label}</Label>
       <div className="mt-1 flex items-center gap-2">
         {canEdit ? (
-          <label className="flex items-center gap-2 cursor-pointer text-sm">
-            <input
-              type="checkbox"
+          <Label className="flex items-center gap-2 cursor-pointer text-sm">
+            <Checkbox
+             
               checked={value}
               onChange={(e) => onChange(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300"
-            />
+              className="w-4 h-4 rounded border-slate-300" />
             {value ? "Enabled" : "Disabled"}
-          </label>
+          </Label>
         ) : (
           <span className="text-sm">{value ? "Enabled" : "Disabled"}</span>
         )}

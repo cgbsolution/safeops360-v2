@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, X } from "lucide-react";
+import { Card } from "@/components/ui/card";
 
 export function NewDropdownTypeButton() {
   const router = useRouter();
@@ -53,7 +54,7 @@ export function NewDropdownTypeButton() {
     );
   }
   return (
-    <div className="flex items-end gap-2 border border-slate-200 rounded-md px-3 py-2 bg-white">
+    <Card className="flex items-end gap-2 border border-slate-200 rounded-md px-3 py-2 bg-white shadow-none">
       <div>
         <Label className="text-xs">New type code</Label>
         <Input
@@ -67,6 +68,6 @@ export function NewDropdownTypeButton() {
       <Button onClick={create} disabled={busy}>{busy ? "Creating…" : "Create"}</Button>
       <Button variant="ghost" onClick={() => setOpen(false)}><X size={14} /></Button>
       {error && <span className="text-xs text-rose-700">{error}</span>}
-    </div>
+    </Card>
   );
 }

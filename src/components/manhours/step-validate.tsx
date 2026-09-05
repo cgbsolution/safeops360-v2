@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckCircle2, AlertTriangle, XCircle, Info, RotateCw } from "lucide-react";
 import type { WizardSubmission } from "./wizard-types";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   fetchValidation,
   patchSubmission,
@@ -98,7 +100,7 @@ export function StepValidate({
       </div>
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</Alert>
       )}
 
       {report && (
@@ -129,7 +131,7 @@ export function StepValidate({
         </div>
       </div>
 
-      <div className="rounded-md border bg-slate-50 p-4 flex items-start justify-between gap-3">
+      <Card className="rounded-md border bg-slate-50 p-4 flex items-start justify-between gap-3 shadow-none">
         <div className="text-sm text-slate-700">
           <div className="font-medium">Ready to submit?</div>
           <div className="text-xs text-slate-500 mt-1">
@@ -149,7 +151,7 @@ export function StepValidate({
         >
           {submitting ? "Submitting…" : "Submit for review"}
         </Button>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -179,9 +181,9 @@ function ReportSummary({ report }: { report: ValidationReport }) {
         tone="slate"
       />
       {total === 0 && (
-        <div className="col-span-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 flex items-center gap-2">
+        <Alert variant="success" className="col-span-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 flex items-center gap-2">
           <CheckCircle2 size={16} /> All checks passed. Ready to submit.
-        </div>
+        </Alert>
       )}
     </div>
   );

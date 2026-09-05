@@ -10,6 +10,7 @@ import { ArrowDown, ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buildScorecard } from "@/lib/manhours/scorecard";
 import { PerformanceScorecard } from "@/components/manhours/widgets/performance-scorecard";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -89,30 +90,30 @@ export default async function PlantComparePage(props: {
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-slate-50">
-              <tr>
-                <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-left text-[11px] uppercase tracking-wider text-slate-500">
+          <Table className="w-full text-sm">
+            <TableHeader className="border-b bg-slate-50">
+              <TableRow>
+                <TableHead className="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-left text-[11px] uppercase tracking-wider text-slate-500">
                   Plant
-                </th>
+                </TableHead>
                 {COMPARE_KPIS.map((c) => (
-                  <th key={c} className="px-3 py-2 text-right text-[11px] uppercase tracking-wider text-slate-500" title={KPI_REGISTRY[c].name}>
+                  <TableHead key={c} className="px-3 py-2 text-right text-[11px] uppercase tracking-wider text-slate-500" title={KPI_REGISTRY[c].name}>
                     {c}
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y">
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {rows.map((row) => {
                 const focused = sp.focusPlantId === row.plant.id;
                 return (
-                  <tr key={row.plant.id} className={cn(focused && "bg-amber-50")}>
-                    <td className="sticky left-0 z-10 bg-white px-3 py-2">
+                  <TableRow key={row.plant.id} className={cn(focused && "bg-amber-50")}>
+                    <TableCell className="sticky left-0 z-10 bg-white px-3 py-2">
                       <Link href={`/manhours/mis-dashboard?plantId=${row.plant.id}`} className="block">
                         <div className="font-medium">{row.plant.name}</div>
                         <div className="text-[10px] text-slate-500">{row.plant.code} · {row.plant.unitType}</div>
                       </Link>
-                    </td>
+                    </TableCell>
                     {COMPARE_KPIS.map((code) => {
                       const cur = row.kpis[code];
                       const pri = row.priorKpis[code];
@@ -127,7 +128,7 @@ export default async function PlantComparePage(props: {
                               ? "good"
                               : "bad";
                       return (
-                        <td key={code} className="px-3 py-2 text-right">
+                        <TableCell key={code} className="px-3 py-2 text-right">
                           <Link
                             href={kpiHref(code, row.plant.id, anchorYear, anchorMonth)}
                             className="inline-block group"
@@ -152,14 +153,14 @@ export default async function PlantComparePage(props: {
                               </div>
                             )}
                           </Link>
-                        </td>
+                        </TableCell>
                       );
                     })}
-                  </tr>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { KriEntryGrid } from "./entry-grid";
 import type { KriListResponse } from "@/app/(dashboard)/erm/lib-p2";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function KriEntryPage() {
         description="Monthly entry grid for manually-fed indicators. Type values across the last few periods; status previews update live against each KRI's thresholds."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}.</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}.</Alert>
       ) : (
         <KriEntryGrid items={data.items} />
       )}

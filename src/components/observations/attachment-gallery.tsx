@@ -105,7 +105,7 @@ export function ObservationAttachmentGallery({
       </CardHeader>
       <CardContent className="space-y-4">
         {showUpload && canUpload && (
-          <div className="border rounded-md p-3 bg-slate-50/50">
+          <Card className="border rounded-md p-3 bg-slate-50/50 shadow-none">
             <ObservationMultiFileUpload
               observationId={observationId}
               category={uploadCategory}
@@ -117,7 +117,7 @@ export function ObservationAttachmentGallery({
                 router.refresh();
               }}
             />
-          </div>
+          </Card>
         )}
 
         {loading ? (
@@ -197,7 +197,7 @@ function Thumb({
   }, [att.id, observationId, isImage]);
 
   return (
-    <div className="group relative border rounded-md overflow-hidden bg-slate-100 aspect-square">
+    <Card className="group relative border rounded-md overflow-hidden bg-slate-100 aspect-square shadow-none">
       <button
         type="button"
         onClick={isImage ? onLightbox : onDownload}
@@ -238,7 +238,7 @@ function Thumb({
           </button>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 

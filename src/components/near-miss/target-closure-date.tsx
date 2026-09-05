@@ -16,6 +16,7 @@ import { CalendarClock, Loader2, Save, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { formatDate } from "@/lib/utils";
 import {
   overdueDays,
@@ -62,7 +63,7 @@ export function TargetClosureDate({
   }
 
   return (
-    <div className="rounded-lg border bg-white px-3 py-2.5">
+    <Card className="px-3 py-2.5 shadow-none">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
           <CalendarClock size={13} /> Target closure date
@@ -106,24 +107,25 @@ export function TargetClosureDate({
               </Badge>
             )}
             {canEdit && (
-              <button
+              <Button
                 type="button"
+                variant="link"
                 onClick={() => setEditing(true)}
-                className="text-xs text-primary-700 underline underline-offset-2 hover:text-primary-900"
+                className="h-auto p-0 text-xs underline underline-offset-2 hover:text-primary-900"
               >
                 {targetDate ? "Change" : "Set date"}
-              </button>
+              </Button>
             )}
           </div>
         )}
       </div>
 
-      {error && <div className="mt-1.5 text-xs text-rose-700">{error}</div>}
+      {error && <p className="mt-1.5 text-xs text-rose-700">{error}</p>}
       {!targetDate && !canEdit && (
-        <div className="mt-1 text-xs text-slate-500">
+        <p className="mt-1 text-xs text-slate-500">
           Set by the HSE Manager at the review &amp; CAPA definition step.
-        </div>
+        </p>
       )}
-    </div>
+    </Card>
   );
 }

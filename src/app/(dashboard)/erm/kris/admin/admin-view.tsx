@@ -8,10 +8,12 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { KRI_STATUS_CHIP, type KriOut, type MetricCatalogEntry } from "@/app/(dashboard)/erm/lib-p2";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 type CategoryLite = { id: string; code: string; name: string };
 type RiskLite = { id: string; riskCode: string; title: string };
@@ -103,7 +105,7 @@ export function KriAdminView({
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         {kris.length === 0 ? (
           <p className="py-6 text-center text-sm text-slate-400">No KRIs defined yet.</p>
         ) : (
@@ -173,7 +175,7 @@ export function KriAdminView({
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
 
       {editing && (
         <KriFormModal
@@ -310,16 +312,11 @@ function KriFormModal({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Category">
-              <Select
+              <SelectField
                 value={f.categoryId}
-                onChange={(e) => set("categoryId", e.target.value)}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("categoryId", value)}
+                options={categories.map((c) => ({ value: c.id, label: `${c.name}` }))}
+              />
             </Field>
             <Field label="Unit">
               <Input
@@ -332,58 +329,38 @@ function KriFormModal({
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Field label="Direction">
-              <Select
+              <SelectField
                 value={f.direction}
-                onChange={(e) => set("direction", e.target.value)}
-              >
-                {DIRECTIONS.map((d) => (
-                  <option key={d} value={d}>
-                    {d === "HIGHER_IS_WORSE" ? "Higher is worse" : "Lower is worse"}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("direction", value)}
+                options={DIRECTIONS.map((d) => ({ value: d, label: `${d === "HIGHER_IS_WORSE" ? "Higher is worse" : "Lower is worse"}` }))}
+              />
             </Field>
             <Field label="Frequency">
-              <Select
+              <SelectField
                 value={f.frequency}
-                onChange={(e) => set("frequency", e.target.value)}
-              >
-                {FREQUENCIES.map((fr) => (
-                  <option key={fr} value={fr}>
-                    {fr.charAt(0) + fr.slice(1).toLowerCase()}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("frequency", value)}
+                options={FREQUENCIES.map((fr) => ({ value: fr, label: `${fr.charAt(0) + fr.slice(1).toLowerCase()}` }))}
+              />
             </Field>
             <Field label="Feed type">
-              <Select
+              <SelectField
                 value={f.feedType}
-                onChange={(e) => set("feedType", e.target.value)}
-              >
-                {FEED_TYPES.map((ft) => (
-                  <option key={ft} value={ft}>
-                    {FEED_LABEL[ft]}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("feedType", value)}
+                options={FEED_TYPES.map((ft) => ({ value: ft, label: `${FEED_LABEL[ft]}` }))}
+              />
             </Field>
           </div>
 
           {f.feedType === "MODULE_FED" && (
             <Field label="Metric provider (module-fed source)">
-              <Select
+              <SelectField
                 value={f.metricProviderKey ?? ""}
-                onChange={(e) => set("metricProviderKey", e.target.value || null)}
-              >
-                <option value="">— select a metric —</option>
-                {catalogue.map((c) => (
-                  <option key={c.key} value={c.key}>
-                    {c.label} ({c.sourceModule})
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("metricProviderKey", value || null)}
+                placeholder="— select a metric —"
+                options={catalogue.map((c) => ({ value: c.key, label: `${c.label} (${c.sourceModule})` }))}
+              />
               {selectedMetric && (
-                <div className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
+                <Card className="mt-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-xs text-slate-600 shadow-none">
                   <div className="font-medium text-slate-700">{selectedMetric.label}</div>
                   <div className="mt-0.5">
                     Preview:{" "}
@@ -393,7 +370,7 @@ function KriFormModal({
                     {selectedMetric.unit} · {selectedMetric.frequency} ·{" "}
                     {selectedMetric.direction === "HIGHER_IS_WORSE" ? "↑ worse" : "↓ worse"}
                   </div>
-                </div>
+                </Card>
               )}
             </Field>
           )}
@@ -434,31 +411,30 @@ function KriFormModal({
               placeholder="Filter risks by code or title…"
               className="mb-2"
             />
-            <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200">
+            <Card className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 shadow-none">
               {filteredRisks.length === 0 ? (
                 <p className="p-3 text-center text-xs text-slate-400">No risks match.</p>
               ) : (
                 filteredRisks.map((r) => (
-                  <label
+                  <Label
                     key={r.id}
-                    className="flex cursor-pointer items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-sm last:border-b-0 hover:bg-slate-50"
-                  >
+                    className="flex cursor-pointer items-center gap-2 border-b border-slate-100 px-3 py-1.5 text-sm last:border-b-0 hover:bg-slate-50">
                     <Checkbox
                       checked={f.linkedRiskIds.includes(r.id)}
                       onChange={() => toggleRisk(r.id)}
                     />
                     <span className="font-medium text-primary-700">{r.riskCode}</span>
                     <span className="truncate text-slate-600">{r.title}</span>
-                  </label>
+                  </Label>
                 ))
               )}
-            </div>
+            </Card>
           </Field>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <Label className="flex items-center gap-2 text-sm text-slate-700">
             <Checkbox checked={f.isActive} onChange={(e) => set("isActive", e.target.checked)} />
             Active
-          </label>
+          </Label>
 
           <Button
             type="button"
@@ -477,7 +453,7 @@ function KriFormModal({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       {children}
     </div>
   );

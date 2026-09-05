@@ -3,23 +3,27 @@
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { UserPicker } from "@/components/ui/user-picker";
-import { X, Trash2, Info, Plus } from "lucide-react";
+import { X, Trash2, Info, Plus, GitBranch } from "lucide-react";
 import type { AssignmentMode, EditorCondition, EditorStep, StepType } from "./types";
 import {
   STEP_TYPE_LIST,
   ROLE_OPTIONS,
   FIELD_OPTIONS,
+  PARALLEL_STRATEGY_LABELS,
   CONDITION_OPERATORS,
   detectAssignmentMode,
   parseConditionExpr,
   serializeConditionExpr
 } from "./types";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const SLA_PRESETS = [
   { label: "2 hours", value: 2 },
@@ -117,9 +121,9 @@ export function PropertiesPanel({
           <div className="text-[10px] uppercase tracking-wider font-semibold text-slate-500">Step Properties</div>
           <div className="text-sm font-semibold text-slate-900 truncate">{step.name || "Untitled step"}</div>
         </div>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <Button variant="ghost" size="icon" aria-label="Close" title="Close" className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-600" onClick={onClose}>
           <X size={18} />
-        </button>
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 py-5 space-y-5">
@@ -131,7 +135,7 @@ export function PropertiesPanel({
               const selected = step.stepType === opt.value;
               const disabled = isFirst && opt.value !== "MAKER";
               return (
-                <button
+                <Button variant="ghost"
                   key={opt.value}
                   type="button"
                   disabled={disabled}
@@ -141,10 +145,9 @@ export function PropertiesPanel({
                     "px-2.5 py-2 text-xs rounded-md border text-left transition",
                     selected ? "border-primary-500 bg-primary-50 text-primary-900 ring-1 ring-primary-200" : "border-slate-200 hover:border-slate-300 text-slate-700",
                     disabled && "opacity-40 cursor-not-allowed"
-                  )}
-                >
+                  )}>
                   <div className="font-semibold">{opt.label}</div>
-                </button>
+                </Button>
               );
             })}
           </div>
@@ -171,7 +174,7 @@ export function PropertiesPanel({
             <Label>Who handles this step?</Label>
             <div className="mt-2 grid grid-cols-2 gap-1.5">
               {ASSIGNMENT_MODES.map((m) => (
-                <button
+                <Button variant="ghost"
                   key={m.v}
                   type="button"
                   onClick={() => setMode(m.v)}
@@ -179,24 +182,20 @@ export function PropertiesPanel({
                   className={cn(
                     "px-2.5 py-1.5 text-xs rounded-md border text-left transition",
                     mode === m.v ? "border-primary-500 bg-primary-50 text-primary-900" : "border-slate-200 text-slate-700 hover:border-slate-300"
-                  )}
-                >
+                  )}>
                   {m.l}
-                </button>
+                </Button>
               ))}
             </div>
 
             {mode === "ROLE" && (
               <div className="mt-2 space-y-2">
-                <Select
+                <SelectField
                   value={step.approverRole ?? ""}
-                  onChange={(e) => patch({ approverRole: e.target.value || null })}
-                >
-                  <option value="">— Pick a role —</option>
-                  {roleChoices.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </Select>
+                  onChange={(value) => patch({ approverRole: value || null })}
+                  placeholder="— Pick a role —"
+                  options={roleChoices.map((r) => ({ value: String(r.value), label: r.label }))}
+                />
 
                 {/* Which holder of that role. Two genuinely different routings,
                     so they are a choice rather than a hidden default:
@@ -209,10 +208,10 @@ export function PropertiesPanel({
                         every plant. Stored as approverUserId alongside the role;
                         the engine checks the pinned user first, and the role is
                         kept so the step still says who it is for. */}
-                <div className="rounded-md border border-slate-200 p-2 space-y-1.5">
+                <Card className="rounded-md border border-slate-200 p-2 space-y-1.5 shadow-none">
                   <p className="text-[11px] font-medium text-slate-700">Which holder of this role?</p>
                   <div className="grid grid-cols-2 gap-1.5">
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => patch({ approverUserId: null, approverUserName: null })}
                       className={cn(
@@ -220,11 +219,10 @@ export function PropertiesPanel({
                         !step.approverUserId
                           ? "border-primary-500 bg-primary-50 text-primary-900"
                           : "border-slate-200 text-slate-700 hover:border-slate-300"
-                      )}
-                    >
+                      )}>
                       Per plant
-                    </button>
-                    <button
+                    </Button>
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => patch({ approverUserId: step.approverUserId ?? null })}
                       className={cn(
@@ -232,10 +230,9 @@ export function PropertiesPanel({
                         step.approverUserId
                           ? "border-primary-500 bg-primary-50 text-primary-900"
                           : "border-slate-200 text-slate-700 hover:border-slate-300"
-                      )}
-                    >
+                      )}>
                       One person
-                    </button>
+                    </Button>
                   </div>
                   {/* Scoped to people who actually hold the selected role.
                       workflow_engine._rbac_gate requires the assignee to hold
@@ -260,21 +257,18 @@ export function PropertiesPanel({
                       ? "Every record routes to this one person, whichever plant it belongs to."
                       : "The engine picks a holder of this role at the record's own plant, falling back to a globally scoped holder."}
                   </p>
-                </div>
+                </Card>
               </div>
             )}
 
             {mode === "FIELD" && (
               <div className="mt-2 space-y-1">
-                <Select
+                <SelectField
                   value={step.approverField ?? ""}
-                  onChange={(e) => patch({ approverField: e.target.value || null })}
-                >
-                  <option value="">— Pick a field —</option>
-                  {FIELD_OPTIONS.map((f) => (
-                    <option key={f.value} value={f.value}>{f.label}</option>
-                  ))}
-                </Select>
+                  onChange={(value) => patch({ approverField: value || null })}
+                  placeholder="— Pick a field —"
+                  options={FIELD_OPTIONS.map((f) => ({ value: String(f.value), label: f.label }))}
+                />
                 <p className="text-[11px] text-slate-500">{ASSIGNMENT_MODES[1].help}</p>
               </div>
             )}
@@ -342,14 +336,15 @@ export function PropertiesPanel({
                 placeholder={slaUnit === "DAYS" ? "days" : "hours"}
                 className="w-28"
               />
-              <Select
+              <SelectField
                 value={slaUnit}
-                onChange={(e) => setSla(slaDisplay, e.target.value as "HOURS" | "DAYS")}
+                onChange={(value) => setSla(slaDisplay, value as "HOURS" | "DAYS")}
                 className="w-24"
-              >
-                <option value="HOURS">Hours</option>
-                <option value="DAYS">Days</option>
-              </Select>
+                options={[
+                { value: "HOURS", label: "Hours" },
+                { value: "DAYS", label: "Days" }
+              ]}
+              />
             </div>
             <div className="mt-2 flex flex-wrap gap-1">
               {SLA_PRESETS.map((p) => (
@@ -371,15 +366,12 @@ export function PropertiesPanel({
             {step.slaHours != null && step.slaHours > 0 && (
               <div className="mt-3 space-y-1.5">
                 <Label className="text-xs">Escalate to (when overdue)</Label>
-                <Select
+                <SelectField
                   value={step.escalationRole ?? ""}
-                  onChange={(e) => patch({ escalationRole: e.target.value || null })}
-                >
-                  <option value="">— None —</option>
-                  {ROLE_OPTIONS.map((r) => (
-                    <option key={r.value} value={r.value}>{r.label}</option>
-                  ))}
-                </Select>
+                  onChange={(value) => patch({ escalationRole: value || null })}
+                  placeholder="— None —"
+                  options={ROLE_OPTIONS.map((r) => ({ value: String(r.value), label: r.label }))}
+                />
               </div>
             )}
           </div>
@@ -387,18 +379,17 @@ export function PropertiesPanel({
 
         {/* Optional flag */}
         {step.stepType !== "MAKER" && (
-          <label className="flex items-start gap-2 cursor-pointer">
-            <input
-              type="checkbox"
+          <Label className="flex items-start gap-2 cursor-pointer">
+            <Checkbox
+             
               checked={step.isOptional}
               onChange={(e) => patch({ isOptional: e.target.checked })}
-              className="mt-1"
-            />
+              className="mt-1" />
             <div>
               <div className="text-sm font-medium text-slate-800">Optional step</div>
               <div className="text-[11px] text-slate-500">Currently informational — combine with conditions to skip.</div>
             </div>
-          </label>
+          </Label>
         )}
 
         {/* Conditions */}
@@ -410,24 +401,22 @@ export function PropertiesPanel({
             </p>
 
             {condition.rules.length === 0 ? (
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() =>
                   commitConditions({
                     combinator: "AND",
                     rules: [{ field: "severity", operator: "in", value: "HIGH,CRITICAL" }]
                   })
-                }
-                className="text-xs text-primary-700 hover:text-primary-900 font-medium flex items-center gap-1"
-              >
+                } className="text-xs flex gap-1">
                 <Plus size={12} /> Add a condition
-              </button>
+              </Button>
             ) : (
               <div className="space-y-2">
                 {condition.rules.length > 1 && (
                   <div className="flex items-center gap-2 text-xs text-slate-600">
                     <span>Combine with:</span>
-                    <div className="inline-flex border border-slate-200 rounded overflow-hidden">
+                    <Card className="inline-flex border border-slate-200 rounded overflow-hidden shadow-none">
                       {(["AND", "OR"] as const).map((c) => (
                         <button
                           key={c}
@@ -441,7 +430,7 @@ export function PropertiesPanel({
                           {c}
                         </button>
                       ))}
-                    </div>
+                    </Card>
                   </div>
                 )}
 
@@ -457,19 +446,16 @@ export function PropertiesPanel({
                       }}
                       className="h-8 text-xs flex-1"
                     />
-                    <Select
+                    <SelectField
                       value={row.operator}
-                      onChange={(e) => {
+                      onChange={(value) => {
                         const next = { ...condition, rules: [...condition.rules] };
-                        next.rules[i] = { ...row, operator: e.target.value as any };
+                        next.rules[i] = { ...row, operator: value as any };
                         commitConditions(next);
                       }}
                       className="h-8 text-xs w-28"
-                    >
-                      {CONDITION_OPERATORS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </Select>
+                      options={CONDITION_OPERATORS.map((o) => ({ value: String(o.value), label: o.label }))}
+                    />
                     <Input
                       placeholder={row.operator === "in" || row.operator === "not_in" ? "A,B,C" : "value"}
                       value={row.value}
@@ -492,18 +478,16 @@ export function PropertiesPanel({
                     </button>
                   </div>
                 ))}
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() =>
                     commitConditions({
                       ...condition,
                       rules: [...condition.rules, { field: "", operator: "=", value: "" }]
                     })
-                  }
-                  className="text-xs text-primary-700 hover:text-primary-900 font-medium flex items-center gap-1"
-                >
+                  } className="text-xs flex gap-1">
                   <Plus size={12} /> Add another condition
-                </button>
+                </Button>
               </div>
             )}
 
@@ -513,6 +497,28 @@ export function PropertiesPanel({
               </Badge>
             )}
           </div>
+        )}
+
+        {/* Parallel strategy — read-only. Set by the workflow seeders, carried
+            through untouched on save (see editor.tsx), and invisible until
+            now: an admin looking at "CAPA Execution" had no way to tell it
+            behaves differently from an ordinary assignee step. */}
+        {step.parallelStrategy && (
+          <Alert variant="info" className="rounded-md border border-sky-200 bg-sky-50 p-2.5 space-y-1">
+            <div className="flex items-center gap-1.5">
+              <GitBranch size={12} className="text-sky-700" />
+              <span className="text-xs font-medium text-sky-900">
+                {step.parallelStrategy.replace(/_/g, " ")}
+              </span>
+            </div>
+            <p className="text-[11px] text-sky-900">
+              {PARALLEL_STRATEGY_LABELS[step.parallelStrategy] ??
+                "This step raises several tasks at once."}
+            </p>
+            <p className="text-[11px] text-sky-700">
+              Set in code, not here — editing this step leaves it unchanged.
+            </p>
+          </Alert>
         )}
 
         {/* Approver notes */}

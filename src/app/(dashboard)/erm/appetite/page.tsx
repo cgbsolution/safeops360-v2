@@ -2,6 +2,8 @@ import Link from "next/link";
 import { AlertTriangle, ChevronRight, Settings2, FileWarning } from "lucide-react";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   APPETITE_LEVEL_CHIP,
   GAUGE_CHIP,
@@ -158,9 +160,9 @@ export default async function AppetiteDashboardPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 2 seed has been run and you are logged in with an ERM role.
-        </div>
+        </Alert>
       ) : (
         <div className="space-y-4">
           {openBreachCount > 0 && (
@@ -179,9 +181,9 @@ export default async function AppetiteDashboardPage() {
           )}
 
           {rows.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
+            <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
               No risk categories configured.
-            </div>
+            </Card>
           ) : (
             <div className="space-y-3">
               {rows.map((row) => (

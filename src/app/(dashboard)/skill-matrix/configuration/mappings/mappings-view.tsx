@@ -13,7 +13,7 @@ import { Plus, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
@@ -26,6 +26,9 @@ import {
 import { useToast } from "@/components/ui/toast";
 import { Can } from "@/components/auth/can";
 import { cn } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   CLASSIFICATION_FIELDS,
   MATCH_MODES,
@@ -202,47 +205,47 @@ export function MappingsView({
         </Can>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-              <th className="px-4 py-2.5 font-semibold">Source</th>
-              <th className="px-4 py-2.5 font-semibold">Field</th>
-              <th className="px-4 py-2.5 font-semibold">Value</th>
-              <th className="px-4 py-2.5 font-semibold">Match</th>
-              <th className="px-4 py-2.5 font-semibold">Competency</th>
-              <th className="px-4 py-2.5 text-right font-semibold">Priority</th>
-              <th className="px-4 py-2.5 font-semibold">Active</th>
-              <th className="px-4 py-2.5" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+      <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+        <Table className="w-full text-sm">
+          <TableHeader>
+            <TableRow className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+              <TableHead className="px-4 py-2.5 font-semibold">Source</TableHead>
+              <TableHead className="px-4 py-2.5 font-semibold">Field</TableHead>
+              <TableHead className="px-4 py-2.5 font-semibold">Value</TableHead>
+              <TableHead className="px-4 py-2.5 font-semibold">Match</TableHead>
+              <TableHead className="px-4 py-2.5 font-semibold">Competency</TableHead>
+              <TableHead className="px-4 py-2.5 text-right font-semibold">Priority</TableHead>
+              <TableHead className="px-4 py-2.5 font-semibold">Active</TableHead>
+              <TableHead className="px-4 py-2.5" />
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-slate-100">
             {mappings.length === 0 ? (
-              <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-sm text-slate-400">
+              <TableRow>
+                <TableCell colSpan={8} className="px-4 py-10 text-center text-sm text-slate-400">
                   No mappings configured yet.
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ) : (
               mappings.map((m) => (
-                <tr key={m.id} className={cn("hover:bg-slate-50/70", !m.isActive && "opacity-60")}>
-                  <td className="px-4 py-3 align-top">
-                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                <TableRow key={m.id} className={cn("hover:bg-slate-50/70", !m.isActive && "opacity-60")}>
+                  <TableCell className="px-4 py-3 align-top">
+                    <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                       {labelize(m.sourceModule)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 align-top font-mono text-xs text-slate-600">
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="px-4 py-3 align-top font-mono text-xs text-slate-600">
                     {m.classificationField}
-                  </td>
-                  <td className="px-4 py-3 align-top text-slate-800">{m.classificationValue}</td>
-                  <td className="px-4 py-3 align-top text-slate-600">{labelize(m.matchMode)}</td>
-                  <td className="px-4 py-3 align-top font-medium text-slate-900">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 align-top text-slate-800">{m.classificationValue}</TableCell>
+                  <TableCell className="px-4 py-3 align-top text-slate-600">{labelize(m.matchMode)}</TableCell>
+                  <TableCell className="px-4 py-3 align-top font-medium text-slate-900">
                     {m.competencyName}
-                  </td>
-                  <td className="px-4 py-3 align-top text-right tabular-nums text-slate-600">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 align-top text-right tabular-nums text-slate-600">
                     {m.priority}
-                  </td>
-                  <td className="px-4 py-3 align-top">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 align-top">
                     <Can
                       permission="SKILL_MATRIX.COMPETENCY_CONFIGURE"
                       fallback={
@@ -272,37 +275,33 @@ export function MappingsView({
                         {m.isActive ? "Active" : "Off"}
                       </button>
                     </Can>
-                  </td>
-                  <td className="px-4 py-3 align-top text-right">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 align-top text-right">
                     <Can permission="SKILL_MATRIX.COMPETENCY_CONFIGURE">
                       <div className="flex items-center justify-end gap-1">
-                        <button
+                        <Button variant="ghost"
                           type="button"
                           onClick={() => openEdit(m)}
-                          disabled={busy}
-                          className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-primary-700 disabled:opacity-50"
-                          aria-label="Edit mapping"
-                        >
+                          disabled={busy} className="rounded p-1"
+                          aria-label="Edit mapping">
                           <Pencil size={14} />
-                        </button>
-                        <button
+                        </Button>
+                        <Button variant="destructive"
                           type="button"
                           onClick={() => remove(m)}
-                          disabled={busy}
-                          className="rounded p-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
-                          aria-label="Delete mapping"
-                        >
+                          disabled={busy} className="rounded p-1"
+                          aria-label="Delete mapping">
                           <Trash2 size={14} />
-                        </button>
+                        </Button>
                       </div>
                     </Can>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))
             )}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
       <Dialog open={dialogOpen} onOpenChange={(o) => !busy && setDialogOpen(o)}>
         <DialogContent className="max-w-lg">
@@ -316,29 +315,19 @@ export function MappingsView({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <Label className="text-xs">Source module</Label>
-              <Select
+              <SelectField
                 value={form.sourceModule}
-                onChange={(e) => set("sourceModule", e.target.value)}
-              >
-                {SOURCE_MODULES.map((s) => (
-                  <option key={s} value={s}>
-                    {labelize(s)}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("sourceModule", value)}
+                options={SOURCE_MODULES.map((s) => ({ value: String(s), label: `${labelize(s)}` }))}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Classification field</Label>
-              <Select
+              <SelectField
                 value={form.classificationField}
-                onChange={(e) => set("classificationField", e.target.value)}
-              >
-                {CLASSIFICATION_FIELDS.map((f) => (
-                  <option key={f} value={f}>
-                    {f}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("classificationField", value)}
+                options={CLASSIFICATION_FIELDS.map((f) => ({ value: String(f), label: `${f}` }))}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Value</Label>
@@ -350,27 +339,18 @@ export function MappingsView({
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Match mode</Label>
-              <Select value={form.matchMode} onChange={(e) => set("matchMode", e.target.value)}>
-                {MATCH_MODES.map((m) => (
-                  <option key={m} value={m}>
-                    {labelize(m)}
-                  </option>
-                ))}
-              </Select>
+              <SelectField value={form.matchMode} onChange={(value) => set("matchMode", value)}
+                options={MATCH_MODES.map((m) => ({ value: String(m), label: `${labelize(m)}` }))}
+              />
             </div>
             <div className="col-span-2 space-y-1">
               <Label className="text-xs">Competency</Label>
-              <Select
+              <SelectField
                 value={form.competencyId}
-                onChange={(e) => set("competencyId", e.target.value)}
-              >
-                <option value="">Select a competency…</option>
-                {competencies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} — {c.name}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => set("competencyId", value)}
+                placeholder="Select a competency…"
+                options={competencies.map((c) => ({ value: String(c.id), label: `${c.code} — ${c.name}` }))}
+              />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Priority</Label>

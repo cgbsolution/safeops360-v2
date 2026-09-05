@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { AdminView } from "./admin-view";
 import type { TeamRole, CallTree } from "@/app/(dashboard)/erm/lib-p3";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -36,7 +37,7 @@ export default async function CrisisAdminPage() {
         description="The crisis roster (per site and corporate) and the published call trees that drive notification cascades. Every role must have a named alternate — no single-person crisis dependencies."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <AdminView roster={roster} callTrees={callTrees} plants={plants} />
       )}

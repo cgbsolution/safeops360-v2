@@ -4,6 +4,13 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
 import { APPETITE_LEVEL_CHIP, GAUGE_CHIP, type AppetiteDashRow } from "@/app/(dashboard)/erm/lib-p2";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const APPETITE_LEVELS = ["AVERSE", "MINIMAL", "CAUTIOUS", "OPEN", "SEEKING"] as const;
 
@@ -86,29 +93,28 @@ export function NewStatementForm({ row }: { row: AppetiteDashRow }) {
   }
 
   return (
-    <div className="max-w-2xl space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+    <Card className="max-w-2xl space-y-4 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
       <div className="flex items-center gap-2">
         <span className="h-4 w-4 rounded" style={{ backgroundColor: row.categoryColor ?? "#64748b" }} />
         <h2 className="text-base font-semibold text-slate-900">{row.categoryName ?? row.categoryCode}</h2>
       </div>
 
       {err && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{err}</div>
+        <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{err}</Alert>
       )}
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Statement text</label>
-        <textarea
+        <Label className="mb-1 block text-xs font-medium text-slate-600">Statement text</Label>
+        <Textarea
           value={statementText}
           onChange={(e) => setStatementText(e.target.value)}
           rows={4}
           className="w-full rounded-lg border border-slate-300 p-2 text-sm"
-          placeholder="The board accepts a CAUTIOUS appetite for…"
-        />
+          placeholder="The board accepts a CAUTIOUS appetite for…" />
       </div>
 
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Appetite level</label>
+        <Label className="mb-1 block text-xs font-medium text-slate-600">Appetite level</Label>
         <div className="flex flex-wrap gap-1.5">
           {APPETITE_LEVELS.map((lvl) => (
             <button
@@ -131,14 +137,12 @@ export function NewStatementForm({ row }: { row: AppetiteDashRow }) {
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <label className="text-xs font-medium text-slate-600">Tolerance bands</label>
-          <button
+          <Label className="text-xs font-medium text-slate-600">Tolerance bands</Label>
+          <Button variant="outline"
             type="button"
-            onClick={addBand}
-            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-primary-500"
-          >
+            onClick={addBand} className="gap-1 rounded-lg px-2 py-1 text-[11px]">
             <Plus size={12} /> Add band
-          </button>
+          </Button>
         </div>
         {bands.length === 0 ? (
           <p className="rounded-lg border border-dashed border-slate-200 py-4 text-center text-xs text-slate-400">
@@ -150,29 +154,22 @@ export function NewStatementForm({ row }: { row: AppetiteDashRow }) {
               const observed = observedFor(b.bandType);
               const state = stateFor(b.bandType);
               return (
-                <div
+                <Card
                   key={i}
-                  className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2.5"
-                >
-                  <select
+                  className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 shadow-none">
+                  <SelectField
                     value={b.bandType}
-                    onChange={(e) => updateBand(i, { bandType: e.target.value })}
+                    onChange={(value) => updateBand(i, { bandType: value })}
                     className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs"
-                  >
-                    {BAND_TYPES.map((t) => (
-                      <option key={t} value={t}>
-                        {BAND_LABEL[t]}
-                      </option>
-                    ))}
-                  </select>
+                    options={BAND_TYPES.map((t) => ({ value: t, label: `${BAND_LABEL[t]}` }))}
+                  />
                   <div className="flex items-center gap-1">
                     <span className="text-[11px] text-slate-500">≤</span>
-                    <input
+                    <Input
                       type="number"
                       value={b.thresholdValue}
                       onChange={(e) => updateBand(i, { thresholdValue: Number(e.target.value) })}
-                      className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-xs tabular-nums"
-                    />
+                      className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-xs tabular-nums" />
                   </div>
                   <div className="ml-auto flex items-center gap-2 text-[11px]">
                     <span className="text-slate-400">live observed</span>
@@ -190,15 +187,13 @@ export function NewStatementForm({ row }: { row: AppetiteDashRow }) {
                       </span>
                     )}
                   </div>
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => removeBand(i)}
-                    className="text-slate-400 hover:text-rose-600"
-                    title="Remove band"
-                  >
+                    title="Remove band">
                     <Trash2 size={14} />
-                  </button>
-                </div>
+                  </Button>
+                </Card>
               );
             })}
           </div>
@@ -214,6 +209,6 @@ export function NewStatementForm({ row }: { row: AppetiteDashRow }) {
           {busy ? "Creating…" : "Create draft statement"}
         </button>
       </div>
-    </div>
+    </Card>
   );
 }

@@ -255,9 +255,9 @@ export default async function InboxPage(props: { searchParams: Promise<{ tab?: s
                 {c}
               </span>
               {u > 0 && (
-                <span className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold leading-4 text-white">
+                <Badge variant="danger" className="absolute -right-1 -top-1 inline-flex min-w-[18px] items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-semibold leading-4 text-white">
                   {u > 99 ? "99+" : u}
-                </span>
+                </Badge>
               )}
             </Link>
           );

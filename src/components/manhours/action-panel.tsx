@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2, XCircle, Lock, Unlock, RotateCw, AlertTriangle } from "lucide-react";
 import { fetchSubmission } from "./wizard-api";
 import type { WizardSubmission } from "./wizard-types";
+import { Alert } from "@/components/ui/alert";
 
 interface CapabilityFlags {
   /** User holds MANHOURS.APPROVE for this plant — drives Plant Head panel. */
@@ -525,9 +526,9 @@ function ReasonForm({
         rows={3}
       />
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-2 text-xs text-rose-700">
           {error}
-        </div>
+        </Alert>
       )}
       <div className="flex items-center justify-end gap-2">
         <Button variant="ghost" size="sm" onClick={onCancel} disabled={busy}>

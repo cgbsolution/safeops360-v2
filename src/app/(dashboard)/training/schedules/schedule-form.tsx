@@ -18,10 +18,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Badge } from "@/components/ui/badge";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
 
 type Plant = { id: string; name: string; code: string };
 type Program = {
@@ -207,7 +208,7 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
               {programs.map((p) => {
                 const active = programId === p.id;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={p.id}
                     type="button"
                     onClick={() => setProgramId(p.id)}
@@ -216,8 +217,7 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
                       active
                         ? "border-primary-500 bg-primary-50"
                         : "border-slate-200 bg-white hover:border-primary-300",
-                    ].join(" ")}
-                  >
+                    ].join(" ")}>
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <div className="font-medium text-slate-900">
@@ -243,7 +243,7 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
                         </Badge>
                       </div>
                     </div>
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -262,21 +262,15 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
             <div className="grid sm:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs">Plant *</Label>
-                <Select value={plantId} onChange={(e) => setPlantId(e.target.value)}>
-                  {plants.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
+                <SelectField value={plantId} onChange={(value) => setPlantId(value)}
+                  options={plants.map((p) => ({ value: String(p.id), label: `${p.name}` }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs">Language *</Label>
-                <Select value={language} onChange={(e) => setLanguage(e.target.value)}>
-                  {(program?.language ?? ["English", "Hindi"]).map((l) => (
-                    <option key={l}>{l}</option>
-                  ))}
-                </Select>
+                <SelectField value={language} onChange={(value) => setLanguage(value)}
+                  options={((program?.language ?? ["English", "Hindi"]) ?? []).map((l) => ({ value: String(l), label: "l" }))}
+                />
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-3">
@@ -313,7 +307,7 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
           </CardHeader>
           <CardContent className="space-y-3">
             {sessions.map((s, idx) => (
-              <div key={idx} className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+              <Card key={idx} className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2 shadow-none">
                 <Input
                   value={s.title}
                   onChange={(e) => {
@@ -349,7 +343,7 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
                     />
                   </div>
                 </div>
-              </div>
+              </Card>
             ))}
           </CardContent>
         </Card>
@@ -364,7 +358,7 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex gap-2">
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setIsExternal(false)}
                 className={[
@@ -372,11 +366,10 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
                   !isExternal
                     ? "bg-primary-50 border-primary-300 text-primary-700"
                     : "bg-white border-slate-200 text-slate-600",
-                ].join(" ")}
-              >
+                ].join(" ")}>
                 Internal Trainer
-              </button>
-              <button
+              </Button>
+              <Button variant="ghost"
                 type="button"
                 onClick={() => setIsExternal(true)}
                 className={[
@@ -384,10 +377,9 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
                   isExternal
                     ? "bg-primary-50 border-primary-300 text-primary-700"
                     : "bg-white border-slate-200 text-slate-600",
-                ].join(" ")}
-              >
+                ].join(" ")}>
                 External Trainer
-              </button>
+              </Button>
             </div>
             {!isExternal ? (
               <UserPicker
@@ -466,9 +458,9 @@ export function ScheduleForm({ plants, programs }: { plants: Plant[]; programs: 
       )}
 
       {error && (
-        <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">
+        <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="fixed bottom-0 left-0 right-0 border-t bg-white/95 backdrop-blur p-3 z-30 shadow-lg sm:left-64">

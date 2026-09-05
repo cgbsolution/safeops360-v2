@@ -20,6 +20,7 @@ import {
   type LucideIcon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 // ─── Type imports for the props (Prisma row shapes) ──────────────────
 
@@ -174,15 +175,15 @@ export function IncidentSummarySection({ incident, reclassifications }: {
           {incident.initialDescription || incident.description}
         </p>
         {incident.classificationRationale && (
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+          <Card className="rounded-md border-slate-200 bg-slate-50 p-3 shadow-none">
             <div className="text-[11px] uppercase tracking-wider font-semibold text-slate-500 mb-1">
               Classification Rationale
             </div>
             <p className="text-sm text-slate-700 whitespace-pre-wrap">{incident.classificationRationale}</p>
-          </div>
+          </Card>
         )}
         {reclassifications.length > 0 && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+          <Alert variant="warning" size="lg" className="p-3">
             <div className="text-[11px] uppercase tracking-wider font-semibold text-amber-900 mb-1.5">
               Reclassification History ({reclassifications.length})
             </div>
@@ -200,7 +201,7 @@ export function IncidentSummarySection({ incident, reclassifications }: {
                 </li>
               ))}
             </ul>
-          </div>
+          </Alert>
         )}
       </CardContent>
     </Card>
@@ -269,7 +270,7 @@ export function TimelineSection({ events }: { events: TimelineEvent[] }) {
         {events.map((e) => (
           <li key={e.id} className="relative">
             <span className="absolute -left-[22px] top-1 w-3 h-3 rounded-full bg-primary-600 border-2 border-white" />
-            <div className="rounded-md border border-slate-200 bg-white p-2.5">
+            <Card className="rounded-md border-slate-200 p-2.5 shadow-none">
               <div className="flex items-center gap-2 text-xs text-slate-500">
                 <span className="font-mono font-semibold">#{e.sequence}</span>
                 <span>·</span>
@@ -279,7 +280,7 @@ export function TimelineSection({ events }: { events: TimelineEvent[] }) {
                 {e.sourceReference && <span className="text-slate-500">({e.sourceReference})</span>}
               </div>
               <div className="text-sm text-slate-800 mt-1">{e.description}</div>
-            </div>
+            </Card>
           </li>
         ))}
       </ol>
@@ -301,9 +302,9 @@ export function WitnessStatementsSection({ witnesses }: { witnesses: Witness[] }
               {w.witnessRole ?? "—"} · taken {formatDateTime(w.takenAt)} · {w.language ?? "English"}
             </div>
             {w.statementText && (
-              <div className="mt-2 rounded-md bg-slate-50 border border-slate-200 p-2.5 text-sm text-slate-700 whitespace-pre-wrap italic">
+              <Card className="mt-2 whitespace-pre-wrap rounded-md border-slate-200 bg-slate-50 p-2.5 text-sm italic text-slate-700 shadow-none">
                 "{w.statementText}"
-              </div>
+              </Card>
             )}
             {(w.statementFileUrl || w.audioRecordingUrl) && (
               <div className="mt-2 flex gap-3 text-xs print:hidden">
@@ -446,12 +447,12 @@ export function CauseAnalysisSection({ incident }: { incident: any }) {
             </div>
 
             {incident.rootCauseSummary && (
-              <div className="rounded-md border border-violet-200 bg-violet-50 p-3">
+              <Card className="rounded-md border-violet-200 bg-violet-50 p-3 shadow-none">
                 <div className="text-[11px] uppercase tracking-wider font-semibold text-violet-800 mb-1">
                   Plain-English Summary
                 </div>
                 <p className="text-sm text-violet-900">{incident.rootCauseSummary}</p>
-              </div>
+              </Card>
             )}
 
             {/* Part B — Methodology Visualization (read-only) */}
@@ -967,7 +968,7 @@ export function IncidentMetadataSidebar({ incident, canSeeScore = false }: { inc
             } />
           )}
           {sd?.escalationTriggered && (
-            <div className="mt-2 rounded-md border border-rose-200 bg-rose-50 px-2.5 py-2 text-xs text-rose-800">
+            <Alert variant="destructive" className="mt-2 px-2.5 py-2">
               <div className="flex items-center gap-1.5 font-semibold">
                 <ShieldAlert size={13} /> Escalated to Corporate HSE
               </div>
@@ -977,7 +978,7 @@ export function IncidentMetadataSidebar({ incident, canSeeScore = false }: { inc
                   {e.triggeredAt ? ` · ${formatDateTime(e.triggeredAt)}` : ""}
                 </div>
               ))}
-            </div>
+            </Alert>
           )}
         </div>
         {incident.classifiedAt && (

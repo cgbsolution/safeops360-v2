@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { requirePermission } from "@/lib/auth/server";
 import { PrintButton } from "@/components/ui/print-button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -148,8 +149,8 @@ export default async function HiraReportPage(
           <div className="text-lg text-slate-700 mt-1">{study.number}</div>
         </div>
 
-        <table className="w-full text-sm mb-6">
-          <tbody>
+        <Table className="w-full text-sm mb-6">
+          <TableBody>
             {[
               ["Plant", detail.plantName ?? "—"],
               ["Department", detail.departmentName ?? "—"],
@@ -163,68 +164,68 @@ export default async function HiraReportPage(
               ["Next scheduled review", study.nextScheduledReviewDate ? new Date(study.nextScheduledReviewDate).toLocaleDateString() : "—"],
               ["Status", study.status]
             ].map(([k, v]) => (
-              <tr key={k} className="border-b border-slate-200">
-                <td className="py-1.5 pr-4 text-slate-500 w-48">{k}</td>
-                <td className="py-1.5 font-medium text-slate-900">{v}</td>
-              </tr>
+              <TableRow key={k} className="border-b border-slate-200">
+                <TableCell className="py-1.5 pr-4 text-slate-500 w-48">{k}</TableCell>
+                <TableCell className="py-1.5 font-medium text-slate-900">{v}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         <h2 className="text-sm uppercase tracking-wider font-semibold text-slate-700 mt-6 mb-2">Team Composition</h2>
-        <table className="w-full text-sm border">
-          <thead className="bg-slate-50 text-xs uppercase">
-            <tr>
-              <th className="text-left px-2 py-1.5">Name</th>
-              <th className="text-left px-2 py-1.5">Role</th>
-              <th className="text-left px-2 py-1.5">Signed</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t">
-              <td className="px-2 py-1.5 font-medium">{detail.teamLeaderName ?? "—"}</td>
-              <td className="px-2 py-1.5">Study Leader</td>
-              <td className="px-2 py-1.5">{study.approvedAt ? new Date(study.approvedAt).toLocaleDateString() : "Pending"}</td>
-            </tr>
+        <Table className="w-full text-sm border">
+          <TableHeader className="bg-slate-50 text-xs uppercase">
+            <TableRow>
+              <TableHead className="text-left px-2 py-1.5">Name</TableHead>
+              <TableHead className="text-left px-2 py-1.5">Role</TableHead>
+              <TableHead className="text-left px-2 py-1.5">Signed</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow className="border-t">
+              <TableCell className="px-2 py-1.5 font-medium">{detail.teamLeaderName ?? "—"}</TableCell>
+              <TableCell className="px-2 py-1.5">Study Leader</TableCell>
+              <TableCell className="px-2 py-1.5">{study.approvedAt ? new Date(study.approvedAt).toLocaleDateString() : "Pending"}</TableCell>
+            </TableRow>
             {study.team.map((m) => (
-              <tr key={m.id} className="border-t">
-                <td className="px-2 py-1.5 font-medium">{detail.teamMemberNames[m.userId] ?? m.userId}</td>
-                <td className="px-2 py-1.5">{m.teamRole.replace(/_/g, " ")}</td>
-                <td className="px-2 py-1.5">{m.signedAt ? new Date(m.signedAt).toLocaleDateString() : "Pending"}</td>
-              </tr>
+              <TableRow key={m.id} className="border-t">
+                <TableCell className="px-2 py-1.5 font-medium">{detail.teamMemberNames[m.userId] ?? m.userId}</TableCell>
+                <TableCell className="px-2 py-1.5">{m.teamRole.replace(/_/g, " ")}</TableCell>
+                <TableCell className="px-2 py-1.5">{m.signedAt ? new Date(m.signedAt).toLocaleDateString() : "Pending"}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         <h2 className="text-sm uppercase tracking-wider font-semibold text-slate-700 mt-6 mb-2">Aggregate Risk Distribution</h2>
-        <table className="w-full text-sm border">
-          <thead className="bg-slate-50 text-xs uppercase">
-            <tr>
-              <th className="text-left px-2 py-1.5">Level</th>
-              <th className="text-right px-2 py-1.5">Initial</th>
-              <th className="text-right px-2 py-1.5">Residual</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table className="w-full text-sm border">
+          <TableHeader className="bg-slate-50 text-xs uppercase">
+            <TableRow>
+              <TableHead className="text-left px-2 py-1.5">Level</TableHead>
+              <TableHead className="text-right px-2 py-1.5">Initial</TableHead>
+              <TableHead className="text-right px-2 py-1.5">Residual</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {(["LOW", "MODERATE", "HIGH", "CRITICAL"] as const).map((lvl) => (
-              <tr key={lvl} className="border-t">
-                <td className="px-2 py-1.5">
+              <TableRow key={lvl} className="border-t">
+                <TableCell className="px-2 py-1.5">
                   <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ background: RISK_COLOR[lvl] }} />
                   {lvl}
-                </td>
-                <td className="px-2 py-1.5 text-right font-mono">{counts.initial[lvl] ?? 0}</td>
-                <td className="px-2 py-1.5 text-right font-mono">{counts.residual[lvl] ?? 0}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="px-2 py-1.5 text-right font-mono">{counts.initial[lvl] ?? 0}</TableCell>
+                <TableCell className="px-2 py-1.5 text-right font-mono">{counts.residual[lvl] ?? 0}</TableCell>
+              </TableRow>
             ))}
-            <tr className="border-t font-semibold bg-slate-50">
-              <td className="px-2 py-1.5">Total</td>
-              <td className="px-2 py-1.5 text-right font-mono">{fullEntries.length}</td>
-              <td className="px-2 py-1.5 text-right font-mono">
+            <TableRow className="border-t font-semibold bg-slate-50">
+              <TableCell className="px-2 py-1.5">Total</TableCell>
+              <TableCell className="px-2 py-1.5 text-right font-mono">{fullEntries.length}</TableCell>
+              <TableCell className="px-2 py-1.5 text-right font-mono">
                 {Object.values(counts.residual).reduce((a, b) => a + b, 0)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
 
         <p className="text-xs text-slate-500 mt-6 italic">
           This document is a HIRA register generated by SafeOps360 on {new Date().toLocaleString()}.
@@ -277,36 +278,36 @@ export default async function HiraReportPage(
           )}
 
           <h4 className="text-xs uppercase font-semibold text-slate-700 mt-3 mb-1">Risk Assessment</h4>
-          <table className="w-full text-sm border">
-            <thead className="bg-slate-50 text-xs uppercase">
-              <tr>
-                <th className="text-left px-2 py-1.5"></th>
-                <th className="text-center px-2 py-1.5">L</th>
-                <th className="text-center px-2 py-1.5">S</th>
-                <th className="text-center px-2 py-1.5">Score</th>
-                <th className="text-center px-2 py-1.5">Level</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="border-t">
-                <td className="px-2 py-1.5 font-medium">Initial</td>
-                <td className="px-2 py-1.5 text-center">{e.initialLikelihoodScore}</td>
-                <td className="px-2 py-1.5 text-center">{e.initialSeverityScore}</td>
-                <td className="px-2 py-1.5 text-center font-mono">{e.initialRiskScore}</td>
-                <td
+          <Table className="w-full text-sm border">
+            <TableHeader className="bg-slate-50 text-xs uppercase">
+              <TableRow>
+                <TableHead className="text-left px-2 py-1.5"></TableHead>
+                <TableHead className="text-center px-2 py-1.5">L</TableHead>
+                <TableHead className="text-center px-2 py-1.5">S</TableHead>
+                <TableHead className="text-center px-2 py-1.5">Score</TableHead>
+                <TableHead className="text-center px-2 py-1.5">Level</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              <TableRow className="border-t">
+                <TableCell className="px-2 py-1.5 font-medium">Initial</TableCell>
+                <TableCell className="px-2 py-1.5 text-center">{e.initialLikelihoodScore}</TableCell>
+                <TableCell className="px-2 py-1.5 text-center">{e.initialSeverityScore}</TableCell>
+                <TableCell className="px-2 py-1.5 text-center font-mono">{e.initialRiskScore}</TableCell>
+                <TableCell
                   className="px-2 py-1.5 text-center font-semibold"
                   style={{ color: RISK_COLOR[e.initialRiskLevel], backgroundColor: RISK_COLOR[e.initialRiskLevel] + "20" }}
                 >
                   {e.initialRiskLevel}
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
               {e.residualRiskLevel && (
-                <tr className="border-t">
-                  <td className="px-2 py-1.5 font-medium">Residual</td>
-                  <td className="px-2 py-1.5 text-center">{e.residualLikelihoodScore}</td>
-                  <td className="px-2 py-1.5 text-center">{e.residualSeverityScore}</td>
-                  <td className="px-2 py-1.5 text-center font-mono">{e.residualRiskScore}</td>
-                  <td
+                <TableRow className="border-t">
+                  <TableCell className="px-2 py-1.5 font-medium">Residual</TableCell>
+                  <TableCell className="px-2 py-1.5 text-center">{e.residualLikelihoodScore}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-center">{e.residualSeverityScore}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-center font-mono">{e.residualRiskScore}</TableCell>
+                  <TableCell
                     className="px-2 py-1.5 text-center font-semibold"
                     style={{
                       color: RISK_COLOR[e.residualRiskLevel],
@@ -315,61 +316,61 @@ export default async function HiraReportPage(
                   >
                     {e.residualRiskLevel}
                     {e.residualAcceptable === false && <span className="ml-1 text-rose-600">⚠</span>}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
 
           <h4 className="text-xs uppercase font-semibold text-slate-700 mt-3 mb-1">Existing Controls</h4>
           {e.existingControls.length === 0 ? (
             <p className="text-sm italic text-slate-500">None recorded.</p>
           ) : (
-            <table className="w-full text-sm border">
-              <thead className="bg-slate-50 text-xs uppercase">
-                <tr>
-                  <th className="text-left px-2 py-1">Hierarchy</th>
-                  <th className="text-left px-2 py-1">Description</th>
-                  <th className="text-left px-2 py-1">Effectiveness</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-sm border">
+              <TableHeader className="bg-slate-50 text-xs uppercase">
+                <TableRow>
+                  <TableHead className="text-left px-2 py-1">Hierarchy</TableHead>
+                  <TableHead className="text-left px-2 py-1">Description</TableHead>
+                  <TableHead className="text-left px-2 py-1">Effectiveness</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {e.existingControls.map((c) => (
-                  <tr key={c.id} className="border-t">
-                    <td className="px-2 py-1 font-medium">{c.hierarchy}</td>
-                    <td className="px-2 py-1">{c.description}</td>
-                    <td className="px-2 py-1">{c.effectiveness?.replace(/_/g, " ") ?? "—"}</td>
-                  </tr>
+                  <TableRow key={c.id} className="border-t">
+                    <TableCell className="px-2 py-1 font-medium">{c.hierarchy}</TableCell>
+                    <TableCell className="px-2 py-1">{c.description}</TableCell>
+                    <TableCell className="px-2 py-1">{c.effectiveness?.replace(/_/g, " ") ?? "—"}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
 
           {e.recommendedControls.length > 0 && (
             <>
               <h4 className="text-xs uppercase font-semibold text-slate-700 mt-3 mb-1">Recommended Additional Controls</h4>
-              <table className="w-full text-sm border">
-                <thead className="bg-slate-50 text-xs uppercase">
-                  <tr>
-                    <th className="text-left px-2 py-1">Hierarchy</th>
-                    <th className="text-left px-2 py-1">Description</th>
-                    <th className="text-left px-2 py-1">Status</th>
-                    <th className="text-left px-2 py-1">Evidence</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full text-sm border">
+                <TableHeader className="bg-slate-50 text-xs uppercase">
+                  <TableRow>
+                    <TableHead className="text-left px-2 py-1">Hierarchy</TableHead>
+                    <TableHead className="text-left px-2 py-1">Description</TableHead>
+                    <TableHead className="text-left px-2 py-1">Status</TableHead>
+                    <TableHead className="text-left px-2 py-1">Evidence</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {e.recommendedControls.map((c) => (
-                    <tr key={c.id} className="border-t">
-                      <td className="px-2 py-1 font-medium">{c.hierarchy}</td>
-                      <td className="px-2 py-1">{c.description}</td>
-                      <td className="px-2 py-1 text-xs">{c.status.replace(/_/g, " ")}</td>
-                      <td className="px-2 py-1 text-xs">
+                    <TableRow key={c.id} className="border-t">
+                      <TableCell className="px-2 py-1 font-medium">{c.hierarchy}</TableCell>
+                      <TableCell className="px-2 py-1">{c.description}</TableCell>
+                      <TableCell className="px-2 py-1 text-xs">{c.status.replace(/_/g, " ")}</TableCell>
+                      <TableCell className="px-2 py-1 text-xs">
                         {c.documentReference || (c.evidenceAttached ? "On file" : "—")}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </>
           )}
 
@@ -396,36 +397,36 @@ export default async function HiraReportPage(
 
       <section className="page-break-before pt-6">
         <h2 className="text-sm uppercase tracking-wider font-semibold text-slate-700 mb-4">Approval</h2>
-        <table className="w-full text-sm border">
-          <thead className="bg-slate-50 text-xs uppercase">
-            <tr>
-              <th className="text-left px-2 py-1.5">Role</th>
-              <th className="text-left px-2 py-1.5">Name</th>
-              <th className="text-left px-2 py-1.5">Date</th>
-              <th className="text-left px-2 py-1.5">Signature</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="border-t h-14">
-              <td className="px-2 py-1.5">Study Leader</td>
-              <td className="px-2 py-1.5">{detail.teamLeaderName ?? "—"}</td>
-              <td className="px-2 py-1.5">{study.completedAt ? new Date(study.completedAt).toLocaleDateString() : "—"}</td>
-              <td className="px-2 py-1.5"></td>
-            </tr>
-            <tr className="border-t h-14">
-              <td className="px-2 py-1.5">Plant Head</td>
-              <td className="px-2 py-1.5">{detail.approvedByName ?? "—"}</td>
-              <td className="px-2 py-1.5">{study.approvedAt ? new Date(study.approvedAt).toLocaleDateString() : "—"}</td>
-              <td className="px-2 py-1.5"></td>
-            </tr>
-            <tr className="border-t h-14">
-              <td className="px-2 py-1.5">Corporate HSE</td>
-              <td className="px-2 py-1.5">—</td>
-              <td className="px-2 py-1.5"></td>
-              <td className="px-2 py-1.5"></td>
-            </tr>
-          </tbody>
-        </table>
+        <Table className="w-full text-sm border">
+          <TableHeader className="bg-slate-50 text-xs uppercase">
+            <TableRow>
+              <TableHead className="text-left px-2 py-1.5">Role</TableHead>
+              <TableHead className="text-left px-2 py-1.5">Name</TableHead>
+              <TableHead className="text-left px-2 py-1.5">Date</TableHead>
+              <TableHead className="text-left px-2 py-1.5">Signature</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            <TableRow className="border-t h-14">
+              <TableCell className="px-2 py-1.5">Study Leader</TableCell>
+              <TableCell className="px-2 py-1.5">{detail.teamLeaderName ?? "—"}</TableCell>
+              <TableCell className="px-2 py-1.5">{study.completedAt ? new Date(study.completedAt).toLocaleDateString() : "—"}</TableCell>
+              <TableCell className="px-2 py-1.5"></TableCell>
+            </TableRow>
+            <TableRow className="border-t h-14">
+              <TableCell className="px-2 py-1.5">Plant Head</TableCell>
+              <TableCell className="px-2 py-1.5">{detail.approvedByName ?? "—"}</TableCell>
+              <TableCell className="px-2 py-1.5">{study.approvedAt ? new Date(study.approvedAt).toLocaleDateString() : "—"}</TableCell>
+              <TableCell className="px-2 py-1.5"></TableCell>
+            </TableRow>
+            <TableRow className="border-t h-14">
+              <TableCell className="px-2 py-1.5">Corporate HSE</TableCell>
+              <TableCell className="px-2 py-1.5">—</TableCell>
+              <TableCell className="px-2 py-1.5"></TableCell>
+              <TableCell className="px-2 py-1.5"></TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
 
         <p className="text-[10px] text-slate-400 mt-8 text-center">
           CONFIDENTIAL — {detail.plantName ?? ""} · {study.number} · Generated {new Date().toISOString().slice(0, 19)}

@@ -27,6 +27,9 @@ import {
 import { cn } from "@/lib/utils";
 import { readApiError } from "@/lib/client-errors";
 import { useToast } from "@/components/ui/toast";
+import { Input } from "@/components/ui/input";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
 
 // Cross-cutting document classes (mirror app/schemas/attachment.py). The ones
 // the AI extraction layer (§6) keys off are SDS / certificate / license.
@@ -203,7 +206,7 @@ export function EvidenceAttachment({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="mb-3 flex items-center gap-2">
         <Paperclip size={15} className="text-slate-500" />
         <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
@@ -214,33 +217,23 @@ export function EvidenceAttachment({
         <div className="mb-3 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             {categories.length > 1 && (
-              <select
+              <SelectField
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(value) => setCategory(value)}
                 className="form-select h-8 text-xs"
                 aria-label="Attachment category"
-              >
-                {categories.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
+                options={categories.map((c) => ({ value: String(c.value), label: `${c.label}` }))}
+              />
             )}
             {showDocumentCategory && (
-              <select
+              <SelectField
                 value={docCategory}
-                onChange={(e) => setDocCategory(e.target.value)}
+                onChange={(value) => setDocCategory(value)}
                 className="form-select h-8 text-xs"
                 aria-label="Document type"
-              >
-                <option value="">Document type…</option>
-                {DOCUMENT_CATEGORIES.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+                placeholder="Document type…"
+                options={DOCUMENT_CATEGORIES.map((d) => ({ value: String(d), label: `${d}` }))}
+              />
             )}
           </div>
 
@@ -275,7 +268,7 @@ export function EvidenceAttachment({
             >
               <Upload size={13} /> Choose file
             </Button>
-            <input
+            <Input
               ref={fileInputRef}
               type="file"
               multiple
@@ -284,8 +277,7 @@ export function EvidenceAttachment({
               onChange={(e) => {
                 if (e.target.files) addFiles(e.target.files);
                 e.target.value = "";
-              }}
-            />
+              }} />
             <p className="mt-2 text-[11px] text-slate-500">
               {help ?? `PDF / image / DOCX / XLSX · up to ${MAX_SIZE / 1024 / 1024} MB`}
             </p>
@@ -325,14 +317,12 @@ export function EvidenceAttachment({
               ) : (
                 <FileText size={14} className="shrink-0 text-slate-400" />
               )}
-              <button
+              <Button variant="link"
                 type="button"
-                onClick={() => download(att)}
-                className="truncate text-left font-medium text-primary-700 hover:underline"
-                title={att.fileName}
-              >
+                onClick={() => download(att)} className="truncate text-left hover:underline"
+                title={att.fileName}>
                 {att.fileName}
-              </button>
+              </Button>
               {att.documentCategory && (
                 <span className="chip border-slate-200 bg-slate-50 text-[10px] text-slate-500">
                   {att.documentCategory}
@@ -342,28 +332,24 @@ export function EvidenceAttachment({
               <span className="ml-auto shrink-0 text-[10px] text-slate-400">
                 {(att.fileSize / 1024).toFixed(0)} KB
               </span>
-              <button
+              <Button variant="ghost"
                 type="button"
                 onClick={() => download(att)}
-                className="text-slate-400 hover:text-primary-700"
-                aria-label="Download"
-              >
+                aria-label="Download">
                 <Download size={13} />
-              </button>
+              </Button>
               {canManage && (
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => remove(att)}
-                  className="text-slate-400 hover:text-rose-600"
-                  aria-label="Remove"
-                >
+                  aria-label="Remove">
                   <X size={13} />
-                </button>
+                </Button>
               )}
             </li>
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }

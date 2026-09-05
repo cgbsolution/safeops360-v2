@@ -7,6 +7,7 @@ import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { AccessRestricted } from "@/components/access-restricted";
 import { EntryEditor } from "./entry-editor";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -313,9 +314,9 @@ export default async function HiraEntryDetailPage(
       />
 
       {!isEditable && (
-        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+        <Alert variant="warning" className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
           Study is in status <strong>{study.status}</strong>. Edits create a new version and require a change reason.
-        </div>
+        </Alert>
       )}
 
       <EntryEditor

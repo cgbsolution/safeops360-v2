@@ -18,6 +18,8 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { GitBranch, ListOrdered, Plus, X, Star, Sparkles, Check, Loader2, Save } from "lucide-react";
+import { CAPA_TYPE_OPTIONS } from "@/lib/capa/options";
+import { SelectField } from "@/components/ui/select-field";
 
 type Method = "fishbone" | "five_why";
 type CauseNode = {
@@ -98,16 +100,28 @@ export function CauseAnalysisCanvas({
             <CardDescription>Both views write the same causes — switching never loses data.</CardDescription>
           </div>
           {/* Segmented control */}
-          <div className="flex rounded-lg border border-slate-200 p-0.5 text-sm">
-            <button type="button" onClick={() => setMethod("fishbone")}
-              className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5", method === "fishbone" ? "bg-primary-100 text-primary-900 font-medium" : "text-slate-600")}>
+          <Card className="flex rounded-lg border-slate-200 p-0.5 text-sm shadow-none">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={method === "fishbone"}
+              onClick={() => setMethod("fishbone")}
+              className={cn("gap-1.5 px-3 py-1.5", method === "fishbone" ? "bg-primary-100 font-medium text-primary-900" : "text-slate-600")}
+            >
               <GitBranch size={14} /> Fishbone
-            </button>
-            <button type="button" onClick={() => setMethod("five_why")}
-              className={cn("flex items-center gap-1.5 rounded-md px-3 py-1.5", method === "five_why" ? "bg-primary-100 text-primary-900 font-medium" : "text-slate-600")}>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              aria-pressed={method === "five_why"}
+              onClick={() => setMethod("five_why")}
+              className={cn("gap-1.5 px-3 py-1.5", method === "five_why" ? "bg-primary-100 font-medium text-primary-900" : "text-slate-600")}
+            >
               <ListOrdered size={14} /> 5-Why
-            </button>
-          </div>
+            </Button>
+          </Card>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -156,20 +170,51 @@ function FishboneView({ causes, onChange, readOnly }: { causes: CauseNode[]; onC
             <div key={b.key} className={cn("rounded-lg border p-3", b.tone)}>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs uppercase tracking-wider font-bold text-slate-700">{b.label}</span>
-                {!readOnly && <button type="button" onClick={() => add(b.key)} className="text-primary-700 hover:text-primary-900"><Plus size={14} /></button>}
+                {!readOnly && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    aria-label={`Add a cause under ${b.label}`}
+                    onClick={() => add(b.key)}
+                    className="h-auto w-auto p-0 text-primary-700 hover:bg-transparent hover:text-primary-900"
+                  >
+                    <Plus size={14} />
+                  </Button>
+                )}
               </div>
               {items.length === 0 && <div className="text-[11px] text-slate-400 italic">No causes.</div>}
               <div className="space-y-1.5">
                 {items.map((c) => (
                   <div key={c.id} className={cn("flex items-start gap-1 rounded border px-1.5 py-1", c.isRootCause ? "border-primary-400 bg-primary-50" : "border-transparent")}>
                     {!readOnly && (
-                      <button type="button" onClick={() => toggleRoot(c.id)} title="Mark root cause" className={cn("mt-1.5", c.isRootCause ? "text-primary-600" : "text-slate-300 hover:text-primary-500")}>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => toggleRoot(c.id)}
+                        title="Mark root cause"
+                        aria-label="Mark root cause"
+                        aria-pressed={c.isRootCause}
+                        className={cn("mt-1.5 h-auto w-auto p-0 hover:bg-transparent", c.isRootCause ? "text-primary-600" : "text-slate-300 hover:text-primary-500")}
+                      >
                         <Star size={12} fill={c.isRootCause ? "currentColor" : "none"} />
-                      </button>
+                      </Button>
                     )}
                     <Input value={c.text} onChange={(e) => setText(c.id, e.target.value)} placeholder="Contributing cause…" className="h-7 text-xs" disabled={readOnly} />
                     {c.source === "ai_suggested" && <Sparkles size={11} className="text-violet-500 mt-2" />}
-                    {!readOnly && <button type="button" onClick={() => remove(c.id)} className="text-slate-400 hover:text-rose-600 mt-1.5"><X size={11} /></button>}
+                    {!readOnly && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label="Remove cause"
+                        onClick={() => remove(c.id)}
+                        className="mt-1.5 h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-rose-600"
+                      >
+                        <X size={11} />
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -221,10 +266,21 @@ function FiveWhyView({ causes, onChange, readOnly, incidentId, plantId }: {
                   placeholder={lvl === 1 ? "Why did this happen?" : "Why?"} className="h-8 text-sm" disabled={readOnly} />
                 {node?.source === "ai_suggested" && <Sparkles size={13} className="text-violet-500 flex-shrink-0" />}
                 {!readOnly && node?.text && (
-                  <button type="button" onClick={() => toggleRoot(lvl)} title="Mark as root cause"
-                    className={cn("flex-shrink-0", isRoot ? "text-primary-600" : "text-slate-300 hover:text-primary-500")}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => toggleRoot(lvl)}
+                    title="Mark as root cause"
+                    aria-label="Mark as root cause"
+                    aria-pressed={isRoot}
+                    className={cn(
+                      "h-auto w-auto flex-shrink-0 p-0 hover:bg-transparent",
+                      isRoot ? "text-primary-600" : "text-slate-300 hover:text-primary-500"
+                    )}
+                  >
                     <Star size={15} fill={isRoot ? "currentColor" : "none"} />
-                  </button>
+                  </Button>
                 )}
               </div>
               {isRoot && node?.text && (
@@ -274,14 +330,16 @@ function InlineAddCapa({ incidentId, plantId, cause, causeId }: { incidentId: st
 
   if (!open) return <Button size="sm" variant="outline" onClick={() => setOpen(true)}><Plus size={13} /> Add CAPA</Button>;
   return (
-    <div className="w-full rounded-md border border-slate-200 bg-white p-2.5 space-y-2">
+    <Card className="w-full space-y-2 rounded-md border-slate-200 p-2.5 shadow-none">
       <div className="grid sm:grid-cols-2 gap-2">
         <div>
           <Label className="text-xs">Type</Label>
-          <Select value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="CORRECTIVE">Corrective</option>
-            <option value="PREVENTIVE">Preventive</option>
-          </Select>
+          <SelectField
+            value={type}
+            onChange={setType}
+            ariaLabel="CAPA type"
+            options={CAPA_TYPE_OPTIONS}
+          />
         </div>
         <div>
           <Label className="text-xs">Target Date</Label>
@@ -296,6 +354,6 @@ function InlineAddCapa({ incidentId, plantId, cause, causeId }: { incidentId: st
         <Button size="sm" onClick={submit} disabled={busy}>{busy ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />} Raise CAPA</Button>
         <Button size="sm" variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
       </div>
-    </div>
+    </Card>
   );
 }

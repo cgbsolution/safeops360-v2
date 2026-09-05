@@ -8,6 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { SCORE_1_TO_5 } from "@/lib/score-options";
 import {
   ASSESS_METHODS,
   RISK_BAND_CHIP,
@@ -148,7 +153,7 @@ export function AssessmentModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Vendor Assessment</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="h-8 w-8 text-slate-400 hover:text-slate-700">
@@ -157,7 +162,7 @@ export function AssessmentModal({
         </div>
 
         {/* Lens selector */}
-        <div className="mb-4 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
+        <Card className="mb-4 inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium shadow-none">
           {(["RISK", "ESG"] as const).map((l) => (
             <Button
               key={l}
@@ -172,7 +177,7 @@ export function AssessmentModal({
               {l === "RISK" ? "Third-Party Risk" : "ESG Posture"}
             </Button>
           ))}
-        </div>
+        </Card>
 
         {!config ? (
           <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -181,7 +186,7 @@ export function AssessmentModal({
         ) : (
           <div className="space-y-4">
             {/* Domain rows + live preview */}
-            <div className="rounded-lg border border-slate-200">
+            <Card className="rounded-lg border border-slate-200 shadow-none">
               <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-3 py-2">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   Domains ({lens === "RISK" ? "higher = worse" : "higher = better"})
@@ -197,20 +202,14 @@ export function AssessmentModal({
                         {d.guidance && <div className="truncate text-[11px] text-slate-400">{d.guidance}</div>}
                       </div>
                       <span className="w-12 flex-shrink-0 text-right text-[11px] tabular-nums text-slate-500">{d.weightPct}%</span>
-                      <Select
-                        value={scores[d.domainKey] ?? ""}
-                        onChange={(e) => setScore(d.domainKey, Number(e.target.value))}
+                      <SelectField
+                        value={scores[d.domainKey] != null ? String(scores[d.domainKey]) : ""}
+                        onChange={(value) => setScore(d.domainKey, Number(value))}
+                        ariaLabel={`${d.domainKey} score`}
+                        placeholder="1–5"
                         className="w-20 flex-shrink-0"
-                      >
-                        <option value="" disabled>
-                          1–5
-                        </option>
-                        {[1, 2, 3, 4, 5].map((n) => (
-                          <option key={n} value={n}>
-                            {n}
-                          </option>
-                        ))}
-                      </Select>
+                        options={SCORE_1_TO_5}
+                      />
                     </div>
                     <Input
                       value={evidence[d.domainKey] ?? ""}
@@ -221,10 +220,10 @@ export function AssessmentModal({
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
 
             {/* Live weighted-score + band preview */}
-            <div className="flex items-center justify-between rounded-lg border border-primary-200 bg-primary-50 px-4 py-3">
+            <Card className="flex items-center justify-between rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 shadow-none">
               <div>
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Live weighted score</div>
                 <div className="text-2xl font-bold tabular-nums text-slate-900">{preview.score}</div>
@@ -244,38 +243,34 @@ export function AssessmentModal({
                   <span className="text-xs text-slate-400">— score all domains —</span>
                 )}
               </div>
-            </div>
+            </Card>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Assessment date</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Assessment date</Label>
                 <Input type="date" value={assessmentDate} onChange={(e) => setAssessmentDate(e.target.value)} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Method</label>
-                <Select value={method} onChange={(e) => setMethod(e.target.value)}>
-                  {ASSESS_METHODS.map((m) => (
-                    <option key={m} value={m}>
-                      {METHOD_LABEL[m] ?? m.replace(/_/g, " ")}
-                    </option>
-                  ))}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Method</Label>
+                <SelectField value={method} onChange={setMethod}
+                  options={ASSESS_METHODS.map((m) => ({ value: m, label: `${METHOD_LABEL[m] ?? m.replace(/_/g, " ")}` }))}
+                />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Valid until</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Valid until</Label>
                 <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
               </div>
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Summary notes</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Summary notes</Label>
               <Textarea value={summaryNotes} onChange={(e) => setSummaryNotes(e.target.value)} rows={2} />
             </div>
 
             {/* Findings capture */}
             <div>
               <div className="mb-1 flex items-center justify-between">
-                <label className="text-xs font-medium text-slate-600">Findings</label>
+                <Label className="text-xs font-medium text-slate-600">Findings</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -290,22 +285,17 @@ export function AssessmentModal({
               ) : (
                 <div className="space-y-2">
                   {findings.map((f, i) => (
-                    <div key={i} className="rounded-md border border-slate-200 p-2">
+                    <Card key={i} className="rounded-md border border-slate-200 p-2 shadow-none">
                       <div className="flex items-center gap-2">
-                        <Select
+                        <SelectField
                           value={f.severity}
-                          onChange={(e) => updateFinding(i, { severity: e.target.value })}
+                          onChange={(value) => updateFinding(i, { severity: value })}
                           className={cn(
                             "h-auto w-auto rounded border px-2 py-1 text-[11px] font-semibold outline-none",
                             VENDOR_FINDING_CHIP[f.severity] ?? "border-slate-200 bg-slate-100 text-slate-600"
                           )}
-                        >
-                          {SEVERITIES.map((s) => (
-                            <option key={s} value={s}>
-                              {s.replace(/_/g, " ")}
-                            </option>
-                          ))}
-                        </Select>
+                          options={SEVERITIES.map((s) => ({ value: s, label: `${s.replace(/_/g, " ")}` }))}
+                        />
                         <Input
                           type="date"
                           value={f.targetCloseDate}
@@ -331,14 +321,14 @@ export function AssessmentModal({
                         placeholder="Describe the finding…"
                         className="mt-1.5 text-xs"
                       />
-                    </div>
+                    </Card>
                   ))}
                 </div>
               )}
             </div>
 
             {error && (
-              <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>
+              <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>
             )}
           </div>
         )}
@@ -351,7 +341,7 @@ export function AssessmentModal({
             {busy ? "Saving…" : "Create assessment"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

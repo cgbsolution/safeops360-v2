@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { HorizonItem } from "@/app/(dashboard)/erm/lib-p3";
 import { HorizonBoard } from "./board-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -26,9 +27,9 @@ export default async function HorizonWatchlistPage() {
         description="Scan for weak, emerging and strong signals on the horizon. Promote a maturing signal to a scenario or risk, or dismiss it — with a retained audit trail."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 3 (BCM) seed has been run and you are logged in with a BCM role.
-        </div>
+        </Alert>
       ) : (
         <HorizonBoard items={items} />
       )}

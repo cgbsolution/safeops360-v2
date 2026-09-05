@@ -4,6 +4,9 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { fmtDate, type BoardPack } from "@/app/(dashboard)/erm/lib";
 import { NewPackButton } from "./new-pack-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -31,45 +34,45 @@ export default async function BoardPacksPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM seed has been run and you are logged in with an ERM role.
-        </div>
+        </Alert>
       ) : packs.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
+        <Card className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-none">
           <FileText size={32} className="text-slate-300" />
           <p className="text-sm font-medium text-slate-700">No board packs yet</p>
           <p className="max-w-sm text-xs text-slate-500">
             Create your first quarterly board pack. It snapshots the current enterprise risk position and
             renders a board-ready document you can edit, publish and print.
           </p>
-        </div>
+        </Card>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50/60 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Quarter</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Generated</th>
-                <th className="px-4 py-3">Published</th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-slate-200 bg-slate-50/60 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                <TableHead className="px-4 py-3">Title</TableHead>
+                <TableHead className="px-4 py-3">Quarter</TableHead>
+                <TableHead className="px-4 py-3">Status</TableHead>
+                <TableHead className="px-4 py-3">Generated</TableHead>
+                <TableHead className="px-4 py-3">Published</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {packs.map((p) => {
                 const cls = STATUS_CHIP[p.status] ?? "bg-slate-100 text-slate-600 border-slate-200";
                 return (
-                  <tr key={p.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
-                    <td className="px-4 py-3">
+                  <TableRow key={p.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/70">
+                    <TableCell className="px-4 py-3">
                       <Link
                         href={`/erm/board-packs/${p.id}`}
                         className="font-medium text-primary-700 hover:underline"
                       >
                         {p.title}
                       </Link>
-                    </td>
-                    <td className="px-4 py-3 text-slate-600">{p.quarterLabel}</td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-slate-600">{p.quarterLabel}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <span
                         className={
                           "inline-flex items-center rounded border px-2 py-0.5 text-[11px] font-semibold " + cls
@@ -77,15 +80,15 @@ export default async function BoardPacksPage() {
                       >
                         {p.status}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{fmtDate(p.generatedAt)}</td>
-                    <td className="px-4 py-3 text-xs text-slate-500">{fmtDate(p.publishedAt)}</td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-xs text-slate-500">{fmtDate(p.generatedAt)}</TableCell>
+                    <TableCell className="px-4 py-3 text-xs text-slate-500">{fmtDate(p.publishedAt)}</TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

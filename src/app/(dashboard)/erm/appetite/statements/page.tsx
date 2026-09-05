@@ -8,6 +8,8 @@ import {
   type AppetiteDashRow,
 } from "@/app/(dashboard)/erm/lib-p2";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -57,13 +59,13 @@ export default async function ManageStatementsPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <div className="space-y-4">
           {[...byCat.entries()].map(([catId, list]) => {
             const head = list[0];
             return (
-              <div key={catId} className="rounded-xl border border-slate-200 bg-white p-5">
+              <Card key={catId} className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
                 <div className="mb-3 flex items-center gap-2">
                   <span
                     className="h-4 w-4 rounded"
@@ -111,12 +113,12 @@ export default async function ManageStatementsPage() {
                     </li>
                   ))}
                 </ul>
-              </div>
+              </Card>
             );
           })}
 
           {catsWithout.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">Categories without a statement</h2>
               <ul className="divide-y divide-slate-100">
                 {catsWithout.map((r) => (
@@ -139,13 +141,13 @@ export default async function ManageStatementsPage() {
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           )}
 
           {byCat.size === 0 && catsWithout.length === 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
+            <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
               No appetite statements or categories found.
-            </div>
+            </Card>
           )}
         </div>
       )}

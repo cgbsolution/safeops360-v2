@@ -74,19 +74,17 @@ export function EffectivenessReviewButton({
         <Label className="text-xs">Effectiveness rating</Label>
         <div className="flex items-center gap-1">
           {[1, 2, 3, 4, 5].map((v) => (
-            <button
+            <Button variant="ghost"
               key={v}
               type="button"
-              onClick={() => setRating(v)}
-              className="hover:scale-110 transition-transform"
-            >
+              onClick={() => setRating(v)} className="hover:scale-110 transition-transform">
               <Star
                 size={20}
                 className={
                   rating >= v ? "text-amber-500 fill-amber-500" : "text-slate-300"
                 }
               />
-            </button>
+            </Button>
           ))}
           <span className="ml-2 text-xs text-slate-600">{rating}/5</span>
         </div>

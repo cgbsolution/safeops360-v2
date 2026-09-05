@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, ShieldCheck, Umbrella, Handshake } from "lucide-react";
+import { Card } from "@/components/ui/card";
 import {
   RATING_CHIP,
   STRENGTH_CHIP,
@@ -48,7 +49,7 @@ export function Tier3RiskPanel({ riskId }: { riskId: string }) {
   return (
     <div className="mt-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
       {/* Controls */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900"><ShieldCheck size={15} className="text-slate-400" /> Mitigating Controls</h2>
         {ctx.controls.length === 0 ? (
           <p className="rounded-md bg-rose-50 px-3 py-2 text-xs font-medium text-rose-700"><AlertTriangle size={12} className="mr-1 inline" /> No control is mapped to this risk.</p>
@@ -69,10 +70,10 @@ export function Tier3RiskPanel({ riskId }: { riskId: string }) {
             </ul>
           </>
         )}
-      </div>
+      </Card>
 
       {/* Risk Transfer */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Umbrella size={15} className="text-slate-400" /> Risk Transfer</h2>
         <div className="mb-2">
           <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Coverage verdict</span>
@@ -90,10 +91,10 @@ export function Tier3RiskPanel({ riskId }: { riskId: string }) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
 
       {/* Linked vendors */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Handshake size={15} className="text-slate-400" /> Linked Vendors</h2>
         {ctx.vendors.length === 0 ? (
           <p className="text-xs text-slate-400">No vendor linked to this risk.</p>
@@ -110,7 +111,7 @@ export function Tier3RiskPanel({ riskId }: { riskId: string }) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

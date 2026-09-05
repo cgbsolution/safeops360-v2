@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
@@ -414,7 +415,7 @@ export default function CertificationsTab({
   return (
     <div className="space-y-5">
       {/* Training Certificates */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+      <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-2">
           <Award size={14} className="text-cyan-700" />
           <h3 className="text-sm font-semibold text-slate-700">
@@ -465,10 +466,10 @@ export default function CertificationsTab({
           </Table>
         )}
         <AddCertForm workerId={workerId} existing={certs} onAdded={setCerts} />
-      </div>
+      </Card>
 
       {/* Competency Records */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+      <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-2">
           <ShieldCheck size={14} className="text-cyan-700" />
           <h3 className="text-sm font-semibold text-slate-700">
@@ -509,10 +510,10 @@ export default function CertificationsTab({
           </Table>
         )}
         <AddCompetencyForm workerId={workerId} existing={comps} onAdded={setComps} />
-      </div>
+      </Card>
 
       {/* PPE Issuances (read-only) */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+      <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center gap-2">
           <HardHat size={14} className="text-cyan-700" />
           <h3 className="text-sm font-semibold text-slate-700">
@@ -550,7 +551,7 @@ export default function CertificationsTab({
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

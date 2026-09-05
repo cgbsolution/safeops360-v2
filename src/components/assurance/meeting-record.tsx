@@ -33,6 +33,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 import {
   fmtDateTime,
   type MeetingAttendee,
@@ -102,7 +104,7 @@ function MeetingCard({
 }) {
   if (!record.recorded) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-3">
+      <Card className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-3 shadow-none">
         <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
           <CircleDashed size={13} className="text-slate-400" />
           {label}
@@ -114,23 +116,21 @@ function MeetingCard({
             <Plus size={12} /> Record it
           </Button>
         )}
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
+    <Card className="rounded-lg border border-slate-200 bg-white p-3 shadow-none">
       <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
         <CheckCircle2 size={13} className="text-emerald-600" />
         {label}
         {canRecord && (
-          <button
+          <Button variant="link"
             type="button"
-            onClick={onEdit}
-            className="ml-auto text-[11px] text-violet-700 hover:underline"
-          >
+            onClick={onEdit} className="ml-auto text-[11px] hover:underline">
             Edit
-          </button>
+          </Button>
         )}
       </div>
       <div className="mt-1 text-[12px] text-slate-600">{fmtDateTime(record.heldAt)}</div>
@@ -177,7 +177,7 @@ function MeetingCard({
             : "Auditee acknowledgement not recorded."}
         </p>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -351,14 +351,12 @@ function MeetingForm({
                         <span className="text-amber-700"> · no email</span>
                       ) : null}
                     </span>
-                    <button
-                      type="button"
-                      className="ml-auto text-slate-400 hover:text-rose-600"
+                    <Button variant="ghost"
+                      type="button" className="ml-auto"
                       onClick={() => setAttendees((p) => p.filter((_, j) => j !== i))}
-                      aria-label={`Remove ${a.name}`}
-                    >
+                      aria-label={`Remove ${a.name}`}>
                       <Trash2 size={13} />
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -374,14 +372,13 @@ function MeetingForm({
           {/* The minute is the only place the department owners identified at the
               opening meeting are ever named. This is what puts them on the
               closing invitation — nothing in the audit team fields knows them. */}
-          <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
-            <label className="flex items-start gap-2 text-xs text-slate-700">
-              <input
-                type="checkbox"
+          <Card className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5 shadow-none">
+            <Label className="flex items-start gap-2 text-xs text-slate-700">
+              <Checkbox
+               
                 checked={addToCalendar}
                 onChange={(e) => setAddToCalendar(e.target.checked)}
-                className="mt-0.5"
-              />
+                className="mt-0.5" />
               <span>
                 Add these attendees to the audit&apos;s calendar.
                 <span className="mt-0.5 block text-[11px] text-slate-500">
@@ -391,25 +388,24 @@ function MeetingForm({
                   Anyone already on the audit team keeps the invitation they have.
                 </span>
               </span>
-            </label>
+            </Label>
             {addToCalendar && unreachable.length > 0 && (
               <p className="mt-1.5 pl-6 text-[11px] text-amber-700">
                 {unreachable.length} external attendee{unreachable.length > 1 ? "s have" : " has"} no
                 email address — recorded in the minute, but no calendar invitation can be sent.
               </p>
             )}
-          </div>
+          </Card>
 
           {meetingType === "OPENING" ? (
-            <label className="flex items-start gap-2 text-xs text-slate-700">
-              <input
-                type="checkbox"
+            <Label className="flex items-start gap-2 text-xs text-slate-700">
+              <Checkbox
+               
                 checked={scopeConfirmed}
                 onChange={(e) => setScopeConfirmed(e.target.checked)}
-                className="mt-0.5"
-              />
+                className="mt-0.5" />
               Audit scope, criteria and method were confirmed with the auditee.
-            </label>
+            </Label>
           ) : (
             <>
               <div>
@@ -425,15 +421,14 @@ function MeetingForm({
                   className="mt-1"
                 />
               </div>
-              <label className="flex items-start gap-2 text-xs text-slate-700">
-                <input
-                  type="checkbox"
+              <Label className="flex items-start gap-2 text-xs text-slate-700">
+                <Checkbox
+                 
                   checked={acknowledged}
                   onChange={(e) => setAcknowledged(e.target.checked)}
-                  className="mt-0.5"
-                />
+                  className="mt-0.5" />
                 The auditee acknowledged the findings presented.
-              </label>
+              </Label>
             </>
           )}
 
@@ -452,9 +447,9 @@ function MeetingForm({
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex justify-end gap-2">

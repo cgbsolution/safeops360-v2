@@ -1,5 +1,8 @@
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +63,7 @@ export default async function AuditTrailPage(props: {
       <PageHeader title="Audit Trail" breadcrumbs={[{ label: "Compliance" }, { label: "Audit Trail" }]}
         description="Tamper-evident, hash-chained record of every change to governed data — who, what, when, before/after. The regulator's view." />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}. Requires a compliance/audit role.</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}. Requires a compliance/audit role.</Alert>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -71,35 +74,35 @@ export default async function AuditTrailPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.total} entr{data.total === 1 ? "y" : "ies"}</span>
             <a href={`/api/audit-trail/log/export.csv${sp.entityType ? `?entityType=${sp.entityType}` : ""}`} className="rounded-lg border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:border-slate-400">Export CSV</a>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1000px] text-sm">
-              <thead className="sticky top-0 bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">When</th><th className="px-3 py-2.5">Entity</th><th className="px-3 py-2.5">Action</th>
-                  <th className="px-3 py-2.5">Actor</th><th className="px-3 py-2.5">Changed</th><th className="px-3 py-2.5">Chain</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1000px] text-sm">
+              <TableHeader className="sticky top-0 bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">When</TableHead><TableHead className="px-3 py-2.5">Entity</TableHead><TableHead className="px-3 py-2.5">Action</TableHead>
+                  <TableHead className="px-3 py-2.5">Actor</TableHead><TableHead className="px-3 py-2.5">Changed</TableHead><TableHead className="px-3 py-2.5">Chain</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.entries.length === 0 ? (
-                  <tr><td colSpan={6} className="px-3 py-10 text-center text-sm text-slate-400">No audit entries match the filter.</td></tr>
+                  <TableRow><TableCell colSpan={6} className="px-3 py-10 text-center text-sm text-slate-400">No audit entries match the filter.</TableCell></TableRow>
                 ) : data.entries.map((e) => (
-                  <tr key={e.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                    <td className="px-3 py-2.5 text-xs text-slate-500 tabular-nums">{e.timestamp ? new Date(e.timestamp).toLocaleString("en-IN") : "—"}</td>
-                    <td className="px-3 py-2.5"><span className="font-medium text-slate-700">{e.entityType}</span><span className="block text-[11px] text-slate-400">{e.entityCode ?? e.entityId.slice(0, 10)} · seq {e.sequenceNo}</span></td>
-                    <td className="px-3 py-2.5"><span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (ACTION_CHIP[e.action] ?? "bg-slate-100 text-slate-600 border-slate-200")}>{e.action.replace(/_/g, " ")}</span></td>
-                    <td className="px-3 py-2.5 text-xs text-slate-600">{e.actorName ?? e.actorId ?? "system"}<span className="block text-[10px] text-slate-400">{e.actorType}{e.actorIp ? ` · ${e.actorIp}` : ""}</span></td>
-                    <td className="max-w-[320px] px-3 py-2.5 text-xs text-slate-600">
+                  <TableRow key={e.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                    <TableCell className="px-3 py-2.5 text-xs text-slate-500 tabular-nums">{e.timestamp ? new Date(e.timestamp).toLocaleString("en-IN") : "—"}</TableCell>
+                    <TableCell className="px-3 py-2.5"><span className="font-medium text-slate-700">{e.entityType}</span><span className="block text-[11px] text-slate-400">{e.entityCode ?? e.entityId.slice(0, 10)} · seq {e.sequenceNo}</span></TableCell>
+                    <TableCell className="px-3 py-2.5"><span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (ACTION_CHIP[e.action] ?? "bg-slate-100 text-slate-600 border-slate-200")}>{e.action.replace(/_/g, " ")}</span></TableCell>
+                    <TableCell className="px-3 py-2.5 text-xs text-slate-600">{e.actorName ?? e.actorId ?? "system"}<span className="block text-[10px] text-slate-400">{e.actorType}{e.actorIp ? ` · ${e.actorIp}` : ""}</span></TableCell>
+                    <TableCell className="max-w-[320px] px-3 py-2.5 text-xs text-slate-600">
                       {(e.changedFields ?? []).slice(0, 4).map((f) => (
                         <span key={f} className="mr-1 inline-block rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">{f}</span>
                       ))}
                       {e.reason && <span className="block text-[10px] italic text-amber-600">reason: {e.reason}</span>}
-                    </td>
-                    <td className="px-3 py-2.5"><span title={e.entryHash} className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-mono text-emerald-700">🔒 {e.entryHash.slice(0, 8)}</span></td>
-                  </tr>
+                    </TableCell>
+                    <TableCell className="px-3 py-2.5"><span title={e.entryHash} className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-mono text-emerald-700">🔒 {e.entryHash.slice(0, 8)}</span></TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

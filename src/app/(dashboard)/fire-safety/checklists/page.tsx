@@ -17,6 +17,7 @@ import { PageHeader } from "@/components/page-header";
 import { MX } from "../lib";
 import { ChecklistLibrary } from "./library";
 import { Caps, ChecklistSummary } from "./types";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -80,21 +81,21 @@ export default async function ChecklistLibraryPage() {
         </summary>
         <div className="border-t px-4 py-3" style={{ borderColor: MX.iceLine }}>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[620px] border-collapse text-[11.5px]">
-              <thead>
-                <tr style={{ background: MX.ice }}>
+            <Table className="w-full min-w-[620px] border-collapse text-[11.5px]">
+              <TableHeader>
+                <TableRow style={{ background: MX.ice }}>
                   {["Sheet's own role", "Platform permission", "Roles that hold it"].map((h) => (
-                    <th
+                    <TableHead
                       key={h}
                       className="border-b px-2.5 py-1.5 text-left text-[10px] font-semibold uppercase tracking-wider"
                       style={{ borderColor: MX.iceLine, color: MX.navy }}
                     >
                       {h}
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody style={{ color: MX.ink }}>
+                </TableRow>
+              </TableHeader>
+              <TableBody style={{ color: MX.ink }}>
                 {[
                   ["Prepared by: Person In-charge", "FIRE.EXECUTE", "Safety Officer, Maintenance Head, Supervisor, Emergency Response Coordinator, HSE Manager"],
                   ["Reviewed by: Intermediatory Head", "FIRE.VERIFY", "Department Head, Plant HSE Head, HSE Manager, Plant Head"],
@@ -106,20 +107,20 @@ export default async function ChecklistLibraryPage() {
                   ["—  mark a shutdown or holiday", "FIRE.CALENDAR", "Plant Head, HSE Manager, Maintenance Head"],
                   ["—  read + export only (audit)", "FIRE.READ / FIRE.EXPORT", "Auditor, Lead Auditor, Compliance Officer, Executive Viewer"],
                 ].map(([role, code, holders]) => (
-                  <tr key={code as string}>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
+                  <TableRow key={code as string}>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine }}>
                       {role}
-                    </td>
-                    <td className="border-b px-2.5 py-1.5 font-mono text-[10.5px]" style={{ borderColor: MX.iceLine, color: MX.navy }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5 font-mono text-[10.5px]" style={{ borderColor: MX.iceLine, color: MX.navy }}>
                       {code}
-                    </td>
-                    <td className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
+                    </TableCell>
+                    <TableCell className="border-b px-2.5 py-1.5" style={{ borderColor: MX.iceLine, color: MX.muted }}>
                       {holders}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
           <p className="mt-2 text-[11px]" style={{ color: MX.muted }}>
             Prepare, review and approve go to different roles on purpose — one person holding all

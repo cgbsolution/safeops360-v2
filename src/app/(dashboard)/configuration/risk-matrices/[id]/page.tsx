@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -61,33 +63,33 @@ export default async function RiskMatrixDetailPage(
     <div>
       <PageHeader title={matrix.name} description={matrix.description ?? ""} />
 
-      <div className="rounded-xl border bg-white overflow-hidden mb-6">
+      <Card className="rounded-xl border bg-white overflow-hidden mb-6 shadow-none">
         <div className="px-4 py-3 border-b text-xs uppercase tracking-wider text-slate-600">
           Matrix Visualisation
         </div>
         <div className="p-4 overflow-x-auto">
-          <table className="border-collapse">
-            <thead>
-              <tr>
-                <th className="p-2 text-xs font-medium text-slate-500 text-left">
+          <Table className="border-collapse">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="p-2 text-xs font-medium text-slate-500 text-left">
                   Likelihood ↓ &nbsp; Severity →
-                </th>
+                </TableHead>
                 {matrix.severities.map((s) => (
-                  <th
+                  <TableHead
                     key={s.id}
                     className="p-2 text-xs font-medium text-slate-700 text-center min-w-[110px] border-b border-l"
                     title={s.description}
                   >
                     <div>{s.score}</div>
                     <div className="font-semibold">{s.label}</div>
-                  </th>
+                  </TableHead>
                 ))}
-              </tr>
-            </thead>
-            <tbody>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {matrix.likelihoods.map((l) => (
-                <tr key={l.id}>
-                  <th
+                <TableRow key={l.id}>
+                  <TableHead
                     className="p-2 text-xs font-medium text-slate-700 text-right border-r border-b min-w-[180px]"
                     title={l.description}
                   >
@@ -95,18 +97,18 @@ export default async function RiskMatrixDetailPage(
                     {l.frequencyGuidance && (
                       <div className="font-normal text-slate-500">{l.frequencyGuidance}</div>
                     )}
-                  </th>
+                  </TableHead>
                   {matrix.severities.map((s) => {
                     const c = cellByKey.get(`${l.score}|${s.score}`);
                     if (!c) {
                       return (
-                        <td key={s.id} className="border-b border-l p-2 text-center text-slate-400">
+                        <TableCell key={s.id} className="border-b border-l p-2 text-center text-slate-400">
                           —
-                        </td>
+                        </TableCell>
                       );
                     }
                     return (
-                      <td
+                      <TableCell
                         key={s.id}
                         className="border-b border-l p-3 text-center"
                         style={{ backgroundColor: c.colorHex + "33" }}
@@ -122,18 +124,18 @@ export default async function RiskMatrixDetailPage(
                         <div className="text-[9px] text-slate-500 mt-0.5">
                           Response: {c.responseTimeDays}d
                         </div>
-                      </td>
+                      </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="rounded-xl border bg-white">
+        <Card className="rounded-xl border bg-white shadow-none">
           <div className="px-4 py-2.5 border-b text-xs uppercase tracking-wider text-slate-600">
             Likelihood Scale
           </div>
@@ -148,9 +150,9 @@ export default async function RiskMatrixDetailPage(
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border bg-white">
+        <Card className="rounded-xl border bg-white shadow-none">
           <div className="px-4 py-2.5 border-b text-xs uppercase tracking-wider text-slate-600">
             Severity Scale
           </div>
@@ -167,7 +169,7 @@ export default async function RiskMatrixDetailPage(
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       </div>
     </div>
   );

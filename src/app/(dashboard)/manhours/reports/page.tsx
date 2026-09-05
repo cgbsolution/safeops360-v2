@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth/server";
 import { getAccessiblePlantIds } from "@/lib/dashboard/scope";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, FileText, TrendingUp } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -141,37 +142,37 @@ export default async function ReportsLauncherPage() {
               <Link href="/manhours" className="text-primary-700 hover:underline">/manhours</Link>).
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead className="text-[11px] uppercase tracking-wider text-slate-500 border-b">
-                <tr>
-                  <th className="px-3 py-2 text-left">Submission #</th>
-                  <th className="px-3 py-2 text-left">Plant</th>
-                  <th className="px-3 py-2 text-left">Period</th>
-                  <th className="px-3 py-2 text-right">Status</th>
-                  <th className="px-3 py-2"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
+            <Table className="w-full text-sm">
+              <TableHeader className="text-[11px] uppercase tracking-wider text-slate-500 border-b">
+                <TableRow>
+                  <TableHead className="px-3 py-2 text-left">Submission #</TableHead>
+                  <TableHead className="px-3 py-2 text-left">Plant</TableHead>
+                  <TableHead className="px-3 py-2 text-left">Period</TableHead>
+                  <TableHead className="px-3 py-2 text-right">Status</TableHead>
+                  <TableHead className="px-3 py-2"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y">
                 {lockedSubmissions.map((s) => (
-                  <tr key={s.id} className="hover:bg-slate-50">
-                    <td className="px-3 py-2 font-mono text-xs">{s.submissionNumber ?? "—"}</td>
-                    <td className="px-3 py-2">{s.plant.name}</td>
-                    <td className="px-3 py-2">{MONTHS[s.reportingMonth]} {s.reportingYear}</td>
-                    <td className="px-3 py-2 text-right">
+                  <TableRow key={s.id} className="hover:bg-slate-50">
+                    <TableCell className="px-3 py-2 font-mono text-xs">{s.submissionNumber ?? "—"}</TableCell>
+                    <TableCell className="px-3 py-2">{s.plant.name}</TableCell>
+                    <TableCell className="px-3 py-2">{MONTHS[s.reportingMonth]} {s.reportingYear}</TableCell>
+                    <TableCell className="px-3 py-2 text-right">
                       <Badge className="bg-slate-700 text-white">LOCKED</Badge>
-                    </td>
-                    <td className="px-3 py-2 text-right">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right">
                       <Link
                         className="text-primary-700 hover:underline text-xs"
                         href={`/manhours/reports/monthly/${s.plantId}/${s.reportingYear}/${s.reportingMonth}`}
                       >
                         Open report →
                       </Link>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </CardContent>
       </Card>

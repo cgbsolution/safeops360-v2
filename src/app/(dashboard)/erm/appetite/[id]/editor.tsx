@@ -10,6 +10,13 @@ import {
   type AppetiteDashRow,
 } from "@/app/(dashboard)/erm/lib-p2";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const APPETITE_LEVELS = ["AVERSE", "MINIMAL", "CAUTIOUS", "OPEN", "SEEKING"] as const;
 
@@ -135,7 +142,7 @@ export function AppetiteEditor({
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
       {/* Editor */}
       <div className="space-y-4 lg:col-span-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <span
               className="h-4 w-4 rounded"
@@ -155,26 +162,25 @@ export function AppetiteEditor({
           </div>
 
           {err && (
-            <div className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            <Alert variant="destructive" className="mb-4 rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
               {err}
-            </div>
+            </Alert>
           )}
 
           <div className="space-y-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Statement text</label>
-              <textarea
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Statement text</Label>
+              <Textarea
                 value={statementText}
                 onChange={(e) => setStatementText(e.target.value)}
                 rows={4}
                 disabled={readOnly}
                 className="w-full rounded-lg border border-slate-300 p-2 text-sm disabled:bg-slate-50 disabled:text-slate-500"
-                placeholder="The board accepts a CAUTIOUS appetite for…"
-              />
+                placeholder="The board accepts a CAUTIOUS appetite for…" />
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Appetite level</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Appetite level</Label>
               <div className="flex flex-wrap gap-1.5">
                 {APPETITE_LEVELS.map((lvl) => (
                   <button
@@ -198,15 +204,13 @@ export function AppetiteEditor({
 
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <label className="text-xs font-medium text-slate-600">Tolerance bands</label>
+                <Label className="text-xs font-medium text-slate-600">Tolerance bands</Label>
                 {!readOnly && (
-                  <button
+                  <Button variant="outline"
                     type="button"
-                    onClick={addBand}
-                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-primary-500"
-                  >
+                    onClick={addBand} className="gap-1 rounded-lg px-2 py-1 text-[11px]">
                     <Plus size={12} /> Add band
-                  </button>
+                  </Button>
                 )}
               </div>
               {bands.length === 0 ? (
@@ -219,31 +223,24 @@ export function AppetiteEditor({
                     const observed = observedFor(b.bandType);
                     const state = stateFor(b.bandType);
                     return (
-                      <div
+                      <Card
                         key={i}
-                        className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2.5"
-                      >
-                        <select
+                        className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/50 p-2.5 shadow-none">
+                        <SelectField
                           value={b.bandType}
                           disabled={readOnly}
-                          onChange={(e) => updateBand(i, { bandType: e.target.value })}
+                          onChange={(value) => updateBand(i, { bandType: value })}
                           className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-xs disabled:bg-slate-50"
-                        >
-                          {BAND_TYPES.map((t) => (
-                            <option key={t} value={t}>
-                              {BAND_LABEL[t]}
-                            </option>
-                          ))}
-                        </select>
+                          options={BAND_TYPES.map((t) => ({ value: t, label: `${BAND_LABEL[t]}` }))}
+                        />
                         <div className="flex items-center gap-1">
                           <span className="text-[11px] text-slate-500">≤</span>
-                          <input
+                          <Input
                             type="number"
                             value={b.thresholdValue}
                             disabled={readOnly}
                             onChange={(e) => updateBand(i, { thresholdValue: Number(e.target.value) })}
-                            className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-xs tabular-nums disabled:bg-slate-50"
-                          />
+                            className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-xs tabular-nums disabled:bg-slate-50" />
                         </div>
                         <div className="ml-auto flex items-center gap-2 text-[11px]">
                           <span className="text-slate-400">live observed</span>
@@ -262,16 +259,14 @@ export function AppetiteEditor({
                           )}
                         </div>
                         {!readOnly && (
-                          <button
+                          <Button variant="ghost"
                             type="button"
                             onClick={() => removeBand(i)}
-                            className="text-slate-400 hover:text-rose-600"
-                            title="Remove band"
-                          >
+                            title="Remove band">
                             <Trash2 size={14} />
-                          </button>
+                          </Button>
                         )}
-                      </div>
+                      </Card>
                     );
                   })}
                 </div>
@@ -291,31 +286,26 @@ export function AppetiteEditor({
               </button>
 
               {isDraft && (
-                <button
+                <Button variant="default"
                   onClick={submit}
-                  disabled={busy}
-                  className="rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-                >
+                  disabled={busy} className="rounded-lg px-3 py-1.5 text-sm text-white">
                   Submit for approval
-                </button>
+                </Button>
               )}
 
               {isPending && (
                 <div className="flex flex-wrap items-center gap-2">
-                  <input
+                  <Input
                     value={approvalReference}
                     onChange={(e) => setApprovalReference(e.target.value)}
                     placeholder="Approval reference (board resolution…)"
-                    className="w-64 rounded-lg border border-slate-300 px-2 py-1.5 text-sm"
-                  />
-                  <button
+                    className="w-64 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+                  <Button variant="default"
                     onClick={approve}
-                    disabled={busy}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-                    title="CRO only — others will receive a 403"
-                  >
+                    disabled={busy} className="gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white"
+                    title="CRO only — others will receive a 403">
                     <CheckCircle2 size={15} /> Approve &amp; activate
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -331,12 +321,12 @@ export function AppetiteEditor({
               Approval is restricted to the CRO. The button is shown to all; the backend enforces the role.
             </p>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Version history */}
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h3 className="mb-3 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800">
             <History size={15} /> Version history
           </h3>
@@ -382,7 +372,7 @@ export function AppetiteEditor({
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -36,6 +36,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select-field";
 import { AlertCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const MX = { navy: "#0B1F4D", gold: "#C9A961", ice: "#E8EEF7" };
 
@@ -188,10 +189,10 @@ export function StopTaxonomyFields({
       )}
 
       {loadError && (
-        <div className="sm:col-span-2 flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-          <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-          <span>{loadError}. Reload the page — the taxonomy master may not be seeded yet.</span>
-        </div>
+        <Alert variant="destructive" size="lg" className="sm:col-span-2">
+          <AlertCircle className="mt-0.5" />
+          <AlertDescription>{loadError}. Reload the page — the taxonomy master may not be seeded yet.</AlertDescription>
+        </Alert>
       )}
     </>
   );

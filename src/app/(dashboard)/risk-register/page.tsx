@@ -14,6 +14,8 @@ import { InsightHero } from "@/components/observations/insight-hero";
 import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
 import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
 import { fetchInsights } from "@/lib/insights";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -71,10 +73,10 @@ export default async function CombinedRiskRegisterPage(props: {
           title="Combined Risk Register"
           description="Unified HIRA + EAI register — safety and environmental risks side by side."
         />
-        <div className="rounded-xl border bg-white p-8 text-sm text-slate-600">
+        <Card className="rounded-xl border bg-white p-8 text-sm text-slate-600 shadow-none">
           No plants are accessible. Contact your Plant Head or System Admin to
           ensure you have at least one plant assignment.
-        </div>
+        </Card>
       </div>
     );
   }
@@ -214,32 +216,32 @@ export default async function CombinedRiskRegisterPage(props: {
       </div>
 
       {data.items.length === 0 ? (
-        <div className="rounded-xl border-2 border-dashed border-slate-200 bg-white py-16 text-center">
+        <Card className="rounded-xl border-2 border-dashed border-slate-200 bg-white py-16 text-center shadow-none">
           <ShieldAlert className="mx-auto text-slate-400 mb-3" size={36} />
           <div className="text-slate-700 font-medium">No risk entries</div>
           <div className="text-sm text-slate-500 mt-1">
             No HIRA or EAI entries match the current filter for this plant.
           </div>
-        </div>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-700">
-              <tr>
-                <th className="text-left px-4 py-3">Source</th>
-                <th className="text-left px-4 py-3">Module #</th>
-                <th className="text-left px-4 py-3">Activity</th>
-                <th className="text-left px-4 py-3">Initial</th>
-                <th className="text-left px-4 py-3">Residual</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Last Reviewed</th>
-                <th className="text-left px-4 py-3">Next Due</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-xs uppercase tracking-wider text-slate-700">
+              <TableRow>
+                <TableHead className="text-left px-4 py-3">Source</TableHead>
+                <TableHead className="text-left px-4 py-3">Module #</TableHead>
+                <TableHead className="text-left px-4 py-3">Activity</TableHead>
+                <TableHead className="text-left px-4 py-3">Initial</TableHead>
+                <TableHead className="text-left px-4 py-3">Residual</TableHead>
+                <TableHead className="text-left px-4 py-3">Status</TableHead>
+                <TableHead className="text-left px-4 py-3">Last Reviewed</TableHead>
+                <TableHead className="text-left px-4 py-3">Next Due</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {visibleItems.map((row) => (
-                <tr key={`${row.type}-${row.id}`} className="hover:bg-slate-50">
-                  <td className="px-4 py-2">
+                <TableRow key={`${row.type}-${row.id}`} className="hover:bg-slate-50">
+                  <TableCell className="px-4 py-2">
                     <span
                       className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded font-medium ${
                         row.type === "HIRA"
@@ -249,8 +251,8 @@ export default async function CombinedRiskRegisterPage(props: {
                     >
                       {row.type}
                     </span>
-                  </td>
-                  <td className="px-4 py-2 font-mono text-xs">
+                  </TableCell>
+                  <TableCell className="px-4 py-2 font-mono text-xs">
                     <Link
                       href={
                         row.type === "HIRA"
@@ -261,19 +263,19 @@ export default async function CombinedRiskRegisterPage(props: {
                     >
                       {row.moduleNumber}#{row.sequenceNumber}
                     </Link>
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
                     <div className="line-clamp-2 text-slate-700">
                       {row.activityDescription}
                     </div>
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
                     <Chip
                       level={row.initialRiskOrImpactLevel}
                       score={row.initialRiskOrImpactScore}
                     />
-                  </td>
-                  <td className="px-4 py-2">
+                  </TableCell>
+                  <TableCell className="px-4 py-2">
                     {row.residualRiskOrImpactLevel ? (
                       <Chip
                         level={row.residualRiskOrImpactLevel}
@@ -282,8 +284,8 @@ export default async function CombinedRiskRegisterPage(props: {
                     ) : (
                       <span className="text-xs text-slate-400">pending</span>
                     )}
-                  </td>
-                  <td className="px-4 py-2 text-xs text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-slate-700">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span>{row.status.replace(/_/g, " ")}</span>
                       {insights.signalByRecord.get(row.id) && (
@@ -293,22 +295,22 @@ export default async function CombinedRiskRegisterPage(props: {
                         />
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-2 text-xs text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-slate-700">
                     {row.lastReviewedAt
                       ? new Date(row.lastReviewedAt).toLocaleDateString()
                       : "—"}
-                  </td>
-                  <td className="px-4 py-2 text-xs text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-2 text-xs text-slate-700">
                     {row.nextReviewDue
                       ? new Date(row.nextReviewDue).toLocaleDateString()
                       : "—"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

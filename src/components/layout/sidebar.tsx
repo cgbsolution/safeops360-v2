@@ -52,6 +52,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { usePermissions } from "@/components/auth/can";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 type NavItem = {
   href: string;
@@ -353,13 +355,11 @@ export function Sidebar({
               </div>
             </div>
           </Link>
-          <button
-            onClick={onMobileClose}
-            className="lg:hidden text-primary-300 hover:text-white"
-            aria-label="Close menu"
-          >
+          <Button variant="ghost"
+            onClick={onMobileClose} className="lg:hidden"
+            aria-label="Close menu">
             <X size={20} />
-          </button>
+          </Button>
         </div>
 
         {/* ─── Nav body ─── */}
@@ -387,7 +387,7 @@ export function Sidebar({
             return (
               <div key={section.key} className={section.label ? "mt-3 first:mt-0" : ""}>
                 {section.label && (
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => toggleSection(section.key)}
                     className={cn(
@@ -397,11 +397,10 @@ export function Sidebar({
                       // Hide section labels on collapsed desktop — show only a thin divider
                       collapsedDesktop && "lg:hidden",
                     )}
-                    title={collapsedDesktop ? section.label : undefined}
-                  >
+                    title={collapsedDesktop ? section.label : undefined}>
                     {isSectionCollapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />}
                     <span>{section.label}</span>
-                  </button>
+                  </Button>
                 )}
                 {/* Collapsed-desktop divider in place of the label */}
                 {section.label && collapsedDesktop && (
@@ -444,9 +443,9 @@ export function Sidebar({
 
                         {/* Phase 2 chip */}
                         {item.phase2 && !collapsedDesktop && (
-                          <span className="bg-amber-400/20 text-amber-200 text-[9px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5">
+                          <Badge variant="warning" className="bg-amber-400/20 text-amber-200 text-[9px] font-semibold uppercase tracking-wider rounded-full px-1.5 py-0.5">
                             Phase 2
-                          </span>
+                          </Badge>
                         )}
 
                         {/* Inbox badge — full count expanded, dot collapsed */}

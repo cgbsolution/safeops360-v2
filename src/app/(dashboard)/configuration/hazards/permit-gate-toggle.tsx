@@ -7,6 +7,9 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ShieldAlert, Check } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 // Mirrors PermitType in the backend enum.
 const PERMIT_TYPES = [
@@ -74,18 +77,17 @@ export function PermitGateToggle({
   }
 
   return (
-    <div className="mt-3 rounded border border-slate-200 bg-slate-50 px-2.5 py-2">
-      <label className="flex items-center gap-2 text-xs text-slate-700">
-        <input
-          type="checkbox"
+    <Card className="mt-3 rounded border border-slate-200 bg-slate-50 px-2.5 py-2 shadow-none">
+      <Label className="flex items-center gap-2 text-xs text-slate-700">
+        <Checkbox
+         
           checked={required}
           disabled={pending}
-          onChange={(e) => toggleRequired(e.target.checked)}
-        />
+          onChange={(e) => toggleRequired(e.target.checked)} />
         <ShieldAlert size={13} className={required ? "text-amber-600" : "text-slate-400"} />
         Requires a work permit
         {saved && !pending && <Check size={13} className="text-emerald-600" />}
-      </label>
+      </Label>
 
       {required && (
         <div className="mt-2">
@@ -113,6 +115,6 @@ export function PermitGateToggle({
       )}
 
       {error && <div className="mt-1.5 text-[11px] text-rose-700">{error}</div>}
-    </div>
+    </Card>
   );
 }

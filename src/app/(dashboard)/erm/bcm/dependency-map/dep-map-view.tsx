@@ -18,6 +18,8 @@ import {
 import "@xyflow/react/dist/style.css";
 import { AlertTriangle } from "lucide-react";
 import type { DependencyMap } from "@/app/(dashboard)/erm/lib-p3";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 const CRIT_HEX: Record<string, string> = {
   VITAL: "#C0392B",
@@ -43,24 +45,23 @@ type DepNode = Node<DepData, "dep">;
 function ProcessNode({ data }: NodeProps<ProcNode>) {
   const hex = CRIT_HEX[data.criticality ?? ""] ?? "#475569";
   return (
-    <div className="rounded-lg border-2 bg-white px-3 py-2 shadow-sm" style={{ borderColor: hex }}>
+    <Card className="rounded-lg border-2 bg-white px-3 py-2 shadow-sm" style={{ borderColor: hex }}>
       <Handle type="source" position={Position.Right} style={{ opacity: 0 }} />
       <div className="max-w-[200px] text-[11px] font-semibold leading-tight text-slate-800">{data.label}</div>
       <div className="mt-0.5 flex items-center gap-1.5">
         <span className="rounded px-1 py-0.5 text-[9px] font-bold uppercase text-white" style={{ backgroundColor: hex }}>{data.criticality ?? "—"}</span>
         {data.fanCount > 0 && <span className="text-[9px] text-slate-400">{data.fanCount} deps</span>}
       </div>
-    </div>
+    </Card>
   );
 }
 
 function DepNodeView({ data }: NodeProps<DepNode>) {
   const spof = data.isSpof;
   return (
-    <div
+    <Card
       className="rounded-lg border-2 px-3 py-2 shadow-sm"
-      style={{ borderColor: spof ? "#C0392B" : "#cbd5e1", backgroundColor: spof ? "#fef2f2" : "#f8fafc" }}
-    >
+      style={{ borderColor: spof ? "#C0392B" : "#cbd5e1", backgroundColor: spof ? "#fef2f2" : "#f8fafc" }}>
       <Handle type="target" position={Position.Left} style={{ opacity: 0 }} />
       <div className="flex items-center gap-1 text-[11px] font-semibold leading-tight text-slate-800">
         {spof && <AlertTriangle size={11} className="text-rose-600" />}
@@ -71,7 +72,7 @@ function DepNodeView({ data }: NodeProps<DepNode>) {
         {data.fanIn > 1 && <span className="rounded bg-amber-100 px-1 py-0.5 text-[9px] font-semibold text-amber-700">shared ×{data.fanIn}</span>}
         {spof && <span className="text-[9px] font-semibold uppercase text-rose-600">SPOF</span>}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -144,20 +145,19 @@ function Inner({ map }: { map: DependencyMap }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-xs">
+      <Card className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-xs shadow-none">
         <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border-2" style={{ borderColor: CRIT_HEX.VITAL }} /> Vital</div>
         <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border-2" style={{ borderColor: CRIT_HEX.ESSENTIAL }} /> Essential</div>
         <div className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border-2 bg-rose-50" style={{ borderColor: "#C0392B" }} /> Unmitigated SPOF</div>
         <div className="flex items-center gap-1.5"><span className="rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">shared ×n</span> Shared dependency</div>
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setSpofOnly((v) => !v)}
-          className={"ml-auto inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-medium transition-colors " + (spofOnly ? "border-rose-600 bg-rose-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400")}
-        >
+          className={"ml-auto inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-medium transition-colors " + (spofOnly ? "border-rose-600 bg-rose-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-400")}>
           <AlertTriangle size={13} /> {spofOnly ? "Showing SPOFs only" : `Show SPOFs only (${spofCount})`}
-        </button>
-      </div>
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50" style={{ height: "72vh" }}>
+        </Button>
+      </Card>
+      <Card className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-none" style={{ height: "72vh" }}>
         <ReactFlow
           nodes={nodes}
           edges={edges}
@@ -172,7 +172,7 @@ function Inner({ map }: { map: DependencyMap }) {
           <Background color="#cbd5e1" gap={20} />
           <Controls showInteractive={false} />
         </ReactFlow>
-      </div>
+      </Card>
     </div>
   );
 }

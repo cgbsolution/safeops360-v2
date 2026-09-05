@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { AccessRestricted } from "@/components/access-restricted";
 import { requirePermission } from "@/lib/auth/server";
 import { EaiReviewForm } from "./review-form";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -78,7 +79,7 @@ export default async function EaiReviewCyclePage(
         </div>
 
         <div className="lg:col-span-1 space-y-4">
-          <Card title="Review Context">
+          <TitledPanel title="Review Context">
             <DefList
               items={[
                 ["Trigger", cycle.triggeredBy.replace(/_/g, " ")],
@@ -88,21 +89,25 @@ export default async function EaiReviewCyclePage(
                 ["Study", cycle.studyNumber ?? "—"],
               ]}
             />
-          </Card>
+          </TitledPanel>
         </div>
       </div>
     </div>
   );
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+/** A titled panel. Named TitledPanel, not Card, so it no longer shadows the
+ *  shared <TitledPanel> this file now builds on. */
+function TitledPanel({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <div className="rounded-xl border bg-white">
-      <div className="px-4 py-2.5 border-b text-xs uppercase tracking-wider text-slate-600">
-        {title}
-      </div>
-      <div className="p-4">{children}</div>
-    </div>
+    <Card className="shadow-none">
+      <CardHeader className="border-b p-0 px-4 py-2.5">
+        <CardTitle className="text-xs font-normal uppercase tracking-wider text-slate-600">
+          {title}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-4">{children}</CardContent>
+    </Card>
   );
 }
 

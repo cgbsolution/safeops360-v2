@@ -5,6 +5,12 @@ import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
 import { Plus, Trash2, AlertTriangle, CheckCircle2, Lock } from "lucide-react";
 import type { EaiEntryOut, MatrixLevel, AspectItem, CategoryItem, ReceptorItem } from "./types";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Props = {
   entry: EaiEntryOut;
@@ -490,85 +496,74 @@ export function EntryEditor({
     <div className="space-y-5">
       {/* Locked study banner */}
       {!isEditable && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <Alert variant="warning" className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <Lock size={16} className="mt-0.5 shrink-0 text-amber-600" />
           <span>
             <strong>Study is locked.</strong> Edits will create a new version and require a change reason.
           </span>
-        </div>
+        </Alert>
       )}
 
       {/* ── Section 1: Activity ── */}
       <EditorSection title="Activity">
         <Field label="Activity description" required>
-          <textarea
+          <Textarea
             value={activityDescription}
             onChange={(e) => { setActivityDescription(e.target.value); markDirty(); }}
             rows={3}
             placeholder="Describe the activity and associated environmental aspect…"
-            className="form-input"
-          />
+            className="form-input" />
         </Field>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Field label="Occurrence" required>
-            <select
+            <SelectField
               value={occurrence}
-              onChange={(e) => { setOccurrence(e.target.value); markDirty(); }}
+              onChange={(value) => { setOccurrence(value); markDirty(); }}
               className="form-input"
-            >
-              {OCCURRENCE.map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
-            </select>
+              options={OCCURRENCE.map((o) => ({ value: o, label: o }))}
+            />
           </Field>
           <Field label="Frequency" required>
-            <select
+            <SelectField
               value={frequency}
-              onChange={(e) => { setFrequency(e.target.value); markDirty(); }}
+              onChange={(value) => { setFrequency(value); markDirty(); }}
               className="form-input"
-            >
-              {FREQUENCY.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
+              options={FREQUENCY.map((f) => ({ value: f, label: f }))}
+            />
           </Field>
           <Field label="Typical duration (min)">
-            <input
+            <Input
               type="number"
               min={0}
               value={typicalDurationMin}
               onChange={(e) => { setTypicalDurationMin(e.target.value); markDirty(); }}
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
         <Field label="Sub-location">
-          <input
+          <Input
             type="text"
             value={subLocation}
             onChange={(e) => { setSubLocation(e.target.value); markDirty(); }}
             placeholder="e.g., Kiln line 2 stack"
-            className="form-input"
-          />
+            className="form-input" />
         </Field>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Equipment used (comma-separated)">
-            <input
+            <Input
               type="text"
               value={equipmentUsed}
               onChange={(e) => { setEquipmentUsed(e.target.value); markDirty(); }}
               placeholder="Rotary kiln, Bag filter"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
           <Field label="Materials used (comma-separated)">
-            <input
+            <Input
               type="text"
               value={materialsUsed}
               onChange={(e) => { setMaterialsUsed(e.target.value); markDirty(); }}
               placeholder="Coal, Limestone"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
       </EditorSection>
@@ -582,27 +577,24 @@ export function EntryEditor({
             {aspectRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="flex gap-2 items-start">
-                  <select
+                  <SelectField
                     value={row.aspectId}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       setAspectRows((rows) =>
-                        rows.map((r, idx) => (idx === i ? { ...r, aspectId: e.target.value } : r))
+                        rows.map((r, idx) => (idx === i ? { ...r, aspectId: value } : r))
                       );
                       markDirty();
                     }}
                     className="form-input flex-1"
-                  >
-                    <option value="">Select aspect…</option>
-                    {aspectsByCategory.map((g) => (
-                      <optgroup key={g.label} label={g.label}>
-                        {g.items.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}{a.typicallySignificant ? " ⚠" : ""}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                    placeholder="Select aspect…"
+                    groups={aspectsByCategory.map((g) => ({
+                      label: g.label,
+                      options: g.items.map((a) => ({
+                        value: a.id,
+                        label: `${a.name}${a.typicallySignificant ? " ⚠" : ""}`
+                      }))
+                    }))}
+                  />
                   <RemoveBtn
                     onClick={() => {
                       setAspectRows((rows) => rows.filter((_, idx) => idx !== i));
@@ -611,7 +603,7 @@ export function EntryEditor({
                     label="Remove aspect"
                   />
                 </div>
-                <input
+                <Input
                   type="text"
                   value={row.contextualDescription}
                   onChange={(e) => {
@@ -623,8 +615,7 @@ export function EntryEditor({
                     markDirty();
                   }}
                   placeholder="Context for this activity (optional)"
-                  className="form-input text-sm"
-                />
+                  className="form-input text-sm" />
               </li>
             ))}
           </ul>
@@ -640,7 +631,7 @@ export function EntryEditor({
             {impactRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="flex gap-2 items-start">
-                  <input
+                  <Input
                     type="text"
                     value={row.description}
                     onChange={(e) => {
@@ -650,8 +641,7 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Impact description"
-                    className="form-input flex-1"
-                  />
+                    className="form-input flex-1" />
                   <RemoveBtn
                     onClick={() => {
                       setImpactRows((rows) => rows.filter((_, idx) => idx !== i));
@@ -732,21 +722,18 @@ export function EntryEditor({
             {controlRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="flex gap-2 items-start">
-                  <select
+                  <SelectField
                     value={row.hierarchy}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       setControlRows((rows) =>
-                        rows.map((r, idx) => (idx === i ? { ...r, hierarchy: e.target.value } : r))
+                        rows.map((r, idx) => (idx === i ? { ...r, hierarchy: value } : r))
                       );
                       markDirty();
                     }}
                     className="form-input w-44"
-                  >
-                    {HIERARCHY.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  <input
+                    options={HIERARCHY.map((h) => ({ value: h, label: h }))}
+                  />
+                  <Input
                     type="text"
                     value={row.description}
                     onChange={(e) => {
@@ -756,22 +743,18 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Control description"
-                    className="form-input flex-1"
-                  />
-                  <select
+                    className="form-input flex-1" />
+                  <SelectField
                     value={row.effectiveness}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       setControlRows((rows) =>
-                        rows.map((r, idx) => (idx === i ? { ...r, effectiveness: e.target.value } : r))
+                        rows.map((r, idx) => (idx === i ? { ...r, effectiveness: value } : r))
                       );
                       markDirty();
                     }}
                     className="form-input w-44"
-                  >
-                    {EFFECTIVENESS.map((x) => (
-                      <option key={x} value={x}>{x.replace(/_/g, " ")}</option>
-                    ))}
-                  </select>
+                    options={EFFECTIVENESS.map((x) => ({ value: x, label: x.replace(/_/g, " ") }))}
+                  />
                   <RemoveBtn
                     onClick={() => {
                       setControlRows((rows) => rows.filter((_, idx) => idx !== i));
@@ -781,7 +764,7 @@ export function EntryEditor({
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={row.monitoringPoint}
                     onChange={(e) => {
@@ -791,9 +774,8 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Monitoring point"
-                    className="form-input text-sm"
-                  />
-                  <input
+                    className="form-input text-sm" />
+                  <Input
                     type="text"
                     value={row.monitoringParameter}
                     onChange={(e) => {
@@ -803,9 +785,8 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Monitoring parameter"
-                    className="form-input text-sm"
-                  />
-                  <input
+                    className="form-input text-sm" />
+                  <Input
                     type="text"
                     value={row.monitoringFrequency}
                     onChange={(e) => {
@@ -815,8 +796,7 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Monitoring frequency"
-                    className="form-input text-sm"
-                  />
+                    className="form-input text-sm" />
                 </div>
               </li>
             ))}
@@ -833,7 +813,7 @@ export function EntryEditor({
             {obligationRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                  <input
+                  <Input
                     type="text"
                     value={row.regulationCode}
                     onChange={(e) => {
@@ -843,9 +823,8 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Regulation code *"
-                    className="form-input text-sm font-mono"
-                  />
-                  <input
+                    className="form-input text-sm font-mono" />
+                  <Input
                     type="text"
                     value={row.parameter}
                     onChange={(e) => {
@@ -855,9 +834,8 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Parameter *"
-                    className="form-input text-sm"
-                  />
-                  <input
+                    className="form-input text-sm" />
+                  <Input
                     type="text"
                     value={row.permittedLimit}
                     onChange={(e) => {
@@ -867,10 +845,9 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Permitted limit"
-                    className="form-input text-sm"
-                  />
+                    className="form-input text-sm" />
                   <div className="flex gap-1">
-                    <input
+                    <Input
                       type="text"
                       value={row.monitoringFrequency}
                       onChange={(e) => {
@@ -880,8 +857,7 @@ export function EntryEditor({
                         markDirty();
                       }}
                       placeholder="Monitoring freq"
-                      className="form-input text-sm flex-1"
-                    />
+                      className="form-input text-sm flex-1" />
                     <RemoveBtn
                       onClick={() => {
                         setObligationRows((rows) => rows.filter((_, idx) => idx !== i));
@@ -892,7 +868,7 @@ export function EntryEditor({
                   </div>
                 </div>
                 <div>
-                  <input
+                  <Input
                     type="date"
                     value={row.nextMonitoringDue}
                     onChange={(e) => {
@@ -901,8 +877,7 @@ export function EntryEditor({
                       );
                       markDirty();
                     }}
-                    className="form-input text-sm w-48"
-                  />
+                    className="form-input text-sm w-48" />
                   <span className="text-xs text-slate-400 ml-2">Next monitoring due (optional)</span>
                 </div>
               </li>
@@ -920,21 +895,18 @@ export function EntryEditor({
             {recControlRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="flex gap-2 items-start">
-                  <select
+                  <SelectField
                     value={row.hierarchy}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       setRecControlRows((rows) =>
-                        rows.map((r, idx) => (idx === i ? { ...r, hierarchy: e.target.value } : r))
+                        rows.map((r, idx) => (idx === i ? { ...r, hierarchy: value } : r))
                       );
                       markDirty();
                     }}
                     className="form-input w-44"
-                  >
-                    {HIERARCHY.map((h) => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  <input
+                    options={HIERARCHY.map((h) => ({ value: h, label: h }))}
+                  />
+                  <Input
                     type="text"
                     value={row.description}
                     onChange={(e) => {
@@ -944,23 +916,19 @@ export function EntryEditor({
                       markDirty();
                     }}
                     placeholder="Recommended control description"
-                    className="form-input flex-1"
-                  />
-                  <select
+                    className="form-input flex-1" />
+                  <SelectField
                     value={row.estimatedCostBand}
-                    onChange={(e) => {
+                    onChange={(value) => {
                       setRecControlRows((rows) =>
-                        rows.map((r, idx) => (idx === i ? { ...r, estimatedCostBand: e.target.value } : r))
+                        rows.map((r, idx) => (idx === i ? { ...r, estimatedCostBand: value } : r))
                       );
                       markDirty();
                     }}
                     className="form-input w-36"
-                  >
-                    <option value="">Cost band…</option>
-                    {COST_BAND.map((b) => (
-                      <option key={b} value={b}>{b}</option>
-                    ))}
-                  </select>
+                    placeholder="Cost band…"
+                    options={COST_BAND.map((b) => ({ value: b, label: b }))}
+                  />
                   <RemoveBtn
                     onClick={() => {
                       setRecControlRows((rows) => rows.filter((_, idx) => idx !== i));
@@ -969,7 +937,7 @@ export function EntryEditor({
                     label="Remove recommended control"
                   />
                 </div>
-                <textarea
+                <Textarea
                   value={row.rationale}
                   onChange={(e) => {
                     setRecControlRows((rows) =>
@@ -979,13 +947,12 @@ export function EntryEditor({
                   }}
                   rows={2}
                   placeholder="Rationale for this recommendation (optional)"
-                  className="form-input text-sm"
-                />
+                  className="form-input text-sm" />
                 <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
                   <div>
-                    <label className="mb-0.5 block text-[10px] uppercase text-slate-500">
+                    <Label className="mb-0.5 block text-[10px] uppercase text-slate-500">
                       Responsible person
-                    </label>
+                    </Label>
                     <UserPicker
                       value={row.responsibleUserId || null}
                       onChange={(userId) => {
@@ -1001,10 +968,10 @@ export function EntryEditor({
                     />
                   </div>
                   <div>
-                    <label className="mb-0.5 block text-[10px] uppercase text-slate-500">
+                    <Label className="mb-0.5 block text-[10px] uppercase text-slate-500">
                       Target implementation date
-                    </label>
-                    <input
+                    </Label>
+                    <Input
                       type="date"
                       value={row.proposedImplementationDate}
                       onChange={(e) => {
@@ -1015,8 +982,7 @@ export function EntryEditor({
                         );
                         markDirty();
                       }}
-                      className="form-input"
-                    />
+                      className="form-input" />
                   </div>
                 </div>
               </li>
@@ -1029,37 +995,27 @@ export function EntryEditor({
       <EditorSection title="Residual Assessment">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Residual likelihood">
-            <select
+            <SelectField
               value={residualLikelihoodId}
-              onChange={(e) => { setResidualLikelihoodId(e.target.value); markDirty(); }}
+              onChange={(value) => { setResidualLikelihoodId(value); markDirty(); }}
               className="form-input"
-            >
-              <option value="">Select likelihood…</option>
-              {likelihoods.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.score} — {l.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Select likelihood…"
+              options={likelihoods.map((l) => ({ value: l.id, label: `${l.score} — ${l.label}` }))}
+            />
           </Field>
           <Field label="Residual magnitude">
-            <select
+            <SelectField
               value={residualMagnitudeId}
-              onChange={(e) => { setResidualMagnitudeId(e.target.value); markDirty(); }}
+              onChange={(value) => { setResidualMagnitudeId(value); markDirty(); }}
               className="form-input"
-            >
-              <option value="">Select magnitude…</option>
-              {magnitudes.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.score} — {m.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Select magnitude…"
+              options={magnitudes.map((m) => ({ value: m.id, label: `${m.score} — ${m.label}` }))}
+            />
           </Field>
         </div>
 
         {/* Live residual preview */}
-        <div className="rounded-lg border bg-slate-50 p-3 flex items-center gap-3 text-sm">
+        <Card className="rounded-lg border bg-slate-50 p-3 flex items-center gap-3 text-sm shadow-none">
           <span className="text-slate-600">Residual impact:</span>
           {residualPreview ? (
             <>
@@ -1080,10 +1036,10 @@ export function EntryEditor({
               Select likelihood and magnitude to preview residual score.
             </span>
           )}
-        </div>
+        </Card>
 
         {/* Also show initial assessment for comparison */}
-        <div className="rounded-lg border bg-slate-50 p-3 flex items-center gap-3 text-sm">
+        <Card className="rounded-lg border bg-slate-50 p-3 flex items-center gap-3 text-sm shadow-none">
           <span className="text-slate-600">Initial impact (read-only):</span>
           <span
             className={`inline-block px-2 py-0.5 text-xs rounded border ${
@@ -1095,52 +1051,46 @@ export function EntryEditor({
           <span className="text-xs text-slate-400">
             ({entry.initialLikelihoodScore} × {entry.initialMagnitudeScore})
           </span>
-        </div>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Likelihood rationale">
-            <textarea
+            <Textarea
               value={residualLikelihoodRationale}
               onChange={(e) => { setResidualLikelihoodRationale(e.target.value); markDirty(); }}
               rows={2}
               className="form-input"
-              placeholder="Basis for residual likelihood score"
-            />
+              placeholder="Basis for residual likelihood score" />
           </Field>
           <Field label="Magnitude rationale">
-            <textarea
+            <Textarea
               value={residualMagnitudeRationale}
               onChange={(e) => { setResidualMagnitudeRationale(e.target.value); markDirty(); }}
               rows={2}
               className="form-input"
-              placeholder="Basis for residual magnitude score"
-            />
+              placeholder="Basis for residual magnitude score" />
           </Field>
         </div>
         <Field label="Acceptance rationale">
-          <textarea
+          <Textarea
             value={residualAcceptanceRationale}
             onChange={(e) => { setResidualAcceptanceRationale(e.target.value); markDirty(); }}
             rows={2}
             className="form-input"
-            placeholder="Why is the residual risk level acceptable?"
-          />
+            placeholder="Why is the residual risk level acceptable?" />
         </Field>
       </EditorSection>
 
       {/* ── Section 8: Legal Compliance ── */}
       <EditorSection title="Legal Compliance">
         <Field label="Overall compliance status">
-          <select
+          <SelectField
             value={legalComplianceStatus}
-            onChange={(e) => { setLegalComplianceStatus(e.target.value); markDirty(); }}
+            onChange={(value) => { setLegalComplianceStatus(value); markDirty(); }}
             className="form-input max-w-xs"
-          >
-            <option value="">Not assessed</option>
-            {COMPLIANCE_STATUS.map((s) => (
-              <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
-            ))}
-          </select>
+            placeholder="Not assessed"
+            options={COMPLIANCE_STATUS.map((s) => ({ value: s, label: s.replace(/_/g, " ") }))}
+          />
         </Field>
       </EditorSection>
 
@@ -1152,43 +1102,43 @@ export function EntryEditor({
             Please provide a reason for this edit.
           </p>
           <Field label="Change reason" required>
-            <textarea
+            <Textarea
               value={changeReason}
               onChange={(e) => { setChangeReason(e.target.value); markDirty(); }}
               rows={2}
               placeholder="e.g., Corrected monitoring frequency after regulatory audit finding"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
           <Field label="Change trigger">
-            <select
+            <SelectField
               value={changeTrigger}
-              onChange={(e) => { setChangeTrigger(e.target.value); markDirty(); }}
+              onChange={(value) => { setChangeTrigger(value); markDirty(); }}
               className="form-input max-w-xs"
-            >
-              <option value="MANUAL_EDIT">Manual edit</option>
-              <option value="INCIDENT">Incident</option>
-              <option value="AUDIT_FINDING">Audit finding</option>
-              <option value="REGULATORY_UPDATE">Regulatory update</option>
-              <option value="MANAGEMENT_REVIEW">Management review</option>
-              <option value="OPERATIONAL_CHANGE">Operational change</option>
-            </select>
+              options={[
+              { value: "MANUAL_EDIT", label: "Manual edit" },
+              { value: "INCIDENT", label: "Incident" },
+              { value: "AUDIT_FINDING", label: "Audit finding" },
+              { value: "REGULATORY_UPDATE", label: "Regulatory update" },
+              { value: "MANAGEMENT_REVIEW", label: "Management review" },
+              { value: "OPERATIONAL_CHANGE", label: "Operational change" }
+            ]}
+            />
           </Field>
         </EditorSection>
       )}
 
       {/* ── Feedback messages ── */}
       {error && (
-        <div className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+        <Alert variant="destructive" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
           <AlertTriangle size={16} className="mt-0.5 shrink-0" />
           <span>{error}</span>
-        </div>
+        </Alert>
       )}
       {success && (
-        <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <Alert variant="success" className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
           <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
           <span>{success}</span>
-        </div>
+        </Alert>
       )}
 
       {/* ── Footer buttons ── */}
@@ -1252,9 +1202,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="form-label">
+      <Label className="form-label">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );
@@ -1274,25 +1224,21 @@ function MiniSelect({
   return (
     <div>
       {label && <div className="text-[10px] text-slate-500 mb-0.5">{label}</div>}
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="form-input text-xs w-full">
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>{o.label}</option>
-        ))}
-      </select>
+      <SelectField value={value} onChange={onChange} className="form-input text-xs w-full"
+        options={options.map((o) => ({ value: o.value, label: o.label }))}
+      />
     </div>
   );
 }
 
 function RemoveBtn({ onClick, label }: { onClick: () => void; label: string }) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
-      onClick={onClick}
-      className="p-2 text-slate-400 hover:text-rose-600 shrink-0"
-      aria-label={label}
-    >
+      onClick={onClick} className="p-2 shrink-0"
+      aria-label={label}>
       <Trash2 size={14} />
-    </button>
+    </Button>
   );
 }
 

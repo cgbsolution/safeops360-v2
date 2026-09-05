@@ -1,6 +1,7 @@
 import { backendFetch } from "@/lib/backend/fetch";
 import type { DailyBriefPayload } from "@/lib/daily-brief/types";
 import { DailyBrief } from "./daily-brief";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -30,9 +31,9 @@ export default async function DailyBriefPage(props: {
 
   if (loadError || !payload) {
     return (
-      <div className="rounded-md border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+      <Alert variant="destructive" className="rounded-md border border-red-200 bg-red-50 p-6 text-sm text-red-700">
         {loadError ?? "Could not load the daily brief"}
-      </div>
+      </Alert>
     );
   }
 

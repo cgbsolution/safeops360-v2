@@ -9,6 +9,7 @@ import { FindingActions } from "../finding-actions";
 import { FindingCapaList } from "../finding-capa-list";
 import { RegisterCapaPanel } from "../register-capa-panel";
 import { requirePermission } from "@/lib/auth/server";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -85,10 +86,10 @@ export default async function FindingDetailPage(props: { params: Promise<{ id: s
       />
 
       {overdue && (
-        <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm flex items-center gap-2 mb-4">
+        <Alert variant="destructive" className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm flex items-center gap-2 mb-4">
           <AlertTriangle size={16} className="text-rose-600" />
           This finding is past its due date ({f.dueDate?.toLocaleDateString()}).
-        </div>
+        </Alert>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -111,7 +112,7 @@ export default async function FindingDetailPage(props: { params: Promise<{ id: s
               </div>
             )}
             {f.itemResult && (
-              <div className="mt-4 rounded border border-slate-200 bg-slate-50 p-3 text-xs">
+              <Card className="mt-4 rounded border border-slate-200 bg-slate-50 p-3 text-xs shadow-none">
                 <div className="text-slate-500 mb-1">Source item ({f.itemResult.sequence})</div>
                 <div className="font-medium">{f.itemResult.itemTextSnapshot}</div>
                 {(f.itemResult.valueText || f.itemResult.valueNumeric !== null) && (
@@ -119,7 +120,7 @@ export default async function FindingDetailPage(props: { params: Promise<{ id: s
                     Value: {f.itemResult.valueNumeric ?? f.itemResult.valueText}
                   </div>
                 )}
-              </div>
+              </Card>
             )}
           </CardContent>
         </Card>

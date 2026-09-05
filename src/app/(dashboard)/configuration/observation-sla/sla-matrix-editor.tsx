@@ -16,10 +16,13 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Label } from "@/components/ui/label";
 import { readApiError } from "@/lib/client-errors";
 import { AlertCircle, CheckCircle2, Info, Loader2, Save } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
 
 export type SlaRow = {
   id: string;
@@ -183,24 +186,19 @@ export function SlaMatrixEditor({
       <Card>
         <CardContent className="p-4">
           <Label htmlFor="scope">Scope</Label>
-          <Select
+          <SelectField
             id="scope"
             className="mt-1 max-w-md"
             value={plantId}
-            onChange={(e) => {
-              const v = e.target.value;
+            onChange={(value) => {
+              const v = value;
               router.push(
                 `/configuration/observation-sla${v ? `?plantId=${encodeURIComponent(v)}` : ""}`
               );
             }}
-          >
-            <option value="">Global default (applies to every plant)</option>
-            {plants.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.code}) — plant override
-              </option>
-            ))}
-          </Select>
+            placeholder="Global default (applies to every plant)"
+            options={plants.map((p) => ({ value: String(p.id), label: `${p.name} (${p.code}) — plant override` }))}
+          />
           <p className="mt-2 flex items-start gap-1.5 text-xs text-slate-500">
             <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
             {plantId
@@ -241,36 +239,35 @@ export function SlaMatrixEditor({
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[520px] text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left">
-                    <th className="py-2 pr-4 font-medium text-slate-600">STOP</th>
-                    <th className="py-2 pr-4 font-medium text-slate-600">Category</th>
-                    <th className="py-2 pr-4 font-medium text-slate-600">SLA group</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full min-w-[520px] text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-slate-200 text-left">
+                    <TableHead className="py-2 pr-4 font-medium text-slate-600">STOP</TableHead>
+                    <TableHead className="py-2 pr-4 font-medium text-slate-600">Category</TableHead>
+                    <TableHead className="py-2 pr-4 font-medium text-slate-600">SLA group</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {groups.map((g, i) => (
-                    <tr key={g.id} className="border-b border-slate-100 last:border-0">
-                      <td className="py-2 pr-4 font-mono text-xs text-slate-500">
+                    <TableRow key={g.id} className="border-b border-slate-100 last:border-0">
+                      <TableCell className="py-2 pr-4 font-mono text-xs text-slate-500">
                         {g.stopReferenceCode || "—"}
-                      </td>
-                      <td className="py-2 pr-4">
+                      </TableCell>
+                      <TableCell className="py-2 pr-4">
                         <span className="text-slate-800">{g.categoryLabel}</span>
                         {g.notes && (
                           <span className="block max-w-md text-[11px] text-slate-400">
                             {g.notes}
                           </span>
                         )}
-                      </td>
-                      <td className="py-2 pr-4">
-                        <Select
+                      </TableCell>
+                      <TableCell className="py-2 pr-4">
+                        <SelectField
                           value={g.categoryGroup}
-                          onChange={(e) =>
-                            setGroups((prev) =>
+                          onChange={(value) => setGroups((prev) =>
                               prev.map((r, j) =>
                                 j === i
-                                  ? { ...r, categoryGroup: e.target.value as CategoryGroupRow["categoryGroup"] }
+                                  ? { ...r, categoryGroup: value as CategoryGroupRow["categoryGroup"] }
                                   : r
                               )
                             )
@@ -280,16 +277,17 @@ export function SlaMatrixEditor({
                               ? "border-amber-300 bg-amber-50 text-amber-900"
                               : ""
                           }`}
-                        >
-                          <option value="BEHAVIORAL">Behavioural</option>
-                          <option value="PHYSICAL">Physical</option>
-                          <option value="PENDING_DECISION">Awaiting decision — no SLA</option>
-                        </Select>
-                      </td>
-                    </tr>
+                          options={[
+                          { value: "BEHAVIORAL", label: "Behavioural" },
+                          { value: "PHYSICAL", label: "Physical" },
+                          { value: "PENDING_DECISION", label: "Awaiting decision — no SLA" }
+                        ]}
+                        />
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
 
@@ -329,32 +327,32 @@ export function SlaMatrixEditor({
           </p>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[520px] text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-left">
-                  <th className="py-2 pr-4 font-medium text-slate-600">Severity</th>
+            <Table className="w-full min-w-[520px] text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-200 text-left">
+                  <TableHead className="py-2 pr-4 font-medium text-slate-600">Severity</TableHead>
                   {GROUPS.map((g) => (
-                    <th key={g.code} className="py-2 pr-4 font-medium text-slate-600">
+                    <TableHead key={g.code} className="py-2 pr-4 font-medium text-slate-600">
                       {g.label}
                       <span className="block text-xs font-normal text-slate-400">{g.hint}</span>
-                    </th>
+                    </TableHead>
                   ))}
-                </tr>
-              </thead>
-              <tbody>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {SEVERITIES.map((sev) => (
-                  <tr key={sev} className="border-b border-slate-100 last:border-0">
-                    <td className="py-2 pr-4">
+                  <TableRow key={sev} className="border-b border-slate-100 last:border-0">
+                    <TableCell className="py-2 pr-4">
                       <span
                         className={`inline-block rounded border px-2 py-0.5 text-xs font-medium ${SEVERITY_STYLES[sev]}`}
                       >
                         {sev.charAt(0) + sev.slice(1).toLowerCase()}
                       </span>
-                    </td>
+                    </TableCell>
                     {GROUPS.map((g) => {
                       const k = keyOf(sev, g.code);
                       return (
-                        <td key={g.code} className="py-2 pr-4">
+                        <TableCell key={g.code} className="py-2 pr-4">
                           <div className="flex items-center gap-2">
                             <Input
                               type="number"
@@ -367,27 +365,26 @@ export function SlaMatrixEditor({
                               className={`w-20 ${inheritedKeys.has(k) ? "text-slate-500" : ""}`}
                             />
                             <span className="text-xs text-slate-500">days</span>
-                            <label className="flex items-center gap-1 text-xs text-slate-500">
-                              <input
-                                type="checkbox"
+                            <Label className="flex items-center gap-1 text-xs text-slate-500">
+                              <Checkbox
+                               
                                 checked={active[k] ?? true}
                                 onChange={(e) =>
                                   setActive((prev) => ({ ...prev, [k]: e.target.checked }))
-                                }
-                              />
+                                } />
                               active
-                            </label>
+                            </Label>
                           </div>
                           {inheritedKeys.has(k) && (
                             <span className="text-[11px] text-slate-400">inherited</span>
                           )}
-                        </td>
+                        </TableCell>
                       );
                     })}
-                  </tr>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
 
           <p className="mt-3 flex items-start gap-1.5 text-xs text-slate-500">
@@ -436,16 +433,16 @@ export function SlaMatrixEditor({
       </Card>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
+        <Alert variant="destructive" className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           {error}
-        </div>
+        </Alert>
       )}
       {saved && (
-        <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+        <Alert variant="success" className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           Saved. Applies to observations submitted from now on; existing records are unchanged.
-        </div>
+        </Alert>
       )}
 
       <Button onClick={onSave} disabled={saving}>

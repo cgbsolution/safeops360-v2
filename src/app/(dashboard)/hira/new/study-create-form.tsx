@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
 import { parseApiError } from "@/lib/api-error";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type Plant = {
   id: string;
@@ -170,73 +177,53 @@ export function StudyCreateForm({
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">
+        <Alert variant="destructive" className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">
           {error}
-        </div>
+        </Alert>
       )}
 
       <Section title="1 — Scope">
         <Grid>
           <Field label="Plant" required>
-            <select
+            <SelectField
               className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
               value={plantId}
-              onChange={(e) => {
-                setPlantId(e.target.value);
+              onChange={(value) => {
+                setPlantId(value);
                 setDepartmentId("");
                 setAreaId("");
               }}
-            >
-              {plants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              options={plants.map((p) => ({ value: p.id, label: `${p.name}` }))}
+            />
           </Field>
           <Field label="Scope Type" required>
-            <select
+            <SelectField
               className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
               value={scopeType}
-              onChange={(e) => setScopeType(e.target.value)}
-            >
-              {SCOPE_TYPES.map((s) => (
-                <option key={s.code} value={s.code}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+              onChange={setScopeType}
+              options={SCOPE_TYPES.map((s) => ({ value: s.code, label: `${s.label}` }))}
+            />
           </Field>
           {(scopeType === "DEPARTMENT" || scopeType === "AREA" || scopeType === "ACTIVITY") && (
             <Field label="Department">
-              <select
+              <SelectField
                 className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
                 value={departmentId}
-                onChange={(e) => setDepartmentId(e.target.value)}
-              >
-                <option value="">— Any —</option>
-                {availableDepartments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setDepartmentId}
+                placeholder="— Any —"
+                options={availableDepartments.map((d) => ({ value: d.id, label: `${d.name}` }))}
+              />
             </Field>
           )}
           {(scopeType === "AREA" || scopeType === "ACTIVITY" || scopeType === "EQUIPMENT") && (
             <Field label="Area">
-              <select
+              <SelectField
                 className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
                 value={areaId}
-                onChange={(e) => setAreaId(e.target.value)}
-              >
-                <option value="">— Any —</option>
-                {availableAreas.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setAreaId}
+                placeholder="— Any —"
+                options={availableAreas.map((a) => ({ value: a.id, label: `${a.name}` }))}
+              />
             </Field>
           )}
         </Grid>
@@ -244,39 +231,30 @@ export function StudyCreateForm({
 
       <Section title="2 — Study">
         <Field label="Title" required>
-          <input
+          <Input
             className="form-input"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. HIRA — Cement Mill Operations 2026"
-          />
+            placeholder="e.g. HIRA — Cement Mill Operations 2026" />
         </Field>
         <Field label="Description">
-          <textarea
+          <Textarea
             className="form-input"
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Optional context, drivers for the study, scope notes."
-          />
+            placeholder="Optional context, drivers for the study, scope notes." />
         </Field>
       </Section>
 
       <Section title="3 — Methodology">
         <Field label="Risk Matrix" required>
-          <select
+          <SelectField
             className="form-select"
             value={riskMatrixId}
-            onChange={(e) => setRiskMatrixId(e.target.value)}
-          >
-            {riskMatrices.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} ({m.likelihoodLevels}×{m.severityLevels})
-                {m.isDefault ? " — default" : ""}
-                {m.controlHierarchyEnforced ? " — hierarchy enforced" : ""}
-              </option>
-            ))}
-          </select>
+            onChange={setRiskMatrixId}
+            options={riskMatrices.map((m) => ({ value: m.id, label: `${m.name} (${m.likelihoodLevels}×${m.severityLevels}) ${m.isDefault ? " — default" : ""} ${m.controlHierarchyEnforced ? " — hierarchy enforced" : ""}` }))}
+          />
         </Field>
         <p className="text-xs text-slate-500">
           The matrix is locked once the study is approved. To change methodology mid-study, supersede with a new study.
@@ -285,79 +263,59 @@ export function StudyCreateForm({
 
       <Section title="4 — Team">
         <Field label="Team Leader" required>
-          <select
+          <SelectField
             className="form-select"
             value={teamLeaderId}
-            onChange={(e) => setTeamLeaderId(e.target.value)}
-          >
-            <option value="">— Select team leader —</option>
-            {plantUsers.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name} {u.department ? `(${u.department})` : ""}
-              </option>
-            ))}
-          </select>
+            onChange={setTeamLeaderId}
+            placeholder="— Select team leader —"
+            options={plantUsers.map((u) => ({ value: u.id, label: `${u.name} ${u.department ? `(${u.department})` : ""}` }))}
+          />
         </Field>
 
         <div className="mt-3 space-y-2">
           {team.map((m, i) => (
-            <div key={i} className="grid grid-cols-12 gap-2 items-end p-3 rounded border bg-slate-50">
+            <Card key={i} className="grid grid-cols-12 gap-2 items-end p-3 rounded border bg-slate-50 shadow-none">
               <div className="col-span-5">
-                <label className="text-xs text-slate-500">Member</label>
-                <select
+                <Label className="text-xs text-slate-500">Member</Label>
+                <SelectField
                   className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
                   value={m.userId}
-                  onChange={(e) => updateTeamMember(i, { userId: e.target.value })}
-                >
-                  <option value="">— Select —</option>
-                  {plantUsers.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-4">
-                <label className="text-xs text-slate-500">Role</label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  value={m.teamRole}
-                  onChange={(e) => updateTeamMember(i, { teamRole: e.target.value })}
-                >
-                  {TEAM_ROLES.map((r) => (
-                    <option key={r.code} value={r.code}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <label className="text-xs text-slate-500">Department</label>
-                <input
-                  className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
-                  value={m.department}
-                  onChange={(e) => updateTeamMember(i, { department: e.target.value })}
+                  onChange={(value) => updateTeamMember(i, { userId: value })}
+                  placeholder="— Select —"
+                  options={plantUsers.map((u) => ({ value: u.id, label: `${u.name}` }))}
                 />
               </div>
-              <button
+              <div className="col-span-4">
+                <Label className="text-xs text-slate-500">Role</Label>
+                <SelectField
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
+                  value={m.teamRole}
+                  onChange={(value) => updateTeamMember(i, { teamRole: value })}
+                  options={TEAM_ROLES.map((r) => ({ value: r.code, label: `${r.label}` }))}
+                />
+              </div>
+              <div className="col-span-2">
+                <Label className="text-xs text-slate-500">Department</Label>
+                <Input
+                  className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
+                  value={m.department}
+                  onChange={(e) => updateTeamMember(i, { department: e.target.value })} />
+              </div>
+              <Button variant="destructive"
                 type="button"
-                onClick={() => removeTeamMember(i)}
-                className="col-span-1 inline-flex items-center justify-center h-9 rounded border bg-white text-rose-600 hover:bg-rose-50"
-                aria-label="Remove team member"
-              >
+                onClick={() => removeTeamMember(i)} className="col-span-1 h-9 rounded"
+                aria-label="Remove team member">
                 <Trash2 size={14} />
-              </button>
-            </div>
+              </Button>
+            </Card>
           ))}
         </div>
 
-        <button
+        <Button variant="outline"
           type="button"
-          onClick={addTeamMember}
-          className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm rounded border border-dashed border-slate-300 text-slate-600 hover:border-primary-500 hover:text-primary-700"
-        >
+          onClick={addTeamMember} className="mt-2 gap-1.5 px-3 py-1.5 text-sm rounded border-dashed">
           <Plus size={14} /> Add team member
-        </button>
+        </Button>
 
         <div className="mt-3 text-xs">
           {teamMeetsMinimum ? (
@@ -373,21 +331,16 @@ export function StudyCreateForm({
       <Section title="5 — Review Cycle">
         <Grid>
           <Field label="Review Frequency">
-            <select
+            <SelectField
               className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
               value={reviewFrequency}
-              onChange={(e) => setReviewFrequency(e.target.value)}
-            >
-              {REVIEW_FREQUENCIES.map((r) => (
-                <option key={r.code} value={r.code}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+              onChange={setReviewFrequency}
+              options={REVIEW_FREQUENCIES.map((r) => ({ value: r.code, label: `${r.label}` }))}
+            />
           </Field>
           {reviewFrequency === "CUSTOM" && (
             <Field label="Custom Interval (months)">
-              <input
+              <Input
                 type="number"
                 min={1}
                 max={60}
@@ -395,27 +348,24 @@ export function StudyCreateForm({
                 value={customReviewMonths}
                 onChange={(e) =>
                   setCustomReviewMonths(e.target.value === "" ? "" : parseInt(e.target.value, 10))
-                }
-              />
+                } />
             </Field>
           )}
           <Field label="Target Completion Date">
-            <input
+            <Input
               type="date"
               className="flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600"
               value={targetCompletionDate}
-              onChange={(e) => setTargetCompletionDate(e.target.value)}
-            />
+              onChange={(e) => setTargetCompletionDate(e.target.value)} />
           </Field>
         </Grid>
-        <label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
+        <Label className="mt-3 inline-flex items-center gap-2 text-sm text-slate-700">
+          <Checkbox
+           
             checked={regulatoryReviewRequired}
-            onChange={(e) => setRegulatoryReviewRequired(e.target.checked)}
-          />
+            onChange={(e) => setRegulatoryReviewRequired(e.target.checked)} />
           Requires regulatory review (e.g. MAH installation, statutory submission)
-        </label>
+        </Label>
       </Section>
 
       <div className="flex gap-2">
@@ -465,9 +415,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="form-label">
+      <Label className="form-label">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );

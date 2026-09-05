@@ -4,6 +4,8 @@ import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BAND_CHIP, BAND_HEX, type HeatMapCell } from "@/app/(dashboard)/erm/lib";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function BandBadge({ band, score }: { band: string | null | undefined; score?: number | null }) {
   if (!band) return <span className="text-slate-400 text-xs">—</span>;
@@ -98,7 +100,7 @@ export function HeatMap({
                 const count = c?.count ?? 0;
                 const isActive = activeCell?.likelihood === l && activeCell?.impact === i;
                 return (
-                  <button
+                  <Button variant="ghost"
                     key={`${l}-${i}`}
                     type="button"
                     onClick={() => onCellClick?.(l, i)}
@@ -111,10 +113,9 @@ export function HeatMap({
                       count === 0 && "opacity-40",
                     )}
                     style={{ backgroundColor: BAND_HEX[band] ?? "#94a3b8" }}
-                    disabled={!onCellClick}
-                  >
+                    disabled={!onCellClick}>
                     {count > 0 ? count : ""}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -156,11 +157,11 @@ export function KpiTile({
     warn: "text-amber-600",
   };
   const inner = (
-    <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
+    <Card className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-white p-4 transition-shadow hover:shadow-md">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">{label}</span>
       <span className={cn("text-2xl font-bold tabular-nums", toneCls[tone])}>{value}</span>
       {sub && <span className="text-[11px] text-slate-400">{sub}</span>}
-    </div>
+    </Card>
   );
   return href ? (
     <Link href={href} className="block">

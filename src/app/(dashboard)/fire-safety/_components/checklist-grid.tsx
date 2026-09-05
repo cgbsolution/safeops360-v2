@@ -51,6 +51,8 @@ import {
 } from "../lib";
 import { ExportButtons } from "./export-buttons";
 import { SignOffPanel, SignaturePayload } from "./sign-off-panel";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 type CellKey = `${string}::${string}`; // periodLabel::itemKey
 const key = (period: string, item: string): CellKey => `${period}::${item}`;
@@ -415,18 +417,18 @@ export function ChecklistGridRunner({
       </div>
 
       {/* ── the grid ───────────────────────────────────────────────────── */}
-      <div className="overflow-x-auto rounded-xl border bg-white" style={{ borderColor: MX.iceLine }}>
-        <table className="w-full border-collapse text-[12px]">
-          <thead>
-            <tr style={{ background: MX.ice }}>
-              <th
+      <Card className="overflow-x-auto rounded-xl shadow-none" style={{ borderColor: MX.iceLine }}>
+        <Table className="w-full border-collapse text-[12px]">
+          <TableHeader>
+            <TableRow style={{ background: MX.ice }}>
+              <TableHead
                 className="sticky left-0 z-10 border-b border-r px-2 py-2 text-left text-[10px] font-semibold uppercase tracking-wider"
                 style={{ background: MX.ice, borderColor: MX.iceLine, color: MX.navy, minWidth: 260 }}
               >
                 Checks to be done
-              </th>
+              </TableHead>
               {grid.columns.map((c) => (
-                <th
+                <TableHead
                   key={c.periodLabel}
                   title={c.nonWorkingDay ? `${c.periodLabel} — ${c.nonWorkingDay}` : c.periodLabel}
                   className="border-b border-r px-1 py-2 text-center text-[10px] font-semibold"
@@ -442,29 +444,29 @@ export function ChecklistGridRunner({
                   }}
                 >
                   {c.header}
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {grid.rows.map((row, idx) => {
               const showSection = row.sectionTitle !== lastSection;
               lastSection = row.sectionTitle;
               return (
                 <React.Fragment key={row.questionId}>
                   {showSection && grid.rows.some((r) => r.sectionTitle !== grid.rows[0].sectionTitle) && (
-                    <tr>
-                      <td
+                    <TableRow>
+                      <TableCell
                         colSpan={grid.columns.length + 1}
                         className="border-b px-2 py-1 text-[11px] font-semibold"
                         style={{ background: MX.ice, borderColor: MX.iceLine, color: MX.navy }}
                       >
                         {row.sectionTitle}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   )}
-                  <tr>
-                    <td
+                  <TableRow>
+                    <TableCell
                       className="sticky left-0 z-10 border-b border-r px-2 py-1.5 align-top"
                       style={{ background: MX.paper, borderColor: MX.iceLine, color: MX.ink, minWidth: 260 }}
                     >
@@ -477,7 +479,7 @@ export function ChecklistGridRunner({
                           Note: {row.guidance}
                         </div>
                       )}
-                    </td>
+                    </TableCell>
                     {grid.columns.map((c) => {
                       const v = cellValue(c.periodLabel, row);
                       const k = key(c.periodLabel, row.itemKey ?? row.questionId);
@@ -485,7 +487,7 @@ export function ChecklistGridRunner({
                       const note = cellNote(c.periodLabel, row);
                       const style = v ? ANSWER_STYLE[v as Answer] : null;
                       return (
-                        <td
+                        <TableCell
                           key={c.periodLabel}
                           className="border-b border-r p-0 text-center"
                           style={{ borderColor: MX.iceLine, background: c.nonWorkingDay && !v ? MX.goldSoft : undefined }}
@@ -527,10 +529,10 @@ export function ChecklistGridRunner({
                               />
                             )}
                           </button>
-                        </td>
+                        </TableCell>
                       );
                     })}
-                  </tr>
+                  </TableRow>
                 </React.Fragment>
               );
             })}
@@ -539,18 +541,18 @@ export function ChecklistGridRunner({
                 covers many runs, each with its own sign-off state, so one foot
                 block cannot speak for all of them: this row answers "which days
                 are approved?", and clicking a cell opens that period's block. */}
-            <tr>
-              <td
+            <TableRow>
+              <TableCell
                 className="sticky left-0 z-10 border-r px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider"
                 style={{ background: MX.ice, borderColor: MX.iceLine, color: MX.navy }}
               >
                 Sign-off stage
-              </td>
+              </TableCell>
               {grid.columns.map((c) => {
                 const st = c.stage ? STAGE_STYLE[c.stage] : null;
                 const on = signPeriod === c.periodLabel;
                 return (
-                  <td
+                  <TableCell
                     key={c.periodLabel}
                     className="border-r px-0.5 py-1 text-center"
                     style={{
@@ -582,17 +584,17 @@ export function ChecklistGridRunner({
                         </span>
                       )}
                     </button>
-                  </td>
+                  </TableCell>
                 );
               })}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* ── Remarks — "comments on the back side of this page" ─────────── */}
       {remarkRows.length > 0 && (
-        <div className="mt-3 overflow-hidden rounded-xl border bg-white" style={{ borderColor: MX.iceLine }}>
+        <Card className="mt-3 overflow-hidden rounded-xl shadow-none" style={{ borderColor: MX.iceLine }}>
           <div
             className="px-4 py-2"
             style={{ background: MX.ice, borderBottom: `1px solid ${MX.iceLine}` }}
@@ -648,12 +650,12 @@ export function ChecklistGridRunner({
               );
             })}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* ── the selected period's sign-off block ───────────────────────── */}
       {signPeriod && (
-        <div className="mt-3 rounded-xl border" style={{ borderColor: MX.gold }}>
+        <Card className="mt-3 rounded-xl shadow-none" style={{ borderColor: MX.gold }}>
           <div
             className="flex flex-wrap items-center gap-2 px-4 py-2"
             style={{ background: MX.goldSoft, borderBottom: `1px solid ${MX.gold}` }}
@@ -699,7 +701,7 @@ export function ChecklistGridRunner({
               />
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       <div className="mt-2 flex flex-wrap items-center gap-3 text-[10.5px]" style={{ color: MX.muted }}>

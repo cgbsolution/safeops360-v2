@@ -7,9 +7,11 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { cn } from "@/lib/utils";
 import { ENGAGEMENT_TYPES, STANDARDS, type AuditType, type Template } from "../lib-cams";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 
 type Props = {
   auditTypes: AuditType[];
@@ -107,7 +109,7 @@ function ScheduleModal({ auditTypes, templates, plants, inspectionOnly = false, 
           <h2 className="text-base font-semibold text-slate-900">{inspectionOnly ? "Schedule Inspection" : "Schedule Audit / Inspection"}</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-auto w-auto text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
-        {err && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
+        {err && <Alert variant="destructive" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
 
         <div className="space-y-3">
           <Field label="Title (required)">
@@ -117,25 +119,25 @@ function ScheduleModal({ auditTypes, templates, plants, inspectionOnly = false, 
           {!inspectionOnly && (
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <Field label="Audit type">
-                <Select value={auditTypeId} onChange={(e) => onPickAuditType(e.target.value)}>
-                  <option value="">— none / ad-hoc —</option>
-                  {auditTypes.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </Select>
+                <SelectField value={auditTypeId} onChange={onPickAuditType}
+                  placeholder="— none / ad-hoc —"
+                  options={auditTypes.map((a) => ({ value: a.id, label: a.name }))}
+                />
               </Field>
               <Field label="Engagement type">
-                <Select value={engagementType} onChange={(e) => setEngagementType(e.target.value)}>
-                  {ENGAGEMENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </Select>
+                <SelectField value={engagementType} onChange={setEngagementType}
+                  options={ENGAGEMENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                />
               </Field>
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Site">
-              <Select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-                <option value="">— corporate / unspecified —</option>
-                {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </Select>
+              <SelectField value={siteId} onChange={setSiteId}
+                placeholder="— corporate / unspecified —"
+                options={plants.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </Field>
             <Field label="Planned date (required)">
               <Input type="date" value={plannedDate} onChange={(e) => setPlannedDate(e.target.value)} />
@@ -143,10 +145,10 @@ function ScheduleModal({ auditTypes, templates, plants, inspectionOnly = false, 
           </div>
 
           <Field label="Template (approved)">
-            <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-              <option value="">— select at execution —</option>
-              {applicableTemplates.map((t) => <option key={t.id} value={t.id}>{t.templateCode} · {t.name} (v{t.version})</option>)}
-            </Select>
+            <SelectField value={templateId} onChange={setTemplateId}
+              placeholder="— select at execution —"
+              options={applicableTemplates.map((t) => ({ value: t.id, label: `${t.templateCode} · ${t.name} (v${t.version})` }))}
+            />
           </Field>
 
           <Field label="Standards">
@@ -189,7 +191,7 @@ function ScheduleModal({ auditTypes, templates, plants, inspectionOnly = false, 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       {children}
     </div>
   );

@@ -13,6 +13,7 @@ import {
   type MaturityProfile,
 } from "./lib";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function MaturityView({
   rollup,
@@ -40,7 +41,7 @@ export function MaturityView({
     <div className="space-y-6">
       {/* Enterprise summary strip */}
       <div className="grid gap-4 lg:grid-cols-[auto,1fr]">
-        <div className="flex items-center gap-5 rounded-xl border bg-white p-5">
+        <Card className="flex items-center gap-5 rounded-xl border bg-white p-5 shadow-none">
           <ScoreDial score={rollup.enterpriseScore} label="Enterprise" />
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">Enterprise culture score</p>
@@ -51,10 +52,10 @@ export function MaturityView({
               <StageBadge stage={require_stage(rollup.enterpriseScore)} />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Stage distribution */}
-        <div className="rounded-xl border bg-white p-5">
+        <Card className="rounded-xl border bg-white p-5 shadow-none">
           <div className="mb-3 flex items-center justify-between">
             <p className="text-xs uppercase tracking-wide text-slate-500">Sites by maturity stage</p>
             <StageLegend />
@@ -86,12 +87,12 @@ export function MaturityView({
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Site grid + drill-down */}
       <div className="grid gap-6 lg:grid-cols-[1.4fr,1fr]">
-        <div className="rounded-xl border bg-white p-5">
+        <Card className="rounded-xl border bg-white p-5 shadow-none">
           <p className="mb-3 text-sm font-semibold" style={{ color: PALETTE.navy }}>
             Sites
           </p>
@@ -101,7 +102,7 @@ export function MaturityView({
               <SiteRow key={site.plantId} site={site} active={site.plantId === selectedSite} onClick={() => selectSite(site.plantId)} />
             ))}
           </div>
-        </div>
+        </Card>
 
         <SiteDetailPanel detail={siteDetail} onClose={() => selectSite(null)} />
       </div>
@@ -148,9 +149,9 @@ function SiteDetailPanel({ detail, onClose }: { detail: MaturityProfile | null; 
 
   if (!detail) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
+      <Card className="flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500 shadow-none">
         Select a site to see its five component scores and 12-month trend.
-      </div>
+      </Card>
     );
   }
 
@@ -172,7 +173,7 @@ function SiteDetailPanel({ detail, onClose }: { detail: MaturityProfile | null; 
   const trend = (detail.history ?? []).map((h) => h.stageScore);
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-4 flex items-start justify-between">
         <div className="flex items-center gap-3">
           <ScoreDial score={detail.stageScore} size={96} />
@@ -212,6 +213,6 @@ function SiteDetailPanel({ detail, onClose }: { detail: MaturityProfile | null; 
           Last calculated {new Date(detail.lastCalculatedAt).toLocaleString()}
         </p>
       )}
-    </div>
+    </Card>
   );
 }

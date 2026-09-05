@@ -12,6 +12,11 @@ import { useToast } from "@/components/ui/toast";
 import { usePermission } from "@/components/auth/can";
 import { parseApiError } from "@/lib/api-error";
 import { fmtDate, METHOD_LABEL, type ContributingCause } from "@/app/(dashboard)/erm/rca/lib";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { SelectField } from "@/components/ui/select-field";
 
 export function RcaRiskPanel({ riskId, riskCode, riskTitle }: { riskId: string; riskCode: string; riskTitle: string }) {
   const router = useRouter();
@@ -30,16 +35,16 @@ export function RcaRiskPanel({ riskId, riskCode, riskTitle }: { riskId: string; 
   }, [riskId]);
 
   return (
-    <div className="mt-6 rounded-xl border border-slate-200 bg-white p-5">
+    <Card className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GitBranch size={16} className="text-slate-500" />
           <h3 className="text-sm font-semibold text-slate-800">Contributing Root Causes</h3>
         </div>
         {canCreate && (
-          <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400">
+          <Button variant="outline" onClick={() => setOpen(true)} className="gap-1.5 rounded-lg px-2.5 py-1.5 text-xs">
             <Plus size={14} /> Open RCA on this risk
-          </button>
+          </Button>
         )}
       </div>
 
@@ -50,7 +55,7 @@ export function RcaRiskPanel({ riskId, riskCode, riskTitle }: { riskId: string; 
       ) : (
         <div className="space-y-2">
           {causes.map((c) => (
-            <div key={c.subCauseId} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2">
+            <Card key={c.subCauseId} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50/60 px-3 py-2 shadow-none">
               <div>
                 <span className="text-sm font-medium text-slate-700">{c.subCauseName}</span>
                 <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-600">{c.categoryCode}</span>
@@ -61,14 +66,14 @@ export function RcaRiskPanel({ riskId, riskCode, riskTitle }: { riskId: string; 
                   {c.rcaCodes.slice(0, 4).map((code) => <span key={code} className="rounded bg-white px-1.5 py-0.5 text-[10px] text-slate-500 ring-1 ring-slate-200">{code}</span>)}
                 </span>
               </div>
-            </div>
+            </Card>
           ))}
           <p className="pt-1 text-[11px] text-slate-400">Computed from approved RCA records · <Link href="/erm/rca/analytics" className="underline">enterprise analytics</Link></p>
         </div>
       )}
 
       {open && <OpenRcaModal riskId={riskId} riskCode={riskCode} riskTitle={riskTitle} onClose={() => setOpen(false)} onDone={(id: string) => router.push(`/erm/rca/${id}`)} toast={toast} />}
-    </div>
+    </Card>
   );
 }
 
@@ -97,17 +102,17 @@ function OpenRcaModal({ riskId, riskCode, riskTitle, onClose, onDone, toast }: a
       <div className="w-[480px] max-w-full rounded-xl bg-white shadow-lg">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 className="text-base font-semibold">Open RCA on this risk</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">✕</button>
+          <Button variant="ghost" onClick={onClose}>✕</Button>
         </div>
         <div className="space-y-3 p-4">
-          <div><label className="text-xs font-semibold text-slate-600">Title</label><input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm" /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Methodology</label>
-            <select value={methodology} onChange={(e) => setMethodology(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm">
-              {Object.entries(METHOD_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+          <div><Label className="text-xs font-semibold text-slate-600">Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm" /></div>
+          <div><Label className="text-xs font-semibold text-slate-600">Methodology</Label>
+            <SelectField value={methodology} onChange={setMethodology} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+              options={Object.entries(METHOD_LABEL).map(([v, l]) => ({ value: v, label: String(l) }))}
+            />
           </div>
           <p className="text-xs text-slate-400">No incident required — this opens a risk-derived RCA you tag against the cross-domain cause taxonomy.</p>
-          <button onClick={submit} disabled={busy || !title} className="w-full rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">{busy ? "Opening…" : "Open RCA"}</button>
+          <Button onClick={submit} disabled={busy || !title} className="w-full rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-50">{busy ? "Opening…" : "Open RCA"}</Button>
         </div>
       </div>
     </div>

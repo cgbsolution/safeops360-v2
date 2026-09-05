@@ -6,6 +6,7 @@ import { resolvePlantContext } from "@/lib/plant-context";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { PpeAnalyticsStrip } from "@/components/ppe/analytics-strip";
 import { PpeTabs } from "./ppe-tabs";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -134,7 +135,7 @@ export default async function PpePage(props: { searchParams: Promise<{ plantId?:
     return (
       <div>
         <PageHeader title="PPE Management" description="The authoritative record of personal protective equipment — issued, inspected, certified." />
-        <div className="rounded-xl border bg-white p-8 text-sm text-slate-600">Select a plant to view PPE.</div>
+        <Card className="rounded-xl border bg-white p-8 text-sm text-slate-600 shadow-none">Select a plant to view PPE.</Card>
       </div>
     );
   }

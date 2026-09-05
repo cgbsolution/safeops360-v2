@@ -10,6 +10,8 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type FieldInput = {
   id: string;
@@ -109,7 +111,7 @@ export function RcaFieldInputsPanel({
   return (
     <div className="space-y-6">
       <Can permission="RCA.TAG">
-        <div className="rounded-lg border bg-card p-5">
+        <Card className="p-5 shadow-none">
           {!requesting ? (
             <Button
               type="button"
@@ -144,7 +146,7 @@ export function RcaFieldInputsPanel({
               </div>
             </div>
           )}
-        </div>
+        </Card>
       </Can>
 
       {total === 0 ? (
@@ -154,7 +156,7 @@ export function RcaFieldInputsPanel({
       ) : (
         <div className="space-y-5">
           {groups.map(([fishbone, inputs]) => (
-            <div key={fishbone} className="rounded-lg border bg-card p-5">
+            <Card key={fishbone} className="rounded-lg border bg-card p-5 shadow-none">
               <div className="mb-3 flex items-center gap-2">
                 <span className="h-3 w-3 rounded-full" style={{ background: FISHBONE_COLOR[fishbone] ?? "#5A6273" }} />
                 <h3 className="text-sm font-semibold">{FISHBONE_LABEL[fishbone] ?? fishbone}</h3>
@@ -162,14 +164,14 @@ export function RcaFieldInputsPanel({
               </div>
               <div className="space-y-3">
                 {inputs.map((input) => (
-                  <div key={input.id} className="rounded-md border bg-muted/20 p-3">
+                  <Card key={input.id} className="rounded-md border bg-muted/20 p-3 shadow-none">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {input.causePath.map((n, i) => (
                         <span key={i} className="flex items-center gap-1.5">
                           {i > 0 ? <span className="text-muted-foreground">→</span> : null}
-                          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[#0B1F4D]">
+                          <Badge className="border-transparent bg-white py-1 text-xs text-[#0B1F4D]">
                             {n.label ?? n.code}
-                          </span>
+                          </Badge>
                         </span>
                       ))}
                     </div>
@@ -186,9 +188,9 @@ export function RcaFieldInputsPanel({
                         {input.createdAt ? ` · ${new Date(input.createdAt).toLocaleDateString("en-IN")}` : ""}
                       </span>
                       {input.promotedCauseId ? (
-                        <span className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+                        <Badge variant="success" className="border-transparent py-1 text-xs">
                           <CheckCircle2 className="h-3.5 w-3.5" /> Promoted
-                        </span>
+                        </Badge>
                       ) : (
                         <Can permission="RCA.TAG">
                           <Button
@@ -206,10 +208,10 @@ export function RcaFieldInputsPanel({
                         </Can>
                       )}
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

@@ -18,6 +18,7 @@ import {
   User as UserIcon
 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -138,20 +139,20 @@ export default async function AnomalyDetailPage(props: {
                   No signal data recorded.
                 </div>
               ) : (
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-slate-100">
+                <Table className="w-full text-sm">
+                  <TableBody className="divide-y divide-slate-100">
                     {signalEntries.map(([k, v]) => (
-                      <tr key={k}>
-                        <td className="px-5 py-2 text-slate-500 w-1/3 align-top">
+                      <TableRow key={k}>
+                        <TableCell className="px-5 py-2 text-slate-500 w-1/3 align-top">
                           {k}
-                        </td>
-                        <td className="px-5 py-2 font-mono text-xs text-slate-800 break-all">
+                        </TableCell>
+                        <TableCell className="px-5 py-2 font-mono text-xs text-slate-800 break-all">
                           {typeof v === "object" ? JSON.stringify(v) : String(v)}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>

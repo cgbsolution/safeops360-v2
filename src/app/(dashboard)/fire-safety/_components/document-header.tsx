@@ -8,6 +8,7 @@
 // screen, one of them is misreporting a controlled document.
 
 import { DISPLAY_FONT, DocumentMeta, MX, fmtDate } from "../lib";
+import { Card } from "@/components/ui/card";
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   return (
@@ -34,7 +35,7 @@ export function DocumentHeader({
   right?: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border bg-white" style={{ borderColor: MX.iceLine }}>
+    <Card className="overflow-hidden rounded-xl shadow-none" style={{ borderColor: MX.iceLine }}>
       <div
         className="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5"
         style={{ background: MX.navy }}
@@ -58,7 +59,7 @@ export function DocumentHeader({
         <Field label="Review Date" value={fmtDate(doc.reviewDate)} />
         <Field label="Revision" value={doc.revision} />
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -68,12 +69,12 @@ export function DocumentHeader({
 export function Footnotes({ lines }: { lines?: string[] }) {
   if (!lines?.length) return null;
   return (
-    <div className="mt-3 rounded-lg border px-3 py-2" style={{ borderColor: MX.iceLine, background: MX.ice }}>
+    <Card className="mt-3 rounded-lg px-3 py-2 shadow-none" style={{ borderColor: MX.iceLine, background: MX.ice }}>
       {lines.map((l, i) => (
         <div key={i} className="text-[11px] leading-relaxed" style={{ color: MX.muted }}>
           {l}
         </div>
       ))}
-    </div>
+    </Card>
   );
 }

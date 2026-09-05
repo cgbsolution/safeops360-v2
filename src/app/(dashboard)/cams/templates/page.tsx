@@ -12,6 +12,10 @@ import {
 import type { AuditLibrary } from "../audits/lib";
 import { NewTemplateButton } from "./new-template";
 import { ImportLibraryButton } from "./import-library";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -76,10 +80,10 @@ export default async function TemplateLibraryPage(props: {
       />
 
       {/* Audit checkpoint libraries — source for the ComplianceAudit flow. */}
-      <div className="mb-6 rounded-xl border border-slate-200 bg-white">
+      <Card className="mb-6 rounded-xl border border-slate-200 bg-white shadow-none">
         <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 px-4 py-3">
           <h2 className="text-sm font-semibold text-slate-800">Audit Checkpoint Libraries</h2>
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{libraries.length}</span>
+          <Badge variant="neutral" className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{libraries.length}</Badge>
           <span className="text-xs text-slate-500">— the discipline → checkpoint sets that audits materialize from</span>
           <div className="ml-auto"><Can permission="AUDIT_COMPLIANCE.CREATE"><ImportLibraryButton /></Can></div>
         </div>
@@ -98,15 +102,15 @@ export default async function TemplateLibraryPage(props: {
               >
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-slate-800">{lib.industryName}</span>
-                  <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">{lib.checkpointCount} cp</span>
+                  <Badge variant="brand" className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700">{lib.checkpointCount} cp</Badge>
                 </div>
                 <div className="mt-0.5 font-mono text-[10px] text-slate-400">{lib.industryCode} · v{lib.version}</div>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {lib.categories.slice(0, 6).map((c) => (
-                    <span key={c.category_code} className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-500">
+                    <Badge variant="neutral" key={c.category_code} className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-500">
                       <span className="size-1.5 rounded-full" style={{ backgroundColor: c.category_color || "#94a3b8" }} />
                       {c.category_name} <span className="tabular-nums text-slate-400">{c.checkpointCount}</span>
-                    </span>
+                    </Badge>
                   ))}
                   {lib.categories.length > 6 && <span className="text-[10px] text-slate-400">+{lib.categories.length - 6} more</span>}
                 </div>
@@ -115,10 +119,10 @@ export default async function TemplateLibraryPage(props: {
             ))}
           </div>
         )}
-      </div>
+      </Card>
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           <h2 className="mb-2 text-sm font-semibold text-slate-800">Inspection Templates</h2>
@@ -127,44 +131,44 @@ export default async function TemplateLibraryPage(props: {
             {["DRAFT", "IN_REVIEW", "APPROVED", "RETIRED"].map((s) => statusChip(s, labelize(s)))}
             <span className="ml-auto text-xs text-slate-500">{data.total} template(s)</span>
           </div>
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1000px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Name</th>
-                  <th className="px-3 py-2.5">Applies to</th>
-                  <th className="px-3 py-2.5">Standards</th>
-                  <th className="px-3 py-2.5 text-center">Sections</th>
-                  <th className="px-3 py-2.5 text-center">Questions</th>
-                  <th className="px-3 py-2.5 text-center">Clauses</th>
-                  <th className="px-3 py-2.5">Ver</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1000px] text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Name</TableHead>
+                  <TableHead className="px-3 py-2.5">Applies to</TableHead>
+                  <TableHead className="px-3 py-2.5">Standards</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Sections</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Questions</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Clauses</TableHead>
+                  <TableHead className="px-3 py-2.5">Ver</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr><td colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">No templates match the current filter.</td></tr>
+                  <TableRow><TableCell colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">No templates match the current filter.</TableCell></TableRow>
                 ) : (
                   data.items.map((t) => (
-                    <tr key={t.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5"><Link href={`/cams/templates/${t.id}`} className="font-medium text-primary-700 hover:underline">{t.templateCode}</Link></td>
-                      <td className="max-w-[240px] px-3 py-2.5 text-slate-700">{t.name}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{t.applicableEngagementTypes.map(engagementTypeLabel).join(", ") || "Any"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{t.standardRefs.map((s) => s.replace("_", " ")).join(", ") || "—"}</td>
-                      <td className="px-3 py-2.5 text-center tabular-nums text-slate-600">{t.sectionCount}</td>
-                      <td className="px-3 py-2.5 text-center tabular-nums text-slate-600">{t.questionCount}</td>
-                      <td className="px-3 py-2.5 text-center tabular-nums text-slate-600">{t.clauseCount}</td>
-                      <td className="px-3 py-2.5 tabular-nums text-slate-500">v{t.version}</td>
-                      <td className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (TEMPLATE_STATUS_CHIP[t.status] ?? "")}>{labelize(t.status)}</span></td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{t.ownerName ?? "—"}</td>
-                    </tr>
+                    <TableRow key={t.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5"><Link href={`/cams/templates/${t.id}`} className="font-medium text-primary-700 hover:underline">{t.templateCode}</Link></TableCell>
+                      <TableCell className="max-w-[240px] px-3 py-2.5 text-slate-700">{t.name}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{t.applicableEngagementTypes.map(engagementTypeLabel).join(", ") || "Any"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{t.standardRefs.map((s) => s.replace("_", " ")).join(", ") || "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-center tabular-nums text-slate-600">{t.sectionCount}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-center tabular-nums text-slate-600">{t.questionCount}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-center tabular-nums text-slate-600">{t.clauseCount}</TableCell>
+                      <TableCell className="px-3 py-2.5 tabular-nums text-slate-500">v{t.version}</TableCell>
+                      <TableCell className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (TEMPLATE_STATUS_CHIP[t.status] ?? "")}>{labelize(t.status)}</span></TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{t.ownerName ?? "—"}</TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

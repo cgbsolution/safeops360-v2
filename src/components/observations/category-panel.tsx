@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { humanize } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 
 // Observation category breakdown (Row-Level Insight Layer, Part 4).
 //
@@ -33,7 +34,7 @@ export function ObservationCategoryPanel({
   const hidden = data.length - bars.length;
 
   return (
-    <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4 elevation-1">
+    <Card className="mb-4 rounded-xl border border-slate-200 bg-white p-4 elevation-1 shadow-none">
       <div className="mb-3 flex items-baseline justify-between">
         <span className="text-overline text-slate-500">Open observations by category</span>
         <span className="text-caption text-slate-400">click a bar to filter</span>
@@ -75,6 +76,6 @@ export function ObservationCategoryPanel({
       {hidden > 0 && (
         <div className="mt-2 text-caption text-slate-400">+{hidden} more categor{hidden === 1 ? "y" : "ies"}</div>
       )}
-    </div>
+    </Card>
   );
 }

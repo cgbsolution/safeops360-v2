@@ -12,6 +12,9 @@
 //   • color is augmented with a text label so it is not the only differentiator
 
 import { useState, useEffect, useRef } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 type Likelihood = {
   id: string;
@@ -120,18 +123,18 @@ export function RiskMatrixGrid({
   }
 
   return (
-    <div className="rounded-lg border bg-white overflow-x-auto" role="region" aria-label="Risk matrix">
+    <Card className="rounded-lg border bg-white overflow-x-auto shadow-none" role="region" aria-label="Risk matrix">
       {caption && (
         <div className="px-4 py-2 border-b text-xs uppercase tracking-wider text-slate-600">{caption}</div>
       )}
-      <table ref={tableRef} className="border-collapse w-full">
-        <thead>
-          <tr>
-            <th scope="col" className="p-2 text-[11px] font-medium text-slate-500 text-left">
+      <Table ref={tableRef} className="border-collapse w-full">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col" className="p-2 text-[11px] font-medium text-slate-500 text-left">
               ↓ Likelihood / → Severity
-            </th>
+            </TableHead>
             {severities.map((s) => (
-              <th
+              <TableHead
                 key={s.id}
                 scope="col"
                 className="p-2 text-xs font-medium text-slate-700 text-center min-w-[100px] border-b border-l"
@@ -139,14 +142,14 @@ export function RiskMatrixGrid({
               >
                 <div className="text-[10px] text-slate-500">S{s.score}</div>
                 <div>{s.label}</div>
-              </th>
+              </TableHead>
             ))}
-          </tr>
-        </thead>
-        <tbody>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {likelihoods.map((l) => (
-            <tr key={l.id}>
-              <th
+            <TableRow key={l.id}>
+              <TableHead
                 scope="row"
                 className="p-2 text-xs font-medium text-slate-700 text-right border-r border-b min-w-[150px]"
                 title={l.description}
@@ -156,14 +159,14 @@ export function RiskMatrixGrid({
                 {l.frequencyGuidance && (
                   <div className="text-[10px] font-normal text-slate-500">{l.frequencyGuidance}</div>
                 )}
-              </th>
+              </TableHead>
               {severities.map((s) => {
                 const c = cellByKey.get(`${l.score}|${s.score}`);
                 if (!c) {
                   return (
-                    <td key={s.id} className="border-b border-l p-2 text-center text-slate-300">
+                    <TableCell key={s.id} className="border-b border-l p-2 text-center text-slate-300">
                       —
-                    </td>
+                    </TableCell>
                   );
                 }
                 const isSelected =
@@ -176,8 +179,8 @@ export function RiskMatrixGrid({
                     ? `${c.riskLevel} risk, score ${c.riskScore}. Likelihood ${l.label}, Severity ${s.label}. Action: ${c.actionRequired}.`
                     : `${c.riskLevel} risk band. ${count} entries.`;
                 return (
-                  <td key={s.id} className="border-b border-l p-0">
-                    <button
+                  <TableCell key={s.id} className="border-b border-l p-0">
+                    <Button variant="ghost"
                       type="button"
                       data-cell={`${l.score}|${s.score}`}
                       disabled={disabled}
@@ -199,8 +202,7 @@ export function RiskMatrixGrid({
                         isSelected ? "ring-2 ring-offset-1 ring-slate-900" : ""
                       } ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:brightness-95"}`}
                       style={{ backgroundColor: c.colorHex + "33" }}
-                      title={c.actionRequired}
-                    >
+                      title={c.actionRequired}>
                       {mode === "heatmap" ? (
                         <>
                           <div className="text-base font-bold text-slate-900">{count || ""}</div>
@@ -219,14 +221,14 @@ export function RiskMatrixGrid({
                           </div>
                         </>
                       )}
-                    </button>
-                  </td>
+                    </Button>
+                  </TableCell>
                 );
               })}
-            </tr>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Card>
   );
 }

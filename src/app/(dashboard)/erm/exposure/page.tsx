@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { ExposureView } from "./exposure-view";
 import type { EnterpriseExposure, CorrelatedExposure, FrameworkCoverage } from "../lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function ExposurePage() {
         breadcrumbs={[{ label: "Enterprise Risk", href: "/erm" }, { label: "Exposure & VaR" }]}
       />
       {error || !exposure ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error ?? "No exposure data."}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error ?? "No exposure data."}</Alert>
       ) : (
         <ExposureView exposure={exposure} correlated={correlated} frameworks={frameworks} />
       )}

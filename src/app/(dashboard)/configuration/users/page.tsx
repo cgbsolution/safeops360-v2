@@ -6,6 +6,8 @@ import { Plus } from "lucide-react";
 import { Can } from "@/components/auth/can";
 import { requirePermission } from "@/lib/auth/server";
 import { UsersTable, type UserRow } from "./users-table";
+import { Input } from "@/components/ui/input";
+import { SelectField } from "@/components/ui/select-field";
 
 export const dynamic = "force-dynamic";
 
@@ -103,28 +105,19 @@ export default async function UsersPage(props: {
       </div>
 
       <form className="mb-4 flex flex-wrap gap-2" action="/configuration/users">
-        <input
+        <Input
           name="q"
           defaultValue={sp.q ?? ""}
           placeholder="Search by name or email…"
-          className="w-72 rounded-md border border-slate-200 px-3 py-2 text-sm"
+          className="w-72 rounded-md border border-slate-200 px-3 py-2 text-sm" />
+        <SelectField name="role" defaultValue={sp.role ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm"
+          placeholder="All roles"
+          options={roles.map((r) => ({ value: String(r.code), label: `${r.name}` }))}
         />
-        <select name="role" defaultValue={sp.role ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm">
-          <option value="">All roles</option>
-          {roles.map((r) => (
-            <option key={r.code} value={r.code}>
-              {r.name}
-            </option>
-          ))}
-        </select>
-        <select name="plant" defaultValue={sp.plant ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm">
-          <option value="">All plants</option>
-          {plants.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        <SelectField name="plant" defaultValue={sp.plant ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm"
+          placeholder="All plants"
+          options={plants.map((p) => ({ value: String(p.id), label: `${p.name}` }))}
+        />
         <Button type="submit" variant="ghost">Filter</Button>
       </form>
 

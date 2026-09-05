@@ -11,11 +11,12 @@ import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/toast";
 import { Can } from "@/components/auth/can";
 import { SEVERITY_THRESHOLDS, type RuleConfigEffective } from "@/lib/training-engine";
+import { Card } from "@/components/ui/card";
 
 type NumField = {
   key:
@@ -116,13 +117,13 @@ export function RulesForm({
 
   return (
     <div className="max-w-2xl space-y-5">
-      <div className="rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 text-sm text-primary-900">
+      <Card className="rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 text-sm text-primary-900 shadow-none">
         {plantId
           ? "Editing the plant-specific override. These values take precedence over the global default for this plant."
           : "No plant scope resolved — editing the global default used wherever a plant has no override."}
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {NUM_FIELDS.map((f) => (
             <div key={f.key} className="space-y-1">
@@ -138,16 +139,11 @@ export function RulesForm({
 
           <div className="space-y-1">
             <Label className="text-xs">Severity threshold</Label>
-            <Select
+            <SelectField
               value={severityThreshold}
-              onChange={(e) => setSeverityThreshold(e.target.value)}
-            >
-              {SEVERITY_THRESHOLDS.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
+              onChange={(value) => setSeverityThreshold(value)}
+              options={SEVERITY_THRESHOLDS.map((s) => ({ value: String(s), label: `${s}` }))}
+            />
             <p className="text-[11px] text-slate-500">
               Minimum severity that triggers a severity-rule assignment.
             </p>
@@ -155,19 +151,19 @@ export function RulesForm({
 
           <div className="space-y-1">
             <Label className="text-xs">SIF handling</Label>
-            <label className="flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm">
+            <Label className="flex items-center gap-2 rounded-md border border-slate-300 bg-white px-3 py-2.5 text-sm">
               <Checkbox
                 checked={sifImmediate}
                 onChange={(e) => setSifImmediate(e.target.checked)}
               />
               <span className="text-slate-700">Assign immediately on SIF-potential events</span>
-            </label>
+            </Label>
             <p className="text-[11px] text-slate-500">
               Bypass the threshold count for serious-injury-or-fatality potential.
             </p>
           </div>
         </div>
-      </div>
+      </Card>
 
       <Can
         permission="SKILL_MATRIX.COMPETENCY_CONFIGURE"

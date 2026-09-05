@@ -15,6 +15,8 @@ import { formatUserRefText, type UserDirectory } from "@/lib/users/user-ref";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 // ── Types (shared with the server page) ────────────────────────────────────────
 export type QualityIndex = {
@@ -142,7 +144,7 @@ function HeroStrip({ quality }: { quality: QualityIndex }) {
   const score = num(quality?.bbsQualityIndex);
   return (
     <div className="grid gap-4 lg:grid-cols-[auto,1fr]">
-      <div className="flex items-center gap-5 rounded-xl border bg-white p-5">
+      <Card className="flex items-center gap-5 rounded-xl border bg-white p-5 shadow-none">
         <ScoreDial score={score} label="BBS Quality" />
         <div className="max-w-md">
           <p className="text-xs uppercase tracking-wide text-slate-500">The new headline metric</p>
@@ -156,7 +158,7 @@ function HeroStrip({ quality }: { quality: QualityIndex }) {
             padding the count no longer moves the score.
           </p>
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <KpiTile label="Observations (window)" value={String(num(quality?.observationCount))} hint={`Target ≈ ${num(quality?.expectedTarget)}`} />
@@ -175,13 +177,13 @@ function HeroStrip({ quality }: { quality: QualityIndex }) {
 
 function KpiTile({ label, value, hint, accent }: { label: string; value: string; hint?: string; accent?: string }) {
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <p className="text-[11px] uppercase tracking-wide text-slate-500">{label}</p>
       <p className="mt-1 text-2xl font-bold" style={{ color: accent ?? PALETTE.navy }}>
         {value}
       </p>
       {hint && <p className="mt-0.5 text-[11px] text-slate-400">{hint}</p>}
-    </div>
+    </Card>
   );
 }
 
@@ -197,7 +199,7 @@ function IntegrityPanel({
 }) {
   const framing = integrity?.framing || "Coaching opportunities — not punitive. These patterns highlight where an observer may need support, never blame.";
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
           Observation Integrity
@@ -207,19 +209,18 @@ function IntegrityPanel({
         </span>
       </div>
 
-      <div
-        className="mb-4 flex items-start gap-2 rounded-lg border p-3 text-xs"
-        style={{ borderColor: PALETTE.gold, background: "#FBF7EC", color: "#7A6320" }}
-      >
+      <Card
+        className="mb-4 flex items-start gap-2 rounded-lg border p-3 text-xs shadow-none"
+        style={{ borderColor: PALETTE.gold, background: "#FBF7EC", color: "#7A6320" }}>
         <span className="mt-0.5" style={{ color: PALETTE.gold }}>◆</span>
         <span>{framing}</span>
-      </div>
+      </Card>
 
       {flags.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-6 text-center" style={{ borderColor: GREEN }}>
+        <Card className="rounded-lg border border-dashed p-6 text-center shadow-none" style={{ borderColor: GREEN }}>
           <p className="text-sm font-medium" style={{ color: GREEN }}>No gaming patterns detected</p>
           <p className="mt-1 text-xs text-slate-500">Every observer&apos;s submissions look genuine for this window.</p>
-        </div>
+        </Card>
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {flags.map((f) => (
@@ -227,7 +228,7 @@ function IntegrityPanel({
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -273,7 +274,7 @@ function CoachingCard({ flag, userDir }: { flag: IntegrityFlag; userDir: UserDir
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 p-4">
+    <Card className="rounded-lg border border-slate-200 p-4 shadow-none">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-slate-800">{formatUserRefText(userDir, flag.observerId)}</p>
@@ -339,7 +340,7 @@ function CoachingCard({ flag, userDir }: { flag: IntegrityFlag; userDir: UserDir
 
       {open && (
         <div className="mt-3 space-y-2 rounded-lg bg-slate-50 p-3">
-          <label className="block text-[11px] font-medium text-slate-600">Review note (required)</label>
+          <Label className="block text-[11px] font-medium text-slate-600">Review note (required)</Label>
           <Textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
@@ -372,7 +373,7 @@ function CoachingCard({ flag, userDir }: { flag: IntegrityFlag; userDir: UserDir
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -420,7 +421,7 @@ function ClosureStepper({ stage }: { stage: ClosureStage }) {
 
 function ClosureLoop({ items, userDir }: { items: ClosureItem[]; userDir: UserDirectory }) {
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
           Closure Loop
@@ -431,9 +432,9 @@ function ClosureLoop({ items, userDir }: { items: ClosureItem[]; userDir: UserDi
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+        <Card className="rounded-lg border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500 shadow-none">
           No observations in this window yet.
-        </div>
+        </Card>
       ) : (
         <div className="overflow-x-auto">
           <Table>
@@ -466,7 +467,7 @@ function ClosureLoop({ items, userDir }: { items: ClosureItem[]; userDir: UserDi
           </Table>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

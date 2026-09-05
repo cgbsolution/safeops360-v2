@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ClipboardList, ArrowRight, Inbox, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   MyCheckpointsResponse, MyAuditGroup, MyCheckpointItem,
   STATUS_CHIP, STATUS_LABEL, CRITICALITY_CHIP, CRITICALITY_FALLBACK, VALUE_META, Chip,
@@ -22,41 +24,40 @@ export function MyCheckpointsView({ data }: { data: MyCheckpointsResponse }) {
 
   if (data.totals.total === 0) {
     return (
-      <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white p-12 text-center">
+      <Card className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-none">
         <Inbox size={28} className="text-slate-300" />
         <div className="text-sm font-medium text-slate-600">No checkpoints assigned to you</div>
         <div className="text-xs text-slate-400">When a Plant Head allocates audit checkpoints to you, they appear here.</div>
-      </div>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
       {/* Totals + filter */}
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <Stat label="Assigned checkpoints" value={data.totals.total} />
         <Stat label="Across audits" value={data.totals.audits} />
         <Stat label="Needs my response" value={data.totals.needsResponse} accent={data.totals.needsResponse > 0} />
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setNeedsOnly((v) => !v)}
           className={cn(
             "ml-auto inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
             needsOnly ? "border-amber-500 bg-amber-500 text-white" : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50",
-          )}
-        >
+          )}>
           Needs my response
           {data.totals.needsResponse > 0 && (
             <span className={cn("rounded-full px-1.5 text-[10px] font-bold", needsOnly ? "bg-white/25" : "bg-amber-100 text-amber-700")}>{data.totals.needsResponse}</span>
           )}
-        </button>
-      </div>
+        </Button>
+      </Card>
 
       {audits.length === 0 && (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center">
+        <Card className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center shadow-none">
           <CheckCircle2 size={26} className="text-emerald-400" />
           <div className="text-sm font-medium text-slate-600">Nothing needs your response right now.</div>
-        </div>
+        </Card>
       )}
 
       {audits.map((a) => <AuditCard key={a.auditId} a={a} />)}
@@ -79,7 +80,7 @@ function AuditCard({ a }: { a: MyAuditGroup }) {
   const sc = a.scorecard;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
+    <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
       <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <ClipboardList size={16} className="text-primary-700" />
         <Link href={`/cams/audits/${a.auditId}`} className="text-sm font-semibold text-slate-800 hover:text-primary-700">{a.title}</Link>
@@ -102,7 +103,7 @@ function AuditCard({ a }: { a: MyAuditGroup }) {
           </div>
         </div>
       ))}
-    </div>
+    </Card>
   );
 }
 

@@ -103,9 +103,9 @@ export default async function ConfigurationLandingPage() {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border border-slate-200 rounded-md p-3 bg-white">
+    <Card className="border border-slate-200 rounded-md p-3 bg-white shadow-none">
       <div className="text-xs uppercase tracking-wide text-slate-500">{label}</div>
       <div className="text-2xl font-bold mt-1 text-slate-900">{value}</div>
-    </div>
+    </Card>
   );
 }

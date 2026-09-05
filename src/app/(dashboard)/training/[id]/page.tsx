@@ -9,6 +9,7 @@ import {
   CalendarDays, GraduationCap, User as UserIcon, Award, AlertCircle, CheckCircle2, FileDown, ExternalLink
 } from "lucide-react";
 import { formatDate, daysBetween } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -83,7 +84,7 @@ export default async function TrainingDetailPage(props: { params: Promise<{ id: 
             <CardHeader><CardTitle className="text-base">Assessment</CardTitle></CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded border p-3">
+                <Card className="rounded border p-3 shadow-none">
                   <div className="text-xs uppercase tracking-wider text-slate-500">Score</div>
                   <div className="text-2xl font-bold mt-1">
                     {r.score !== null ? `${r.score} / 100` : "—"}
@@ -93,8 +94,8 @@ export default async function TrainingDetailPage(props: { params: Promise<{ id: 
                       {r.score >= r.program.passingScore ? "Above passing threshold" : "Below passing threshold"}
                     </div>
                   )}
-                </div>
-                <div className="rounded border p-3">
+                </Card>
+                <Card className="rounded border p-3 shadow-none">
                   <div className="text-xs uppercase tracking-wider text-slate-500">Outcome</div>
                   <div className={`text-2xl font-bold mt-1 ${r.passed ? "text-emerald-700" : "text-rose-700"}`}>
                     {r.passed ? "Pass" : "Fail"}
@@ -102,7 +103,7 @@ export default async function TrainingDetailPage(props: { params: Promise<{ id: 
                   <div className="text-[11px] text-slate-500 mt-1">
                     {r.passed ? "Certificate issued on this date" : "Re-attempt required"}
                   </div>
-                </div>
+                </Card>
               </div>
               {r.remarks && (
                 <div>
@@ -122,23 +123,23 @@ export default async function TrainingDetailPage(props: { params: Promise<{ id: 
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
                 {r.certificateUrl ? (
-                  <div className="flex items-center justify-between rounded border bg-amber-50/40 border-amber-200 p-3">
+                  <Alert variant="warning" className="flex items-center justify-between rounded border bg-amber-50/40 border-amber-200 p-3">
                     <span className="text-amber-900">Certificate document attached.</span>
                     <Button asChild size="sm" variant="outline">
                       <a href={r.certificateUrl} target="_blank" rel="noopener noreferrer">
                         <ExternalLink size={13} /> Open
                       </a>
                     </Button>
-                  </div>
+                  </Alert>
                 ) : (
-                  <div className="flex items-center justify-between rounded border bg-slate-50 border-slate-200 p-3">
+                  <Card className="flex items-center justify-between rounded border bg-slate-50 border-slate-200 p-3 shadow-none">
                     <span className="text-slate-600 text-xs">
                       No certificate file uploaded yet. Auto-generation ships in the Training depth sprint.
                     </span>
                     <Button size="sm" variant="outline" disabled>
                       <FileDown size={13} /> Download
                     </Button>
-                  </div>
+                  </Card>
                 )}
               </CardContent>
             </Card>

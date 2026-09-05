@@ -20,6 +20,8 @@ import { useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import {
   COVERAGE_META,
   pctLabel,
@@ -84,12 +86,10 @@ export function CoverageMatrix({ data }: { data: CoverageResponse }) {
           const considered = units.reduce((n, u) => n + u.considered, 0);
           return (
             <Card key={siteId} className="overflow-hidden rounded-xl border border-slate-200">
-              <button
+              <Button variant="ghost"
                 type="button"
-                onClick={() => toggle(siteId)}
-                className="flex w-full items-center gap-2 px-3 py-2.5 text-left"
-                aria-expanded={open}
-              >
+                onClick={() => toggle(siteId)} className="flex w-full gap-2 px-3 py-2.5 text-left"
+                aria-expanded={open}>
                 {open ? (
                   <ChevronDown size={15} className="shrink-0 text-slate-400" />
                 ) : (
@@ -101,7 +101,7 @@ export function CoverageMatrix({ data }: { data: CoverageResponse }) {
                 <span className="ml-auto shrink-0 text-xs tabular-nums text-slate-500">
                   {covered}/{considered}
                 </span>
-              </button>
+              </Button>
 
               {open && (
                 <div className="border-t border-slate-100 px-2 pb-3 pt-2">
@@ -133,34 +133,34 @@ export function CoverageMatrix({ data }: { data: CoverageResponse }) {
 
       {/* ── Desktop: the full 2-D matrix, same data ────────────────── */}
       <Card className="hidden overflow-x-auto rounded-xl border border-slate-200 lg:block">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-slate-50 text-left text-xs text-slate-500">
-              <th className="px-3 py-2 font-medium">Site</th>
-              <th className="px-3 py-2 font-medium">Discipline</th>
-              <th className="px-2 py-2 text-center font-medium">Req.</th>
+        <Table className="w-full border-collapse text-sm">
+          <TableHeader>
+            <TableRow className="bg-slate-50 text-left text-xs text-slate-500">
+              <TableHead className="px-3 py-2 font-medium">Site</TableHead>
+              <TableHead className="px-3 py-2 font-medium">Discipline</TableHead>
+              <TableHead className="px-2 py-2 text-center font-medium">Req.</TableHead>
               {data.periods.map((p) => (
-                <th key={p.periodIndex} className="px-2 py-2 text-center font-medium">
+                <TableHead key={p.periodIndex} className="px-2 py-2 text-center font-medium">
                   {p.label}
                   {p.closed && <span className="ml-1 text-[10px] text-slate-400">closed</span>}
-                </th>
+                </TableHead>
               ))}
-              <th className="px-3 py-2 text-center font-medium">Coverage</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+              <TableHead className="px-3 py-2 text-center font-medium">Coverage</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-slate-100">
             {bySite.map(([, { label, units }]) =>
               units.map((u, i) => (
-                <tr key={u.scopeUnitId} className="hover:bg-slate-50/60">
+                <TableRow key={u.scopeUnitId} className="hover:bg-slate-50/60">
                   {i === 0 && (
-                    <td
+                    <TableCell
                       rowSpan={units.length}
                       className="border-r border-slate-100 px-3 py-2 align-top text-xs font-medium text-slate-700"
                     >
                       {label}
-                    </td>
+                    </TableCell>
                   )}
-                  <td className="px-3 py-2">
+                  <TableCell className="px-3 py-2">
                     <div className="flex items-center gap-1.5">
                       <span className="text-slate-800">{u.dimensionLabel}</span>
                       <RiskWeight weight={u.riskWeight} />
@@ -168,28 +168,28 @@ export function CoverageMatrix({ data }: { data: CoverageResponse }) {
                     {u.isWaived && (
                       <div className="text-[10px] text-violet-600">waived · {u.waiverReason}</div>
                     )}
-                  </td>
-                  <td className="px-2 py-2 text-center text-xs tabular-nums text-slate-600">
+                  </TableCell>
+                  <TableCell className="px-2 py-2 text-center text-xs tabular-nums text-slate-600">
                     {u.requiredPerCycle ?? "—"}
                     {u.shortfall > 0 && (
                       <span className="ml-1 text-rose-600" title={`${u.shortfall} short`}>
                         −{u.shortfall}
                       </span>
                     )}
-                  </td>
+                  </TableCell>
                   {u.periods.map((c) => (
-                    <td key={c.periodIndex} className="px-1 py-1 text-center">
+                    <TableCell key={c.periodIndex} className="px-1 py-1 text-center">
                       <CellButton cell={c} onClick={() => setDetail({ unit: u, cell: c })} />
-                    </td>
+                    </TableCell>
                   ))}
-                  <td className="px-3 py-2 text-center text-xs font-semibold tabular-nums text-slate-700">
+                  <TableCell className="px-3 py-2 text-center text-xs font-semibold tabular-nums text-slate-700">
                     {pctLabel(u.coveragePct)}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )),
             )}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </Card>
 
       <Legend />
@@ -238,7 +238,7 @@ function CellButton({
 }) {
   const meta = COVERAGE_META[cell.state];
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onClick}
       title={`${meta.label} — ${cell.label}`}
@@ -249,10 +249,9 @@ function CellButton({
         // 40px keeps the touch target usable at 390px without overflowing four
         // columns plus a label.
         compact ? "h-10 w-10 text-[11px]" : "h-8 w-full min-w-[2.75rem] text-[11px]",
-      )}
-    >
+      )}>
       {cell.total > 0 ? cell.label : meta.glyph}
-    </button>
+    </Button>
   );
 }
 
@@ -308,7 +307,7 @@ function Stat({ label, value, tone }: { label: string; value: number; tone: stri
 
 function Legend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-[11px] text-slate-600">
+    <Card className="flex flex-wrap items-center gap-x-4 gap-y-1.5 rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-2 text-[11px] text-slate-600 shadow-none">
       <Info size={12} className="text-slate-400" />
       {(Object.keys(COVERAGE_META) as CoverageState[]).map((k) => (
         <span key={k} className="inline-flex items-center gap-1">
@@ -320,7 +319,7 @@ function Legend() {
         · &ldquo;Covered by sample&rdquo; is a weaker claim than &ldquo;covered&rdquo; and is never
         merged into it
       </span>
-    </div>
+    </Card>
   );
 }
 
@@ -406,13 +405,11 @@ function CellSheet({
           </ul>
         )}
 
-        <button
+        <Button variant="outline"
           type="button"
-          onClick={onClose}
-          className="mt-4 w-full rounded-lg border border-slate-300 py-2 text-sm text-slate-700 hover:bg-slate-50"
-        >
+          onClick={onClose} className="mt-4 w-full rounded-lg py-2 text-sm">
           Close
-        </button>
+        </Button>
       </div>
     </div>
   );

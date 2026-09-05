@@ -15,6 +15,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AlertCircle, ExternalLink, ShieldAlert } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type HiraEntrySuggestion = {
   id: string;
@@ -117,14 +119,14 @@ export function HiraSuggestionsPanel({
 
   if (!plantId) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">
+      <Card className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500 shadow-none">
         Pick a plant to see HIRA entries for this work.
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-xl border bg-white">
+    <Card className="rounded-xl border bg-white shadow-none">
       <div className="px-4 py-3 border-b flex items-center justify-between">
         <div>
           <div className="text-xs uppercase tracking-wider text-slate-600 font-medium">
@@ -238,6 +240,6 @@ export function HiraSuggestionsPanel({
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }

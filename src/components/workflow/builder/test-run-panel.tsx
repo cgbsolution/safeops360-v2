@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime, cn } from "@/lib/utils";
 import type { EditorStep } from "./types";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type SimAssignee = { id: string; name: string; designation: string | null; plant?: string | null };
 type SimStepResult = {
@@ -101,13 +104,13 @@ export function TestRunPanel({
               <div className="text-[11px] text-slate-500">Simulates the workflow against a real sample record. No data is modified.</div>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <Button variant="ghost" size="icon" aria-label="Close" title="Close" className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-600" onClick={onClose}>
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="px-5 py-4 border-b space-y-2 bg-slate-50">
-          <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Sample record (optional)</label>
+          <Label className="text-[11px] font-semibold uppercase tracking-wider text-slate-600">Sample record (optional)</Label>
           <Input
             value={sampleRecordId}
             onChange={(e) => setSampleRecordId(e.target.value)}
@@ -122,22 +125,22 @@ export function TestRunPanel({
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {error && (
-            <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 flex items-start gap-2">
+            <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 flex items-start gap-2">
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5" />
               <span>{error}</span>
-            </div>
+            </Alert>
           )}
 
           {result && (
             <>
-              <div className="rounded-md border border-slate-200 bg-white p-3">
+              <Card className="rounded-md border border-slate-200 bg-white p-3 shadow-none">
                 <div className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">Sample record</div>
                 <div className="font-mono text-xs text-slate-700 mt-0.5">{result.sample.number}</div>
                 <div className="text-xs text-slate-600 mt-0.5 line-clamp-2">{result.sample.title}</div>
-              </div>
+              </Card>
 
               {result.errors.length > 0 && (
-                <div className="rounded-md border border-rose-200 bg-rose-50 p-3 space-y-1">
+                <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 space-y-1">
                   <div className="text-xs font-semibold text-rose-800 flex items-center gap-1">
                     <AlertCircle size={12} /> {result.errors.length} issue{result.errors.length === 1 ? "" : "s"} found
                   </div>
@@ -146,7 +149,7 @@ export function TestRunPanel({
                       <li key={i}>Step {e.sequence}: {e.message}</li>
                     ))}
                   </ul>
-                </div>
+                </Alert>
               )}
 
               <ol className="space-y-2">

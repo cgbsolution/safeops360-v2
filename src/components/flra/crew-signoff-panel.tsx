@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, Clock, PenLine, Lock, AlertCircle, Loader2 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type CrewRow = {
   id: string;
@@ -100,10 +101,10 @@ export function CrewSignoffPanel({
       </CardHeader>
       <CardContent className="pt-4">
         {permitLocked && (
-          <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-center gap-2">
+          <Alert variant="warning" className="mb-3 p-3">
             <Lock size={14} />
-            Linked permit is paused. Sign-off actions are locked until the permit is resumed.
-          </div>
+            <AlertDescription>Linked permit is paused. Sign-off actions are locked until the permit is resumed.</AlertDescription>
+          </Alert>
         )}
 
         {totalCrew === 0 ? (
@@ -162,10 +163,10 @@ export function CrewSignoffPanel({
         )}
 
         {error && (
-          <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 flex items-start gap-2">
-            <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-            <div>{error}</div>
-          </div>
+          <Alert variant="destructive" size="lg" className="mt-3 p-3">
+            <AlertCircle className="mt-0.5" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
       </CardContent>
     </Card>

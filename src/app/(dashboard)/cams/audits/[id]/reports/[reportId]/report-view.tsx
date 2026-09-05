@@ -19,6 +19,10 @@ import { InsightSummary } from "./insight-summary";
 import { EvidenceStrip } from "../../../evidence-strip";
 import { usePermission } from "@/components/auth/can";
 import type { Erratum } from "../../../../lib-assurance";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export function ReportView({
   report, userMap, auditId, errata = [],
@@ -116,9 +120,9 @@ export function ReportView({
             <div className="text-right">
               {grade && !grade.showGrade ? (
                 <>
-                  <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">
+                  <Badge variant="neutral" className="inline-block rounded-full bg-slate-100 px-3 py-1 text-sm font-bold text-slate-600">
                     No grade issued
-                  </span>
+                  </Badge>
                   <div className="mt-2 text-3xl font-extrabold tabular-nums text-slate-400">
                     {grade.assessed}<span className="text-xl font-semibold text-slate-400"> of {grade.applicable}</span>
                   </div>
@@ -216,40 +220,40 @@ export function ReportView({
           {s.categoryScores.some((c) => c.passed + c.partial + c.failed > 0) && (
             <Collapse label="Underlying figures" className="mt-2">
               <div className="overflow-x-auto">
-                <table className="w-full text-[11px]">
-                  <thead className="text-left text-slate-500">
-                    <tr className="border-b border-slate-200">
-                      <th className="py-1 pr-2 font-medium">{axis.Title.slice(0, -1)}</th>
-                      <th className="px-1 text-center font-medium">Pass</th>
-                      <th className="px-1 text-center font-medium">Partial</th>
-                      <th className="px-1 text-center font-medium">Fail</th>
-                      <th className="px-1 text-center font-medium">N/A</th>
-                      <th className="px-1 text-center font-medium">Assessed</th>
-                      <th className="px-1 text-center font-medium">Points</th>
-                      <th className="px-1 text-center font-medium">Score %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table className="w-full text-[11px]">
+                  <TableHeader className="text-left text-slate-500">
+                    <TableRow className="border-b border-slate-200">
+                      <TableHead className="py-1 pr-2 font-medium">{axis.Title.slice(0, -1)}</TableHead>
+                      <TableHead className="px-1 text-center font-medium">Pass</TableHead>
+                      <TableHead className="px-1 text-center font-medium">Partial</TableHead>
+                      <TableHead className="px-1 text-center font-medium">Fail</TableHead>
+                      <TableHead className="px-1 text-center font-medium">N/A</TableHead>
+                      <TableHead className="px-1 text-center font-medium">Assessed</TableHead>
+                      <TableHead className="px-1 text-center font-medium">Points</TableHead>
+                      <TableHead className="px-1 text-center font-medium">Score %</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {s.categoryScores.map((c) => {
                       const assessable = c.passed + c.partial + c.failed;
                       const pct = assessable === 0 ? null : c.score_pct;
                       return (
-                        <tr key={c.category_id} className="border-b border-slate-100">
-                          <td className="py-1 pr-2 text-slate-700">{c.category_name}</td>
-                          <td className="px-1 text-center tabular-nums">{c.passed}</td>
-                          <td className="px-1 text-center tabular-nums">{c.partial}</td>
-                          <td className={cn("px-1 text-center tabular-nums", c.failed ? "font-semibold text-rose-700" : "")}>{c.failed}</td>
-                          <td className="px-1 text-center tabular-nums text-slate-400">{c.na}</td>
-                          <td className="px-1 text-center tabular-nums">{assessable}/{c.total}</td>
-                          <td className="px-1 text-center tabular-nums text-slate-500">{c.score_obtained}/{c.score_allotted}</td>
-                          <td className={cn("px-1 text-center font-semibold tabular-nums", ragText(pct))}>
+                        <TableRow key={c.category_id} className="border-b border-slate-100">
+                          <TableCell className="py-1 pr-2 text-slate-700">{c.category_name}</TableCell>
+                          <TableCell className="px-1 text-center tabular-nums">{c.passed}</TableCell>
+                          <TableCell className="px-1 text-center tabular-nums">{c.partial}</TableCell>
+                          <TableCell className={cn("px-1 text-center tabular-nums", c.failed ? "font-semibold text-rose-700" : "")}>{c.failed}</TableCell>
+                          <TableCell className="px-1 text-center tabular-nums text-slate-400">{c.na}</TableCell>
+                          <TableCell className="px-1 text-center tabular-nums">{assessable}/{c.total}</TableCell>
+                          <TableCell className="px-1 text-center tabular-nums text-slate-500">{c.score_obtained}/{c.score_allotted}</TableCell>
+                          <TableCell className={cn("px-1 text-center font-semibold tabular-nums", ragText(pct))}>
                             {pct == null ? "n/a" : pct}
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </Collapse>
           )}
@@ -258,17 +262,17 @@ export function ReportView({
         {/* Standards rollup (final) */}
         {isFinal && (s.standardsRollup?.length ?? 0) > 0 && (
           <Section title="Standard / clause conformance">
-            <table className="w-full text-[12px]">
-              <thead><tr className="border-b text-left text-slate-400"><th className="py-1 font-medium">Standard</th><th className="font-medium">Pass</th><th className="font-medium">Partial</th><th className="font-medium">Fail</th><th className="font-medium">Conformance</th></tr></thead>
-              <tbody>
+            <Table className="w-full text-[12px]">
+              <TableHeader><TableRow className="border-b text-left text-slate-400"><TableHead className="py-1 font-medium">Standard</TableHead><TableHead className="font-medium">Pass</TableHead><TableHead className="font-medium">Partial</TableHead><TableHead className="font-medium">Fail</TableHead><TableHead className="font-medium">Conformance</TableHead></TableRow></TableHeader>
+              <TableBody>
                 {s.standardsRollup!.map((r) => (
-                  <tr key={r.standard} className="border-b border-slate-50">
-                    <td className="py-1 text-slate-700">{r.standard}</td><td>{r.pass}</td><td>{r.partial}</td><td>{r.fail}</td>
-                    <td className={cn("font-semibold", complianceColor(r.scorePct))}>{r.scorePct}%</td>
-                  </tr>
+                  <TableRow key={r.standard} className="border-b border-slate-50">
+                    <TableCell className="py-1 text-slate-700">{r.standard}</TableCell><TableCell>{r.pass}</TableCell><TableCell>{r.partial}</TableCell><TableCell>{r.fail}</TableCell>
+                    <TableCell className={cn("font-semibold", complianceColor(r.scorePct))}>{r.scorePct}%</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </Section>
         )}
 
@@ -289,7 +293,7 @@ export function ReportView({
                   </div>
                   <div className="space-y-2">
               {group.map((f) => (
-                <div key={f.checkpointCode} className="break-inside-avoid rounded-lg border border-slate-200 p-2.5 text-[12px]">
+                <Card key={f.checkpointCode} className="break-inside-avoid rounded-lg border border-slate-200 p-2.5 text-[12px] shadow-none">
                   <div className="flex flex-wrap items-center gap-2">
                     {/* State icon — FAIL/PARTIAL are what the register holds
                         today (PASS/NA raise no finding), but the map is keyed
@@ -343,7 +347,7 @@ export function ReportView({
                     </Collapse>
                   )}
                   {(f.standard || f.requirementReference) && <div className="mt-0.5 text-[11px] text-slate-400">{[f.requirementReference, f.standard].filter(Boolean).join(" · ")}</div>}
-                </div>
+                </Card>
               ))}
                   </div>
                 </div>
@@ -475,14 +479,14 @@ export function ReportView({
             {s.independence.waivers?.length > 0 && (
               <div className="mt-2 space-y-2">
                 {s.independence.waivers.map((w) => (
-                  <div key={w.id} className="rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-900">
+                  <Alert variant="warning" key={w.id} className="rounded border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-900">
                     <div className="font-semibold">{w.subject} — waiver granted</div>
                     {w.conflict && <div className="mt-0.5">Conflict: {w.conflict}</div>}
                     <div className="mt-0.5">Justification: {w.justification}</div>
                     <div className="mt-0.5 text-amber-700">
                       Approved by {w.approvedBy} · {fmtDateTime(w.approvedAt)}
                     </div>
-                  </div>
+                  </Alert>
                 ))}
               </div>
             )}
@@ -615,32 +619,32 @@ export function ReportView({
               </p>
             )}
             <div className="overflow-x-auto">
-              <table className="w-full text-[11px]">
-                <thead className="text-left text-slate-500">
-                  <tr className="border-b border-slate-200">
-                    <th className="py-1 pr-2 font-medium">Standard</th>
-                    <th className="py-1 pr-2 font-medium">Clause</th>
-                    <th className="py-1 px-1 text-center font-medium">CPs</th>
-                    <th className="py-1 px-1 text-center font-medium">Pass</th>
-                    <th className="py-1 px-1 text-center font-medium">Fail</th>
-                    <th className="py-1 px-1 text-center font-medium">Partial</th>
-                    <th className="py-1 px-1 text-center font-medium">N/A</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full text-[11px]">
+                <TableHeader className="text-left text-slate-500">
+                  <TableRow className="border-b border-slate-200">
+                    <TableHead className="py-1 pr-2 font-medium">Standard</TableHead>
+                    <TableHead className="py-1 pr-2 font-medium">Clause</TableHead>
+                    <TableHead className="py-1 px-1 text-center font-medium">CPs</TableHead>
+                    <TableHead className="py-1 px-1 text-center font-medium">Pass</TableHead>
+                    <TableHead className="py-1 px-1 text-center font-medium">Fail</TableHead>
+                    <TableHead className="py-1 px-1 text-center font-medium">Partial</TableHead>
+                    <TableHead className="py-1 px-1 text-center font-medium">N/A</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {s.clauseIndex.slice(0, 60).map((e, i) => (
-                    <tr key={i} className="border-b border-slate-100">
-                      <td className="py-1 pr-2 text-slate-700">{e.standard}</td>
-                      <td className="py-1 pr-2 text-slate-600">{e.clause}</td>
-                      <td className="py-1 px-1 text-center tabular-nums">{e.total}</td>
-                      <td className="py-1 px-1 text-center tabular-nums">{e.pass}</td>
-                      <td className={cn("py-1 px-1 text-center tabular-nums", e.fail ? "font-semibold text-rose-700" : "")}>{e.fail}</td>
-                      <td className="py-1 px-1 text-center tabular-nums">{e.partial}</td>
-                      <td className="py-1 px-1 text-center tabular-nums text-slate-400">{e.na}</td>
-                    </tr>
+                    <TableRow key={i} className="border-b border-slate-100">
+                      <TableCell className="py-1 pr-2 text-slate-700">{e.standard}</TableCell>
+                      <TableCell className="py-1 pr-2 text-slate-600">{e.clause}</TableCell>
+                      <TableCell className="py-1 px-1 text-center tabular-nums">{e.total}</TableCell>
+                      <TableCell className="py-1 px-1 text-center tabular-nums">{e.pass}</TableCell>
+                      <TableCell className={cn("py-1 px-1 text-center tabular-nums", e.fail ? "font-semibold text-rose-700" : "")}>{e.fail}</TableCell>
+                      <TableCell className="py-1 px-1 text-center tabular-nums">{e.partial}</TableCell>
+                      <TableCell className="py-1 px-1 text-center tabular-nums text-slate-400">{e.na}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
             {s.clauseIndex.length > 60 && (
               <p className="mt-1 text-[10px] text-slate-400">
@@ -848,7 +852,7 @@ function FinalRegister({ reportId, userMap }: { reportId: string; userMap: Recor
       ) : (
         <div className="space-y-2">
           {entries.map((e) => (
-            <div key={e.checkpointCode} className="break-inside-avoid rounded-lg border border-slate-200 p-2.5 text-[12px]">
+            <Card key={e.checkpointCode} className="break-inside-avoid rounded-lg border border-slate-200 p-2.5 text-[12px] shadow-none">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-mono text-slate-500">{e.checkpointCode}</span>
                 {e.requirementType && (
@@ -927,7 +931,7 @@ function FinalRegister({ reportId, userMap }: { reportId: string; userMap: Recor
                   )}
                 </Collapse>
               )}
-            </div>
+            </Card>
           ))}
           {cursor && (
             <Button type="button" variant="outline" size="sm" className="w-full print:hidden" onClick={() => load(cursor)} disabled={loading}>

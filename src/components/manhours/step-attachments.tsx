@@ -2,6 +2,8 @@
 
 import { Paperclip, FileText, AlertTriangle } from "lucide-react";
 import type { WizardSubmission } from "./wizard-types";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const SUGGESTED_DOCS: { category: string; label: string; required: boolean }[] = [
   { category: "ATTENDANCE_REPORT", label: "HR attendance system export", required: true },
@@ -44,7 +46,7 @@ export function StepAttachments({
         </p>
       </div>
 
-      <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-start gap-2">
+      <Alert variant="warning" className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-start gap-2">
         <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
         <div>
           <div className="font-medium">File upload arrives in a follow-up</div>
@@ -54,13 +56,13 @@ export function StepAttachments({
             modules. Submission can still proceed in Step 8 without uploads (with a notes warning).
           </div>
         </div>
-      </div>
+      </Alert>
 
       <div className="space-y-3">
         {SUGGESTED_DOCS.map((doc) => {
           const items = byCategory.get(doc.category) ?? [];
           return (
-            <div key={doc.category} className="rounded-md border bg-white">
+            <Card key={doc.category} className="rounded-md border bg-white shadow-none">
               <div className="flex items-center justify-between border-b bg-slate-50 px-4 py-2">
                 <div className="flex items-center gap-2">
                   <FileText size={14} className="text-slate-500" />
@@ -94,7 +96,7 @@ export function StepAttachments({
                   </ul>
                 )}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>

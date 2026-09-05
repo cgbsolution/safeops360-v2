@@ -14,6 +14,7 @@ import {
   UserPlus,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
-import { formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime } from "@/lib/utils";
 import {
   EvidenceCapture,
   evidenceComplete,
@@ -245,19 +246,19 @@ function GasTestSection({ permitId, active }: { permitId: string; active: boolea
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid sm:grid-cols-3 gap-2 text-xs">
-          <div className="p-2 rounded-md border bg-slate-50">
+          <Card className="rounded-md bg-slate-50 p-2 shadow-none">
             <div className="text-[10px] uppercase text-slate-500">Last reading</div>
             <div className="font-medium">
               {status.lastReadingAt
                 ? formatDateTime(new Date(status.lastReadingAt))
                 : "— none yet —"}
             </div>
-          </div>
-          <div
-            className={[
-              "p-2 rounded-md border",
-              overdue ? "bg-rose-50 border-rose-200" : "bg-slate-50",
-            ].join(" ")}
+          </Card>
+          <Card
+            className={cn(
+              "rounded-md p-2 shadow-none",
+              overdue ? "border-rose-200 bg-rose-50" : "bg-slate-50"
+            )}
           >
             <div className="text-[10px] uppercase text-slate-500">Next due</div>
             <div className="font-medium">
@@ -270,20 +271,20 @@ function GasTestSection({ permitId, active }: { permitId: string; active: boolea
                 <Clock size={10} /> Overdue
               </div>
             )}
-          </div>
-          <div className="p-2 rounded-md border bg-slate-50">
+          </Card>
+          <Card className="rounded-md bg-slate-50 p-2 shadow-none">
             <div className="text-[10px] uppercase text-slate-500">Instrument</div>
             <div className="font-medium">{status.instrumentSerial ?? "—"}</div>
-          </div>
+          </Card>
         </div>
 
         {status.lastIsExceedance && (
-          <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-2 flex items-start gap-1.5">
-            <AlertOctagon size={14} className="mt-0.5 shrink-0" />
-            <span>
+          <Alert variant="destructive" className="p-2">
+            <AlertOctagon className="mt-0.5" />
+            <AlertDescription>
               Last reading was an exceedance. Permit auto-suspended pending re-FLRA.
-            </span>
-          </div>
+            </AlertDescription>
+          </Alert>
         )}
 
         {!showForm && active && (
@@ -293,7 +294,7 @@ function GasTestSection({ permitId, active }: { permitId: string; active: boolea
         )}
 
         {showForm && (
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+          <Card className="space-y-2 rounded-md border-slate-200 bg-slate-50 p-3 shadow-none">
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {(status.parametersToTest ?? []).map((p) => (
                 <div key={p.parameter} className="space-y-1">
@@ -340,7 +341,7 @@ function GasTestSection({ permitId, active }: { permitId: string; active: boolea
                 Cancel
               </Button>
             </div>
-          </div>
+          </Card>
         )}
       </CardContent>
     </Card>
@@ -481,7 +482,7 @@ function ExtensionSection({
         )}
 
         {decidingId && (
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+          <Card className="space-y-2 rounded-md border-slate-200 bg-slate-50 p-3 shadow-none">
             <div className="text-xs font-medium text-slate-700">
               {decision === "APPROVED" ? "Approve" : "Reject"} this extension —
               field evidence is recorded on the permit's audit trail.
@@ -496,7 +497,7 @@ function ExtensionSection({
                 Cancel
               </Button>
             </div>
-          </div>
+          </Card>
         )}
 
         {!show && !decidingId && pending.length === 0 && (
@@ -506,7 +507,7 @@ function ExtensionSection({
         )}
 
         {show && (
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+          <Card className="space-y-2 rounded-md border-slate-200 bg-slate-50 p-3 shadow-none">
             <div className="grid sm:grid-cols-2 gap-2">
               <div>
                 <Label className="text-[11px]">New end date</Label>
@@ -553,7 +554,7 @@ function ExtensionSection({
                 Cancel
               </Button>
             </div>
-          </div>
+          </Card>
         )}
       </CardContent>
     </Card>
@@ -703,7 +704,7 @@ function CrewChangeSection({
         )}
 
         {showAdd && (
-          <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+          <Card className="space-y-2 rounded-md border-slate-200 bg-slate-50 p-3 shadow-none">
             <UserPicker
               value={pickedUser}
               onChange={(id) => setPickedUser(id)}
@@ -727,7 +728,7 @@ function CrewChangeSection({
                 Cancel
               </Button>
             </div>
-          </div>
+          </Card>
         )}
       </CardContent>
     </Card>

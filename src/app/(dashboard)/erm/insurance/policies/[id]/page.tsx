@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { PolicyDetail } from "@/app/(dashboard)/erm/lib-t3";
 import { PolicyDetailView } from "./policy-detail-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +29,10 @@ export default async function PolicyDetailPage(props: { params: Promise<{ id: st
             { label: "Not found" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Policy not found."} Ensure the ERM Tier 3 seed has been run, and you are logged in with an insurance role.{" "}
           <Link href="/erm/insurance/policies" className="font-medium underline">Back to policies</Link>
-        </div>
+        </Alert>
       </div>
     );
   }

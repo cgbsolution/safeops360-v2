@@ -4,10 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
 
 const REVOKER_ROLES = [
   "HSE_MANAGER",
@@ -82,20 +83,16 @@ export function CertificateRevokeButton({
 
   return (
     <div className="space-y-2">
-      <div className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-md p-2">
+      <Alert variant="destructive" className="text-xs text-rose-800 bg-rose-50 border border-rose-200 rounded-md p-2">
         Revoking <strong>{certificateNumber}</strong> takes immediate effect — all
         SafeOps gates referring to this certificate will fail. The audit
         trail is preserved.
-      </div>
+      </Alert>
       <div className="space-y-1.5">
         <Label className="text-xs">Reason category *</Label>
-        <Select value={reason} onChange={(e) => setReason(e.target.value)}>
-          {REASONS.map((r) => (
-            <option key={r.value} value={r.value}>
-              {r.label}
-            </option>
-          ))}
-        </Select>
+        <SelectField value={reason} onChange={(value) => setReason(value)}
+          options={REASONS.map((r) => ({ value: String(r.value), label: `${r.label}` }))}
+        />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs">Details *</Label>

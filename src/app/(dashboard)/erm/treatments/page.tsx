@@ -4,6 +4,9 @@ import { PageHeader } from "@/components/page-header";
 import { BandBadge, KpiTile } from "@/components/erm/shared";
 import { TreatmentProgressCell } from "@/components/erm/treatment-progress-cell";
 import { STATE_CHIP, fmtDate, fmtInr, type TreatmentTrackerRow } from "../lib";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -84,7 +87,7 @@ export default async function TreatmentTrackerPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           {/* KPI strip */}
@@ -106,38 +109,38 @@ export default async function TreatmentTrackerPage(props: {
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Strategy</th>
-                  <th className="px-3 py-2.5">Risk</th>
-                  <th className="px-3 py-2.5">CAPA</th>
-                  <th className="px-3 py-2.5">Parent Residual</th>
-                  <th className="px-3 py-2.5">State</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                  <th className="px-3 py-2.5">Progress</th>
-                  <th className="px-3 py-2.5">Due</th>
-                  <th className="px-3 py-2.5">Residual Reduction</th>
-                  <th className="px-3 py-2.5">Cost-Benefit</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1100px] text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Strategy</TableHead>
+                  <TableHead className="px-3 py-2.5">Risk</TableHead>
+                  <TableHead className="px-3 py-2.5">CAPA</TableHead>
+                  <TableHead className="px-3 py-2.5">Parent Residual</TableHead>
+                  <TableHead className="px-3 py-2.5">State</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                  <TableHead className="px-3 py-2.5">Progress</TableHead>
+                  <TableHead className="px-3 py-2.5">Due</TableHead>
+                  <TableHead className="px-3 py-2.5">Residual Reduction</TableHead>
+                  <TableHead className="px-3 py-2.5">Cost-Benefit</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={10} className="px-3 py-10 text-center text-sm text-slate-400">
                       No treatments match the current filter.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   rows.map((t) => (
-                    <tr key={t.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={t.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <span className="rounded bg-violet-100 px-2 py-0.5 text-[11px] font-medium text-violet-800">
                           {t.treatmentStrategy}
                         </span>
-                      </td>
-                      <td className="max-w-[280px] px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[280px] px-3 py-2.5">
                         <Link
                           href={`/erm/register/${t.riskId}`}
                           className="font-medium text-primary-700 hover:underline"
@@ -145,34 +148,34 @@ export default async function TreatmentTrackerPage(props: {
                           {t.riskCode}
                         </Link>
                         <span className="block truncate text-xs text-slate-500">{t.riskTitle}</span>
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/capa/${t.id}`} className="font-medium text-primary-700 hover:underline">
                           {t.capaNumber}
                         </Link>
                         <span className="block max-w-[220px] truncate text-xs text-slate-500">{t.title}</span>
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <BandBadge band={t.parentResidualBand} />
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (STATE_CHIP[t.state] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                           {t.state.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{t.primaryOwnerName ?? "—"}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{t.primaryOwnerName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <TreatmentProgressCell id={t.id} completionPercent={t.completionPercent} />
-                      </td>
-                      <td className="px-3 py-2.5 text-xs">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs">
                         <span className="text-slate-500">{fmtDate(t.closureTargetDate)}</span>
                         {t.overdue && (
                           <span className="ml-1 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">
                             OVERDUE
                           </span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums">
                         <span className="text-slate-500">exp</span>{" "}
                         <span className="font-medium text-slate-700">{t.expectedResidualReduction ?? "—"}</span>
                         <span className="mx-1 text-slate-300">/</span>
@@ -188,8 +191,8 @@ export default async function TreatmentTrackerPage(props: {
                         {t.reductionShortfall && (
                           <span className="ml-1 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">SHORT</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums">
                         {t.costInr != null ? (
                           <>
                             <span className="text-slate-700">{fmtInr(t.costInr)}</span>
@@ -200,13 +203,13 @@ export default async function TreatmentTrackerPage(props: {
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

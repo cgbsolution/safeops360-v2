@@ -27,10 +27,11 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
 import { fmtDate, type SlotPlan } from "@/app/(dashboard)/cams/programme/lib-programme";
+import { Alert } from "@/components/ui/alert";
 
 export function MaterialiseDialog({
   plan, sites, onClose,
@@ -97,7 +98,7 @@ export function MaterialiseDialog({
 
         {/* What the plan already decided — read-only, so it is obvious the user
             is scheduling THIS slot and not filling a blank form. */}
-        <div className="mt-3 space-y-1.5 rounded-lg border border-violet-200 bg-violet-50/60 p-3 text-[11px] text-violet-900">
+        <Alert variant="brand" className="mt-3 space-y-1.5 rounded-lg border border-violet-200 bg-violet-50/60 p-3 text-[11px] text-violet-900">
           <div className="flex items-center gap-1.5">
             <CalendarRange size={12} />
             Window {fmtDate(plan.windowStart)} – {fmtDate(plan.windowEnd)} · P{plan.periodIndex + 1}
@@ -119,10 +120,10 @@ export function MaterialiseDialog({
               engagement&rsquo;s scope statement.
             </div>
           )}
-        </div>
+        </Alert>
 
         {kind === "AUDIT" && plan.unmatchedDisciplineCodes.length > 0 && (
-          <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
+          <Alert variant="warning" className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
             <AlertTriangle size={13} className="mt-0.5 shrink-0" />
             <span>
               {plan.unmatchedDisciplineCodes.length} planned discipline(s) —{" "}
@@ -130,7 +131,7 @@ export function MaterialiseDialog({
               library and will not be materialised. That gap will show as scope variance, which is
               correct: the audit really will not cover them.
             </span>
-          </div>
+          </Alert>
         )}
 
         <div className="mt-4 space-y-3">
@@ -164,14 +165,16 @@ export function MaterialiseDialog({
           {kind === "INSPECTION" && (
             <div>
               <Label htmlFor="ms-type" className="text-xs">Engagement type</Label>
-              <Select id="ms-type" value={engagementType} className="mt-1"
-                onChange={(e) => setEngagementType(e.target.value)}>
-                <option value="INSPECTION">Inspection</option>
-                <option value="INTERNAL_AUDIT">Internal audit</option>
-                <option value="COMPLIANCE_AUDIT">Compliance audit</option>
-                <option value="SUPPLIER_AUDIT">Supplier audit</option>
-                <option value="LAYERED_PROCESS_AUDIT">Layered process audit</option>
-              </Select>
+              <SelectField id="ms-type" value={engagementType} className="mt-1"
+                onChange={setEngagementType}
+                options={[
+                { value: "INSPECTION", label: "Inspection" },
+                { value: "INTERNAL_AUDIT", label: "Internal audit" },
+                { value: "COMPLIANCE_AUDIT", label: "Compliance audit" },
+                { value: "SUPPLIER_AUDIT", label: "Supplier audit" },
+                { value: "LAYERED_PROCESS_AUDIT", label: "Layered process audit" }
+              ]}
+              />
             </div>
           )}
 
@@ -186,11 +189,11 @@ export function MaterialiseDialog({
               <Label htmlFor="ms-site" className="text-xs">
                 Site <span className="text-rose-600">*</span>
               </Label>
-              <Select id="ms-site" value={siteId} onChange={(e) => setSiteId(e.target.value)}
-                className="mt-1">
-                <option value="">— select —</option>
-                {sites.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </Select>
+              <SelectField id="ms-site" value={siteId} onChange={setSiteId}
+                className="mt-1"
+                placeholder="— select —"
+                options={sites.map((s) => ({ value: s.id, label: s.name }))}
+              />
               {plan.multiSite && (
                 <p className="mt-1 text-[11px] text-amber-700">
                   This slot spans {plan.siteIds.length} sites; an engagement runs at one. Pick the
@@ -230,9 +233,9 @@ export function MaterialiseDialog({
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex justify-end gap-2">
@@ -254,16 +257,15 @@ function KindCard({
   on: boolean; disabled?: boolean; onClick: () => void; title: string; sub: string;
 }) {
   return (
-    <button type="button" onClick={onClick} disabled={disabled} aria-pressed={on}
+    <Button type="button" variant="outline" onClick={onClick} disabled={disabled} aria-pressed={on}
       className={cn(
-        "rounded-lg border p-2.5 text-left transition",
-        on ? "border-violet-500 bg-violet-50" : "border-slate-200 bg-white hover:bg-slate-50",
-        disabled && "cursor-not-allowed opacity-50",
+        "h-auto flex-col items-start rounded-lg p-2.5 text-left",
+        on && "border-violet-500 bg-violet-50 hover:bg-violet-100",
       )}>
       <div className={cn("text-sm font-medium", on ? "text-violet-900" : "text-slate-700")}>
         {title}
       </div>
       <div className="mt-0.5 text-[11px] text-slate-500">{sub}</div>
-    </button>
+    </Button>
   );
 }

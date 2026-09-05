@@ -32,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
 import {
   BAND_META,
   siteText,
@@ -100,9 +101,9 @@ export function RecommendationPanel({
           )}
         </div>
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
       </Card>
 
@@ -225,13 +226,11 @@ function RecommendationCard({
         </div>
       )}
 
-      <button
+      <Button variant="link"
         type="button"
-        onClick={onToggle}
-        className="mt-2 text-[11px] text-violet-700 hover:underline"
-      >
+        onClick={onToggle} className="mt-2 text-[11px] hover:underline">
         {expanded ? "Hide" : "Show"} the arithmetic ({rec.score}/100)
-      </button>
+      </Button>
 
       {expanded && (
         <div className="mt-2 rounded-lg bg-slate-50 p-3">

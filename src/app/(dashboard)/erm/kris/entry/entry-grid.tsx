@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 
 // Compute a traffic-light status client-side, mirroring the spec rules.
 export function computeStatus(
@@ -112,9 +113,9 @@ export function KriEntryGrid({ items }: { items: KriOut[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
+      <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
         No manually-fed KRIs to enter.
-      </div>
+      </Card>
     );
   }
 
@@ -134,7 +135,7 @@ export function KriEntryGrid({ items }: { items: KriOut[] }) {
         </Button>
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <Table>
           <TableHeader>
             <TableRow>
@@ -208,7 +209,7 @@ export function KriEntryGrid({ items }: { items: KriOut[] }) {
             })}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       <p className="text-[11px] text-slate-400">
         Amber-tinted cells are missing data for that period. Status chips are live previews computed from each KRI's direction and thresholds.
       </p>

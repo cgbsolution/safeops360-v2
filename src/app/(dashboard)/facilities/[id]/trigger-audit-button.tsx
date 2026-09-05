@@ -17,6 +17,7 @@ import { useToast } from "@/components/ui/toast";
 import { ScheduleModal } from "../../cams/audits/schedule-modal";
 import type { AuditCategory, AuditLibrary, AuditTemplate, PlantUser } from "../../cams/audits/lib";
 import type { FactoryProfileDetail } from "../lib";
+import { Button } from "@/components/ui/button";
 
 type SchedulerData = {
   templates: AuditTemplate[];
@@ -62,14 +63,12 @@ export function TriggerAuditButton({ profile }: { profile: FactoryProfileDetail 
 
   return (
     <>
-      <button
+      <Button variant="default"
         type="button"
         onClick={open}
-        disabled={loading}
-        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-primary-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-800 disabled:opacity-50"
-      >
+        disabled={loading} className="shrink-0 gap-1.5 rounded-lg px-3 py-1.5 text-sm text-white">
         {loading ? <Loader2 size={15} className="animate-spin" /> : <ClipboardList size={15} />} Trigger Audit
-      </button>
+      </Button>
       {data && (
         <ScheduleModal
           plantId={profile.siteId}

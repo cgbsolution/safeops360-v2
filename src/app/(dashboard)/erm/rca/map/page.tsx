@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { CauseRiskGraph, SubCauseOut } from "../lib";
 import { CauseToRiskMap } from "./map-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +35,7 @@ export default async function RcaMapPage(props: {
         description="One root cause in the centre, the risks it drives radiating out — coloured by risk domain. The literal 'one cause, combination of risks' picture, with risk-to-risk chains."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <CauseToRiskMap graph={graph} focusOptions={focusOptions} focusValue={sp.subCauseId ?? ""} />
       )}

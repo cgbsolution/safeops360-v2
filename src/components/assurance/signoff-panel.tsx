@@ -27,11 +27,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { SignatureModal } from "@/components/ui/signature-pad";
 import { readApiError } from "@/lib/client-errors";
 import { fmtDateTime } from "@/app/(dashboard)/cams/lib-assurance";
+import { Alert } from "@/components/ui/alert";
 
 export type SignOffEntry = {
   role: string;
@@ -184,32 +185,30 @@ function RoleCard({
 
   if (!entry) {
     return (
-      <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-2.5">
+      <Card className="rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-2.5 shadow-none">
         <div className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
           <CircleDashed size={13} className="text-slate-400" />
           {ROLE_LABEL[role] ?? role}
         </div>
         <p className="mt-0.5 text-[11px] text-slate-500">Not yet signed.</p>
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+    <Card className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-none">
       <div className="flex items-center gap-1.5 text-xs font-medium text-slate-700">
         <CheckCircle2 size={13} className="text-emerald-600" />
         {ROLE_LABEL[role] ?? role}
         {/* Only the signer may withdraw their own signature. */}
         {!locked && entry.userId === me && (
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={withdraw}
-            disabled={busy}
-            className="ml-auto text-slate-400 hover:text-rose-600 disabled:opacity-50"
-            aria-label="Withdraw signature"
-          >
+            disabled={busy} className="ml-auto"
+            aria-label="Withdraw signature">
             {busy ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-          </button>
+          </Button>
         )}
       </div>
       <div className="mt-0.5 text-[12px] text-slate-700">{entry.name}</div>
@@ -233,7 +232,7 @@ function RoleCard({
       {entry.statement && (
         <p className="mt-1 text-[11px] italic text-slate-600">&ldquo;{entry.statement}&rdquo;</p>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -294,25 +293,19 @@ function SignDialog({
           <div className="mt-4 space-y-3">
             <div>
               <Label htmlFor="so-role" className="text-xs">Signing as</Label>
-              <Select id="so-role" value={role} onChange={(e) => setRole(e.target.value)} className="mt-1">
-                {Object.entries(ROLE_LABEL).map(([v, l]) => (
-                  <option key={v} value={v}>{l}</option>
-                ))}
-              </Select>
+              <SelectField id="so-role" value={role} onChange={setRole} className="mt-1"
+                options={Object.entries(ROLE_LABEL).map(([v, l]) => ({ value: v, label: String(l) }))}
+              />
             </div>
 
             {role === "DISCIPLINE_AUDITOR" && (
               <div>
                 <Label htmlFor="so-disc" className="text-xs">Discipline</Label>
-                <Select id="so-disc" value={disciplineCode}
-                  onChange={(e) => setDisciplineCode(e.target.value)} className="mt-1">
-                  <option value="">— select —</option>
-                  {status.disciplines.map((d) => (
-                    <option key={d.disciplineCode} value={d.disciplineCode}>
-                      {d.disciplineLabel}{d.signed ? " (signed)" : ""}
-                    </option>
-                  ))}
-                </Select>
+                <SelectField id="so-disc" value={disciplineCode}
+                  onChange={setDisciplineCode} className="mt-1"
+                  placeholder="— select —"
+                  options={status.disciplines.map((d) => ({ value: d.disciplineCode, label: `${d.disciplineLabel}${d.signed ? " (signed)" : ""}` }))}
+                />
               </div>
             )}
 
@@ -364,9 +357,9 @@ function SignDialog({
           </div>
 
           {err && (
-            <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
               {err}
-            </div>
+            </Alert>
           )}
 
           <div className="mt-5 flex justify-end gap-2">

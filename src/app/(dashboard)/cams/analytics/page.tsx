@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import type { Analytics } from "../lib-cams";
 import { AnalyticsView } from "./analytics-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function AnalyticsPage() {
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Analytics" }]}
       />
       {error || !data ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error ?? "No data"}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error ?? "No data"}</Alert>
       ) : (
         <AnalyticsView a={data} />
       )}

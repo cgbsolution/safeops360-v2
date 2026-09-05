@@ -9,6 +9,8 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { GitBranch } from "lucide-react";
 import type { LinkedRiskRef } from "@/app/(dashboard)/erm/rca/lib";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function LinkedRisksCell({ risks }: { risks?: LinkedRiskRef[] | null }) {
   const [open, setOpen] = useState(false);
@@ -36,7 +38,7 @@ export function LinkedRisksCell({ risks }: { risks?: LinkedRiskRef[] | null }) {
 
   return (
     <div className="relative inline-block" ref={ref}>
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={
@@ -45,13 +47,12 @@ export function LinkedRisksCell({ risks }: { risks?: LinkedRiskRef[] | null }) {
             ? "border-indigo-300 bg-indigo-100 text-indigo-800"
             : "border-indigo-200 bg-indigo-50 text-indigo-700 hover:border-indigo-400")
         }
-        title="Linked risks"
-      >
+        title="Linked risks">
         <GitBranch size={11} />
         {risks.length} risk{risks.length === 1 ? "" : "s"}
-      </button>
+      </Button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg">
+        <Card className="absolute right-0 z-20 mt-1 w-64 rounded-lg border border-slate-200 bg-white p-1.5 shadow-lg">
           <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">
             Linked risks
           </div>
@@ -72,7 +73,7 @@ export function LinkedRisksCell({ risks }: { risks?: LinkedRiskRef[] | null }) {
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
     </div>
   );

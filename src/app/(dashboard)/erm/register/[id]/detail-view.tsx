@@ -26,6 +26,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   BAND_HEX,
   DIMENSION_LABEL,
@@ -101,7 +105,7 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
   return (
     <div className="space-y-4">
       {/* Header card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -110,9 +114,9 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
                 {st.replace(/_/g, " ")}
               </span>
               {risk.categoryCode && (
-                <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white" style={{ backgroundColor: risk.categoryColor ?? "#64748b" }}>
+                <Badge variant="neutral" className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white" style={{ backgroundColor: risk.categoryColor ?? "#64748b" }}>
                   {risk.categoryName}
-                </span>
+                </Badge>
               )}
               {isRollup && (
                 <span className="rounded bg-cyan-50 px-2 py-0.5 text-[11px] font-medium text-cyan-700 ring-1 ring-cyan-200">
@@ -160,7 +164,7 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
             </ActionBtn>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-200">
@@ -184,7 +188,7 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         {tab === "Overview" && <OverviewTab risk={risk} />}
         {tab === "Assessments" && <AssessmentsTab risk={risk} />}
         {tab === "Treatments" && <TreatmentsTab risk={risk} />}
@@ -195,7 +199,7 @@ export function RiskDetailView({ risk, matrix, phase2 }: { risk: RiskDetail; mat
         {tab === "Reviews" && <ReviewsTab risk={risk} />}
         {tab === "Documents" && <RiskAttachments riskId={risk.id} canEdit={true} />}
         {tab === "History" && <RiskHistory riskId={risk.id} riskCode={risk.riskCode} />}
-      </div>
+      </Card>
 
       {modal === "assess" && <AssessModal risk={risk} matrix={matrix} onClose={() => setModal(null)} onDone={() => { setModal(null); router.refresh(); }} />}
       {modal === "treat" && <TreatModal risk={risk} onClose={() => setModal(null)} onDone={() => { setModal(null); router.refresh(); }} />}
@@ -232,18 +236,18 @@ function OverviewTab({ risk }: { risk: RiskDetail }) {
       </div>
       {/* Bow-tie */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+        <Card className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 shadow-none">
           <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Causes</h3>
           <Chips items={risk.causes} tone="bg-amber-50 text-amber-800 border border-amber-100" />
-        </div>
-        <div className="rounded-lg border-2 border-slate-300 bg-white p-3">
+        </Card>
+        <Card className="rounded-lg border-2 border-slate-300 bg-white p-3 shadow-none">
           <h3 className="mb-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-500">Risk Event</h3>
           <p className="text-center text-sm font-medium text-slate-800">{risk.title}</p>
-        </div>
-        <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3">
+        </Card>
+        <Card className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 shadow-none">
           <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Consequences</h3>
           <Chips items={risk.consequences} tone="bg-rose-50 text-rose-800 border border-rose-100" />
-        </div>
+        </Card>
       </div>
       <div>
         <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Existing controls</h3>
@@ -293,7 +297,7 @@ function AssessmentsTab({ risk }: { risk: RiskDetail }) {
         <AssessmentCard title="Residual (current)" a={res} />
       </div>
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-lg border border-slate-200 p-3">
+        <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
           <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Per-dimension breakdown</h3>
           <ResponsiveContainer width="100%" height={240}>
             <RadarChart data={radarData}>
@@ -304,8 +308,8 @@ function AssessmentsTab({ risk }: { risk: RiskDetail }) {
               <Tooltip contentStyle={{ borderRadius: 8, fontSize: 12 }} />
             </RadarChart>
           </ResponsiveContainer>
-        </div>
-        <div className="rounded-lg border border-slate-200 p-3">
+        </Card>
+        <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
           <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Residual score trend</h3>
           {trend.length > 1 ? (
             <ResponsiveContainer width="100%" height={240}>
@@ -320,7 +324,7 @@ function AssessmentsTab({ risk }: { risk: RiskDetail }) {
           ) : (
             <p className="py-12 text-center text-xs text-slate-400">A single residual assessment so far — re-assess to build a trend.</p>
           )}
-        </div>
+        </Card>
       </div>
       <div>
         <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Assessment history</h3>
@@ -351,7 +355,7 @@ function AssessmentsTab({ risk }: { risk: RiskDetail }) {
 
 function AssessmentCard({ title, a }: { title: string; a: Assessment | null }) {
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
+    <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
       <div className="mb-2 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-800">{title}</h3>
         {a && <BandBadge band={a.ratingBand} score={a.totalScore} />}
@@ -374,7 +378,7 @@ function AssessmentCard({ title, a }: { title: string; a: Assessment | null }) {
       ) : (
         <p className="py-4 text-center text-xs text-slate-400">Not yet assessed.</p>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -469,7 +473,7 @@ function TreatmentProgress({ treatment: t }: { treatment: Treatment }) {
         <span className="w-9 text-right text-[11px] tabular-nums text-slate-600">{value}%</span>
       </div>
       <div className="flex items-center gap-2">
-        <input
+        <Input
           type="range"
           min={0}
           max={100}
@@ -477,17 +481,15 @@ function TreatmentProgress({ treatment: t }: { treatment: Treatment }) {
           value={value}
           onChange={(e) => setValue(Number(e.target.value))}
           disabled={busy}
-          className="h-1.5 w-28 cursor-pointer accent-primary-600"
-        />
-        <input
+          className="h-1.5 w-28 cursor-pointer accent-primary-600" />
+        <Input
           type="number"
           min={0}
           max={100}
           value={value}
           onChange={(e) => setValue(Math.max(0, Math.min(100, Number(e.target.value) || 0)))}
           disabled={busy}
-          className="w-14 rounded border border-slate-300 px-1.5 py-0.5 text-[11px] tabular-nums"
-        />
+          className="w-14 rounded border border-slate-300 px-1.5 py-0.5 text-[11px] tabular-nums" />
         <button
           onClick={save}
           disabled={busy || !dirty}
@@ -546,7 +548,7 @@ function LossHistoryTab({ phase2 }: { phase2: NonNullable<Phase2Context> }) {
     <div>
       <div className="mb-3 flex items-center justify-between">
         <p className="text-xs text-slate-500">Actual loss events evidencing this risk (12-month net).</p>
-        <span className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">12-mo net: {inr(phase2.netLoss12m)}</span>
+        <Badge variant="neutral" className="rounded-lg bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">12-mo net: {inr(phase2.netLoss12m)}</Badge>
       </div>
       <Table>
         <TableHeader>
@@ -672,11 +674,11 @@ export function AssessForm({
   return (
     <div className="space-y-4">
       {!forceType && (
-        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
+        <Card className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium shadow-none">
           {(["INHERENT", "RESIDUAL"] as const).map((t) => (
             <Button key={t} type="button" variant="ghost" onClick={() => setType(t)} className={cn("h-auto rounded-md px-3 py-1.5", type === t ? "bg-white text-primary-700 shadow-sm" : "text-slate-500")}>{t}</Button>
           ))}
-        </div>
+        </Card>
       )}
       <div>
         <h3 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Likelihood</h3>
@@ -721,7 +723,7 @@ export function AssessForm({
         <span className="text-xs text-slate-500">= {likelihood} × {overall}</span>
       </div>
       <div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Rationale (required)</label>
+        <Label className="mb-1 block text-xs font-medium text-slate-600">Rationale (required)</Label>
         <Textarea value={rationale} onChange={(e) => setRationale(e.target.value)} rows={3}
           placeholder="Why this likelihood and impact…" />
       </div>
@@ -776,15 +778,15 @@ function AssessModal({ risk, matrix, onClose, onDone }: { risk: RiskDetail; matr
     <Modal title="Record assessment" onClose={onClose} wide>
       {overridePrompt ? (
         <div className="space-y-3">
-          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">{overridePrompt.message}</div>
+          <Alert variant="warning" className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-800">{overridePrompt.message}</Alert>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Override justification (required)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Override justification (required)</Label>
             <Textarea value={justification} onChange={(e) => setJustification(e.target.value)} rows={3} placeholder="Why is this residual supportable despite the control-derived value?" />
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => { setOverridePrompt(null); setJustification(""); }} className="flex-1">Back</Button>
             {/* Bespoke amber "confirm override" action — no Button variant matches this warning color; left as a raw styled button to avoid guessing a visual change. */}
-            <button disabled={busy || !justification.trim()} onClick={confirmOverride} className="flex-1 rounded-lg bg-amber-600 py-2 text-sm font-medium text-white disabled:opacity-50">{busy ? "Saving…" : "Confirm override & save"}</button>
+            <Button disabled={busy || !justification.trim()} onClick={confirmOverride} className="flex-1 rounded-lg bg-amber-600 py-2 text-sm font-medium text-white disabled:opacity-50">{busy ? "Saving…" : "Confirm override & save"}</Button>
           </div>
         </div>
       ) : (
@@ -821,7 +823,7 @@ function TreatModal({ risk, onClose, onDone }: { risk: RiskDetail; onClose: () =
     <Modal title="Add treatment" onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Strategy</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Strategy</Label>
           <div className="grid grid-cols-4 gap-1.5">
             {["TREAT", "TOLERATE", "TRANSFER", "TERMINATE"].map((s) => (
               <Button key={s} type="button" variant="ghost" onClick={() => setStrategy(s)} className={cn("h-auto rounded-lg border px-2 py-2 text-xs font-medium", strategy === s ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200")}>{s}</Button>
@@ -830,27 +832,27 @@ function TreatModal({ risk, onClose, onDone }: { risk: RiskDetail; onClose: () =
         </div>
         {strategy === "TOLERATE" ? (
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Acceptance justification (required — CRO sign-off via Accept)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Acceptance justification (required — CRO sign-off via Accept)</Label>
             <Textarea value={justification} onChange={(e) => setJustification(e.target.value)} rows={3} />
           </div>
         ) : (
           <>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Treatment title</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Treatment title</Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Qualify alternate polymer vendor" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Action owner</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Action owner</Label>
                 <UserPicker value={ownerId} onChange={(id) => setOwnerId(id)} filter={{ plantId: risk.plantId ?? undefined }} placeholder="Assign an owner" />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Due date</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Due date</Label>
                 <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
               </div>
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Expected residual score after completion</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Expected residual score after completion</Label>
               <Input type="number" min={1} max={25} value={reduction} onChange={(e) => setReduction(e.target.value)} className="w-32" />
             </div>
             <p className="text-xs text-slate-500">Spawns a CAPA on the universal CAPA engine (source type RISK_TREATMENT) — one action universe, one overdue report. The owner is notified on assignment.</p>
@@ -884,7 +886,7 @@ function ReviewModal({ risk, matrix, onClose, onDone }: { risk: RiskDetail; matr
     <Modal title="Conduct review" onClose={onClose} wide={outcome === "RESCORED"}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Outcome</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Outcome</Label>
           <div className="grid grid-cols-2 gap-1.5">
             {["NO_CHANGE", "RESCORED", "ESCALATED", "RECOMMEND_CLOSURE"].map((o) => (
               <Button key={o} type="button" variant="ghost" onClick={() => setOutcome(o)} className={cn("h-auto rounded-lg border px-2 py-2 text-xs font-medium", outcome === o ? "border-primary-600 bg-primary-50 text-primary-700" : "border-slate-200")}>{o.replace(/_/g, " ")}</Button>
@@ -892,14 +894,14 @@ function ReviewModal({ risk, matrix, onClose, onDone }: { risk: RiskDetail; matr
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Notes (required)</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Notes (required)</Label>
           <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
         </div>
         {outcome === "RESCORED" && (
-          <div className="rounded-lg border border-slate-200 p-3">
+          <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
             <p className="mb-2 text-xs font-medium text-slate-600">New residual assessment {assessment && <span className="text-emerald-600">✓ captured</span>}</p>
             <AssessForm matrix={matrix} forceType="RESIDUAL" busy={false} onSubmit={(b) => setAssessment(b)} />
-          </div>
+          </Card>
         )}
         <Button type="button" disabled={busy || !notes.trim()} onClick={submit} className="w-full">
           {busy ? "Saving…" : "Submit review"}

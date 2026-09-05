@@ -79,16 +79,38 @@ export const ROLE_OPTIONS = [
   { value: "ADMIN", label: "Admin" }
 ];
 
+/** Assignment-by-field options.
+ *
+ *  Must stay in step with `_resolve_assignee` in
+ *  services/workflow_engine.py — that function is what turns one of these into
+ *  a user id. A field the engine handles but this list omits is worse than it
+ *  sounds: the step still routes correctly, but the admin opening it sees an
+ *  empty "Pick a field" dropdown, and re-picking silently reassigns the step
+ *  to someone else. */
 export const FIELD_OPTIONS = [
   { value: "ORIGINATOR", label: "Originator (record creator)" },
   { value: "ACTION_OWNER", label: "Action Owner (named on record)" },
   { value: "RESPONSIBLE_PERSON", label: "Responsible Person (named on record)" },
+  { value: "SAFETY_OFFICER", label: "Safety Officer (named on record)" },
+  { value: "INVESTIGATION_LEAD", label: "Investigation Lead (named on record)" },
   { value: "ASSIGNED_INSPECTOR", label: "Assigned Inspector" },
   { value: "RECEIVER", label: "Receiver" },
   { value: "ISSUER", label: "Issuer" },
   { value: "TRAINER", label: "Trainer" },
   { value: "AREA_OWNER", label: "Area Owner" }
 ];
+
+/** Human-readable description of a step's parallel strategy. The editor has no
+ *  control for it — these are set by the seeders — but a step that silently
+ *  behaves differently from every other one should say so. */
+export const PARALLEL_STRATEGY_LABELS: Record<string, string> = {
+  JOINT_APPROVAL:
+    "Joint approval — one task per role above; all must approve before the workflow advances.",
+  CAPA_FAN_OUT:
+    "CAPA fan-out — one task per CAPA owner on the record; the step advances when every owner is done.",
+  CAPA_ACTION_FAN_OUT:
+    "Action fan-out — one task per action owner on the CAPA; the step advances when every owner is done."
+};
 
 export const CONDITION_OPERATORS = [
   { value: "=", label: "equals" },

@@ -220,16 +220,15 @@ export default async function InspectionTypeDetailPage(props: { params: Promise<
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {t.equipmentLinks.map((l) => (
-                  <div
+                  <Card
                     key={l.id}
-                    className="border border-slate-200 rounded-md p-2 text-sm"
-                  >
+                    className="border border-slate-200 rounded-md p-2 text-sm shadow-none">
                     <div className="font-medium">{l.equipment.name}</div>
                     <div className="text-xs text-slate-500">
                       {l.equipment.plant.code} · {l.equipment.code}
                       {l.frequencyOverride && ` · ${FREQ_LABEL[l.frequencyOverride]} (override)`}
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             </CardContent>

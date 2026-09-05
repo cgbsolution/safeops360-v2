@@ -3,6 +3,8 @@
 import { Download } from "lucide-react";
 import { toCsv, downloadCsv, stamp } from "../csv";
 import { buildingRegisterCsv, certificationRegisterCsv, workforceRegisterCsv } from "../registers-csv";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   fmtDate,
   titleCase,
@@ -93,19 +95,17 @@ export function ReportsView({
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
       {reports.map((r) => (
-        <div key={r.title} className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4">
+        <Card key={r.title} className="flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <div>
             <h3 className="text-sm font-semibold text-slate-800">{r.title}</h3>
             <p className="mt-1 text-xs text-slate-500">{r.desc}</p>
             <p className="mt-2 text-[11px] font-medium text-slate-400">{r.count}</p>
           </div>
-          <button
-            onClick={r.run}
-            className="mt-3 inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:border-primary-400 hover:text-primary-700"
-          >
+          <Button variant="outline"
+            onClick={r.run} className="mt-3 gap-1.5 rounded-lg px-3 py-2 text-sm">
             <Download size={15} /> Download CSV
-          </button>
-        </div>
+          </Button>
+        </Card>
       ))}
     </div>
   );

@@ -23,10 +23,13 @@ import { Check, History, Pencil, ShieldCheck, X } from "lucide-react";
 import { Can, usePermission } from "@/components/auth/can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   CHANGE_REQUEST_STATUS_CHIP,
   CHANGE_REQUEST_STATUS_LABEL,
@@ -123,7 +126,7 @@ function payloadFor(f: Form) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       {children}
     </div>
   );
@@ -234,7 +237,7 @@ export function ProfileEditPanel({ profile }: { profile: FactoryProfileDetail })
 
   return (
     <div className="mb-4 space-y-3">
-      {err && <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
+      {err && <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
 
       {/* ── Actions row ── */}
       <div className="flex flex-wrap items-center gap-2">
@@ -266,7 +269,7 @@ export function ProfileEditPanel({ profile }: { profile: FactoryProfileDetail })
 
       {/* ── Pending change request ── */}
       {pending && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
+        <Alert variant="warning" className="rounded-xl border border-amber-200 bg-amber-50/60 p-4">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <StatusChip status={pending.status} />
             <span className="text-sm font-semibold text-slate-800">Profile change v{pending.version}</span>
@@ -343,12 +346,12 @@ export function ProfileEditPanel({ profile }: { profile: FactoryProfileDetail })
               Awaiting {pending.status === "PENDING_UNIT" ? "the Plant Head at the Unit" : "the Compliance Team’s Lead Auditor"}.
             </p>
           )}
-        </div>
+        </Alert>
       )}
 
       {/* ── Edit form ── */}
       {editing && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <div className="mb-3 flex items-center gap-2">
             <h3 className="text-sm font-semibold text-slate-800">Edit factory profile</h3>
             <span className="text-[11px] text-slate-500">
@@ -362,25 +365,16 @@ export function ProfileEditPanel({ profile }: { profile: FactoryProfileDetail })
               <Input value={f.factoryName} onChange={(e) => setF({ ...f, factoryName: e.target.value })} />
             </Field>
             <Field label="Status">
-              <Select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value as FactoryStatus })}>
-                {FACTORY_STATUSES.map((s) => (
-                  <option key={s} value={s}>
-                    {titleCase(s)}
-                  </option>
-                ))}
-              </Select>
+              <SelectField value={f.status} onChange={(value) => setF({ ...f, status: value as FactoryStatus })}
+                options={FACTORY_STATUSES.map((s) => ({ value: String(s), label: `${titleCase(s)}` }))}
+              />
             </Field>
             <Field label="Ownership">
-              <Select
+              <SelectField
                 value={f.ownershipType}
-                onChange={(e) => setF({ ...f, ownershipType: e.target.value as OwnershipType })}
-              >
-                {OWNERSHIP_TYPES.map((o) => (
-                  <option key={o} value={o}>
-                    {OWNERSHIP_LABEL[o]}
-                  </option>
-                ))}
-              </Select>
+                onChange={(value) => setF({ ...f, ownershipType: value as OwnershipType })}
+                options={OWNERSHIP_TYPES.map((o) => ({ value: String(o), label: `${OWNERSHIP_LABEL[o]}` }))}
+              />
             </Field>
             <Field label="Primary industry">
               <Input value={f.primaryIndustry} onChange={(e) => setF({ ...f, primaryIndustry: e.target.value })} />
@@ -460,12 +454,12 @@ export function ProfileEditPanel({ profile }: { profile: FactoryProfileDetail })
               Cancel
             </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* ── Version history ── */}
       {showHistory && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <h3 className="mb-3 text-sm font-semibold text-slate-700">Profile version history</h3>
           <ul className="space-y-3">
             {history.map((cr) => (
@@ -505,7 +499,7 @@ export function ProfileEditPanel({ profile }: { profile: FactoryProfileDetail })
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       )}
     </div>
   );

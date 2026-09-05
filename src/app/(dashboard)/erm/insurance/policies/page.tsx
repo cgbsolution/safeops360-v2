@@ -11,6 +11,9 @@ import {
 } from "@/app/(dashboard)/erm/lib-t3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { NewPolicyButton } from "./new-policy-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -70,9 +73,9 @@ export default async function PolicyRegisterPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Tier 3 seed has been run, and you are logged in with an insurance role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -133,71 +136,71 @@ export default async function PolicyRegisterPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.items.length} shown</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Name</th>
-                  <th className="px-3 py-2.5">Type</th>
-                  <th className="px-3 py-2.5">Insurer</th>
-                  <th className="px-3 py-2.5">Policy no.</th>
-                  <th className="px-3 py-2.5 text-right">Sum insured</th>
-                  <th className="px-3 py-2.5 text-right">Premium</th>
-                  <th className="px-3 py-2.5">Coverage end</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5 text-right">Risks</th>
-                  <th className="px-3 py-2.5 text-right">Claims</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1100px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Name</TableHead>
+                  <TableHead className="px-3 py-2.5">Type</TableHead>
+                  <TableHead className="px-3 py-2.5">Insurer</TableHead>
+                  <TableHead className="px-3 py-2.5">Policy no.</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">Sum insured</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">Premium</TableHead>
+                  <TableHead className="px-3 py-2.5">Coverage end</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">Risks</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">Claims</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
                       No policies match the current filter. Use “New Policy” to add one.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((p) => (
-                    <tr key={p.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={p.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/insurance/policies/${p.id}`} className="font-medium text-primary-700 hover:underline">
                           {p.policyCode}
                         </Link>
-                      </td>
-                      <td className="max-w-[220px] px-3 py-2.5 text-slate-700">{p.policyName}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[220px] px-3 py-2.5 text-slate-700">{p.policyName}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
                           {POLICY_TYPE_LABEL[p.policyType] ?? p.policyType.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{p.insurerName}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-500">{p.policyNumber}</td>
-                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-700">{inrCompact(p.sumInsuredInr)}</td>
-                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-600">{inrCompact(p.premiumAnnualInr)}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-500">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{p.insurerName}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-500">{p.policyNumber}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-700">{inrCompact(p.sumInsuredInr)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-600">{inrCompact(p.premiumAnnualInr)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-500">
                         {fmtDate(p.coverageEndDate)}
                         {expiryBadge(p.daysToExpiry)}
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (POLICY_STATUS_CHIP[p.status] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                           {p.status.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-600">{p.coveredRiskCount}</td>
-                      <td className="px-3 py-2.5 text-right text-xs tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-600">{p.coveredRiskCount}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums">
                         {p.openClaimCount > 0 ? (
                           <span className="rounded bg-amber-100 px-1.5 py-0.5 font-semibold text-amber-800">{p.openClaimCount}</span>
                         ) : (
                           <span className="text-slate-400">0</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

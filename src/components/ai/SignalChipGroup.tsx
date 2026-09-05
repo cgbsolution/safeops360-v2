@@ -14,6 +14,7 @@ import { useId, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { Signal } from "@/lib/insights";
 import { SignalChip } from "./SignalChip";
+import { Button } from "@/components/ui/button";
 
 export function SignalChipGroup({
   signals,
@@ -52,17 +53,15 @@ export function SignalChipGroup({
             if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
           }}
         >
-          <button
+          <Button variant="outline"
             type="button"
             aria-describedby={open ? popId : undefined}
             aria-expanded={open}
             onClick={() => setOpen((v) => !v)}
             onFocus={() => setOpen(true)}
-            onKeyDown={(e) => e.key === "Escape" && setOpen(false)}
-            className="chip cursor-help gap-0.5 whitespace-nowrap border border-slate-200 bg-slate-50 text-[10px] font-semibold text-slate-600"
-          >
+            onKeyDown={(e) => e.key === "Escape" && setOpen(false)} className="chip cursor-help gap-0.5 whitespace-nowrap text-[10px]">
             +{overflow.length}
-          </button>
+          </Button>
 
           {open && (
             <span

@@ -3,6 +3,8 @@
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 import { Building2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
 
 export type PlantOption = {
   id: string;
@@ -39,21 +41,16 @@ export function PlantSwitcher({
   }
 
   return (
-    <label className="inline-flex items-center gap-2 text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 hover:border-slate-300 transition">
+    <Label className="inline-flex items-center gap-2 text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 hover:border-slate-300 transition">
       <Building2 size={14} className="text-slate-500" />
       <span className="text-slate-600 font-medium">Plant:</span>
-      <select
+      <SelectField
         value={currentPlantId ?? ""}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(value) => onChange(value)}
         disabled={pending}
         className="bg-transparent text-slate-800 outline-none cursor-pointer"
-      >
-        {plants.map((p) => (
-          <option key={p.id} value={p.id}>
-            {p.code} — {p.name}
-          </option>
-        ))}
-      </select>
-    </label>
+        options={plants.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` }))}
+      />
+    </Label>
   );
 }

@@ -67,6 +67,12 @@ import {
   uploadMedia,
 } from "./upload";
 import { VoiceRecorder } from "./voice-recorder";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 const APP_VERSION = "capture-1.1.0";
 const LAST_TYPE_KEY = "safeops_capture_last_type";
@@ -1046,14 +1052,12 @@ export function CaptureWizard({
           </p>
           <p className="mt-4 text-lg text-[#0B1F4D]">{t("successBody", lang)}</p>
         </div>
-        <button
+        <Button variant="ghost"
           type="button"
           aria-label={t("listen", lang)}
-          onClick={() => speak(`${t("successTitle", lang)} ${result.number}. ${t("successBody", lang)}`, lang)}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95"
-        >
+          onClick={() => speak(`${t("successTitle", lang)} ${result.number}. ${t("successBody", lang)}`, lang)} className="flex h-14 w-14 rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95">
           <Volume2 className="h-6 w-6" />
-        </button>
+        </Button>
         <div className="flex w-full max-w-sm flex-col gap-3">
           <BigButton primary={t("another", lang)} secondary={tPair("another", lang).secondary} variant="gold" onClick={() => resetForAnother(true)} />
           <BigButton primary={t("myReports", lang)} secondary={tPair("myReports", lang).secondary} variant="ghost" onClick={() => router.push("/capture/mine")} icon={ListChecks} />
@@ -1085,7 +1089,7 @@ export function CaptureWizard({
   if (phase === "submitting") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-5 p-6">
-        <div className="h-14 w-14 animate-spin rounded-full border-4 border-[#E8EEF7] border-t-[#C9A961]" />
+        <Spinner size="xl" tone="gold" />
         <p className="text-xl font-semibold text-[#0B1F4D]">
           {submitStage === "media" ? t("uploadingMedia", lang) : t("sending", lang)}
         </p>
@@ -1119,25 +1123,21 @@ export function CaptureWizard({
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col" onPointerDownCapture={countTap}>
       {/* header: back | dots | globe (always visible — spec 1.1.4) */}
       <header className="flex items-center justify-between gap-2 px-4 pb-2 pt-4">
-        <button
+        <Button variant="ghost"
           type="button"
           aria-label={step === 0 ? t("goDashboard", lang) : t("back", lang)}
-          onClick={back}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95"
-        >
+          onClick={back} className="flex h-14 w-14 rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95">
           {step === 0 ? <Home className="h-6 w-6" /> : <ChevronLeft className="h-7 w-7" />}
-        </button>
+        </Button>
         <ProgressDots total={stages.length} current={step} />
         <div className="flex items-center gap-2">
           <SyncChip />
-          <button
+          <Button variant="ghost"
             type="button"
             aria-label={t("chooseLanguage", lang)}
-            onClick={() => setShowLangPicker(true)}
-            className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95"
-          >
+            onClick={() => setShowLangPicker(true)} className="flex h-14 w-14 rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95">
             <Globe className="h-6 w-6" />
-          </button>
+          </Button>
         </div>
       </header>
 
@@ -1207,32 +1207,21 @@ export function CaptureWizard({
                 />
               ))}
             </TileGrid>
-            <label className="mt-2 flex min-h-[56px] items-center justify-between gap-3 rounded-2xl border border-[#D9E1EF] bg-white px-4 py-3">
+            <Label className="mt-2 flex min-h-[56px] items-center justify-between gap-3 rounded-2xl border border-[#D9E1EF] bg-white px-4 py-3 font-normal">
               <BiText
                 primary={t("anonToggle", lang)}
                 secondary={tPair("anonToggle", lang).secondary}
                 className="items-start text-left"
               />
-              <button
-                type="button"
-                role="switch"
-                aria-checked={anonymous}
-                onClick={() => setAnonymous(!anonymous)}
-                className={
-                  anonymous
-                    ? "relative h-8 w-14 shrink-0 rounded-full bg-[#C9A961] transition-colors"
-                    : "relative h-8 w-14 shrink-0 rounded-full bg-[#D9E1EF] transition-colors"
-                }
-              >
-                <span
-                  className={
-                    anonymous
-                      ? "absolute right-1 top-1 h-6 w-6 rounded-full bg-white shadow"
-                      : "absolute left-1 top-1 h-6 w-6 rounded-full bg-white shadow"
-                  }
-                />
-              </button>
-            </label>
+              <Switch
+                size="lg"
+                checked={anonymous}
+                onCheckedChange={setAnonymous}
+                activeClassName="bg-[#C9A961]"
+                className="bg-[#D9E1EF]"
+                aria-label={t("anonToggle", lang)}
+              />
+            </Label>
             {anonymous ? <p className="text-center text-sm font-medium text-[#B7791F]">{t("anonOn", lang)}</p> : null}
             <Link href="/capture/mine" className="mt-auto text-center text-base font-medium text-[#0B1F4D] underline underline-offset-4">
               {t("myReports", lang)}
@@ -1248,10 +1237,9 @@ export function CaptureWizard({
                 scanned a specific cylinder; they need to see the wizard agrees
                 which one before they describe a fault on it. */}
             {fireAsset ? (
-              <div
-                className="mb-4 rounded-2xl border-2 border-[#C9A961] bg-[#FDF8EE] px-4 py-3"
-                data-testid="fire-asset-banner"
-              >
+              <Card
+                className="mb-4 rounded-2xl border-2 border-[#C9A961] bg-[#FDF8EE] px-4 py-3 shadow-none"
+                data-testid="fire-asset-banner">
                 <div className="flex items-start gap-3">
                   <Flame size={22} className="mt-0.5 shrink-0 text-[#B7791F]" />
                   <div className="min-w-0">
@@ -1267,7 +1255,7 @@ export function CaptureWizard({
                     ) : null}
                   </div>
                 </div>
-              </div>
+              </Card>
             ) : null}
 
             {fireAssetLoading ? (
@@ -1281,11 +1269,10 @@ export function CaptureWizard({
                 the sticker may be damaged (rescan), or genuinely retired
                 (file the finding without the link rather than lose it). */}
             {fireAssetError ? (
-              <div
-                className="mb-4 rounded-2xl border-2 border-[#C53030] bg-[#FEF2F2] px-4 py-3"
+              <Card
+                className="mb-4 rounded-2xl border-2 border-[#C53030] bg-[#FEF2F2] px-4 py-3 shadow-none"
                 role="alert"
-                data-testid="fire-asset-error"
-              >
+                data-testid="fire-asset-error">
                 <div className="flex items-start gap-3">
                   <AlertTriangle size={22} className="mt-0.5 shrink-0 text-[#C53030]" />
                   <p className="text-base font-medium text-[#C53030]">{fireAssetError}</p>
@@ -1316,7 +1303,7 @@ export function CaptureWizard({
                     {t("fireAssetSkip", lang)}
                   </button>
                 </div>
-              </div>
+              </Card>
             ) : null}
 
             <TileGrid>
@@ -1629,18 +1616,18 @@ export function CaptureWizard({
 
             {/* AI vision-suggest confirm card (spec 1.2 screen 3) */}
             {aiChecking ? (
-              <div className="flex items-center justify-center gap-2 rounded-2xl border-2 border-[#C9A961]/40 bg-[#C9A961]/5 p-4">
+              <Card className="flex items-center justify-center gap-2 rounded-2xl border-2 border-[#C9A961]/40 bg-[#C9A961]/5 p-4 shadow-none">
                 <Sparkles className="h-5 w-5 animate-pulse text-[#C9A961]" />
                 <span className="text-sm font-medium text-[#0B1F4D]">
                   {lang === "hi" ? "फोटो देख रहे हैं…" : "Looking at your photo…"}
                 </span>
-              </div>
+              </Card>
             ) : null}
             {/* On STOP flows the card only shows when the server could express
                 the suggestion in that taxonomy — otherwise "Yes" would appear
                 to classify the report and silently do nothing. */}
             {aiSuggestion?.l1 && (!usesStop || aiStopSuggestion) ? (
-              <div className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4" data-testid="ai-suggest-card">
+              <Card className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4 shadow-none" data-testid="ai-suggest-card">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-[#C9A961]" />
                   <span className="text-xs font-bold uppercase tracking-wide text-[#8a6d2f]">
@@ -1680,13 +1667,13 @@ export function CaptureWizard({
                     <X className="h-6 w-6" /> {lang === "hi" ? "बदलें" : "Change"}
                   </button>
                 </div>
-              </div>
+              </Card>
             ) : null}
 
             {media.length > 0 ? (
               <div className="grid grid-cols-3 gap-2">
                 {media.map((item) => (
-                  <div key={item.clientMediaId} className="relative overflow-hidden rounded-xl border border-[#D9E1EF] bg-[#E8EEF7]">
+                  <Card key={item.clientMediaId} className="relative overflow-hidden rounded-xl border border-[#D9E1EF] bg-[#E8EEF7] shadow-none">
                     {item.kind === "PHOTO" && item.previewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.previewUrl} alt="" className="h-24 w-full object-cover" />
@@ -1695,15 +1682,13 @@ export function CaptureWizard({
                         <Video className="h-8 w-8 text-[#0B1F4D]" />
                       </div>
                     )}
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       aria-label={t("remove", lang)}
-                      onClick={() => setMedia((m) => m.filter((x) => x.clientMediaId !== item.clientMediaId))}
-                      className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 text-white"
-                    >
+                      onClick={() => setMedia((m) => m.filter((x) => x.clientMediaId !== item.clientMediaId))} className="absolute right-1 top-1 flex h-9 w-9 rounded-full text-white">
                       <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                    </Button>
+                  </Card>
                 ))}
               </div>
             ) : (
@@ -1726,7 +1711,7 @@ export function CaptureWizard({
             <ScreenHeading {...tPair("q_severity", lang)} lang={lang} />
             <div className="flex flex-col gap-3">
               {severityTiles.map(({ value, titleKey, bodyKey, color }) => (
-                <button
+                <Button variant="ghost"
                   key={value}
                   type="button"
                   aria-pressed={severity === value}
@@ -1741,8 +1726,7 @@ export function CaptureWizard({
                       ? "flex min-h-[88px] items-center gap-4 rounded-2xl border-4 p-4 text-left transition-transform active:scale-[0.98]"
                       : "flex min-h-[88px] items-center gap-4 rounded-2xl border-2 border-[#D9E1EF] bg-white p-4 text-left transition-transform active:scale-[0.98]"
                   }
-                  style={severity === value ? { borderColor: color, background: `${color}14` } : undefined}
-                >
+                  style={severity === value ? { borderColor: color, background: `${color}14` } : undefined}>
                   <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full" style={{ background: `${color}22` }}>
                     <ShieldAlert className="h-8 w-8" style={{ color }} />
                   </span>
@@ -1753,7 +1737,7 @@ export function CaptureWizard({
                     <span className="text-base text-[#0B1F4D]">{t(bodyKey, lang)}</span>
                     {lang !== "en" ? <span className="text-xs text-[#5A6273]">{t(bodyKey, "en")}</span> : null}
                   </span>
-                </button>
+                </Button>
               ))}
             </div>
           </>
@@ -1828,7 +1812,7 @@ export function CaptureWizard({
               ) : null}
 
               {guidedOpen && !draft ? (
-                <div className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4" data-testid="guided-panel">
+                <Card className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4 shadow-none" data-testid="guided-panel">
                   <div className="flex items-start gap-2">
                     <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#C9A961]" />
                     <span className="text-xs font-bold uppercase tracking-wide text-[#8a6d2f]">{t("guidedIntro", lang)}</span>
@@ -1840,14 +1824,12 @@ export function CaptureWizard({
                         <div key={q.key} className="flex flex-col gap-1">
                           <div className="flex items-center gap-2">
                             <BiText primary={qp.primary} secondary={qp.secondary} className="items-start text-left" />
-                            <button
+                            <Button variant="ghost"
                               type="button"
                               aria-label={t("listen", lang)}
-                              onClick={() => speak(qp.primary, lang)}
-                              className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white text-[#0B1F4D]"
-                            >
+                              onClick={() => speak(qp.primary, lang)} className="ml-auto flex h-9 w-9 shrink-0 rounded-full text-[#0B1F4D]">
                               <Volume2 className="h-4 w-4" />
-                            </button>
+                            </Button>
                           </div>
                           <input
                             value={answers[q.key] ?? ""}
@@ -1880,11 +1862,11 @@ export function CaptureWizard({
                       {t("cancel", lang)}
                     </button>
                   </div>
-                </div>
+                </Card>
               ) : null}
 
               {draft ? (
-                <div className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4" data-testid="draft-card">
+                <Card className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4 shadow-none" data-testid="draft-card">
                   <p className="text-xs font-bold uppercase tracking-wide text-[#8a6d2f]">{t("aiDraftLabel", lang)}</p>
                   <p className="mt-1 text-base font-semibold text-[#0B1F4D]" data-testid="draft-text">{draft.description}</p>
                   <div className="mt-4 grid grid-cols-2 gap-3">
@@ -1904,7 +1886,7 @@ export function CaptureWizard({
                       <X className="h-5 w-5" /> {t("keepOriginal", lang)}
                     </button>
                   </div>
-                </div>
+                </Card>
               ) : null}
 
               {boot.features.aiCaptureAssist && typedDescription.trim().length >= 3 && !cleanup && !guidedOpen && !draft ? (
@@ -1921,7 +1903,7 @@ export function CaptureWizard({
               ) : null}
 
               {cleanup ? (
-                <div className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4" data-testid="cleanup-card">
+                <Card className="rounded-2xl border-2 border-[#C9A961] bg-[#C9A961]/10 p-4 shadow-none" data-testid="cleanup-card">
                   <div className="flex flex-col gap-3">
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-[#5A6273]">
@@ -1955,7 +1937,7 @@ export function CaptureWizard({
                       <X className="h-5 w-5" /> {t("keepOriginal", lang)}
                     </button>
                   </div>
-                </div>
+                </Card>
               ) : null}
             </div>
 
@@ -2089,7 +2071,7 @@ function ReviewCard({
   }
 
   return (
-    <div className="rounded-2xl border-2 border-[#D9E1EF] bg-white p-4">
+    <Card className="rounded-2xl border-2 border-[#D9E1EF] p-4 shadow-none">
       <div className="flex flex-col gap-3">
         {rows.map((row) => (
           <div key={row.label} className="flex items-start justify-between gap-3 border-b border-[#E8EEF7] pb-2 last:border-0 last:pb-0">
@@ -2100,18 +2082,19 @@ function ReviewCard({
           </div>
         ))}
         {anonymous ? (
-          <span className="self-start rounded-full bg-[#C9A961]/20 px-3 py-1 text-sm font-semibold text-[#8a6d2f]">
+          <Badge className="self-start border-transparent bg-[#C9A961]/20 px-3 py-1 text-sm text-[#8a6d2f]">
             {t("anonymous", lang)}
-          </span>
+          </Badge>
         ) : null}
       </div>
-      <button
+      <Button
         type="button"
+        variant="secondary"
         onClick={() => speak(summaryForTts, lang)}
-        className="mt-4 flex min-h-[56px] w-full items-center justify-center gap-2 rounded-xl bg-[#E8EEF7] text-base font-semibold text-[#0B1F4D] active:scale-[0.98]"
+        className="mt-4 min-h-[56px] w-full rounded-xl bg-[#E8EEF7] text-base font-semibold text-[#0B1F4D] hover:bg-[#dbe5f2] active:scale-[0.98]"
       >
         <Volume2 className="h-5 w-5" /> {t("listen", lang)}
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }

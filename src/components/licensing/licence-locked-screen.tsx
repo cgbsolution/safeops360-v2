@@ -95,21 +95,19 @@ export function LicenceLockedScreen() {
             {/* Installation ID — admins copy this and send it to Vizionforge so
                 a licence can be issued bound to THIS install (on-prem flow). */}
             {isAdmin && view?.installationId && (
-              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+              <Card className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
                 <div className="text-xs text-slate-500 mb-0.5">
                   Installation ID — send this to Vizionforge to receive your licence
                 </div>
                 <div className="flex items-center gap-2">
                   <code className="text-xs text-slate-800 break-all">{view.installationId}</code>
-                  <button
+                  <Button variant="link"
                     type="button"
-                    onClick={() => navigator.clipboard?.writeText(view.installationId!)}
-                    className="text-xs text-primary-700 hover:underline shrink-0"
-                  >
+                    onClick={() => navigator.clipboard?.writeText(view.installationId!)} className="text-xs hover:underline shrink-0">
                     Copy
-                  </button>
+                  </Button>
                 </div>
-              </div>
+              </Card>
             )}
 
             <div className="flex flex-wrap gap-2 pt-1">

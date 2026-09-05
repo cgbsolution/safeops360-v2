@@ -8,6 +8,9 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { SelectField } from "@/components/ui/select-field";
 import { INDIA_STATE_OPTIONS, canonicalIndiaState } from "@/lib/india-states";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 import {
   BUILDING_TYPES,
   BUILDING_TYPE_LABEL,
@@ -58,10 +61,10 @@ function Field({ label, required, error, children }: {
 }) {
   return (
     <div>
-      <label className={labelCls}>
+      <Label className={labelCls}>
         {label}
         {required && <span className="ml-0.5 text-red-500">*</span>}
-      </label>
+      </Label>
       {children}
       {/* Rendered only once the step has been touched — see `showErr`. Telling
           someone a field is wrong before they have reached it is noise. */}
@@ -301,24 +304,17 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         {/* ── Step 1: Identity & Location ── */}
         {step === 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {canLinkSite && (
             <div className="sm:col-span-2">
               <Field label={inHouse ? "Site (optional)" : "Site (1:1 link — required)"}>
-                <Select value={siteId} onChange={(e) => onPickSite(e.target.value)}>
-                  <option value="">
-                    {inHouse ? "Not linked — create a site for this factory" : "Select a site…"}
-                  </option>
-                  {sites.map((s) => (
-                    <option key={s.id} value={s.id} disabled={s.linked}>
-                      {s.code} — {s.name}
-                      {s.linked ? " (already linked)" : ""}
-                    </option>
-                  ))}
-                </Select>
+                <SelectField value={siteId} onChange={onPickSite}
+                  placeholder={`${inHouse ? "Not linked — create a site for this factory" : "Select a site…"}`}
+                  options={sites.map((s) => ({ value: String(s.id), label: `${s.code} — ${s.name} ${s.linked ? " (already linked)" : ""}` }))}
+                />
               </Field>
               <p className="mt-1 text-[11px] text-slate-500">
                 {inHouse
@@ -439,7 +435,7 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
             </Field>
             <div className="sm:col-span-2">
               <div className="mb-1 flex items-center justify-between">
-                <label className={labelCls}>Registrations (GST / ESI / EPF / PCB consent …)</label>
+                <Label className={labelCls}>Registrations (GST / ESI / EPF / PCB consent …)</Label>
                 <Button
                   type="button"
                   variant="ghost"
@@ -500,28 +496,25 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
               </Button>
             </div>
             {buildings.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400">
+              <Card className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400 shadow-none">
                 No buildings added. The profile’s building count can also be set/edited later.
-              </div>
+              </Card>
             ) : (
               <div className="space-y-2">
                 {buildings.map((b, i) => (
-                  <div key={i} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-2 sm:grid-cols-12">
+                  <Card key={i} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-2 sm:grid-cols-12 shadow-none">
                     <Input
                       className="sm:col-span-4"
                       placeholder="Building name (Block A — Stitching)"
                       value={b.buildingName}
                       onChange={(e) => setBuildings(buildings.map((x, j) => (j === i ? { ...x, buildingName: e.target.value } : x)))}
                     />
-                    <Select
+                    <SelectField
                       className="sm:col-span-3"
                       value={b.buildingType}
-                      onChange={(e) => setBuildings(buildings.map((x, j) => (j === i ? { ...x, buildingType: e.target.value as BuildingType } : x)))}
-                    >
-                      {BUILDING_TYPES.map((t) => (
-                        <option key={t} value={t}>{BUILDING_TYPE_LABEL[t]}</option>
-                      ))}
-                    </Select>
+                      onChange={(value) => setBuildings(buildings.map((x, j) => (j === i ? { ...x, buildingType: value as BuildingType } : x)))}
+                      options={BUILDING_TYPES.map((t) => ({ value: String(t), label: BUILDING_TYPE_LABEL[t] }))}
+                    />
                     <Input
                       className="sm:col-span-1"
                       placeholder="Flr"
@@ -550,7 +543,7 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
                         <Trash2 size={16} />
                       </Button>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
@@ -604,13 +597,13 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
               </Button>
             </div>
             {procs.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400">
+              <Card className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-xs text-slate-400 shadow-none">
                 No processes added. Cutting → Stitching → Finishing → Packing, etc. can be added later too.
-              </div>
+              </Card>
             ) : (
               <div className="space-y-2">
                 {procs.map((p, i) => (
-                  <div key={i} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-2 sm:grid-cols-12">
+                  <Card key={i} className="grid grid-cols-1 gap-2 rounded-lg border border-slate-200 p-2 sm:grid-cols-12 shadow-none">
                     <div className="flex items-center sm:col-span-1">
                       <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-[11px] font-semibold text-primary-700">{i + 1}</span>
                     </div>
@@ -628,7 +621,7 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
                         <Trash2 size={16} />
                       </Button>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
@@ -664,8 +657,8 @@ export function AddFactoryWizard({ sites, canLinkSite }: { sites: SiteOption[]; 
           </div>
         )}
 
-        {error && <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</div>}
-      </div>
+        {error && <Alert variant="destructive" className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</Alert>}
+      </Card>
 
       {/* Nav buttons */}
       <div className="mt-4 flex items-center justify-between">

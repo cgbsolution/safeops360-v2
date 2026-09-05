@@ -11,6 +11,7 @@ import type { Lang } from "@/lib/capture/i18n";
 import { t } from "@/lib/capture/i18n";
 import type { WizardMedia } from "@/lib/capture/types";
 import { MAX_VOICE_SECONDS, mediaDuration, newClientId } from "./upload";
+import { Button } from "@/components/ui/button";
 
 function pickMime(): string {
   if (typeof MediaRecorder === "undefined") return "";
@@ -195,7 +196,7 @@ export function VoiceRecorder({
   const recording = state === "recording";
   return (
     <div className="flex flex-col items-center gap-4">
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={recording ? stop : start}
         aria-label={recording ? t("tapToStop", lang) : t("tapToRecord", lang)}
@@ -203,10 +204,9 @@ export function VoiceRecorder({
           recording
             ? "flex h-28 w-28 items-center justify-center rounded-full bg-[#C0392B] text-white shadow-lg active:scale-95"
             : "flex h-28 w-28 items-center justify-center rounded-full bg-[#0B1F4D] text-white shadow-lg active:scale-95"
-        }
-      >
+        }>
         {recording ? <Square className="h-10 w-10 fill-current" /> : <Mic className="h-12 w-12" />}
-      </button>
+      </Button>
       {recording ? (
         <div className="flex flex-col items-center gap-2">
           {/* waveform animation while recording (CSS bars — see globals.css) */}

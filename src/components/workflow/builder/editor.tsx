@@ -28,6 +28,7 @@ import { StepNode, InserterNode, TriggerNode } from "./step-node";
 import { PropertiesPanel } from "./properties-panel";
 import { VersionHistoryDrawer } from "./version-history";
 import { TestRunPanel } from "./test-run-panel";
+import { Card } from "@/components/ui/card";
 import {
   type DefinitionDTO,
   type EditorStep,
@@ -463,11 +464,11 @@ function EditorInner({ initial, roles }: { initial: DefinitionDTO; roles: RoleOp
                 className="h-8 text-base font-semibold"
               />
             ) : (
-              <button className="text-left max-w-full" onClick={() => setEditingHeader(true)} title="Click to rename">
+              <Button variant="ghost" className="text-left max-w-full" onClick={() => setEditingHeader(true)} title="Click to rename">
                 <div className="text-base font-semibold text-slate-900 truncate hover:text-primary-700">
                   {name || "Untitled workflow"}
                 </div>
-              </button>
+              </Button>
             )}
             <div className="flex items-center gap-2 text-xs text-slate-500">
               <span>{humanize(initial.module)}</span>
@@ -573,19 +574,17 @@ function EditorInner({ initial, roles }: { initial: DefinitionDTO; roles: RoleOp
           </ReactFlow>
 
           {!selectedStep && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-200 rounded-full px-3 py-1.5 text-[11px] text-slate-600 flex items-center gap-1.5 pointer-events-none">
+            <Card className="absolute top-3 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur border border-slate-200 rounded-full px-3 py-1.5 text-[11px] text-slate-600 flex items-center gap-1.5 pointer-events-none shadow-none">
               <Info size={11} /> Click a step to edit · click a + to insert · drag to pan
-            </div>
+            </Card>
           )}
 
           {initial.instanceCount === 0 && (
-            <button
+            <Button variant="outline"
               onClick={deleteDefinition}
-              disabled={busy}
-              className="absolute bottom-4 right-4 text-[11px] text-rose-600 hover:text-rose-700 hover:underline flex items-center gap-1 bg-white border border-rose-200 rounded-md px-2 py-1 shadow-sm"
-            >
+              disabled={busy} className="absolute bottom-4 right-4 text-[11px] hover:underline flex gap-1 rounded-md px-2 py-1 shadow-sm">
               <Trash2 size={11} /> Delete workflow
-            </button>
+            </Button>
           )}
         </div>
 

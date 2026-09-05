@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { PlanDetail } from "@/app/(dashboard)/erm/lib-p3";
 import { PlanDetailView } from "./plan-detail-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +29,10 @@ export default async function PlanDetailPage(props: { params: Promise<{ id: stri
             { label: "Not found" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Plan not found."}{" "}
           <Link href="/erm/bcm/plans" className="font-medium underline">Back to plans</Link>
-        </div>
+        </Alert>
       </div>
     );
   }

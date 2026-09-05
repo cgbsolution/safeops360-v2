@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { parseApiError } from "@/lib/api-error";
 import { DOMAINS, DOMAIN_COLOR, DOMAIN_LABEL, type CategoryOut } from "../../rca/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 async function call(path: string, method: string, body?: unknown) {
   const res = await fetch(path, {
@@ -36,16 +38,16 @@ export function RcaTaxonomyView({ categories }: { categories: CategoryOut[] }) {
   return (
     <div className="space-y-5">
       {/* Add enterprise category */}
-      <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
-        <div><label className="text-[11px] font-semibold text-slate-500">Code</label><Input value={newCat.code} onChange={(e) => setNewCat({ ...newCat, code: e.target.value.toUpperCase() })} className="mt-1 w-32" placeholder="GOV" /></div>
-        <div className="flex-1"><label className="text-[11px] font-semibold text-slate-500">Enterprise category name</label><Input value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} className="mt-1 w-full" placeholder="Governance / Oversight Failure" /></div>
+      <Card className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
+        <div><Label className="text-[11px] font-semibold text-slate-500">Code</Label><Input value={newCat.code} onChange={(e) => setNewCat({ ...newCat, code: e.target.value.toUpperCase() })} className="mt-1 w-32" placeholder="GOV" /></div>
+        <div className="flex-1"><Label className="text-[11px] font-semibold text-slate-500">Enterprise category name</Label><Input value={newCat.name} onChange={(e) => setNewCat({ ...newCat, name: e.target.value })} className="mt-1 w-full" placeholder="Governance / Oversight Failure" /></div>
         <Button disabled={!newCat.code || !newCat.name || busy}
           onClick={() => run(() => call("/api/erm/rca/categories", "POST", newCat), "Category added").then(() => setNewCat({ code: "", name: "" }))}
           className="gap-1.5"><Plus size={15} /> Add category</Button>
-      </div>
+      </Card>
 
       {categories.map((cat) => (
-        <div key={cat.id} className="rounded-xl border border-slate-200 bg-white">
+        <Card key={cat.id} className="rounded-xl border border-slate-200 bg-white shadow-none">
           <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
             <div className="flex items-center gap-2">
               <span className="inline-block h-3.5 w-3.5 rounded-sm" style={{ backgroundColor: cat.colorHex }} />
@@ -75,7 +77,7 @@ export function RcaTaxonomyView({ categories }: { categories: CategoryOut[] }) {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       ))}
     </div>
   );
@@ -89,11 +91,11 @@ function AddSubCause({ categoryId, busy, run, onDone }: any) {
   return (
     <div className="space-y-2 border-b border-slate-100 bg-slate-50/60 px-4 py-3">
       <div className="flex flex-wrap items-end gap-2">
-        <div><label className="text-[11px] font-semibold text-slate-500">Code</label><Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="mt-1 w-36" placeholder="OPS-ISO" /></div>
-        <div className="flex-1"><label className="text-[11px] font-semibold text-slate-500">Sub-cause name</label><Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full" placeholder="Inadequate isolation verification" /></div>
+        <div><Label className="text-[11px] font-semibold text-slate-500">Code</Label><Input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} className="mt-1 w-36" placeholder="OPS-ISO" /></div>
+        <div className="flex-1"><Label className="text-[11px] font-semibold text-slate-500">Sub-cause name</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="mt-1 w-full" placeholder="Inadequate isolation verification" /></div>
       </div>
       <div>
-        <label className="text-[11px] font-semibold text-slate-500">Applicable domains (none = universal)</label>
+        <Label className="text-[11px] font-semibold text-slate-500">Applicable domains (none = universal)</Label>
         <div className="mt-1 flex flex-wrap gap-1.5">
           {DOMAINS.map((d) => (
             <Button key={d} onClick={() => toggle(d)} type="button" variant="ghost"

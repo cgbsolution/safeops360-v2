@@ -12,6 +12,9 @@ import {
   EmptyState, ErrorState, Kpi, StatusChip, SubNav, ThresholdBar,
 } from "../_components";
 import { NewThresholdRuleDialog, RecomputeButton } from "./threshold-actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -95,7 +98,7 @@ export default async function ThresholdDashboardPage({
           </div>
 
           {caveats.length > 0 && (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <Alert variant="warning" size="lg" className="mb-4 rounded-xl p-4">
               <div className="text-sm font-semibold text-amber-800">
                 {caveats.length} threshold{caveats.length === 1 ? "" : "s"} could not be fully evaluated
               </div>
@@ -111,7 +114,7 @@ export default async function ThresholdDashboardPage({
                 density, and this module treats SDS values as evidence rather than parsing them. Set
                 the affected batches to the rule&apos;s unit, or add a rule in the batch&apos;s unit.
               </div>
-            </div>
+            </Alert>
           )}
 
           {rows.length === 0 ? (
@@ -121,41 +124,41 @@ export default async function ThresholdDashboardPage({
               action={<NewThresholdRuleDialog />}
             />
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-              <table className="w-full text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-semibold">Schedule / licence</th>
-                    <th className="px-4 py-2.5 font-semibold">Scope</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">On site</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">Threshold</th>
-                    <th className="px-4 py-2.5 font-semibold">Utilisation</th>
-                    <th className="px-4 py-2.5 font-semibold">Obligation</th>
-                    <th className="px-4 py-2.5 font-semibold">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+            <Card className="overflow-x-auto rounded-xl shadow-none">
+              <Table className="w-full text-sm">
+                <TableHeader className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableRow>
+                    <TableHead className="px-4 py-2.5 font-semibold">Schedule / licence</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Scope</TableHead>
+                    <TableHead className="px-4 py-2.5 text-right font-semibold">On site</TableHead>
+                    <TableHead className="px-4 py-2.5 text-right font-semibold">Threshold</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Utilisation</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Obligation</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {rows.map((r) => (
-                    <tr key={r.ruleId} className={r.status === "BREACHED" ? "bg-rose-50/40" : "hover:bg-slate-50"}>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={r.ruleId} className={r.status === "BREACHED" ? "bg-rose-50/40" : "hover:bg-slate-50"}>
+                      <TableCell className="px-4 py-2.5">
                         <div className="font-medium text-slate-900">{r.scheduleReference}</div>
                         {r.lastBreachedAt && (
                           <div className="text-[11px] text-slate-400">
                             Last breached {fmtDate(r.lastBreachedAt)}
                           </div>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-slate-600">
                         {r.hazardClass ? prettyLabel(r.hazardClass) : "Specific chemical"}
-                      </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-800">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-right tabular-nums text-slate-800">
                         {fmtQty(r.currentQuantity, r.unit)}
-                      </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-right tabular-nums text-slate-600">
                         {fmtQty(r.thresholdQuantity, r.unit)}
-                      </td>
-                      <td className="px-4 py-2.5"><ThresholdBar percent={r.percentOfThreshold} /></td>
-                      <td className="px-4 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5"><ThresholdBar percent={r.percentOfThreshold} /></TableCell>
+                      <TableCell className="px-4 py-2.5">
                         <div className="text-xs text-slate-700">{prettyLabel(r.triggerObligation)}</div>
                         {!r.autoMocOnBreach && (
                           <Badge className="bg-slate-100 text-slate-600 border-slate-300">Auto-MOC off</Badge>
@@ -168,19 +171,19 @@ export default async function ThresholdDashboardPage({
                             Open change request →
                           </Link>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5"><StatusChip status={r.status} /></td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5"><StatusChip status={r.status} /></TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
               <div className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400">
                 A change request is raised on the transition into breach, not on every receipt while
                 breached — one regulatory fact, one MOC. Every evaluation is recorded in the{" "}
                 <Link href="/chemicals/trigger-log" className="underline">MOC trigger log</Link>{" "}
                 whether it fired, was skipped, or failed.
               </div>
-            </div>
+            </Card>
           )}
         </>
       )}

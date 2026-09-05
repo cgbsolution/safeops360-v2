@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { Exercise, PlanListResponse, Scenario } from "@/app/(dashboard)/erm/lib-p3";
 import { ExerciseWorkspace } from "./workspace";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -39,12 +40,12 @@ export default async function ExerciseWorkspacePage(props: { params: Promise<{ i
             { label: "Exercises", href: "/erm/bcm/exercises" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Exercise not found"}.{" "}
           <Link href="/erm/bcm/exercises" className="underline">
             Back to programme
           </Link>
-        </div>
+        </Alert>
       </div>
     );
   }

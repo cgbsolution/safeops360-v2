@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
 
 // ─────────────────────────────────────────────────────────────────────
 // Widget viz primitives (UI Depth sprint, Deliverable 1).
@@ -154,12 +155,12 @@ export function Pipeline({ stages }: { stages: PipelineStage[] }) {
       {stages.map((s, i) => {
         const intensity = s.count === 0 ? 0 : 0.25 + 0.75 * (s.count / max);
         const inner = (
-          <div className="flex min-w-[64px] flex-1 flex-col items-center rounded-lg border border-slate-100 px-1.5 py-2 transition hover:border-primary-200">
+          <Card className="flex min-w-[64px] flex-1 flex-col items-center rounded-lg border border-slate-100 px-1.5 py-2 transition hover:border-primary-200 shadow-none">
             <span className="font-numeric text-lg font-bold leading-none" style={{ color: `rgba(124,58,237,${Math.max(0.35, intensity)})` }}>
               {s.count}
             </span>
             <span className="mt-1 text-center text-[10px] leading-tight text-slate-500">{s.label}</span>
-          </div>
+          </Card>
         );
         return (
           <React.Fragment key={i}>
@@ -288,11 +289,11 @@ export function SubBar({ label, pct, suffix, href }: { label: string; pct: numbe
 // ─── MiniStatTile (2×2 KPI grids: PTW, EAI) ──────────────────────────
 export function MiniStatTile({ label, value, sub, tone = "neutral", href }: { label: string; value: React.ReactNode; sub?: React.ReactNode; tone?: Tone; href?: string }) {
   const inner = (
-    <div className="flex h-full flex-col rounded-lg border border-slate-100 p-2.5 transition hover:border-primary-200">
+    <Card className="flex h-full flex-col rounded-lg border border-slate-100 p-2.5 transition hover:border-primary-200 shadow-none">
       <span className="text-overline text-slate-500">{label}</span>
       <span className={cn("font-numeric text-2xl font-bold leading-tight", TONE_TEXT[tone])}>{value}</span>
       {sub && <span className="mt-0.5 text-[10px] text-slate-500">{sub}</span>}
-    </div>
+    </Card>
   );
   return href ? (
     <Link href={href} className="block h-full">
@@ -307,10 +308,10 @@ export function MiniStatTile({ label, value, sub, tone = "neutral", href }: { la
 export function DaysTile({ label, days, href }: { label: string; days: number | null; href?: string }) {
   const color = days === null ? "text-slate-400" : days > 365 ? "text-amber-500" : days >= 90 ? "text-emerald-600" : days >= 30 ? "text-amber-600" : "text-rose-600";
   const inner = (
-    <div className="flex h-full flex-col items-center justify-center rounded-lg border border-slate-100 px-2 py-3 text-center transition hover:border-primary-200">
+    <Card className="flex h-full flex-col items-center justify-center rounded-lg border border-slate-100 px-2 py-3 text-center transition hover:border-primary-200 shadow-none">
       <span className={cn("font-numeric text-3xl font-bold leading-none", color)}>{days === null ? "—" : days}</span>
       <span className="mt-1 text-[10px] uppercase tracking-wide text-slate-500">{label}</span>
-    </div>
+    </Card>
   );
   return href ? (
     <Link href={href} className="block h-full">

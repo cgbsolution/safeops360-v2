@@ -31,11 +31,11 @@ export default async function AccessDeniedPage(
             <p className="text-slate-600 mt-1">You don't have permission to view this page.</p>
           </div>
           {code && (
-            <div className="text-left bg-slate-50 border rounded-md p-3 text-sm">
+            <Card className="text-left bg-slate-50 border rounded-md p-3 text-sm shadow-none">
               <div><span className="text-slate-500">Required:</span> <span className="font-mono">{code}</span></div>
               <div className="mt-1"><span className="text-slate-500">Your roles:</span> {roles.length ? roles.join(", ") : "—"}</div>
               {reason && <div className="mt-1 text-slate-500 italic">{reason}</div>}
-            </div>
+            </Card>
           )}
           <p className="text-xs text-slate-500">
             If you believe this is a mistake, contact your HSE Manager or System Admin to grant the required permission.

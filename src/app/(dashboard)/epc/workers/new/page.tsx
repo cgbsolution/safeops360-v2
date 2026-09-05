@@ -6,8 +6,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { ArrowLeft, Loader2, Users } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const TRADES = [
   "Welder", "Rigger", "Electrician", "Mason", "Carpenter", "Painter",
@@ -137,28 +139,25 @@ export default function NewWorkerPage() {
 
       <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
         {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             {error}
-          </div>
+          </Alert>
         )}
 
         {/* Contractor */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Contractor Company</h2>
           <div>
             <Label htmlFor="contractorCompanyId">Contractor Company *</Label>
-            <Select
+            <SelectField
               id="contractorCompanyId"
               value={form.contractorCompanyId}
-              onChange={(e) => set("contractorCompanyId", e.target.value)}
+              onChange={(value) => set("contractorCompanyId", value)}
               required
               className="mt-1"
-            >
-              <option value="">Select contractor company...</option>
-              {contractors.map((c) => (
-                <option key={c.id} value={c.id}>{c.companyName}</option>
-              ))}
-            </Select>
+              placeholder="Select contractor company..."
+              options={contractors.map((c) => ({ value: String(c.id), label: c.companyName }))}
+            />
             {contractors.length === 0 && (
               <p className="mt-1 text-xs text-amber-600">
                 Loading companies...{" "}
@@ -166,10 +165,10 @@ export default function NewWorkerPage() {
               </p>
             )}
           </div>
-        </div>
+        </Card>
 
         {/* Personal Details */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Personal Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -195,45 +194,40 @@ export default function NewWorkerPage() {
             </div>
             <div>
               <Label htmlFor="gender">Gender</Label>
-              <Select
+              <SelectField
                 id="gender"
                 value={form.gender}
-                onChange={(e) => set("gender", e.target.value)}
+                onChange={(value) => set("gender", value)}
                 className="mt-1"
-              >
-                <option value="">Select...</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </Select>
+                placeholder="Select..."
+                options={[
+                { value: "male", label: "Male" },
+                { value: "female", label: "Female" },
+                { value: "other", label: "Other" }
+              ]}
+              />
             </div>
             <div>
               <Label htmlFor="bloodGroup">Blood Group</Label>
-              <Select
+              <SelectField
                 id="bloodGroup"
                 value={form.bloodGroup}
-                onChange={(e) => set("bloodGroup", e.target.value)}
+                onChange={(value) => set("bloodGroup", value)}
                 className="mt-1"
-              >
-                <option value="">Select...</option>
-                {BLOOD_GROUPS.map((bg) => (
-                  <option key={bg} value={bg}>{bg}</option>
-                ))}
-              </Select>
+                placeholder="Select..."
+                options={BLOOD_GROUPS.map((bg) => ({ value: String(bg), label: bg }))}
+              />
             </div>
             <div>
               <Label htmlFor="homeState">Home State</Label>
-              <Select
+              <SelectField
                 id="homeState"
                 value={form.homeState}
-                onChange={(e) => set("homeState", e.target.value)}
+                onChange={(value) => set("homeState", value)}
                 className="mt-1"
-              >
-                <option value="">Select state...</option>
-                {INDIAN_STATES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+                placeholder="Select state..."
+                options={INDIAN_STATES.map((s) => ({ value: String(s), label: s }))}
+              />
             </div>
             <div>
               <Label htmlFor="aadhaarLast4">Aadhaar Last 4 Digits</Label>
@@ -248,26 +242,23 @@ export default function NewWorkerPage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Trade & Experience */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Trade & Experience</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="primaryTrade">Primary Trade *</Label>
-              <Select
+              <SelectField
                 id="primaryTrade"
                 value={form.primaryTrade}
-                onChange={(e) => set("primaryTrade", e.target.value)}
+                onChange={(value) => set("primaryTrade", value)}
                 required
                 className="mt-1"
-              >
-                <option value="">Select trade...</option>
-                {TRADES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </Select>
+                placeholder="Select trade..."
+                options={TRADES.map((t) => ({ value: String(t), label: t }))}
+              />
             </div>
             <div>
               <Label htmlFor="yearsExperience">Years of Experience</Label>
@@ -284,17 +275,14 @@ export default function NewWorkerPage() {
             </div>
             <div>
               <Label htmlFor="educationLevel">Education Level</Label>
-              <Select
+              <SelectField
                 id="educationLevel"
                 value={form.educationLevel}
-                onChange={(e) => set("educationLevel", e.target.value)}
+                onChange={(value) => set("educationLevel", value)}
                 className="mt-1"
-              >
-                <option value="">Select...</option>
-                {EDUCATION_LEVELS.map((el) => (
-                  <option key={el.value} value={el.value}>{el.label}</option>
-                ))}
-              </Select>
+                placeholder="Select..."
+                options={EDUCATION_LEVELS.map((el) => ({ value: String(el.value), label: el.label }))}
+              />
             </div>
             <div>
               <Label htmlFor="mobileNumber">Mobile Number *</Label>
@@ -309,10 +297,10 @@ export default function NewWorkerPage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Emergency Contact */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Emergency Contact</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -337,7 +325,7 @@ export default function NewWorkerPage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         <div className="flex gap-3">
           <Button type="submit" disabled={submitting} className="min-w-36">

@@ -25,3 +25,8 @@ export const WITNESS_LANGUAGES = [
   "Khasi",
   "Other",
 ] as const;
+
+// The same list in the shape SelectField takes. Derived rather than written out
+// again — the drift described above is exactly what a second hand-written copy
+// caused, and the intake form and the investigation panel both read this now.
+export const WITNESS_LANGUAGE_OPTIONS = WITNESS_LANGUAGES.map((l) => ({ value: l, label: l }));

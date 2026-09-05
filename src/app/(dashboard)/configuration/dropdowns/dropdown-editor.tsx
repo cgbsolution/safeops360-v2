@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, ChevronUp, ChevronDown, Save, Eye, EyeOff } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 type Item = {
   id?: string;
@@ -184,13 +185,15 @@ export function DropdownEditor({ type, initialItems }: { type: string; initialIt
                 ].join(" ")}
               >
                 <div className="col-span-1 flex flex-col items-center">
-                  <button type="button" onClick={() => move(idx, -1)} disabled={idx === 0} className="text-slate-400 hover:text-slate-700 disabled:opacity-30">
+                  <Button type="button" variant="ghost" size="icon" onClick={() => move(idx, -1)} disabled={idx === 0}
+                    aria-label="Move option up" title="Move option up" className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-700">
                     <ChevronUp size={14} />
-                  </button>
+                  </Button>
                   <span className="text-xs text-slate-500">{it.sortOrder}</span>
-                  <button type="button" onClick={() => move(idx, 1)} disabled={idx === items.length - 1} className="text-slate-400 hover:text-slate-700 disabled:opacity-30">
+                  <Button type="button" variant="ghost" size="icon" onClick={() => move(idx, 1)} disabled={idx === items.length - 1}
+                    aria-label="Move option down" title="Move option down" className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-700">
                     <ChevronDown size={14} />
-                  </button>
+                  </Button>
                 </div>
                 <div className="col-span-3">
                   <Input
@@ -228,21 +231,19 @@ export function DropdownEditor({ type, initialItems }: { type: string; initialIt
                       <Save size={12} />
                     </Button>
                   )}
-                  <button
+                  <Button variant="ghost"
                     type="button"
-                    onClick={() => remove(idx)}
-                    className="text-slate-400 hover:text-rose-600 p-1"
-                    title="Delete"
-                  >
+                    onClick={() => remove(idx)} className="p-1"
+                    title="Delete">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
           </div>
         )}
         {error && (
-          <div className="mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div>
+          <Alert variant="destructive" className="mt-3 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</Alert>
         )}
         <p className="mt-3 text-xs text-slate-500">
           Code is the stable identifier saved in records. Label is shown in dropdowns. Hidden items remain in historical records but no longer appear in forms.

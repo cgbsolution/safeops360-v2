@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { PlantSwitcher } from "@/components/plant-switcher";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -107,10 +109,10 @@ export default async function RiskAggregationDashboardPage(props: {
           title="Risk Aggregation Dashboard"
           description="Plant-level executive view: top risks, trends, control effectiveness, coverage, and review compliance across HIRA + EAI."
         />
-        <div className="rounded-xl border bg-white p-8 text-sm text-slate-600">
+        <Card className="rounded-xl border bg-white p-8 text-sm text-slate-600 shadow-none">
           No plants are accessible. Contact your Plant Head or System Admin to
           ensure you have at least one plant assignment.
-        </div>
+        </Card>
       </div>
     );
   }
@@ -418,43 +420,43 @@ export default async function RiskAggregationDashboardPage(props: {
         {incidentLinkage.length === 0 ? (
           <Empty msg="No incidents in the last 90 days." />
         ) : (
-          <table className="w-full text-xs">
-            <thead className="text-[10px] uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="text-left py-2">Incident</th>
-                <th className="text-left py-2">Date</th>
-                <th className="text-left py-2">Severity</th>
-                <th className="text-left py-2">Linked HIRA</th>
-                <th className="text-left py-2">Linked EAI</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table className="w-full text-xs">
+            <TableHeader className="text-[10px] uppercase tracking-wider text-slate-500">
+              <TableRow>
+                <TableHead className="text-left py-2">Incident</TableHead>
+                <TableHead className="text-left py-2">Date</TableHead>
+                <TableHead className="text-left py-2">Severity</TableHead>
+                <TableHead className="text-left py-2">Linked HIRA</TableHead>
+                <TableHead className="text-left py-2">Linked EAI</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {incidentLinkage.slice(0, 10).map((r) => (
-                <tr key={r.incidentId}>
-                  <td className="py-2">
+                <TableRow key={r.incidentId}>
+                  <TableCell className="py-2">
                     <Link
                       href={`/incidents/${r.incidentId}`}
                       className="font-mono text-primary-700 hover:underline"
                     >
                       {r.incidentNumber ?? r.incidentId.slice(0, 10)}
                     </Link>
-                  </td>
-                  <td className="py-2 text-slate-700">
+                  </TableCell>
+                  <TableCell className="py-2 text-slate-700">
                     {r.occurredAt
                       ? new Date(r.occurredAt).toLocaleDateString()
                       : "—"}
-                  </td>
-                  <td className="py-2 text-slate-700">{r.severity ?? "—"}</td>
-                  <td className="py-2 text-slate-700">
+                  </TableCell>
+                  <TableCell className="py-2 text-slate-700">{r.severity ?? "—"}</TableCell>
+                  <TableCell className="py-2 text-slate-700">
                     {r.linkedHiraEntryIds.length || "—"}
-                  </td>
-                  <td className="py-2 text-slate-700">
+                  </TableCell>
+                  <TableCell className="py-2 text-slate-700">
                     {r.linkedEaiEntryIds.length || "—"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
       </Widget>
     </div>

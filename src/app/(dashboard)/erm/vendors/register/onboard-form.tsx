@@ -7,8 +7,11 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 import {
   VENDOR_CRITICALITIES,
   VENDOR_TIERS,
@@ -99,7 +102,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Onboard Vendor</h2>
           <Button
@@ -116,7 +119,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Legal name</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Legal name</Label>
             <Input
               value={legalName}
               onChange={(e) => setLegalName(e.target.value)}
@@ -126,7 +129,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Category</Label>
               <Input
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
@@ -134,7 +137,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Master data ref</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Master data ref</Label>
               <Input
                 value={masterDataRef}
                 onChange={(e) => setMasterDataRef(e.target.value)}
@@ -145,35 +148,25 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Criticality</label>
-              <Select
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Criticality</Label>
+              <SelectField
                 value={criticality}
-                onChange={(e) => setCriticality(e.target.value)}
-              >
-                {VENDOR_CRITICALITIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c.charAt(0) + c.slice(1).toLowerCase()}
-                  </option>
-                ))}
-              </Select>
+                onChange={setCriticality}
+                options={VENDOR_CRITICALITIES.map((c) => ({ value: c, label: `${c.charAt(0) + c.slice(1).toLowerCase()}` }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Tier</label>
-              <Select
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Tier</Label>
+              <SelectField
                 value={tier}
-                onChange={(e) => setTier(e.target.value)}
-              >
-                {VENDOR_TIERS.map((t) => (
-                  <option key={t} value={t}>
-                    {TIER_LABEL[t] ?? t}
-                  </option>
-                ))}
-              </Select>
+                onChange={setTier}
+                options={VENDOR_TIERS.map((t) => ({ value: t, label: `${TIER_LABEL[t] ?? t}` }))}
+              />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Relationship owner</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Relationship owner</Label>
             <UserPicker
               value={relationshipOwnerId}
               onChange={(id) => setRelationshipOwnerId(id)}
@@ -183,7 +176,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Annual spend (₹)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Annual spend (₹)</Label>
               <Input
                 type="number"
                 value={annualSpend}
@@ -192,18 +185,18 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div className="flex items-end pb-1">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <Label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <Checkbox
                   checked={isSingleSource}
                   onChange={(e) => setIsSingleSource(e.target.checked)}
                 />
                 Single-source vendor
-              </label>
+              </Label>
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Site scope (one per line / comma)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Site scope (one per line / comma)</Label>
             <Textarea
               value={siteScopeText}
               onChange={(e) => setSiteScopeText(e.target.value)}
@@ -214,7 +207,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Linked risk IDs</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Linked risk IDs</Label>
               <Textarea
                 value={linkedRisksText}
                 onChange={(e) => setLinkedRisksText(e.target.value)}
@@ -223,7 +216,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Linked process IDs</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Linked process IDs</Label>
               <Textarea
                 value={linkedProcessesText}
                 onChange={(e) => setLinkedProcessesText(e.target.value)}
@@ -234,7 +227,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
           </div>
 
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>
+            <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>
           )}
         </div>
 
@@ -246,7 +239,7 @@ function OnboardModal({ onClose }: { onClose: () => void }) {
             {busy ? "Onboarding…" : "Onboard"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

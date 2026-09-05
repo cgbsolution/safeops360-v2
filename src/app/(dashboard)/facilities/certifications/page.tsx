@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { CertificationsRegisterView } from "./certifications-register-view";
 import type { CertificationRegisterResponse } from "../lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export default async function CertificationsRegisterPage() {
         description="Every facility certification across the group — ISO 9001 / 14001 / 45001, SA8000, WRAP, BSCI, OEKO-TEX, SMETA and more — with real-time expiry status, days-to-expiry and the renewals coming due."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <CertificationsRegisterView data={data!} />
       )}

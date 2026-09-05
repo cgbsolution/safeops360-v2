@@ -18,6 +18,13 @@
 import * as React from "react";
 import { GripVertical, Loader2, Plus, Save, Trash2, X } from "lucide-react";
 import { DISPLAY_FONT, MX } from "../lib";
+import { SelectField } from "@/components/ui/select-field";
+import { CheckboxField } from "@/components/ui/checkbox-field";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   ASSET_TYPES,
   ChecklistDefinition,
@@ -218,9 +225,9 @@ export function ChecklistEditor({
               {def?.name || def?.documentNo || "Untitled checklist"}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded p-1 text-white/80 hover:bg-white/10" aria-label="Close">
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-auto w-auto rounded p-1 text-white/80 hover:bg-white/10 hover:text-white" aria-label="Close">
             <X size={16} />
-          </button>
+          </Button>
         </div>
 
         <div className="p-4">
@@ -235,10 +242,9 @@ export function ChecklistEditor({
           ) : (
             <>
               {frozen && (
-                <div
-                  className="mb-3 rounded-lg border px-3 py-2 text-[11.5px]"
-                  style={{ borderColor: MX.gold, background: MX.amberSoft, color: MX.amber }}
-                >
+                <Card
+                  className="mb-3 rounded-lg border px-3 py-2 text-[11.5px] shadow-none"
+                  style={{ borderColor: MX.gold, background: MX.amberSoft, color: MX.amber }}>
                   {meta?.status === "RETIRED" ? (
                     <>This revision is retired and read-only. Revise it from the library to make a new draft.</>
                   ) : (
@@ -248,13 +254,12 @@ export function ChecklistEditor({
                       answering. Use <strong>Revise</strong> in the library to make a new revision.
                     </>
                   )}
-                </div>
+                </Card>
               )}
               {readOnly && !frozen && (
-                <div
-                  className="mb-3 rounded-lg border px-3 py-2 text-[11.5px]"
-                  style={{ borderColor: MX.iceLine, background: MX.ice, color: MX.muted }}
-                >
+                <Card
+                  className="mb-3 rounded-lg border px-3 py-2 text-[11.5px] shadow-none"
+                  style={{ borderColor: MX.iceLine, background: MX.ice, color: MX.muted }}>
                   {readOnlyReason === "VIEW" ? (
                     <>
                       Viewing this checklist as published — every item in the sheet&rsquo;s own order,
@@ -266,114 +271,97 @@ export function ChecklistEditor({
                       Read-only. Changing a controlled checklist needs <code>FIRE.TEMPLATE_AUTHOR</code>.
                     </>
                   )}
-                </div>
+                </Card>
               )}
 
               {/* ── document header ─────────────────────────────────────── */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <div className="col-span-2">
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Checklist name
-                  </label>
-                  <input
+                  </Label>
+                  <Input inputSize="compact"
                     disabled={disabled}
                     value={def.name ?? ""}
                     onChange={(e) => patch({ name: e.target.value })}
                     placeholder="Monthly Fire Hydrant System Maintenance Checklist"
-                    className={FIELD}
-                    style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  />
+                    style={{ borderColor: MX.iceLine, color: MX.ink }} />
                 </div>
                 <div>
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Document No.
-                  </label>
-                  <input
+                  </Label>
+                  <Input inputSize="compact"
                     disabled={disabled}
                     value={def.documentNo}
                     onChange={(e) => patch({ documentNo: e.target.value })}
                     placeholder="PIL/EHSD/CL/029-R1"
-                    className={FIELD}
-                    style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  />
+                    style={{ borderColor: MX.iceLine, color: MX.ink }} />
                 </div>
                 <div>
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Revision
-                  </label>
-                  <input
+                  </Label>
+                  <Input inputSize="compact"
                     disabled={disabled}
                     value={def.revision}
                     onChange={(e) => patch({ revision: e.target.value })}
-                    className={FIELD}
-                    style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  />
+                    style={{ borderColor: MX.iceLine, color: MX.ink }} />
                 </div>
                 <div>
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Supersedes No.
-                  </label>
-                  <input
+                  </Label>
+                  <Input inputSize="compact"
                     disabled={disabled}
                     value={def.supersedesNo ?? ""}
                     onChange={(e) => patch({ supersedesNo: e.target.value })}
-                    className={FIELD}
-                    style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  />
+                    style={{ borderColor: MX.iceLine, color: MX.ink }} />
                 </div>
                 <div>
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Effective date
-                  </label>
-                  <input
+                  </Label>
+                  <Input inputSize="compact"
                     type="date"
                     disabled={disabled}
                     value={(def.effectiveDate ?? "").slice(0, 10)}
                     onChange={(e) => patch({ effectiveDate: e.target.value })}
-                    className={FIELD}
-                    style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  />
+                    style={{ borderColor: MX.iceLine, color: MX.ink }} />
                 </div>
                 <div>
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Review date
-                  </label>
-                  <input
+                  </Label>
+                  <Input inputSize="compact"
                     type="date"
                     disabled={disabled}
                     value={(def.reviewDate ?? "").slice(0, 10)}
                     onChange={(e) => patch({ reviewDate: e.target.value })}
-                    className={FIELD}
+                    style={{ borderColor: MX.iceLine, color: MX.ink }} />
+                </div>
+                <div>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
+                    Applies to
+                  </Label>
+                  <SelectField
+                    disabled={disabled}
+                    value={def.assetType}
+                    onChange={(v) => patch({ assetType: v })}
+                    ariaLabel="Applies to"
                     style={{ borderColor: MX.iceLine, color: MX.ink }}
+                    options={ASSET_TYPES.map((a) => ({ value: a.value, label: a.label }))}
                   />
                 </div>
                 <div>
-                  <label className={LABEL} style={{ color: MX.muted }}>
-                    Applies to
-                  </label>
-                  <select
-                    disabled={disabled}
-                    value={def.assetType}
-                    onChange={(e) => patch({ assetType: e.target.value })}
-                    className={FIELD}
-                    style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  >
-                    {ASSET_TYPES.map((a) => (
-                      <option key={a.value} value={a.value}>
-                        {a.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Frequency
-                  </label>
-                  <select
+                  </Label>
+                  <SelectField
                     disabled={disabled}
                     value={def.frequency}
-                    onChange={(e) => {
-                      const frequency = e.target.value;
+                    ariaLabel="Frequency"
+                    onChange={(frequency) => {
                       const allowed = LAYOUTS_FOR_FREQUENCY[frequency] ?? [];
                       // Snap the layout to one this cadence supports. An ANNUAL
                       // sheet has no grid, and leaving a stale DAY_GRID selected
@@ -383,46 +371,33 @@ export function ChecklistEditor({
                         : allowed[0]?.value ?? "FORM";
                       patch({ frequency, layout });
                     }}
-                    className={FIELD}
                     style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  >
-                    {FREQUENCIES.map((f) => (
-                      <option key={f.value} value={f.value}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={FREQUENCIES.map((f) => ({ value: f.value, label: f.label }))}
+                  />
                 </div>
                 <div className="col-span-2">
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Layout
-                  </label>
-                  <select
+                  </Label>
+                  <SelectField
                     disabled={disabled}
                     value={def.layout}
-                    onChange={(e) => patch({ layout: e.target.value })}
-                    className={FIELD}
+                    onChange={(v) => patch({ layout: v })}
+                    ariaLabel="Layout"
                     style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  >
-                    {layouts.map((l) => (
-                      <option key={l.value} value={l.value}>
-                        {l.label}
-                      </option>
-                    ))}
-                  </select>
+                    options={layouts.map((l) => ({ value: l.value, label: l.label }))}
+                  />
                 </div>
                 <div className="col-span-2">
-                  <label className={LABEL} style={{ color: MX.muted }}>
+                  <Label variant="eyebrow" style={{ color: MX.muted }}>
                     Unit variant <span className="font-normal normal-case">(only where two units&rsquo; sheets differ)</span>
-                  </label>
-                  <input
+                  </Label>
+                  <Input inputSize="compact"
                     disabled={disabled}
                     value={def.siteVariant ?? ""}
                     onChange={(e) => patch({ siteVariant: e.target.value })}
                     placeholder="UNIT_21_A"
-                    className={FIELD}
-                    style={{ borderColor: MX.iceLine, color: MX.ink }}
-                  />
+                    style={{ borderColor: MX.iceLine, color: MX.ink }} />
                 </div>
               </div>
 
@@ -450,7 +425,7 @@ export function ChecklistEditor({
 
               <div className="mt-2 space-y-3">
                 {def.sections.map((sec, sIdx) => (
-                  <div key={sIdx} className="rounded-xl border" style={{ borderColor: MX.iceLine }}>
+                  <Card key={sIdx} className="rounded-xl border shadow-none" style={{ borderColor: MX.iceLine }}>
                     <div
                       className="flex flex-wrap items-center gap-2 px-3 py-2"
                       style={{ background: MX.ice, borderBottom: `1px solid ${MX.iceLine}` }}
@@ -499,12 +474,12 @@ export function ChecklistEditor({
                               <GripVertical size={12} />
                               {!disabled && (
                                 <div className="flex flex-col">
-                                  <button type="button" onClick={() => moveItem(sIdx, iIdx, -1)} className="text-[9px] leading-none hover:opacity-70" style={{ color: MX.muted }} title="Move up">
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => moveItem(sIdx, iIdx, -1)} className="h-auto w-auto p-0 text-[9px] leading-none hover:bg-transparent hover:opacity-70" style={{ color: MX.muted }} title="Move up" aria-label="Move item up">
                                     ▲
-                                  </button>
-                                  <button type="button" onClick={() => moveItem(sIdx, iIdx, 1)} className="text-[9px] leading-none hover:opacity-70" style={{ color: MX.muted }} title="Move down">
+                                  </Button>
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => moveItem(sIdx, iIdx, 1)} className="h-auto w-auto p-0 text-[9px] leading-none hover:bg-transparent hover:opacity-70" style={{ color: MX.muted }} title="Move down" aria-label="Move item down">
                                     ▼
-                                  </button>
+                                  </Button>
                                 </div>
                               )}
                             </div>
@@ -545,41 +520,31 @@ export function ChecklistEditor({
                                   className="rounded border px-2 py-0.5 font-mono text-[10.5px] outline-none disabled:bg-slate-50"
                                   style={{ borderColor: MX.iceLine, color: MX.muted, width: 150 }}
                                 />
-                                <select
+                                <SelectField
                                   disabled={disabled}
                                   value={it.type}
-                                  onChange={(e) => patchItem(sIdx, iIdx, { type: e.target.value as any })}
-                                  className="rounded border px-1.5 py-0.5 text-[10.5px] outline-none"
-                                  style={{ borderColor: MX.iceLine, color: MX.ink }}
-                                >
-                                  {ITEM_TYPES.map((t) => (
-                                    <option key={t.value} value={t.value}>
-                                      {t.label}
-                                    </option>
-                                  ))}
-                                </select>
-                                <label className="flex items-center gap-1 text-[10.5px]" style={{ color: MX.muted }}>
-                                  <input
-                                    type="checkbox"
-                                    disabled={disabled}
-                                    checked={it.mandatory}
-                                    onChange={(e) => patchItem(sIdx, iIdx, { mandatory: e.target.checked })}
-                                  />
-                                  required to submit
-                                </label>
-                                <label
-                                  className="flex items-center gap-1 text-[10.5px]"
+                                  onChange={(v) => patchItem(sIdx, iIdx, { type: v as any })}
+                                  ariaLabel="Item type"
+                                  className="h-auto px-1.5 py-0.5 text-[10.5px]"
+                                  options={ITEM_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                                />
+                                <CheckboxField
+                                  className="items-center gap-1 text-[10.5px]"
+                                  style={{ color: MX.muted }}
+                                  disabled={disabled}
+                                  checked={it.mandatory}
+                                  onChange={(e) => patchItem(sIdx, iIdx, { mandatory: e.target.checked })}
+                                  label="required to submit"
+                                />
+                                <CheckboxField
+                                  className="items-center gap-1 text-[10.5px]"
                                   style={{ color: MX.muted }}
                                   title="A 'No' on this item raises a CAMS finding. Off by default — a daily grid would otherwise flood the findings register."
-                                >
-                                  <input
-                                    type="checkbox"
-                                    disabled={disabled}
-                                    checked={it.triggersFinding}
-                                    onChange={(e) => patchItem(sIdx, iIdx, { triggersFinding: e.target.checked })}
-                                  />
-                                  &ldquo;No&rdquo; raises a finding
-                                </label>
+                                  disabled={disabled}
+                                  checked={it.triggersFinding}
+                                  onChange={(e) => patchItem(sIdx, iIdx, { triggersFinding: e.target.checked })}
+                                  label={<>&ldquo;No&rdquo; raises a finding</>}
+                                />
                               </div>
                             </div>
 
@@ -614,7 +579,7 @@ export function ChecklistEditor({
                         </button>
                       </div>
                     )}
-                  </div>
+                  </Card>
                 ))}
               </div>
 

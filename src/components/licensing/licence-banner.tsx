@@ -9,6 +9,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, Clock, X } from "lucide-react";
 import { useLicence } from "./licence-provider";
+import { Button } from "@/components/ui/button";
 
 export function LicenceBanner() {
   const { view } = useLicence();
@@ -76,9 +77,9 @@ function Bar({
     <div className={`flex items-center gap-2 border-b px-4 py-2 text-sm ${tones}`}>
       {children}
       {!persistent && onClose && (
-        <button onClick={onClose} className="ml-auto opacity-60 hover:opacity-100" aria-label="Dismiss">
+        <Button variant="ghost" onClick={onClose} className="ml-auto opacity-60 hover:opacity-100" aria-label="Dismiss">
           <X size={14} />
-        </button>
+        </Button>
       )}
     </div>
   );

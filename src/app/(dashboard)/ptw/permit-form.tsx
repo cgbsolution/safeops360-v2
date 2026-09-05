@@ -22,7 +22,10 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField, type SelectOption } from "@/components/ui/select-field";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
@@ -34,6 +37,7 @@ import {
   AlertCircle, ChevronLeft, ChevronRight, Check, MapPin, Trash2, Clock, Flame, Wrench, Users, ShieldAlert, ClipboardCheck, Zap, HardHat, Pickaxe, Hammer, Anchor
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { RemoveRowButton } from "@/components/ui/remove-row-button";
 
 type Plant = { id: string; name: string; areas: { id: string; name: string }[] };
 type Department = { id: string; name: string };
@@ -92,6 +96,39 @@ const DEFAULT_GAS_PARAMS = {
     { parameter: "H2S", lowLimit: 0, highLimit: 10, unit: "ppm" }
   ]
 } as const;
+
+// The fixed enum lists the wizard's dropdowns offer. Hoisted to module scope
+// so they are one array each rather than a fresh literal per render, and so
+// the option text lives next to the type definitions it belongs to.
+const CREW_ROLES: SelectOption[] = [
+  { value: "WORKER", label: "Worker" },
+  { value: "HELPER", label: "Helper" },
+  { value: "OPERATOR", label: "Operator" },
+  { value: "SUPERVISOR", label: "Supervisor" },
+  { value: "TECHNICIAN", label: "Technician" },
+  { value: "CONTRACTOR", label: "Contractor" }
+];
+
+const ISOLATION_TYPES: SelectOption[] = [
+  { value: "ELECTRICAL", label: "Electrical" },
+  { value: "MECHANICAL", label: "Mechanical" },
+  { value: "FLUID", label: "Fluid" },
+  { value: "PNEUMATIC", label: "Pneumatic" },
+  { value: "HYDRAULIC", label: "Hydraulic" },
+  { value: "STEAM", label: "Steam" }
+];
+
+const WORK_NATURES: SelectOption[] = [
+  { value: "INSPECTION", label: "Inspection" },
+  { value: "REPAIR", label: "Repair" },
+  { value: "REPLACEMENT", label: "Replacement" },
+  { value: "MODIFICATION", label: "Modification" }
+];
+
+const FLRA_OVERRIDES: SelectOption[] = [
+  { value: "yes", label: "Required — crew must complete & sign an FLRA before activation" },
+  { value: "no", label: "Not required for this permit" }
+];
 
 type CrewRow = { tempId: string; userId: string; role: string };
 type IsolationRow = { tempId: string; isolationType: string; description: string; isolationPointTag: string; lotoTagNumber: string };
@@ -189,6 +226,12 @@ export function PermitForm({
   const { coords: gps, status: gpsStatus, error: gpsError, request: requestGps } = useGeolocation();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [equipmentList, setEquipmentList] = useState<EquipmentRow[]>([]);
+  // Both step-5 dropdowns render the same master list; deriving it once keeps
+  // the two in step and avoids rebuilding the array per row per render.
+  const equipmentOptions: SelectOption[] = useMemo(
+    () => equipmentList.map((eq) => ({ value: eq.id, label: `${eq.name} (${eq.code})` })),
+    [equipmentList]
+  );
   const [loadingMasters, setLoadingMasters] = useState(false);
   const selectedPlant = useMemo(() => plants.find((p) => p.id === plantId), [plants, plantId]);
 
@@ -516,7 +559,7 @@ export function PermitForm({
       {/* Provenance banner — this permit was called for by a HIRA hazard row.
           Shown on every step so the originator keeps the context in view. */}
       {hiraPrefill && (
-        <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <Alert variant="warning" size="lg" className="border-amber-300">
           <div className="font-medium">
             Raised from HIRA{hiraPrefill.studyNumber ? ` ${hiraPrefill.studyNumber}` : ""}
             {hiraPrefill.hazardName ? ` — ${hiraPrefill.hazardName}` : ""}
@@ -529,7 +572,7 @@ export function PermitForm({
               ? ` Assessed residual risk: ${hiraPrefill.residualRiskLevel}.`
               : ""}
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Step content */}
@@ -584,28 +627,28 @@ export function PermitForm({
                           {t.label}
                         </div>
                         <div className="mt-1 flex flex-wrap gap-1">
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600">
+                          <Badge variant="neutral" size="sm" className="font-medium">
                             Max {t.maxHours}h
-                          </span>
+                          </Badge>
                           {t.requiresGasTest && (
-                            <span className="inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700 ring-1 ring-inset ring-amber-200">
+                            <Badge variant="warning" size="sm" className="bg-amber-50 font-medium">
                               gas test
-                            </span>
+                            </Badge>
                           )}
                           {t.requiresFireWatch && (
-                            <span className="inline-flex items-center rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-medium text-rose-700 ring-1 ring-inset ring-rose-200">
+                            <Badge variant="danger" size="sm" className="bg-rose-50 font-medium">
                               fire watch
-                            </span>
+                            </Badge>
                           )}
                           {t.requiresStandby && (
-                            <span className="inline-flex items-center rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-700 ring-1 ring-inset ring-sky-200">
+                            <Badge variant="info" size="sm" className="border-sky-200 bg-sky-50 font-medium text-sky-700">
                               standby
-                            </span>
+                            </Badge>
                           )}
                           {t.requiresRescue && (
-                            <span className="inline-flex items-center rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 ring-1 ring-inset ring-violet-200">
+                            <Badge variant="violet" size="sm" className="bg-violet-50 font-medium">
                               rescue
-                            </span>
+                            </Badge>
                           )}
                         </div>
                       </div>
@@ -650,23 +693,32 @@ export function PermitForm({
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label>Plant <span className="text-rose-600">*</span></Label>
-                <Select value={plantId} onChange={(e) => { setPlantId(e.target.value); setAreaId(""); setDepartmentId(""); }} required>
-                  {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </Select>
+                <SelectField
+                  value={plantId}
+                  onChange={(v) => { setPlantId(v); setAreaId(""); setDepartmentId(""); }}
+                  required
+                  options={plants.map((p) => ({ value: p.id, label: p.name }))}
+                />
               </div>
               <div>
                 <Label>Department</Label>
-                <Select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} disabled={loadingMasters}>
-                  <option value="">{loadingMasters ? "Loading…" : "— Select —"}</option>
-                  {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </Select>
+                <SelectField
+                  value={departmentId}
+                  onChange={setDepartmentId}
+                  disabled={loadingMasters}
+                  placeholder={loadingMasters ? "Loading…" : "— Select —"}
+                  options={departments.map((d) => ({ value: d.id, label: d.name }))}
+                />
               </div>
               <div>
                 <Label>Area <span className="text-rose-600">*</span></Label>
-                <Select value={areaId} onChange={(e) => setAreaId(e.target.value)} required>
-                  <option value="">— Select —</option>
-                  {selectedPlant?.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </Select>
+                <SelectField
+                  value={areaId}
+                  onChange={setAreaId}
+                  required
+                  placeholder="— Select —"
+                  options={(selectedPlant?.areas ?? []).map((a) => ({ value: a.id, label: a.name }))}
+                />
               </div>
               <div>
                 <Label>Specific Location</Label>
@@ -675,10 +727,12 @@ export function PermitForm({
               </div>
               <div>
                 <Label>Contractor (if applicable)</Label>
-                <Select value={contractorCompanyId} onChange={(e) => setContractorCompanyId(e.target.value)}>
-                  <option value="">— None (own employee) —</option>
-                  {contractors.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </Select>
+                <SelectField
+                  value={contractorCompanyId}
+                  onChange={setContractorCompanyId}
+                  placeholder="— None (own employee) —"
+                  options={contractors.map((c) => ({ value: c.id, label: c.name }))}
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label>Scope of Work <span className="text-rose-600">*</span></Label>
@@ -734,24 +788,23 @@ export function PermitForm({
               </div>
               {crew.length === 0 && <div className="text-sm text-slate-500 italic">No crew members added.</div>}
               {crew.map((c) => (
-                <div key={c.tempId} className="rounded-md border border-slate-200 p-2 flex items-center gap-2 mb-2 bg-slate-50/50">
+                <Card key={c.tempId} className="mb-2 flex items-center gap-2 rounded-md border-slate-200 bg-slate-50/50 p-2 shadow-none">
                   <div className="flex-1">
                     <UserPicker value={c.userId || null} onChange={(id) => setCrew((p) => p.map((r) => r.tempId === c.tempId ? { ...r, userId: id ?? "" } : r))}
                       filter={{ plantId }} placeholder="Search…" />
                   </div>
-                  <Select value={c.role} onChange={(e) => setCrew((p) => p.map((r) => r.tempId === c.tempId ? { ...r, role: e.target.value } : r))}
-                    className="w-32">
-                    <option value="WORKER">Worker</option>
-                    <option value="HELPER">Helper</option>
-                    <option value="OPERATOR">Operator</option>
-                    <option value="SUPERVISOR">Supervisor</option>
-                    <option value="TECHNICIAN">Technician</option>
-                    <option value="CONTRACTOR">Contractor</option>
-                  </Select>
-                  <button type="button" onClick={() => setCrew((p) => p.filter((r) => r.tempId !== c.tempId))} className="text-slate-400 hover:text-rose-600">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                  <SelectField
+                    value={c.role}
+                    onChange={(v) => setCrew((p) => p.map((r) => r.tempId === c.tempId ? { ...r, role: v } : r))}
+                    ariaLabel="Crew role"
+                    className="w-32"
+                    options={CREW_ROLES}
+                  />
+                  <RemoveRowButton
+                    label="Remove crew member"
+                    onClick={() => setCrew((p) => p.filter((r) => r.tempId !== c.tempId))}
+                  />
+                </Card>
               ))}
             </div>
 
@@ -784,18 +837,15 @@ export function PermitForm({
           <CardContent className="space-y-2">
             {isolations.length === 0 && <div className="text-sm text-slate-500 italic">No isolations added. Work that doesn't need isolations can skip this step.</div>}
             {isolations.map((iso) => (
-              <div key={iso.tempId} className="rounded-md border border-slate-200 p-2.5 grid sm:grid-cols-[1fr_2fr_1fr_1fr_auto] gap-2 items-end">
+              <Card key={iso.tempId} className="grid items-end gap-2 rounded-md border-slate-200 p-2.5 shadow-none sm:grid-cols-[1fr_2fr_1fr_1fr_auto]">
                 <div>
                   <Label>Type</Label>
-                  <Select value={iso.isolationType} onChange={(e) => setIsolations((p) => p.map((r) => r.tempId === iso.tempId ? { ...r, isolationType: e.target.value } : r))}>
-                    <option value="">—</option>
-                    <option value="ELECTRICAL">Electrical</option>
-                    <option value="MECHANICAL">Mechanical</option>
-                    <option value="FLUID">Fluid</option>
-                    <option value="PNEUMATIC">Pneumatic</option>
-                    <option value="HYDRAULIC">Hydraulic</option>
-                    <option value="STEAM">Steam</option>
-                  </Select>
+                  <SelectField
+                    value={iso.isolationType}
+                    onChange={(v) => setIsolations((p) => p.map((r) => r.tempId === iso.tempId ? { ...r, isolationType: v } : r))}
+                    placeholder="—"
+                    options={ISOLATION_TYPES}
+                  />
                 </div>
                 <div>
                   <Label>Description</Label>
@@ -809,10 +859,12 @@ export function PermitForm({
                   <Label>LOTO Tag #</Label>
                   <Input value={iso.lotoTagNumber} onChange={(e) => setIsolations((p) => p.map((r) => r.tempId === iso.tempId ? { ...r, lotoTagNumber: e.target.value } : r))} placeholder="optional" />
                 </div>
-                <button type="button" onClick={() => setIsolations((p) => p.filter((r) => r.tempId !== iso.tempId))} className="text-slate-400 hover:text-rose-600 mb-1.5">
-                  <Trash2 size={14} />
-                </button>
-              </div>
+                <RemoveRowButton
+                  label="Remove isolation"
+                  className="mb-1.5"
+                  onClick={() => setIsolations((p) => p.filter((r) => r.tempId !== iso.tempId))}
+                />
+              </Card>
             ))}
             <Button type="button" size="sm" variant="outline" onClick={() => setIsolations((p) => [...p, { tempId: tempId(), isolationType: "", description: "", isolationPointTag: "", lotoTagNumber: "" }])}>+ Add Isolation</Button>
           </CardContent>
@@ -830,14 +882,21 @@ export function PermitForm({
               <Label>Required PPE</Label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 mt-1">
                 {PPE_CATALOG.map((p) => (
-                  <label key={p.code} className={cn(
-                    "flex items-center gap-2 text-sm rounded-md border px-2.5 py-1.5 cursor-pointer",
-                    ppe.includes(p.code) ? "border-primary-300 bg-primary-50/50" : "border-slate-200 bg-white"
-                  )}>
-                    <input type="checkbox" checked={ppe.includes(p.code)}
-                      onChange={() => setPpe((cur) => cur.includes(p.code) ? cur.filter((x) => x !== p.code) : [...cur, p.code])} />
+                  <Label
+                    key={p.code}
+                    htmlFor={`ppe-${p.code}`}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-md border px-2.5 py-1.5 text-sm font-normal",
+                      ppe.includes(p.code) ? "border-primary-300 bg-primary-50/50" : "border-slate-200 bg-white"
+                    )}
+                  >
+                    <Checkbox
+                      id={`ppe-${p.code}`}
+                      checked={ppe.includes(p.code)}
+                      onChange={() => setPpe((cur) => cur.includes(p.code) ? cur.filter((x) => x !== p.code) : [...cur, p.code])}
+                    />
                     <span>{p.label}</span>
-                  </label>
+                  </Label>
                 ))}
               </div>
             </div>
@@ -850,22 +909,26 @@ export function PermitForm({
               </div>
               {tools.length === 0 && <div className="text-sm text-slate-500 italic">None added.</div>}
               {tools.map((t) => (
-                <div key={t.tempId} className="rounded-md border border-slate-200 p-2 grid sm:grid-cols-[2fr_2fr_auto] gap-2 mb-2 items-end">
+                <Card key={t.tempId} className="mb-2 grid items-end gap-2 rounded-md border-slate-200 p-2 shadow-none sm:grid-cols-[2fr_2fr_auto]">
                   <div>
                     <Label>Equipment from Master</Label>
-                    <Select value={t.equipmentId} onChange={(e) => setTools((p) => p.map((r) => r.tempId === t.tempId ? { ...r, equipmentId: e.target.value } : r))}>
-                      <option value="">— or use free text —</option>
-                      {equipmentList.map((eq) => <option key={eq.id} value={eq.id}>{eq.name} ({eq.code})</option>)}
-                    </Select>
+                    <SelectField
+                      value={t.equipmentId}
+                      onChange={(v) => setTools((p) => p.map((r) => r.tempId === t.tempId ? { ...r, equipmentId: v } : r))}
+                      placeholder="— or use free text —"
+                      options={equipmentOptions}
+                    />
                   </div>
                   <div>
                     <Label>Free-text description</Label>
                     <Input value={t.freeTextDescription} onChange={(e) => setTools((p) => p.map((r) => r.tempId === t.tempId ? { ...r, freeTextDescription: e.target.value } : r))} placeholder="for tools not in master" />
                   </div>
-                  <button type="button" onClick={() => setTools((p) => p.filter((r) => r.tempId !== t.tempId))} className="text-slate-400 hover:text-rose-600 mb-1.5">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                  <RemoveRowButton
+                    label="Remove tool"
+                    className="mb-1.5"
+                    onClick={() => setTools((p) => p.filter((r) => r.tempId !== t.tempId))}
+                  />
+                </Card>
               ))}
             </div>
 
@@ -877,27 +940,31 @@ export function PermitForm({
               </div>
               {subjectEq.length === 0 && <div className="text-sm text-slate-500 italic">None added.</div>}
               {subjectEq.map((s) => (
-                <div key={s.tempId} className="rounded-md border border-slate-200 p-2 grid sm:grid-cols-[2fr_1fr_auto] gap-2 mb-2 items-end">
+                <Card key={s.tempId} className="mb-2 grid items-end gap-2 rounded-md border-slate-200 p-2 shadow-none sm:grid-cols-[2fr_1fr_auto]">
                   <div>
                     <Label>Equipment <span className="text-rose-600">*</span></Label>
-                    <Select value={s.equipmentId} onChange={(e) => setSubjectEq((p) => p.map((r) => r.tempId === s.tempId ? { ...r, equipmentId: e.target.value } : r))}>
-                      <option value="">— Select —</option>
-                      {equipmentList.map((eq) => <option key={eq.id} value={eq.id}>{eq.name} ({eq.code})</option>)}
-                    </Select>
+                    <SelectField
+                      value={s.equipmentId}
+                      onChange={(v) => setSubjectEq((p) => p.map((r) => r.tempId === s.tempId ? { ...r, equipmentId: v } : r))}
+                      placeholder="— Select —"
+                      options={equipmentOptions}
+                    />
                   </div>
                   <div>
                     <Label>Work Nature</Label>
-                    <Select value={s.workNature} onChange={(e) => setSubjectEq((p) => p.map((r) => r.tempId === s.tempId ? { ...r, workNature: e.target.value } : r))}>
-                      <option value="INSPECTION">Inspection</option>
-                      <option value="REPAIR">Repair</option>
-                      <option value="REPLACEMENT">Replacement</option>
-                      <option value="MODIFICATION">Modification</option>
-                    </Select>
+                    <SelectField
+                      value={s.workNature}
+                      onChange={(v) => setSubjectEq((p) => p.map((r) => r.tempId === s.tempId ? { ...r, workNature: v } : r))}
+                      ariaLabel="Work nature"
+                      options={WORK_NATURES}
+                    />
                   </div>
-                  <button type="button" onClick={() => setSubjectEq((p) => p.filter((r) => r.tempId !== s.tempId))} className="text-slate-400 hover:text-rose-600 mb-1.5">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                  <RemoveRowButton
+                    label="Remove subject equipment"
+                    className="mb-1.5"
+                    onClick={() => setSubjectEq((p) => p.filter((r) => r.tempId !== s.tempId))}
+                  />
+                </Card>
               ))}
             </div>
           </CardContent>
@@ -935,7 +1002,7 @@ export function PermitForm({
                 <Button type="button" size="sm" variant="outline" onClick={() => setGasParams((p) => [...p, { parameter: "OTHER", lowLimit: "", highLimit: "", unit: "" }])}>+ Add Parameter</Button>
               </div>
               {gasParams.map((p, i) => (
-                <div key={i} className="rounded-md border border-slate-200 p-2 grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 mb-2 items-end">
+                <Card key={i} className="rounded-md border border-slate-200 p-2 grid grid-cols-[1fr_1fr_1fr_1fr_auto] gap-2 mb-2 items-end shadow-none">
                   <div>
                     <Label>Parameter</Label>
                     <Input value={p.parameter} onChange={(e) => setGasParams((arr) => arr.map((x, idx) => idx === i ? { ...x, parameter: e.target.value } : x))} />
@@ -952,10 +1019,12 @@ export function PermitForm({
                     <Label>Unit</Label>
                     <Input value={p.unit} onChange={(e) => setGasParams((arr) => arr.map((x, idx) => idx === i ? { ...x, unit: e.target.value } : x))} placeholder="%, ppm" />
                   </div>
-                  <button type="button" onClick={() => setGasParams((arr) => arr.filter((_, idx) => idx !== i))} className="text-slate-400 hover:text-rose-600 mb-1.5">
-                    <Trash2 size={14} />
-                  </button>
-                </div>
+                  <RemoveRowButton
+                    label="Remove gas parameter"
+                    className="mb-1.5"
+                    onClick={() => setGasParams((arr) => arr.filter((_, idx) => idx !== i))}
+                  />
+                </Card>
               ))}
             </div>
           </CardContent>
@@ -991,15 +1060,13 @@ export function PermitForm({
             </div>
             <div>
               <Label>Field-Level Risk Assessment (FLRA)</Label>
-              <select
+              <SelectField
                 value={flraOverride}
-                onChange={(e) => setFlraOverride(e.target.value as "" | "yes" | "no")}
-                className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
-              >
-                <option value="">Follow site policy (default)</option>
-                <option value="yes">Required — crew must complete &amp; sign an FLRA before activation</option>
-                <option value="no">Not required for this permit</option>
-              </select>
+                onChange={(v) => setFlraOverride(v as "" | "yes" | "no")}
+                ariaLabel="Field-Level Risk Assessment requirement"
+                placeholder="Follow site policy (default)"
+                options={FLRA_OVERRIDES}
+              />
               <p className="text-xs text-slate-500 mt-0.5">
                 Controls whether the FLRA sub-flow gates the receiver's acceptance.
                 The choice is snapshotted on the permit for audit.
@@ -1034,10 +1101,10 @@ export function PermitForm({
       )}
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 flex items-start gap-2">
-          <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
-        </div>
+        <Alert variant="destructive" size="lg">
+          <AlertCircle className="mt-0.5" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       {/* Navigation */}

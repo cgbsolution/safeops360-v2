@@ -2,6 +2,7 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { ClipboardList, AlertCircle, CheckCircle2, Layers, TrendingUp, GitMerge } from "lucide-react";
 import { PatternConfirmCard } from "@/components/capa/pattern-confirm-card";
+import { Alert } from "@/components/ui/alert";
 
 // CAPA dashboard widgets — pure 3-tier.
 
@@ -174,13 +175,13 @@ export async function CapaPatternsWidget() {
             <PatternConfirmCard key={`c-${i}`} pattern={p} />
           ))}
           {confirmed.slice(0, 2).map((p) => (
-            <div key={p.id} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs">
+            <Alert variant="success" key={p.id} className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-emerald-900">Confirmed pattern</span>
                 <span className="text-emerald-700 text-[10px]">{p.capaIds.length} CAPAs</span>
               </div>
               <div className="text-slate-700 mt-1">{p.rationale}</div>
-            </div>
+            </Alert>
           ))}
         </div>
       )}

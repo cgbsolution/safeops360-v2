@@ -22,6 +22,8 @@ import {
   RISK_CHIP
 } from "./_meta";
 import { AlertTriangle } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -72,9 +74,9 @@ export default async function MocLandingPage(props: {
     return (
       <div>
         <PageHeader title="Management of Change" description="Govern every planned change before it happens — ISO 45001 §8.1.3" />
-        <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
           Select a plant to view its change requests.
-        </div>
+        </Card>
       </div>
     );
   }
@@ -207,27 +209,27 @@ export default async function MocLandingPage(props: {
       )}
 
       {items.length === 0 ? (
-        <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
           <GitBranch className="mx-auto mb-2 text-slate-300" size={32} />
           No change requests{searchParams.classification ? " for this filter" : " yet"}.
-        </div>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-3">MOC</th>
-                <th className="text-left px-4 py-3">Category</th>
-                <th className="text-left px-4 py-3">Class</th>
-                <th className="text-left px-4 py-3">Risk</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Target</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
+        <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-slate-600 text-xs uppercase tracking-wider">
+              <TableRow>
+                <TableHead className="text-left px-4 py-3">MOC</TableHead>
+                <TableHead className="text-left px-4 py-3">Category</TableHead>
+                <TableHead className="text-left px-4 py-3">Class</TableHead>
+                <TableHead className="text-left px-4 py-3">Risk</TableHead>
+                <TableHead className="text-left px-4 py-3">Status</TableHead>
+                <TableHead className="text-left px-4 py-3">Target</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {visibleItems.map((cr) => (
-                <tr key={cr.id} className="hover:bg-slate-50/60">
-                  <td className="px-4 py-3">
+                <TableRow key={cr.id} className="hover:bg-slate-50/60">
+                  <TableCell className="px-4 py-3">
                     <Link href={`/moc/${cr.id}`} className="block">
                       <div className="font-mono text-xs text-slate-500">{cr.number}</div>
                       <div className="font-medium text-slate-900">
@@ -244,14 +246,14 @@ export default async function MocLandingPage(props: {
                         )}
                       </div>
                     </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{CATEGORY_LABEL[cr.category] ?? cr.category}</td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-slate-700">{CATEGORY_LABEL[cr.category] ?? cr.category}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium capitalize", CLASSIFICATION_CHIP[cr.classification] ?? "bg-slate-100 text-slate-700 border-slate-200")}>
                       {cr.classification}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     {cr.overallResidualRisk ? (
                       <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium capitalize", RISK_CHIP[cr.overallResidualRisk] ?? "bg-slate-100 text-slate-700 border-slate-200")}>
                         {cr.overallResidualRisk}
@@ -259,8 +261,8 @@ export default async function MocLandingPage(props: {
                     ) : (
                       <span className="text-xs text-slate-400">—</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span className={cn("inline-block rounded border px-2 py-0.5 text-xs font-medium", STATUS_CHIP[cr.status] ?? "bg-slate-100 text-slate-700 border-slate-200")}>
                         {STATUS_LABEL[cr.status] ?? cr.status}
@@ -269,13 +271,13 @@ export default async function MocLandingPage(props: {
                         <SignalChip signal={insights.signalByRecord.get(cr.id)!} href={`/moc/${cr.id}`} />
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDate(cr.targetCompletionDate)}</td>
-                </tr>
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-slate-600 whitespace-nowrap">{fmtDate(cr.targetCompletionDate)}</TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

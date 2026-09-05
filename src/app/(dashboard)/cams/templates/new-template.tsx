@@ -6,9 +6,11 @@ import { Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { cn } from "@/lib/utils";
 import { ENGAGEMENT_TYPES, STANDARDS, SCORING_MODES, labelize } from "../lib-cams";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 
 export function NewTemplateButton({ ownerId }: { ownerId: string }) {
   const [open, setOpen] = useState(false);
@@ -60,18 +62,18 @@ function NewTemplateModal({ ownerId, onClose }: { ownerId: string; onClose: () =
           <h2 className="text-base font-semibold text-slate-900">New Template</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-auto w-auto text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
-        {err && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
+        {err && <Alert variant="destructive" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Name (required)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Name (required)</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Internal HSE System Audit — ISO 45001" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Description</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Applicable engagement types</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Applicable engagement types</Label>
             <div className="flex flex-wrap gap-2">
               {ENGAGEMENT_TYPES.map((t) => (
                 <Button key={t.value} type="button" variant="ghost" onClick={() => toggle(types, t.value, setTypes)}
@@ -82,7 +84,7 @@ function NewTemplateModal({ ownerId, onClose }: { ownerId: string; onClose: () =
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Standards assessed</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Standards assessed</Label>
             <div className="flex flex-wrap gap-2">
               {STANDARDS.map((s) => (
                 <Button key={s} type="button" variant="ghost" onClick={() => toggle(standards, s, setStandards)}
@@ -94,13 +96,13 @@ function NewTemplateModal({ ownerId, onClose }: { ownerId: string; onClose: () =
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Scoring mode</label>
-              <Select value={mode} onChange={(e) => setMode(e.target.value)}>
-                {SCORING_MODES.map((m) => <option key={m} value={m}>{labelize(m)}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Scoring mode</Label>
+              <SelectField value={mode} onChange={setMode}
+                options={SCORING_MODES.map((m) => ({ value: m, label: labelize(m) }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Pass threshold %</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Pass threshold %</Label>
               <Input type="number" min={0} max={100} value={passThreshold} onChange={(e) => setPassThreshold(e.target.value)} />
             </div>
           </div>

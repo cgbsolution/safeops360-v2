@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { ChecklistBuilder } from "../../checklist-builder";
 import { requirePermission } from "@/lib/auth/server";
 import { prisma } from "@/lib/prisma";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +28,9 @@ export default async function EditChecklistPage(props: { params: Promise<{ id: s
             { label: "Edit" }
           ]}
         />
-        <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+        <Alert variant="warning" className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           To change an approved template, create a new version (bumped version number, links back to this template).
-        </div>
+        </Alert>
       </div>
     );
   }

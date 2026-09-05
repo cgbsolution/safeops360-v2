@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { RollupAdminView } from "./rollup-view";
 import type { RollupRule } from "@/app/(dashboard)/erm/lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +23,9 @@ export default async function RollupAdminPage() {
         description="Auto-aggregate operational entries (HIRA / EAI / Quality NCR) into enterprise risks. Preview matches before running; running creates and refreshes the linked enterprise risks."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM seed has been run and you hold ERM.ROLLUP_ADMIN.
-        </div>
+        </Alert>
       ) : (
         <RollupAdminView rules={rules} />
       )}

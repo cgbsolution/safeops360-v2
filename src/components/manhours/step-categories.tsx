@@ -4,7 +4,7 @@ import { useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Trash2, Plus, Upload, Download, ChevronDown, ChevronRight } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
@@ -22,6 +22,9 @@ import {
   fetchSubmission
 } from "./wizard-api";
 import { generateCsvTemplate } from "@/lib/manhours/csv";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Kind = "PERMANENT" | "CONTRACT" | "TRAINEE";
 
@@ -157,25 +160,25 @@ export function StepCategories({
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-md border border-dashed bg-slate-50 p-6 text-center text-sm text-slate-500">
+        <Card className="rounded-md border border-dashed bg-slate-50 p-6 text-center text-sm text-slate-500 shadow-none">
           No {meta.entityLabel.toLowerCase()} rows yet. Add one below or use bulk import.
-        </div>
+        </Card>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-3 py-2 text-left">{meta.entityLabel}</th>
-                <th className="px-3 py-2 text-right" title="Average headcount across the period">Avg HC</th>
-                <th className="px-3 py-2 text-right" title="Peak headcount on any day">Peak HC</th>
-                <th className="px-3 py-2 text-right" title="Headcount on the last day of the period">End HC</th>
-                <th className="px-3 py-2 text-right">Regular Hrs</th>
-                <th className="px-3 py-2 text-right">OT Hrs</th>
-                <th className="px-3 py-2 text-right">Total</th>
-                <th className="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+              <TableRow>
+                <TableHead className="px-3 py-2 text-left">{meta.entityLabel}</TableHead>
+                <TableHead className="px-3 py-2 text-right" title="Average headcount across the period">Avg HC</TableHead>
+                <TableHead className="px-3 py-2 text-right" title="Peak headcount on any day">Peak HC</TableHead>
+                <TableHead className="px-3 py-2 text-right" title="Headcount on the last day of the period">End HC</TableHead>
+                <TableHead className="px-3 py-2 text-right">Regular Hrs</TableHead>
+                <TableHead className="px-3 py-2 text-right">OT Hrs</TableHead>
+                <TableHead className="px-3 py-2 text-right">Total</TableHead>
+                <TableHead className="px-3 py-2"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {rows.map((r) => (
                 <RowEditor
                   key={r.id}
@@ -189,18 +192,18 @@ export function StepCategories({
                   isReadOnly={isReadOnly}
                 />
               ))}
-            </tbody>
+            </TableBody>
             <tfoot>
-              <tr className="border-t-2 border-slate-300 bg-slate-50 font-semibold">
-                <td className="px-3 py-2 text-right">Subtotal ({rows.length} row{rows.length === 1 ? "" : "s"})</td>
-                <td colSpan={2}></td>
-                <td className="px-3 py-2 text-right tabular-nums">{subtotalHeadcount}</td>
-                <td colSpan={2}></td>
-                <td className="px-3 py-2 text-right tabular-nums">{formatNumber(subtotal)}</td>
-                <td></td>
-              </tr>
+              <TableRow className="border-t-2 border-slate-300 bg-slate-50 font-semibold">
+                <TableCell className="px-3 py-2 text-right">Subtotal ({rows.length} row{rows.length === 1 ? "" : "s"})</TableCell>
+                <TableCell colSpan={2}></TableCell>
+                <TableCell className="px-3 py-2 text-right tabular-nums">{subtotalHeadcount}</TableCell>
+                <TableCell colSpan={2}></TableCell>
+                <TableCell className="px-3 py-2 text-right tabular-nums">{formatNumber(subtotal)}</TableCell>
+                <TableCell></TableCell>
+              </TableRow>
             </tfoot>
-          </table>
+          </Table>
         </div>
       )}
 
@@ -223,17 +226,15 @@ export function StepCategories({
       )}
 
       {/* CSV bulk import */}
-      <div className="rounded-md border bg-slate-50">
-        <button
-          type="button"
-          className="flex w-full items-center justify-between px-4 py-2 text-sm font-medium text-slate-700"
-          onClick={() => setCsvOpen((x) => !x)}
-        >
+      <Card className="rounded-md border bg-slate-50 shadow-none">
+        <Button variant="ghost"
+          type="button" className="flex w-full justify-between px-4 py-2 text-sm"
+          onClick={() => setCsvOpen((x) => !x)}>
           <span className="flex items-center gap-2">
             {csvOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />} Bulk import via CSV
           </span>
           <span className="text-xs text-slate-500">Replaces all current {kind.toLowerCase()} rows</span>
-        </button>
+        </Button>
         {csvOpen && (
           <CsvImportPanel
             submissionId={submission.id}
@@ -247,7 +248,7 @@ export function StepCategories({
             isReadOnly={isReadOnly}
           />
         )}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -280,33 +281,33 @@ function RowEditor({
       : row.department?.name ?? "(department)";
 
   return (
-    <tr className={row._dirty ? "bg-amber-50" : ""}>
-      <td className="px-3 py-2">
+    <TableRow className={row._dirty ? "bg-amber-50" : ""}>
+      <TableCell className="px-3 py-2">
         <div className="font-medium">{entityName}</div>
         {row.notes && <div className="text-xs text-slate-500 mt-0.5">{row.notes}</div>}
         {row._error && <div className="text-xs text-rose-700 mt-0.5">{row._error}</div>}
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell className="px-3 py-2">
         <NumCell value={row.averageHeadcount} onChange={(v) => onPatch({ averageHeadcount: v })} disabled={isReadOnly} />
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell className="px-3 py-2">
         <NumCell value={row.peakHeadcount} onChange={(v) => onPatch({ peakHeadcount: v })} disabled={isReadOnly} />
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell className="px-3 py-2">
         <NumCell
           value={row.endOfPeriodHeadcount}
           onChange={(v) => onPatch({ endOfPeriodHeadcount: v })}
           disabled={isReadOnly}
         />
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell className="px-3 py-2">
         <NumCell value={row.regularHours} onChange={(v) => onPatch({ regularHours: v })} disabled={isReadOnly} />
-      </td>
-      <td className="px-3 py-2">
+      </TableCell>
+      <TableCell className="px-3 py-2">
         <NumCell value={row.overtimeHours} onChange={(v) => onPatch({ overtimeHours: v })} disabled={isReadOnly} />
-      </td>
-      <td className="px-3 py-2 text-right tabular-nums font-semibold">{formatNumber(total)}</td>
-      <td className="px-3 py-2 text-right">
+      </TableCell>
+      <TableCell className="px-3 py-2 text-right tabular-nums font-semibold">{formatNumber(total)}</TableCell>
+      <TableCell className="px-3 py-2 text-right">
         <div className="flex items-center justify-end gap-1">
           {row._dirty && !isReadOnly && (
             <Button size="sm" onClick={onSave} disabled={row._saving}>
@@ -319,8 +320,8 @@ function RowEditor({
             </Button>
           )}
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }
 
@@ -401,26 +402,18 @@ function NewRowEditor({
       : !!departmentId;
 
   return (
-    <div className="grid sm:grid-cols-7 gap-2 w-full rounded-md border bg-white p-3">
+    <Card className="grid sm:grid-cols-7 gap-2 w-full rounded-md border bg-white p-3 shadow-none">
       <div className="sm:col-span-2">
         {kind === "CONTRACT" ? (
-          <Select value={contractorCompanyId} onChange={(e) => setContractorCompanyId(e.target.value)}>
-            <option value="">Select contractor…</option>
-            {contractors.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
+          <SelectField value={contractorCompanyId} onChange={(value) => setContractorCompanyId(value)}
+            placeholder="Select contractor…"
+            options={contractors.map((c) => ({ value: String(c.id), label: `${c.name}` }))}
+          />
         ) : (
-          <Select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)}>
-            <option value="">Select department…</option>
-            {departments.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </Select>
+          <SelectField value={departmentId} onChange={(value) => setDepartmentId(value)}
+            placeholder="Select department…"
+            options={departments.map((d) => ({ value: String(d.id), label: `${d.name}` }))}
+          />
         )}
       </div>
       <Input type="number" min={0} placeholder="Avg HC" value={average} onChange={(e) => setAverage(Number(e.target.value || 0))} />
@@ -436,7 +429,7 @@ function NewRowEditor({
           Cancel
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -520,7 +513,7 @@ function CsvImportPanel({
         >
           <Upload size={14} /> Choose file…
         </Button>
-        <input
+        <Input
           ref={fileInputRef}
           type="file"
           accept=".csv,text/csv"
@@ -529,8 +522,7 @@ function CsvImportPanel({
             const f = e.target.files?.[0];
             if (f) handleFile(f);
             e.currentTarget.value = "";
-          }}
-        />
+          }} />
       </div>
 
       <Textarea
@@ -552,7 +544,7 @@ function CsvImportPanel({
       </div>
 
       {result?.ok && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+        <Alert variant="success" className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
           Imported {result.imported} row{result.imported === 1 ? "" : "s"} (replaced {result.replaced}).
           {result.errors.length > 0 && (
             <ul className="mt-2 text-xs list-disc list-inside">
@@ -561,10 +553,10 @@ function CsvImportPanel({
               ))}
             </ul>
           )}
-        </div>
+        </Alert>
       )}
       {result && !result.ok && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
           {result.message}
           {result.errors && result.errors.length > 0 && (
             <ul className="mt-2 text-xs list-disc list-inside">
@@ -573,7 +565,7 @@ function CsvImportPanel({
               ))}
             </ul>
           )}
-        </div>
+        </Alert>
       )}
     </div>
   );

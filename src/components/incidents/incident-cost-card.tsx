@@ -60,22 +60,22 @@ export function IncidentCostCard({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-lg border border-slate-200 p-3">
+          <Card className="p-3 shadow-none">
             <div className="text-[11px] uppercase tracking-wider text-slate-500">Plant · Trailing 12 mo</div>
             <div className="text-2xl font-bold text-slate-900 mt-0.5">{fmt(roll.totalCost, ccy)}</div>
             <div className="text-xs text-slate-500">{roll.contributingCount} of {roll.incidentCount} incidents</div>
-          </div>
-          <div className="rounded-lg border border-slate-200 p-3">
+          </Card>
+          <Card className="p-3 shadow-none">
             <div className="text-[11px] uppercase tracking-wider text-slate-500">This incident</div>
             <div className="text-2xl font-bold text-slate-900 mt-0.5">{fmt(thisIncident, ccy)}</div>
             {costImpact?.costConfidence && (
               <Badge className="mt-1 bg-slate-100 text-slate-600 border-slate-200 text-[10px]">{costImpact.costConfidence}</Badge>
             )}
-          </div>
+          </Card>
         </div>
 
         {/* CAPA comparison — unsafety cost vs. cost of prevention */}
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3">
+        <Card className="border-emerald-200 bg-emerald-50/50 p-3 shadow-none">
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-700">Preventive CAPA spend (T12M)</span>
             <span className="font-semibold text-slate-900">{fmt(roll.capaPreventiveCost, ccy)}</span>
@@ -86,7 +86,7 @@ export function IncidentCostCard({
               Every {ccy === "INR" ? "₹1" : "1"} of prevention offsets ~{fmt(avoidRatio * 1, ccy).replace("₹", "₹")} of unsafety cost.
             </div>
           )}
-        </div>
+        </Card>
 
         {!roll.hasPlantConfig && (
           <div className="flex items-start gap-1.5 text-[11px] text-amber-700">

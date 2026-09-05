@@ -118,7 +118,7 @@ export function NearMissAttachmentGallery({
       </CardHeader>
       <CardContent className="space-y-4">
         {showUpload && canUpload && (
-          <div className="border rounded-md p-3 bg-slate-50/50">
+          <Card className="border rounded-md p-3 bg-slate-50/50 shadow-none">
             <input
               type="file"
               multiple
@@ -130,7 +130,7 @@ export function NearMissAttachmentGallery({
             <p className="text-xs text-slate-500 mt-1">
               Uploaded as: <strong>{CATEGORY_LABEL[uploadCategory]}</strong>
             </p>
-          </div>
+          </Card>
         )}
 
         {loading ? (
@@ -149,7 +149,7 @@ export function NearMissAttachmentGallery({
                   const isVideo = a.mimeType.startsWith("video/");
                   const isMine = (a.uploadedBy?.id ?? a.uploadedById) === currentUserId;
                   return (
-                    <div key={a.id} className="group relative border rounded-md overflow-hidden bg-slate-100 aspect-square">
+                    <Card key={a.id} className="group relative border rounded-md overflow-hidden bg-slate-100 aspect-square shadow-none">
                       {isImage && thumbs[a.id] ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={thumbs[a.id]} alt={a.caption ?? a.fileName} className="w-full h-full object-cover" />
@@ -173,7 +173,7 @@ export function NearMissAttachmentGallery({
                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
                         <div className="text-[10px] text-white truncate">{a.uploadedBy?.name ?? "Unknown"}</div>
                       </div>
-                    </div>
+                    </Card>
                   );
                 })}
               </div>

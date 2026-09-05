@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, X, ExternalLink } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 type Pattern = {
   type: "candidate";
@@ -60,7 +62,7 @@ export function PatternConfirmCard({ pattern }: { pattern: Pattern }) {
   }
 
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
+    <Alert variant="warning" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1">
           <div className="font-medium text-amber-900">
@@ -92,23 +94,19 @@ export function PatternConfirmCard({ pattern }: { pattern: Pattern }) {
       </div>
       {error && <div className="text-rose-700 mt-1.5">{error}</div>}
       <div className="flex gap-1.5 mt-2">
-        <button
+        <Button variant="success"
           type="button"
           disabled={pending}
-          onClick={() => act("CONFIRM")}
-          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
+          onClick={() => act("CONFIRM")} className="gap-1 px-2 py-1 text-[11px] rounded text-white">
           <Check size={11} /> Confirm pattern
-        </button>
-        <button
+        </Button>
+        <Button variant="outline"
           type="button"
           disabled={pending}
-          onClick={() => act("DISMISS")}
-          className="inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded border border-slate-300 hover:bg-slate-50 disabled:opacity-50"
-        >
+          onClick={() => act("DISMISS")} className="gap-1 px-2 py-1 text-[11px] rounded">
           <X size={11} /> Dismiss
-        </button>
+        </Button>
       </div>
-    </div>
+    </Alert>
   );
 }

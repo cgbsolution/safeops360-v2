@@ -32,6 +32,7 @@ import { cn } from "@/lib/utils";
 
 import { AgentConfigForm } from "./agent-config-form";
 import { CalibrationButton } from "./calibration-button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -322,9 +323,9 @@ function MetricsGrid({ metrics }: { metrics: Metrics }) {
 function PromptList({ prompts }: { prompts: PromptRow[] }) {
   if (prompts.length === 0) {
     return (
-      <div className="text-xs text-slate-500 p-3 border border-dashed border-slate-200 rounded">
+      <Card className="text-xs text-slate-500 p-3 border border-dashed border-slate-200 rounded shadow-none">
         No prompt versions seeded yet.
-      </div>
+      </Card>
     );
   }
   return (
@@ -380,34 +381,34 @@ function PromptList({ prompts }: { prompts: PromptRow[] }) {
 function InvocationsTable({ items }: { items: InvocationRow[] }) {
   if (items.length === 0) {
     return (
-      <div className="text-xs text-slate-500 p-3 border border-dashed border-slate-200 rounded">
+      <Card className="text-xs text-slate-500 p-3 border border-dashed border-slate-200 rounded shadow-none">
         No invocations yet.
-      </div>
+      </Card>
     );
   }
   return (
-    <div className="border border-slate-200 rounded-md bg-white overflow-x-auto">
-      <table className="w-full text-xs">
-        <thead className="bg-slate-50 text-left text-[10px] uppercase tracking-wider text-slate-500">
-          <tr>
-            <th className="px-3 py-2">Invocation</th>
-            <th className="px-3 py-2">At</th>
-            <th className="px-3 py-2">Source</th>
-            <th className="px-3 py-2">Status</th>
-            <th className="px-3 py-2">Decision</th>
-            <th className="px-3 py-2 text-right">Cost</th>
-            <th className="px-3 py-2 text-right">Latency</th>
-            <th className="px-3 py-2">Flags</th>
-          </tr>
-        </thead>
-        <tbody>
+    <Card className="border border-slate-200 rounded-md bg-white overflow-x-auto shadow-none">
+      <Table className="w-full text-xs">
+        <TableHeader className="bg-slate-50 text-left text-[10px] uppercase tracking-wider text-slate-500">
+          <TableRow>
+            <TableHead className="px-3 py-2">Invocation</TableHead>
+            <TableHead className="px-3 py-2">At</TableHead>
+            <TableHead className="px-3 py-2">Source</TableHead>
+            <TableHead className="px-3 py-2">Status</TableHead>
+            <TableHead className="px-3 py-2">Decision</TableHead>
+            <TableHead className="px-3 py-2 text-right">Cost</TableHead>
+            <TableHead className="px-3 py-2 text-right">Latency</TableHead>
+            <TableHead className="px-3 py-2">Flags</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {items.map((row) => (
-            <tr key={row.id} className="border-t border-slate-100 hover:bg-slate-50">
-              <td className="px-3 py-2 font-mono text-[11px]">{row.invocationNumber}</td>
-              <td className="px-3 py-2 text-slate-500">
+            <TableRow key={row.id} className="border-t border-slate-100 hover:bg-slate-50">
+              <TableCell className="px-3 py-2 font-mono text-[11px]">{row.invocationNumber}</TableCell>
+              <TableCell className="px-3 py-2 text-slate-500">
                 {new Date(row.invokedAt).toLocaleString()}
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell className="px-3 py-2">
                 <span className="text-slate-500">{row.sourceModule}</span>
                 <Link
                   href={`/incidents/${row.sourceRecordId}`}
@@ -416,29 +417,29 @@ function InvocationsTable({ items }: { items: InvocationRow[] }) {
                 >
                   →
                 </Link>
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell className="px-3 py-2">
                 <StatusBadge status={row.status} />
-              </td>
-              <td className="px-3 py-2 text-slate-600">
+              </TableCell>
+              <TableCell className="px-3 py-2 text-slate-600">
                 {row.humanDecision ?? "—"}
                 {row.ratingByHuman != null && (
                   <span className="ml-1 text-[10px] text-amber-600">
                     {row.ratingByHuman}/5
                   </span>
                 )}
-              </td>
-              <td className="px-3 py-2 text-right text-slate-600">
+              </TableCell>
+              <TableCell className="px-3 py-2 text-right text-slate-600">
                 {row.totalCostUsd != null
                   ? `$${row.totalCostUsd.toFixed(4)}`
                   : "—"}
-              </td>
-              <td className="px-3 py-2 text-right text-slate-600">
+              </TableCell>
+              <TableCell className="px-3 py-2 text-right text-slate-600">
                 {row.latencyMs != null
                   ? `${(row.latencyMs / 1000).toFixed(1)}s`
                   : "—"}
-              </td>
-              <td className="px-3 py-2">
+              </TableCell>
+              <TableCell className="px-3 py-2">
                 <span className="flex items-center gap-1">
                   {row.hallucinationFlagged && (
                     <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[9px]">
@@ -451,12 +452,12 @@ function InvocationsTable({ items }: { items: InvocationRow[] }) {
                     </Badge>
                   )}
                 </span>
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </TableBody>
+      </Table>
+    </Card>
   );
 }
 

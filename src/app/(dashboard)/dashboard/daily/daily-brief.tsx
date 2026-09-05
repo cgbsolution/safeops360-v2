@@ -38,6 +38,10 @@ import type {
   ScoreComponents,
 } from "@/lib/daily-brief/types";
 import { cn } from "@/lib/utils";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const MX = { navy: "#0B1F4D", gold: "#C9A961", ice: "#E8EEF7", red: "#C0392B", green: "#2E7D5B" };
 const POLL_MS = 45_000;
@@ -201,20 +205,15 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
               </span>
             ) : null}
             {/* role lens */}
-            <select
+            <SelectField
               value={lens}
-              onChange={(e) => navTo({ role: e.target.value as BriefLens })}
-              className="rounded-full border border-white/25 bg-transparent px-3 py-1.5 text-sm text-white [&>option]:text-black"
-              title="Brief lens"
-            >
-              {availableLenses.map((l) => (
-                <option key={l} value={l}>
-                  {LENS_LABEL[l]}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => navTo({ role: value as BriefLens })}
+              ariaLabel="Brief lens"
+              className="rounded-full border border-white/25 bg-transparent px-3 py-1.5 text-sm text-white"
+              options={availableLenses.map((l) => ({ value: l, label: LENS_LABEL[l] }))}
+            />
             {/* window toggle */}
-            <div className="flex overflow-hidden rounded-full border border-white/25">
+            <Card className="flex overflow-hidden rounded-full border border-white/25 shadow-none">
               {(["24h", "7d"] as const).map((w) => (
                 <button
                   key={w}
@@ -225,20 +224,19 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
                   {w === "24h" ? "Since yesterday" : "Last 7 days"}
                 </button>
               ))}
-            </div>
+            </Card>
             {multiSite ? (
-              <select
+              <SelectField
                 value={data.siteId ?? ""}
-                onChange={(e) => navTo({ siteId: e.target.value || null })}
-                className="rounded-full border border-white/25 bg-transparent px-3 py-1.5 text-sm text-white [&>option]:text-black"
-              >
-                <option value="">All sites</option>
-                {data.sites.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} — {s.name.split("—")[0].trim()}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => navTo({ siteId: value || null })}
+                ariaLabel="Site"
+                placeholder="All sites"
+                className="rounded-full border border-white/25 bg-transparent px-3 py-1.5 text-sm text-white"
+                options={data.sites.map((site) => ({
+                  value: site.id,
+                  label: `${site.code} — ${site.name.split("—")[0].trim()}`
+                }))}
+              />
             ) : null}
           </div>
         </div>
@@ -249,13 +247,11 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
             {data.siteComparison
               .filter((s) => s.critical + s.attention > 0)
               .map((s) => (
-                <button
+                <Button variant="ghost"
                   key={s.siteId}
                   type="button"
-                  onClick={() => navTo({ siteId: s.siteId })}
-                  className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs hover:bg-white/20"
-                  title={`${s.name} — click to focus`}
-                >
+                  onClick={() => navTo({ siteId: s.siteId })} className="flex gap-2 rounded-full px-3 py-1 text-xs"
+                  title={`${s.name} — click to focus`}>
                   <span className="font-semibold">{s.name}</span>
                   {s.critical > 0 ? (
                     <span className="flex items-center gap-0.5 font-bold" style={{ color: "#ff9c8f" }}>
@@ -269,7 +265,7 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
                       {s.attention}
                     </span>
                   ) : null}
-                </button>
+                </Button>
               ))}
           </div>
         ) : null}
@@ -279,13 +275,13 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
         {/* ── alert feed (the hero, left 2/3) ── */}
         <div className="space-y-3 lg:col-span-2">
           {visible.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-12 text-center" style={{ borderColor: MX.ice }}>
+            <Card className="flex flex-col items-center gap-3 rounded-xl border-2 border-dashed p-12 text-center shadow-none" style={{ borderColor: MX.ice }}>
               <CheckCircle2 className="h-12 w-12" style={{ color: MX.green }} />
               <p className="text-lg font-semibold" style={{ ...GEORGIA, color: MX.navy }}>
                 Nothing needs your attention right now
               </p>
               <p className="text-sm text-[#5A6273]">{data.acknowledgedThisWeek} items acknowledged this week.</p>
-            </div>
+            </Card>
           ) : (
             visible.map((alert) => {
               const tier = tierOf(alert);
@@ -306,20 +302,20 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
                         <Icon className="h-3.5 w-3.5" /> {meta.label}
                       </span>
                       {isSentinel ? (
-                        <span className="flex items-center gap-1 rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[11px] font-semibold text-[#5B2D90]">
+                        <Badge variant="neutral" className="flex items-center gap-1 rounded-full bg-[#EEF0FF] px-2 py-0.5 text-[11px] font-semibold text-[#5B2D90]">
                           <Sparkles className="h-3 w-3" /> {KIND_LABEL[kind ?? ""] ?? "Sentinel"}
-                        </span>
+                        </Badge>
                       ) : null}
                       {alert.earlySignal ? (
-                        <span className="rounded-full bg-[#E8EEF7] px-2 py-0.5 text-[11px] font-medium text-[#5A6273]">early signal</span>
+                        <Badge variant="neutral" className="rounded-full bg-[#E8EEF7] px-2 py-0.5 text-[11px] font-medium text-[#5A6273]">early signal</Badge>
                       ) : null}
                       {alert.count > 1 ? (
-                        <span className="rounded-full bg-[#0B1F4D] px-2 py-0.5 text-[11px] font-bold text-white">×{alert.count}</span>
+                        <Badge variant="neutral" className="rounded-full bg-[#0B1F4D] px-2 py-0.5 text-[11px] font-bold text-white">×{alert.count}</Badge>
                       ) : null}
                       {alert.status === "acknowledged" ? (
-                        <span className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+                        <Badge variant="success" className="flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
                           <Check className="h-3 w-3" /> acknowledged
-                        </span>
+                        </Badge>
                       ) : null}
                     </div>
                     <span className="flex items-center gap-1 text-xs text-[#5A6273]">
@@ -368,14 +364,12 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
 
                   <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3" style={{ borderColor: MX.ice }}>
                     {alert.status !== "acknowledged" ? (
-                      <button
+                      <Button variant="ghost"
                         type="button"
-                        onClick={() => void act(alert, "ack")}
-                        className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-semibold text-white"
-                        style={{ background: MX.navy }}
-                      >
+                        onClick={() => void act(alert, "ack")} className="flex gap-1.5 rounded-md px-3 py-1.5 text-sm text-white"
+                        style={{ background: MX.navy }}>
                         <Check className="h-4 w-4" /> Acknowledge
-                      </button>
+                      </Button>
                     ) : null}
                     {alert.deepLink ? (
                       <Link href={alert.deepLink} className="rounded-md border px-3 py-1.5 text-sm font-semibold" style={{ borderColor: MX.ice, color: MX.navy }}>
@@ -383,13 +377,11 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
                       </Link>
                     ) : null}
                     {tier !== "critical" && alert.status !== "acknowledged" ? (
-                      <button
+                      <Button variant="ghost"
                         type="button"
-                        onClick={() => void act(alert, "mute")}
-                        className="ml-auto flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-[#5A6273] hover:bg-[#E8EEF7]"
-                      >
+                        onClick={() => void act(alert, "mute")} className="ml-auto flex gap-1.5 rounded-md px-3 py-1.5 text-sm text-[#5A6273]">
                         <VolumeX className="h-4 w-4" /> Mute 24h
-                      </button>
+                      </Button>
                     ) : null}
                   </div>
                 </div>
@@ -401,7 +393,7 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
         {/* ── right rail ── */}
         <div className="space-y-5">
           {/* today's numbers */}
-          <div className="rounded-xl border bg-white p-5" style={{ borderColor: MX.ice }}>
+          <Card className="rounded-xl border bg-white p-5 shadow-none" style={{ borderColor: MX.ice }}>
             <h2 className="text-sm font-semibold" style={{ ...GEORGIA, color: MX.navy }}>
               Today&apos;s numbers
               <span className="ml-2 font-sans text-[11px] font-normal text-[#5A6273]">
@@ -424,10 +416,10 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
                 </div>
               ))}
             </div>
-          </div>
+          </Card>
 
           {/* field pulse */}
-          <div className="rounded-xl border bg-white p-5" style={{ borderColor: MX.ice }}>
+          <Card className="rounded-xl border bg-white p-5 shadow-none" style={{ borderColor: MX.ice }}>
             <h2 className="text-sm font-semibold" style={{ ...GEORGIA, color: MX.navy }}>
               Field pulse <span className="font-sans text-xs font-normal text-[#5A6273]">{pulseWindow}</span>
             </h2>
@@ -455,10 +447,10 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
                 </div>
               </>
             )}
-          </div>
+          </Card>
 
           {/* aging watch */}
-          <div className="rounded-xl border bg-white p-5" style={{ borderColor: MX.ice }}>
+          <Card className="rounded-xl border bg-white p-5 shadow-none" style={{ borderColor: MX.ice }}>
             <h2 className="text-sm font-semibold" style={{ ...GEORGIA, color: MX.navy }}>
               Aging watch
             </h2>
@@ -474,17 +466,16 @@ export function DailyBrief({ initial }: { initial: DailyBriefPayload }) {
                     <Link href={item.href} className="min-w-0 flex-1 truncate text-sm hover:underline" style={{ color: MX.navy }} title={item.label}>
                       <span className="font-mono text-xs">{item.ref}</span> {item.label}
                     </Link>
-                    <span
+                    <Badge variant="neutral"
                       className="rounded-full px-2 py-0.5 text-[11px] font-bold tabular-nums"
-                      style={{ background: item.ageDays > 60 ? "#C0392B22" : "#C9A96122", color: item.ageDays > 60 ? MX.red : "#8a6d2f" }}
-                    >
+                      style={{ background: item.ageDays > 60 ? "#C0392B22" : "#C9A96122", color: item.ageDays > 60 ? MX.red : "#8a6d2f" }}>
                       {item.ageDays}d
-                    </span>
+                    </Badge>
                   </li>
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>

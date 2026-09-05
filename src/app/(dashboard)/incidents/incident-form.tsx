@@ -34,7 +34,9 @@ import { readApiError } from "@/lib/client-errors";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField, type SelectOption } from "@/components/ui/select-field";
+import { CheckboxField } from "@/components/ui/checkbox-field";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
@@ -43,9 +45,11 @@ import { GpsCaptureStatus } from "@/components/ui/gps-capture";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { AlertCircle, Camera, Trash2, Upload, MapPin, Clock, X, ChevronDown, ChevronRight, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { WITNESS_LANGUAGES } from "@/lib/languages";
+import { WITNESS_LANGUAGE_OPTIONS } from "@/lib/languages";
 import { RcaEditor, useRcaMethodSwitcher } from "@/components/incidents/rca-editor";
 import { type RcaMethod, RCA_METHODS_LIST, emptyDataFor, isEmptyRcaData } from "@/lib/rca/types";
+import { RemoveRowButton } from "@/components/ui/remove-row-button";
+import { Badge } from "@/components/ui/badge";
 
 type Plant = { id: string; name: string; areas: { id: string; name: string }[] };
 type Department = { id: string; plantId: string; name: string };
@@ -63,6 +67,26 @@ const TYPES = [
   { value: "FIRE", label: "Fire / Explosion" },
   { value: "PROCESS_SAFETY", label: "Process Safety" },
   { value: "HIPO_NEAR_MISS", label: "High-Potential Near Miss" }
+];
+
+// Fixed enum lists for the report form's dropdowns. Hoisted so each is one
+// array rather than a fresh literal per render.
+const ROUTINE_OPTIONS: SelectOption[] = [
+  { value: "yes", label: "Yes — routine activity" },
+  { value: "no", label: "No — non-routine" }
+];
+
+const INJURY_SEVERITY_OPTIONS: SelectOption[] = [
+  { value: "MINOR", label: "Minor" },
+  { value: "MAJOR", label: "Major" },
+  { value: "FATAL", label: "Fatal" }
+];
+
+const INVOLVEMENT_OPTIONS: SelectOption[] = [
+  { value: "DIRECTLY_INVOLVED", label: "Directly involved" },
+  { value: "DAMAGED", label: "Damaged" },
+  { value: "INADEQUATE_GUARDING", label: "Inadequate guarding" },
+  { value: "MALFUNCTION", label: "Malfunction" }
 ];
 
 const PERSON_ROLES = ["VICTIM", "INJURED", "WITNESS", "RESPONDER", "OPERATOR", "SUPERVISOR"] as const;
@@ -420,10 +444,12 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4 max-w-4xl">
       {sourceNearMissId && (
-        <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-900 flex items-center gap-2">
-          <AlertCircle size={16} className="flex-shrink-0" />
-          Auto-promoting from near miss <span className="font-mono">{sourceNearMissId}</span>. Most context will be linked automatically.
-        </div>
+        <Alert variant="destructive" size="lg" className="border-rose-300 p-3">
+          <AlertCircle />
+          <AlertDescription>
+            Auto-promoting from near miss <span className="font-mono">{sourceNearMissId}</span>. Most context will be linked automatically.
+          </AlertDescription>
+        </Alert>
       )}
 
       {/* ─── 1. When ─── */}
@@ -459,9 +485,13 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
           <div className="grid sm:grid-cols-2 gap-4 mt-4">
             <div>
               <Label>Incident Type <span className="text-rose-600">*</span></Label>
-              <Select value={type} onChange={(e) => setType(e.target.value)} required>
-                {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </Select>
+              <SelectField
+                value={type}
+                onChange={setType}
+                required
+                ariaLabel="Incident type"
+                options={TYPES.map((t) => ({ value: t.value, label: t.label }))}
+              />
               <p className="text-xs text-slate-500 mt-1">
                 Plant HSE Manager confirms or reclassifies during Phase 2.
               </p>
@@ -479,29 +509,41 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <Label>Plant <span className="text-rose-600">*</span></Label>
-              <Select value={plantId} onChange={(e) => { setPlantId(e.target.value); setAreaId(""); setDepartmentId(""); }} required>
-                {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </Select>
+              <SelectField
+                value={plantId}
+                onChange={(v) => { setPlantId(v); setAreaId(""); setDepartmentId(""); }}
+                required
+                ariaLabel="Plant"
+                options={plants.map((pl) => ({ value: pl.id, label: pl.name }))}
+              />
             </div>
             <div>
               <Label>Department</Label>
-              <Select value={departmentId} onChange={(e) => setDepartmentId(e.target.value)} disabled={loadingDepartments}>
-                <option value="">
-                  {loadingDepartments
+              <SelectField
+                value={departmentId}
+                onChange={setDepartmentId}
+                disabled={loadingDepartments}
+                ariaLabel="Department"
+                placeholder={
+                  loadingDepartments
                     ? "Loading departments…"
                     : departments.length === 0
                       ? "— No departments available —"
-                      : "— Select —"}
-                </option>
-                {!loadingDepartments && departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </Select>
+                      : "— Select —"
+                }
+                options={loadingDepartments ? [] : departments.map((d) => ({ value: d.id, label: d.name }))}
+              />
             </div>
             <div>
               <Label>Area <span className="text-rose-600">*</span></Label>
-              <Select value={areaId} onChange={(e) => setAreaId(e.target.value)} required>
-                <option value="">— Select —</option>
-                {selectedPlant?.areas.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </Select>
+              <SelectField
+                value={areaId}
+                onChange={setAreaId}
+                required
+                ariaLabel="Area"
+                placeholder="— Select —"
+                options={(selectedPlant?.areas ?? []).map((a) => ({ value: a.id, label: a.name }))}
+              />
             </div>
             <div>
               <Label>Specific Location</Label>
@@ -510,10 +552,13 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
             </div>
             <div>
               <Label>Shift</Label>
-              <Select value={shiftId} onChange={(e) => setShiftId(e.target.value)}>
-                <option value="">— Select —</option>
-                {shifts.map((s) => <option key={s.id} value={s.id}>{s.label}</option>)}
-              </Select>
+              <SelectField
+                value={shiftId}
+                onChange={setShiftId}
+                ariaLabel="Shift"
+                placeholder="— Select —"
+                options={shifts.map((sh) => ({ value: sh.id, label: sh.label }))}
+              />
             </div>
             <div>
               <Label>Weather Conditions</Label>
@@ -552,11 +597,13 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
             </div>
             <div>
               <Label>Was the activity routine?</Label>
-              <Select value={activityIsRoutine} onChange={(e) => setActivityIsRoutine(e.target.value as "" | "yes" | "no")}>
-                <option value="">— Unknown —</option>
-                <option value="yes">Yes — routine activity</option>
-                <option value="no">No — non-routine</option>
-              </Select>
+              <SelectField
+                value={activityIsRoutine}
+                onChange={(v) => setActivityIsRoutine(v as "" | "yes" | "no")}
+                ariaLabel="Was the activity routine?"
+                placeholder="— Unknown —"
+                options={ROUTINE_OPTIONS}
+              />
             </div>
           </div>
         </CardContent>
@@ -603,10 +650,13 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
 
             <div>
               <Label>RCA Method <span className="text-xs font-normal text-slate-500">— picks which template to show</span></Label>
-              <Select
+              <SelectField
                 value={rcaMethod ?? ""}
-                onChange={(e) => {
-                  const next = e.target.value as RcaMethod | "";
+                ariaLabel="RCA method"
+                placeholder="— Pick a method to start the analysis —"
+                options={RCA_METHODS_LIST.map((m) => ({ value: m.code, label: m.label }))}
+                onChange={(raw) => {
+                  const next = raw as RcaMethod | "";
                   if (!next) {
                     setRcaMethod(null);
                     setRcaData(null);
@@ -619,12 +669,7 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
                   }
                   switchRcaMethod(next);
                 }}
-              >
-                <option value="">— Pick a method to start the analysis —</option>
-                {RCA_METHODS_LIST.map((m) => (
-                  <option key={m.code} value={m.code}>{m.label}</option>
-                ))}
-              </Select>
+              />
               <p className="text-xs text-slate-500 mt-1">
                 5-Why for simple causal chains. Fishbone (Ishikawa) for multi-cause analysis across 6M categories. TapRoot for high-severity events. Bowtie for barrier analysis.
               </p>
@@ -641,9 +686,9 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
               </div>
             )}
             {!rcaMethod && (
-              <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm text-slate-600">
+              <Card className="border-dashed border-slate-300 bg-slate-50 p-4 text-center text-sm text-slate-600 shadow-none">
                 Pick an RCA method above to load the corresponding template (5-Why, Fishbone, TapRoot, etc.).
-              </div>
+              </Card>
             )}
           </CardContent>
         )}
@@ -663,12 +708,10 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
             <div className="text-sm text-slate-500 italic">No persons added.</div>
           )}
           {persons.map((p) => (
-            <div key={p.tempId} className="rounded-lg border border-slate-200 p-3 space-y-3 bg-slate-50/50">
+            <Card key={p.tempId} className="space-y-3 border-slate-200 bg-slate-50/50 p-3 shadow-none">
               <div className="flex items-start justify-between">
                 <div className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Person</div>
-                <button type="button" onClick={() => removePerson(p.tempId)} className="text-slate-400 hover:text-rose-600">
-                  <Trash2 size={14} />
-                </button>
+                <RemoveRowButton label="Remove person" onClick={() => removePerson(p.tempId)} />
               </div>
               <div className="grid sm:grid-cols-2 gap-3">
                 <div>
@@ -683,15 +726,20 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
                 </div>
                 <div>
                   <Label>Role</Label>
-                  <Select value={p.role} onChange={(e) => updatePerson(p.tempId, { role: e.target.value as PersonRow["role"] })}>
-                    {PERSON_ROLES.map((r) => <option key={r} value={r}>{r.replace(/_/g, " ")}</option>)}
-                  </Select>
+                  <SelectField
+                    value={p.role}
+                    onChange={(v) => updatePerson(p.tempId, { role: v as PersonRow["role"] })}
+                    ariaLabel="Role"
+                    options={PERSON_ROLES.map((r) => ({ value: r, label: r.replace(/_/g, " ") }))}
+                  />
                 </div>
-                <div className="flex items-center gap-2 pt-6">
-                  <input type="checkbox" id={`inj-${p.tempId}`} checked={p.isInjured}
-                    onChange={(e) => updatePerson(p.tempId, { isInjured: e.target.checked })} />
-                  <Label htmlFor={`inj-${p.tempId}`} className="!mb-0">This person was injured</Label>
-                </div>
+                <CheckboxField
+                  id={`inj-${p.tempId}`}
+                  className="items-center pt-6"
+                  checked={p.isInjured}
+                  onChange={(e) => updatePerson(p.tempId, { isInjured: e.target.checked })}
+                  label="This person was injured"
+                />
               </div>
 
               {p.isInjured && (
@@ -710,13 +758,13 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
                   </div>
                   <div>
                     <Label>Severity</Label>
-                    <Select value={p.injurySeverity}
-                      onChange={(e) => updatePerson(p.tempId, { injurySeverity: e.target.value as PersonRow["injurySeverity"] })}>
-                      <option value="">—</option>
-                      <option value="MINOR">Minor</option>
-                      <option value="MAJOR">Major</option>
-                      <option value="FATAL">Fatal</option>
-                    </Select>
+                    <SelectField
+                      value={p.injurySeverity}
+                      onChange={(v) => updatePerson(p.tempId, { injurySeverity: v as PersonRow["injurySeverity"] })}
+                      ariaLabel="Injury severity"
+                      placeholder="—"
+                      options={INJURY_SEVERITY_OPTIONS}
+                    />
                   </div>
                   <div className="sm:col-span-2">
                     <Label>Treatment / Hospital</Label>
@@ -731,7 +779,7 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
         </CardContent>
       </Card>
@@ -763,14 +811,14 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
               </div>
               <div>
                 <Label>Language</Label>
-                <Select value={w.language} onChange={(e) => updateWitness(w.tempId, { language: e.target.value })}>
-                  {WITNESS_LANGUAGES.map((l) => <option key={l}>{l}</option>)}
-                </Select>
+                <SelectField
+                  value={w.language}
+                  onChange={(v) => updateWitness(w.tempId, { language: v })}
+                  ariaLabel="Language"
+                  options={WITNESS_LANGUAGE_OPTIONS}
+                />
               </div>
-              <button type="button" onClick={() => removeWitness(w.tempId)}
-                className="text-slate-400 hover:text-rose-600 mt-7">
-                <Trash2 size={14} />
-              </button>
+              <RemoveRowButton label="Remove witness" className="mt-7" onClick={() => removeWitness(w.tempId)} />
             </div>
           ))}
         </CardContent>
@@ -791,33 +839,33 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
             <div className="text-sm text-slate-500 italic">No equipment added.</div>
           )}
           {equipmentRows.map((r) => (
-            <div key={r.tempId} className="rounded-lg border border-slate-200 p-3 grid sm:grid-cols-[2fr_1fr_140px_auto] gap-3 items-start bg-slate-50/50">
+            <Card key={r.tempId} className="grid items-start gap-3 border-slate-200 bg-slate-50/50 p-3 shadow-none sm:grid-cols-[2fr_1fr_140px_auto]">
               <div>
                 <Label>Equipment</Label>
-                <Select value={r.equipmentId} onChange={(e) => updateEquipment(r.tempId, { equipmentId: e.target.value })}>
-                  <option value="">— Select —</option>
-                  {equipmentList.map((eq) => <option key={eq.id} value={eq.id}>{eq.name} ({eq.code})</option>)}
-                </Select>
+                <SelectField
+                  value={r.equipmentId}
+                  onChange={(v) => updateEquipment(r.tempId, { equipmentId: v })}
+                  ariaLabel="Equipment"
+                  placeholder="— Select —"
+                  options={equipmentList.map((eq) => ({ value: eq.id, label: `${eq.name} (${eq.code})` }))}
+                />
               </div>
               <div>
                 <Label>Involvement</Label>
-                <Select value={r.involvement} onChange={(e) => updateEquipment(r.tempId, { involvement: e.target.value })}>
-                  <option value="DIRECTLY_INVOLVED">Directly involved</option>
-                  <option value="DAMAGED">Damaged</option>
-                  <option value="INADEQUATE_GUARDING">Inadequate guarding</option>
-                  <option value="MALFUNCTION">Malfunction</option>
-                </Select>
+                <SelectField
+                  value={r.involvement}
+                  onChange={(v) => updateEquipment(r.tempId, { involvement: v })}
+                  ariaLabel="Involvement"
+                  options={INVOLVEMENT_OPTIONS}
+                />
               </div>
               <div>
                 <Label>Damage (₹)</Label>
                 <Input type="number" min={0} value={r.damageEstimate}
                   onChange={(e) => updateEquipment(r.tempId, { damageEstimate: e.target.value })} />
               </div>
-              <button type="button" onClick={() => removeEquipment(r.tempId)}
-                className="text-slate-400 hover:text-rose-600 mt-7">
-                <Trash2 size={14} />
-              </button>
-            </div>
+              <RemoveRowButton label="Remove equipment" className="mt-7" onClick={() => removeEquipment(r.tempId)} />
+            </Card>
           ))}
         </CardContent>
       </Card>
@@ -839,12 +887,12 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
         <CardHeader>
           <CardTitle>
             Site Photos
-            {photosMandatory && <span className="ml-2 text-xs font-normal text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded">Required for {type}</span>}
+            {photosMandatory && <Badge variant="warning" size="sm" className="ml-2 rounded font-normal tracking-normal">Required for {type}</Badge>}
           </CardTitle>
           <CardDescription>Up to {MAX_PHOTOS} photos · 50 MB each · phone camera works.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center">
+          <Card className="rounded-md border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center shadow-none">
             <Upload size={20} className="mx-auto text-slate-400 mb-1.5" />
             <p className="text-sm text-slate-700 font-medium">Drag & drop photos here</p>
             <div className="mt-2.5 flex items-center justify-center gap-2">
@@ -855,28 +903,34 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
                 <Camera size={13} /> Take Photo
               </Button>
             </div>
-            <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,application/pdf"
-              className="hidden" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
-            <input ref={cameraInputRef} type="file" accept="image/*"
+            {/* Hidden and driven by the buttons above — a native file picker
+                cannot be styled, so this is the only way to give it the
+                design system's chrome. */}
+            <Input ref={fileInputRef} type="file" multiple accept="image/*,video/*,application/pdf"
+              className="hidden" tabIndex={-1} aria-hidden="true"
+              onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
+            <Input ref={cameraInputRef} type="file" accept="image/*"
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               {...({ capture: "environment" } as any)}
-              className="hidden" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
-          </div>
+              className="hidden" tabIndex={-1} aria-hidden="true"
+              onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
+          </Card>
           {photos.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-3">
               {photos.map((p) => (
-                <div key={p.tempId} className="relative aspect-square rounded-md border bg-slate-100 overflow-hidden">
+                <Card key={p.tempId} className="relative aspect-square overflow-hidden rounded-md bg-slate-100 shadow-none">
                   {p.previewUrl
                     ? <img src={p.previewUrl} className="w-full h-full object-cover" alt="" />
                     : <div className="flex items-center justify-center h-full text-xs text-slate-500">{p.file.name.slice(0, 30)}</div>}
-                  <button type="button" onClick={() => removePhoto(p.tempId)}
-                    className="absolute top-1 right-1 rounded-full bg-black/60 text-white p-0.5 hover:bg-black">
+                  <Button type="button" variant="ghost" size="icon" aria-label={`Remove ${p.file.name}`}
+                    onClick={() => removePhoto(p.tempId)}
+                    className="absolute right-1 top-1 h-auto w-auto rounded-full bg-black/60 p-0.5 text-white hover:bg-black hover:text-white">
                     <X size={12} />
-                  </button>
+                  </Button>
                   {p.error && (
                     <div className="absolute inset-x-0 bottom-0 bg-rose-700 text-white text-[10px] px-1 py-0.5">{p.error}</div>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -885,10 +939,10 @@ export function IncidentForm({ plants }: { plants: Plant[] }) {
 
       {/* Error + submit */}
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 flex items-start gap-2">
-          <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-          <span>{error}</span>
-        </div>
+        <Alert variant="destructive" size="lg" className="px-3 py-2">
+          <AlertCircle className="mt-0.5" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
       )}
 
       <div className="flex items-center justify-between sticky bottom-0 bg-white/95 backdrop-blur border-t border-slate-200 -mx-6 px-6 py-3">

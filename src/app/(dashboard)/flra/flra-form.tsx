@@ -24,7 +24,8 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField, type SelectOption } from "@/components/ui/select-field";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +34,7 @@ import { GpsCaptureStatus } from "@/components/ui/gps-capture";
 import { useGeolocation } from "@/hooks/use-geolocation";
 import { formatDateTime, humanize } from "@/lib/utils";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
 
 type Plant = { id: string; name: string };
 type MasterItem = { id: string; code: string; label: string };
@@ -83,6 +85,9 @@ type FitnessDeclaration = {
 };
 
 const TBT_LANGUAGES = ["English", "Hindi", "Bengali", "Khasi", "Other"];
+// Same list in the shape SelectField takes. Derived rather than written twice
+// so adding a language stays a one-line change.
+const TBT_LANGUAGE_OPTIONS: SelectOption[] = TBT_LANGUAGES.map((l) => ({ value: l, label: l }));
 
 const PPE_ITEMS = [
   { code: "HARD_HAT", label: "Hard hat" },
@@ -542,10 +547,10 @@ export function FLRAForm({
       )}
 
       {error && (
-        <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 flex items-start gap-2">
+        <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 flex items-start gap-2">
           <AlertTriangle size={16} className="mt-0.5" />
           <div>{error}</div>
-        </div>
+        </Alert>
       )}
 
       {/* Sticky bottom nav */}
@@ -669,7 +674,7 @@ function Step1JobInfo(props: {
         </CardHeader>
         <CardContent>
           {props.selectedPermit ? (
-            <div className="rounded-lg border border-primary-200 bg-primary-50 p-3 space-y-1">
+            <Card className="space-y-1 rounded-lg border-primary-200 bg-primary-50 p-3 shadow-none">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
@@ -689,16 +694,18 @@ function Step1JobInfo(props: {
                     {formatDateTime(new Date(props.selectedPermit.validTo))}
                   </div>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={props.clearPermit}
-                  className="text-primary-700 hover:text-primary-900"
+                  className="h-auto w-auto p-0 text-primary-700 hover:bg-transparent hover:text-primary-900"
                   aria-label="Clear linked permit"
                 >
                   <X size={16} />
-                </button>
+                </Button>
               </div>
-            </div>
+            </Card>
           ) : (
             <PermitPicker onSelect={props.applyPermit} />
           )}
@@ -715,31 +722,23 @@ function Step1JobInfo(props: {
           <div className="grid sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label className="text-xs">Plant *</Label>
-              <Select
+              <SelectField
                 value={props.plantId}
-                onChange={(e) => props.setPlantId(e.target.value)}
+                onChange={props.setPlantId}
                 disabled={props.lockedByPermit}
-              >
-                {props.plants.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </Select>
+                ariaLabel="Plant"
+                options={props.plants.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Department</Label>
-              <Select
+              <SelectField
                 value={props.departmentId}
-                onChange={(e) => props.setDepartmentId(e.target.value)}
-              >
-                <option value="">— Pick —</option>
-                {props.departments.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
-                  </option>
-                ))}
-              </Select>
+                onChange={props.setDepartmentId}
+                ariaLabel="Department"
+                placeholder="— Pick —"
+                options={props.departments.map((d) => ({ value: d.id, label: d.name }))}
+              />
             </div>
           </div>
 
@@ -931,14 +930,12 @@ function Step2CrewTBT(props: {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Language</Label>
-              <Select
+              <SelectField
                 value={props.tbtLanguage}
-                onChange={(e) => props.setTbtLanguage(e.target.value)}
-              >
-                {TBT_LANGUAGES.map((l) => (
-                  <option key={l}>{l}</option>
-                ))}
-              </Select>
+                onChange={props.setTbtLanguage}
+                ariaLabel="Language"
+                options={TBT_LANGUAGE_OPTIONS}
+              />
             </div>
           </div>
 
@@ -952,20 +949,18 @@ function Step2CrewTBT(props: {
             />
           </div>
 
-          <label className="flex items-start gap-2 p-2 rounded-md border border-emerald-200 bg-emerald-50">
-            <input
-              type="checkbox"
-              checked={props.tbtConducted}
-              onChange={(e) => props.setTbtConducted(e.target.checked)}
-              className="mt-0.5"
-            />
-            <div className="text-xs text-emerald-800">
-              <span className="font-medium">Toolbox talk completed</span>
-              <div className="text-emerald-700">
+          <CheckboxField
+            variant="card"
+            className="border-emerald-200 bg-emerald-50 text-xs text-emerald-800"
+            checked={props.tbtConducted}
+            onChange={(e) => props.setTbtConducted(e.target.checked)}
+            label={<span className="font-medium">Toolbox talk completed</span>}
+            description={
+              <span className="text-emerald-700">
                 All crew briefed on hazards, controls and emergency procedures.
-              </div>
-            </div>
-          </label>
+              </span>
+            }
+          />
         </CardContent>
       </Card>
     </div>
@@ -1069,10 +1064,9 @@ function Step3Hazards({
               const initialLevel = riskLevel(initialScore);
               const residualLevel = riskLevel(residualScore);
               return (
-                <div
+                <Card
                   key={hIdx}
-                  className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2"
-                >
+                  className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2 shadow-none">
                   <div className="flex items-center justify-between">
                     <div className="text-xs font-semibold text-slate-700">
                       Hazard #{hIdx + 1}
@@ -1098,36 +1092,24 @@ function Step3Hazards({
                   />
 
                   <div className="grid sm:grid-cols-2 gap-2">
-                    <Select
+                    <SelectField
                       value={h.hazardCategory}
-                      onChange={(e) =>
-                        updateHazard(sIdx, hIdx, { hazardCategory: e.target.value })
-                      }
-                    >
-                      <option value="">Hazard category…</option>
-                      {hazardCategories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </Select>
-                    <Select
+                      onChange={(v) => updateHazard(sIdx, hIdx, { hazardCategory: v })}
+                      ariaLabel="Hazard category"
+                      placeholder="Hazard category…"
+                      options={hazardCategories.map((c) => ({ value: c.id, label: c.label }))}
+                    />
+                    <SelectField
                       value={h.energySource}
-                      onChange={(e) =>
-                        updateHazard(sIdx, hIdx, { energySource: e.target.value })
-                      }
-                    >
-                      <option value="">Energy source (opt)…</option>
-                      {energySources.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </Select>
+                      onChange={(v) => updateHazard(sIdx, hIdx, { energySource: v })}
+                      ariaLabel="Energy source"
+                      placeholder="Energy source (opt)…"
+                      options={energySources.map((c) => ({ value: c.id, label: c.label }))}
+                    />
                   </div>
 
                   {/* Initial risk */}
-                  <div className="rounded-md border border-orange-200 bg-orange-50 p-2 space-y-2">
+                  <Card className="space-y-2 rounded-md border-orange-200 bg-orange-50 p-2 shadow-none">
                     <div className="flex items-center justify-between">
                       <div className="text-[11px] font-semibold text-orange-700 uppercase tracking-wide">
                         Initial Risk (no controls)
@@ -1151,7 +1133,7 @@ function Step3Hazards({
                       value={h.initialSeverity}
                       onChange={(v) => updateHazard(sIdx, hIdx, { initialSeverity: v })}
                     />
-                  </div>
+                  </Card>
 
                   <Textarea
                     rows={2}
@@ -1208,7 +1190,7 @@ function Step3Hazards({
                       </div>
                     )}
                   </div>
-                </div>
+                </Card>
               );
             })}
 
@@ -1372,20 +1354,18 @@ function Step4Controls(props: {
               placeholder="Describe primary & secondary exit routes from the worksite"
             />
           </div>
-          <label className="flex items-start gap-2 p-2 rounded-md border border-amber-200 bg-amber-50 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={props.emergencyConfirmed}
-              onChange={(e) => props.setEmergencyConfirmed(e.target.checked)}
-              className="mt-0.5"
-            />
-            <div className="text-xs text-amber-800">
-              <span className="font-medium">Emergency contacts confirmed</span>
-              <div className="text-amber-700">
+          <CheckboxField
+            variant="card"
+            className="border-amber-200 bg-amber-50 text-xs text-amber-800"
+            checked={props.emergencyConfirmed}
+            onChange={(e) => props.setEmergencyConfirmed(e.target.checked)}
+            label={<span className="font-medium">Emergency contacts confirmed</span>}
+            description={
+              <span className="text-amber-700">
                 Crew knows muster point, security number and on-call rescue.
-              </div>
-            </div>
-          </label>
+              </span>
+            }
+          />
         </CardContent>
       </Card>
 
@@ -1441,39 +1421,24 @@ function Step4Controls(props: {
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                <label className="flex items-start gap-1.5 text-[11px] text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={f.hadAdequateRest}
-                    onChange={(e) =>
-                      updateFitness(f.userId, { hadAdequateRest: e.target.checked })
-                    }
-                    className="mt-0.5"
-                  />
-                  <span>Adequate rest</span>
-                </label>
-                <label className="flex items-start gap-1.5 text-[11px] text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={f.underInfluenceCheck}
-                    onChange={(e) =>
-                      updateFitness(f.userId, { underInfluenceCheck: e.target.checked })
-                    }
-                    className="mt-0.5"
-                  />
-                  <span>Not under influence</span>
-                </label>
-                <label className="flex items-start gap-1.5 text-[11px] text-slate-700">
-                  <input
-                    type="checkbox"
-                    checked={f.hasMedicalCondition}
-                    onChange={(e) =>
-                      updateFitness(f.userId, { hasMedicalCondition: e.target.checked })
-                    }
-                    className="mt-0.5"
-                  />
-                  <span>Has medical condition</span>
-                </label>
+                <CheckboxField
+                  className="gap-1.5 text-[11px] text-slate-700"
+                  checked={f.hadAdequateRest}
+                  onChange={(e) => updateFitness(f.userId, { hadAdequateRest: e.target.checked })}
+                  label="Adequate rest"
+                />
+                <CheckboxField
+                  className="gap-1.5 text-[11px] text-slate-700"
+                  checked={f.underInfluenceCheck}
+                  onChange={(e) => updateFitness(f.userId, { underInfluenceCheck: e.target.checked })}
+                  label="Not under influence"
+                />
+                <CheckboxField
+                  className="gap-1.5 text-[11px] text-slate-700"
+                  checked={f.hasMedicalCondition}
+                  onChange={(e) => updateFitness(f.userId, { hasMedicalCondition: e.target.checked })}
+                  label="Has medical condition"
+                />
               </div>
 
               {f.hasMedicalCondition && (
@@ -1524,12 +1489,12 @@ function Step5Review(props: {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           {props.selectedPermit && (
-            <div className="rounded-md border border-primary-200 bg-primary-50 p-2">
+            <Card className="rounded-md border-primary-200 bg-primary-50 p-2 shadow-none">
               <div className="text-[11px] text-primary-700">Linked Permit</div>
               <div className="font-mono font-semibold text-primary-900">
                 {props.selectedPermit.number}
               </div>
-            </div>
+            </Card>
           )}
 
           <ReviewRow label="Plant" value={props.plantName} />
@@ -1564,15 +1529,14 @@ function Step5Review(props: {
         <CardContent>
           <div className="space-y-1.5">
             {props.teamMemberIds.map((uid) => (
-              <div
+              <Card
                 key={uid}
-                className="flex items-center justify-between p-2 rounded-md border border-slate-200 bg-white text-xs"
-              >
+                className="flex items-center justify-between p-2 rounded-md border border-slate-200 bg-white text-xs shadow-none">
                 <span className="font-medium">{props.crewNamesById[uid] ?? uid}</span>
                 <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[10px]">
                   Pending sign-off
                 </Badge>
-              </div>
+              </Card>
             ))}
           </div>
         </CardContent>
@@ -1633,7 +1597,7 @@ function PermitPicker({ onSelect }: { onSelect: (p: EligiblePermit) => void }) {
         onFocus={() => setOpen(true)}
       />
       {open && (
-        <div className="rounded-md border border-slate-200 bg-white shadow-sm max-h-64 overflow-auto">
+        <Card className="max-h-64 overflow-auto rounded-md border-slate-200">
           {loading && <div className="p-3 text-xs text-slate-500">Searching…</div>}
           {!loading && eligibleNoFlra.length === 0 && (
             <div className="p-3 text-xs text-slate-500">
@@ -1673,7 +1637,7 @@ function PermitPicker({ onSelect }: { onSelect: (p: EligiblePermit) => void }) {
                 <div className="text-[11px] text-slate-500 truncate">{p.scopeOfWork}</div>
               </button>
             ))}
-        </div>
+        </Card>
       )}
     </div>
   );

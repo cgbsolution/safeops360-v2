@@ -11,6 +11,11 @@ import { useToast } from "@/components/ui/toast";
 import { usePermission } from "@/components/auth/can";
 import { parseApiError } from "@/lib/api-error";
 import { METHOD_LABEL, STATUS_CHIP, type RcaListItem } from "@/app/(dashboard)/erm/rca/lib";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { SelectField } from "@/components/ui/select-field";
 
 export function RcaLossPanel({ lossEventId, eventCode, title }: { lossEventId: string; eventCode: string; title: string }) {
   const router = useRouter();
@@ -29,16 +34,16 @@ export function RcaLossPanel({ lossEventId, eventCode, title }: { lossEventId: s
   }, [lossEventId]);
 
   return (
-    <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+    <Card className="mt-4 rounded-lg border border-slate-200 bg-slate-50/60 p-3 shadow-none">
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <Microscope size={15} className="text-slate-500" />
           <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-600">Root-Cause Analysis</h4>
         </div>
         {canCreate && (
-          <button onClick={() => setOpen(true)} className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-slate-400">
+          <Button variant="outline" onClick={() => setOpen(true)} className="gap-1 rounded-md px-2 py-1 text-[11px]">
             <Plus size={12} /> Open RCA on this loss
-          </button>
+          </Button>
         )}
       </div>
       {items === null ? (
@@ -59,7 +64,7 @@ export function RcaLossPanel({ lossEventId, eventCode, title }: { lossEventId: s
         </div>
       )}
       {open && <OpenLossRcaModal lossEventId={lossEventId} eventCode={eventCode} title={title} onClose={() => setOpen(false)} onDone={(id: string) => router.push(`/erm/rca/${id}`)} toast={toast} />}
-    </div>
+    </Card>
   );
 }
 
@@ -88,17 +93,17 @@ function OpenLossRcaModal({ lossEventId, eventCode, title, onClose, onDone, toas
       <div className="w-[480px] max-w-full rounded-xl bg-white shadow-lg">
         <div className="flex items-center justify-between border-b px-4 py-3">
           <h2 className="text-base font-semibold">Open RCA on this loss</h2>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700">✕</button>
+          <Button variant="ghost" onClick={onClose}>✕</Button>
         </div>
         <div className="space-y-3 p-4">
-          <div><label className="text-xs font-semibold text-slate-600">Title</label><input value={rcaTitle} onChange={(e) => setRcaTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm" /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Methodology</label>
-            <select value={methodology} onChange={(e) => setMethodology(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm">
-              {Object.entries(METHOD_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+          <div><Label className="text-xs font-semibold text-slate-600">Title</Label><Input value={rcaTitle} onChange={(e) => setRcaTitle(e.target.value)} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm" /></div>
+          <div><Label className="text-xs font-semibold text-slate-600">Methodology</Label>
+            <SelectField value={methodology} onChange={setMethodology} className="mt-1 w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm"
+              options={Object.entries(METHOD_LABEL).map(([v, l]) => ({ value: v, label: String(l) }))}
+            />
           </div>
           <p className="text-xs text-slate-400">The domain is inferred from the loss event's category — the cause picker scopes to it automatically.</p>
-          <button onClick={submit} disabled={busy || !rcaTitle} className="w-full rounded-lg bg-primary-700 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">{busy ? "Opening…" : "Open RCA"}</button>
+          <Button onClick={submit} disabled={busy || !rcaTitle} className="w-full rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-50">{busy ? "Opening…" : "Open RCA"}</Button>
         </div>
       </div>
     </div>

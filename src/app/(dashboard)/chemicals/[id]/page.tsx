@@ -9,6 +9,9 @@ import { fmtDate, fmtQty, prettyLabel } from "@/lib/chemicals/types";
 import { ErrorState, HazardChips, StatusChip } from "../_components";
 import { EvidenceLink } from "../evidence-link";
 import { ChemicalActions } from "./chemical-actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -84,17 +87,17 @@ export default async function ChemicalDetailPage({
       />
 
       {c.status === "RESTRICTED" && (
-        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4">
+        <Alert variant="destructive" size="lg" className="mb-4 rounded-xl p-4">
           <div className="text-sm font-semibold text-rose-800">Restricted chemical</div>
           <div className="mt-0.5 text-xs text-rose-700">
             {c.restrictionReason ?? "No reason recorded."} Receipt requires an HSE Manager exception.
           </div>
-        </div>
+        </Alert>
       )}
 
       <div className="grid gap-4 lg:grid-cols-3">
         {/* ── identity + classification ── */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2">
+        <Card className="rounded-xl p-4 shadow-none lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Identity & hazard classification</h2>
             <StatusChip status={c.status} />
@@ -135,19 +138,19 @@ export default async function ChemicalDetailPage({
             point, NFPA ratings and hazard phrases is a separate licensed capability and is not part
             of this module.
           </p>
-        </div>
+        </Card>
 
         {/* ── SDS ── */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl p-4 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Safety Data Sheet</h2>
           {!c.sdsAttachmentId ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <Alert variant="warning" size="lg" className="p-3">
               <div className="text-xs font-semibold text-amber-800">No SDS attached</div>
               <div className="mt-1 text-[11px] text-amber-700">
                 This chemical cannot be activated until a sheet is attached — enforced as a database
                 constraint, not just a form rule.
               </div>
-            </div>
+            </Alert>
           ) : (
             <div className="space-y-3">
               <Field label="Revision date">{fmtDate(c.sdsRevisionDate)}</Field>
@@ -174,11 +177,11 @@ export default async function ChemicalDetailPage({
               )}
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* ── inventory across sites ── */}
-      <div className="mt-4 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="mt-4 overflow-x-auto rounded-xl shadow-none">
         <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
           <h2 className="text-sm font-semibold text-slate-900">Inventory across sites</h2>
           <span className="text-xs text-slate-500">
@@ -188,50 +191,50 @@ export default async function ChemicalDetailPage({
         {c.inventory.length === 0 ? (
           <div className="p-6 text-center text-sm text-slate-400">No stock on hand.</div>
         ) : (
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-4 py-2.5 font-semibold">Batch / lot</th>
-                <th className="px-4 py-2.5 font-semibold">Storage location</th>
-                <th className="px-4 py-2.5 font-semibold">Quantity</th>
-                <th className="px-4 py-2.5 font-semibold">Expiry</th>
-                <th className="px-4 py-2.5 font-semibold">Supplier</th>
-                <th className="px-4 py-2.5 font-semibold">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+              <TableRow>
+                <TableHead className="px-4 py-2.5 font-semibold">Batch / lot</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Storage location</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Quantity</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Expiry</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Supplier</TableHead>
+                <TableHead className="px-4 py-2.5 font-semibold">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {c.inventory.map((i) => (
-                <tr key={i.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2.5 font-medium text-slate-800">{i.batchLotNumber}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{i.storageLocationName ?? "Unassigned"}</td>
-                  <td className="px-4 py-2.5 tabular-nums text-slate-800">{fmtQty(i.quantity, i.unit)}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{fmtDate(i.expiryDate)}</td>
-                  <td className="px-4 py-2.5 text-slate-600">{i.supplierName ?? "—"}</td>
-                  <td className="px-4 py-2.5"><StatusChip status={i.currentStatus} /></td>
-                </tr>
+                <TableRow key={i.id} className="hover:bg-slate-50">
+                  <TableCell className="px-4 py-2.5 font-medium text-slate-800">{i.batchLotNumber}</TableCell>
+                  <TableCell className="px-4 py-2.5 text-slate-600">{i.storageLocationName ?? "Unassigned"}</TableCell>
+                  <TableCell className="px-4 py-2.5 tabular-nums text-slate-800">{fmtQty(i.quantity, i.unit)}</TableCell>
+                  <TableCell className="px-4 py-2.5 text-slate-600">{fmtDate(i.expiryDate)}</TableCell>
+                  <TableCell className="px-4 py-2.5 text-slate-600">{i.supplierName ?? "—"}</TableCell>
+                  <TableCell className="px-4 py-2.5"><StatusChip status={i.currentStatus} /></TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
         <div className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400">
           Quantities are derived from the transaction ledger. There is no editable quantity field —
           a correction is a compensating adjustment, recorded with a reason.
         </div>
-      </div>
+      </Card>
 
       {/* ── HIRA linkage ── */}
       {hazards && (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="mt-4 rounded-xl p-4 shadow-none">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">HIRA hazard rows implied</h2>
           <p className="mb-3 text-[11px] text-slate-500">
             These rows can be added to a HIRA entry that is being authored, carrying this chemical's
             regulatory citation to hazard-row grain. Approved entries are not modified.
           </p>
           {hazards.missingLibraryHazards.length > 0 && (
-            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-800">
+            <Alert variant="warning" className="mb-3 p-2.5 text-[11px]">
               The hazard library is missing {hazards.missingLibraryHazards.join(", ")} — rows for
               those classes cannot be generated until the HIRA master seed is re-run.
-            </div>
+            </Alert>
           )}
           {hazards.proposals.length === 0 ? (
             <div className="text-sm text-slate-400">No mapped hazard rows.</div>
@@ -257,7 +260,7 @@ export default async function ChemicalDetailPage({
           <Link href="/hira" className="mt-3 inline-block text-xs font-medium text-slate-700 hover:underline">
             Open HIRA →
           </Link>
-        </div>
+        </Card>
       )}
     </div>
   );

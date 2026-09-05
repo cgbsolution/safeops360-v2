@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { Scenario, ProcessListResponse } from "@/app/(dashboard)/erm/lib-p3";
 import { ScenarioDetailView, type RefLabel } from "./stressed-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -40,12 +41,12 @@ export default async function ScenarioDetailPage(props: { params: Promise<{ id: 
             { label: "Scenarios", href: "/erm/bcm/scenarios" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Scenario not found"}.{" "}
           <Link href="/erm/bcm/scenarios" className="underline">
             Back to library
           </Link>
-        </div>
+        </Alert>
       </div>
     );
   }

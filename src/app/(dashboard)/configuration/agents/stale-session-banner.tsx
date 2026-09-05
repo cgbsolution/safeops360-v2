@@ -10,10 +10,11 @@
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { LogOut, AlertTriangle } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 export function StaleSessionBanner() {
   return (
-    <div className="rounded-md border border-amber-300 bg-amber-50 p-4 mb-4 flex items-start gap-3">
+    <Alert variant="warning" className="rounded-md border border-amber-300 bg-amber-50 p-4 mb-4 flex items-start gap-3">
       <AlertTriangle className="text-amber-600 mt-0.5 flex-shrink-0" size={18} />
       <div className="flex-1 text-sm">
         <p className="font-semibold text-amber-900">Your session is stale</p>
@@ -31,6 +32,6 @@ export function StaleSessionBanner() {
           <LogOut size={12} /> Sign out
         </Button>
       </div>
-    </div>
+    </Alert>
   );
 }

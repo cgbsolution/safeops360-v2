@@ -7,9 +7,12 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PLAN_TYPES } from "@/app/(dashboard)/erm/lib-p3";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type PlantOption = { id: string; name: string };
 type ProcOption = { id: string; processCode: string; name: string };
@@ -98,7 +101,7 @@ function NewPlanModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New continuity plan</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
@@ -106,80 +109,80 @@ function NewPlanModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Plan title</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Plan title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. North Works Production Continuity Plan" />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-              <Select value={planType} onChange={(e) => setPlanType(e.target.value)}>
-                {PLAN_TYPES.map((t) => <option key={t} value={t}>{PLAN_TYPE_LABEL[t] ?? t}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Type</Label>
+              <SelectField value={planType} onChange={setPlanType}
+                options={PLAN_TYPES.map((t) => ({ value: t, label: PLAN_TYPE_LABEL[t] ?? t }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Site</label>
-              <Select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-                <option value="">Corporate</option>
-                {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Site</Label>
+              <SelectField value={siteId} onChange={setSiteId}
+                placeholder="Corporate"
+                options={plants.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Owner</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Owner</Label>
               <UserPicker value={ownerId} onChange={(id) => setOwnerId(id)} placeholder="Owner" />
             </div>
           </div>
 
           {planType === "EMERGENCY_RESPONSE_LINK" && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">FSER plan reference (site code / provider key)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">FSER plan reference (site code / provider key)</Label>
               <Input value={fserPlanRef} onChange={(e) => setFserPlanRef(e.target.value)} placeholder="e.g. NW" />
             </div>
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Covered processes</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Covered processes</Label>
             {procs.length === 0 ? (
               <p className="text-xs text-slate-400">No processes available.</p>
             ) : (
-              <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+              <Card className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2 shadow-none">
                 {procs.map((p) => (
-                  <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
+                  <Label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
                     <Checkbox checked={coveredProcessIds.includes(p.id)} onChange={() => toggleProc(p.id)} />
                     <span className="font-medium text-primary-700">{p.processCode}</span>
                     <span className="truncate text-slate-600">{p.name}</span>
-                  </label>
+                  </Label>
                 ))}
-              </div>
+              </Card>
             )}
             {coveredProcessIds.length > 0 && <p className="mt-1 text-[11px] text-slate-400">{coveredProcessIds.length} process(es) selected</p>}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Scope statement</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Scope statement</Label>
             <Textarea value={scopeStatement} onChange={(e) => setScopeStatement(e.target.value)} rows={2} />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Activation criteria (one per line)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Activation criteria (one per line)</Label>
             <Textarea value={criteriaText} onChange={(e) => setCriteriaText(e.target.value)} rows={3}
               placeholder={"Loss of a critical line > 8 hours\nSite evacuation order"} />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Strategy summary</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Strategy summary</Label>
             <Textarea value={strategySummary} onChange={(e) => setStrategySummary(e.target.value)} rows={2} />
           </div>
 
           {/* Sections */}
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-600">Plan sections</label>
+              <Label className="text-xs font-medium text-slate-600">Plan sections</Label>
               <Button type="button" variant="ghost" onClick={() => setSections((s) => [...s, { heading: "", contentRichText: "" }])} className="h-auto p-0 text-xs font-medium text-primary-700 hover:underline">+ Section</Button>
             </div>
             <div className="space-y-2">
               {sections.map((s, i) => (
-                <div key={i} className="rounded-md border border-slate-200 p-2">
+                <Card key={i} className="rounded-md border border-slate-200 p-2 shadow-none">
                   <div className="flex items-center gap-2">
                     <Input value={s.heading} onChange={(e) => setSections((arr) => arr.map((x, j) => (j === i ? { ...x, heading: e.target.value } : x)))}
                       placeholder="Section heading" className="flex-1" />
@@ -187,7 +190,7 @@ function NewPlanModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
                   </div>
                   <Textarea value={s.contentRichText} onChange={(e) => setSections((arr) => arr.map((x, j) => (j === i ? { ...x, contentRichText: e.target.value } : x)))}
                     rows={2} placeholder="Section content" className="mt-1" />
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -195,12 +198,12 @@ function NewPlanModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
           {/* Recovery tasks */}
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-600">Recovery tasks</label>
+              <Label className="text-xs font-medium text-slate-600">Recovery tasks</Label>
               <Button type="button" variant="ghost" onClick={() => setTasks((t) => [...t, { title: "", responsibleRoleName: "", targetHoursFromActivation: "", detail: "" }])} className="h-auto p-0 text-xs font-medium text-primary-700 hover:underline">+ Task</Button>
             </div>
             <div className="space-y-2">
               {tasks.map((t, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-md border border-slate-200 p-2">
+                <Card key={i} className="flex items-center gap-2 rounded-md border border-slate-200 p-2 shadow-none">
                   <Input value={t.title} onChange={(e) => setTasks((arr) => arr.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))}
                     placeholder="Task" className="flex-[2]" />
                   <Input value={t.responsibleRoleName} onChange={(e) => setTasks((arr) => arr.map((x, j) => (j === i ? { ...x, responsibleRoleName: e.target.value } : x)))}
@@ -208,12 +211,12 @@ function NewPlanModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
                   <Input type="number" min={0} value={t.targetHoursFromActivation} onChange={(e) => setTasks((arr) => arr.map((x, j) => (j === i ? { ...x, targetHoursFromActivation: e.target.value } : x)))}
                     placeholder="h" className="w-16" />
                   {tasks.length > 1 && <Button type="button" variant="ghost" size="icon" onClick={() => setTasks((arr) => arr.filter((_, j) => j !== i))} className="text-slate-300 hover:text-rose-600"><Trash2 size={14} /></Button>}
-                </div>
+                </Card>
               ))}
             </div>
           </div>
 
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
@@ -222,7 +225,7 @@ function NewPlanModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
             {busy ? "Creating…" : "Create plan (draft)"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

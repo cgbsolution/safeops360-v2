@@ -4,6 +4,9 @@ import { useState } from "react";
 import { CheckCircle2, Clock, AlertTriangle, ChevronDown, ChevronUp, User as UserIcon } from "lucide-react";
 import { cn, formatDateTime, humanize } from "@/lib/utils";
 import { formatPartyMeta, formatPartyMetaOrHint, formatPartyName } from "@/lib/users/user-ref";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Step = {
   id: string;
@@ -86,7 +89,7 @@ export function WorkflowTracker({
     <div className="space-y-3">
       {/* Stepper — single rendering for all viewports. The previous mobile
           vertical timeline was a duplicate of the same data. */}
-      <div className="flex items-stretch gap-0 rounded-lg border bg-white p-3 overflow-x-auto">
+      <Card className="flex items-stretch gap-0 rounded-lg border bg-white p-3 overflow-x-auto shadow-none">
         {steps.map((step, i) => {
           const done = completedSteps.has(step.id);
           const active = step.id === currentStepId && !isComplete;
@@ -126,7 +129,7 @@ export function WorkflowTracker({
             </div>
           );
         })}
-      </div>
+      </Card>
 
       {/* Pending tasks — only those at the CURRENT active step. Stale
           pending tasks at earlier steps (from older code paths that
@@ -147,7 +150,7 @@ export function WorkflowTracker({
           : open;
         if (visiblePendingTasks.length === 0) return null;
         return (
-        <div className="rounded-lg border bg-amber-50 border-amber-200 p-3">
+        <Alert variant="warning" className="rounded-lg border bg-amber-50 border-amber-200 p-3">
           <div className="text-xs uppercase tracking-wider font-semibold text-amber-800 mb-2">Awaiting Action</div>
           <div className="space-y-2.5">
             {visiblePendingTasks.map((t) => (
@@ -179,22 +182,20 @@ export function WorkflowTracker({
               </div>
             ))}
           </div>
-        </div>
+        </Alert>
         );
       })()}
 
       {/* Audit trail (collapsible) */}
-      <div className="rounded-lg border bg-white">
-        <button
-          onClick={() => setExpanded(expanded ? null : "audit")}
-          className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-50 transition"
-        >
+      <Card className="rounded-lg border bg-white shadow-none">
+        <Button variant="ghost"
+          onClick={() => setExpanded(expanded ? null : "audit")} className="w-full flex justify-between px-4 py-3 text-left">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-slate-900">Audit Trail</span>
             <span className="text-xs text-slate-500">({history.length} {history.length === 1 ? "entry" : "entries"})</span>
           </div>
           {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-        </button>
+        </Button>
         {expanded && (
           <div className="border-t px-4 py-3 space-y-3">
             {history.length === 0 && <p className="text-sm text-slate-500">No actions recorded yet.</p>}
@@ -223,7 +224,7 @@ export function WorkflowTracker({
             ))}
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

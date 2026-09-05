@@ -8,6 +8,7 @@ import type {
 } from "@/app/(dashboard)/erm/lib";
 import type { Tier3Summary } from "@/app/(dashboard)/erm/lib-t3";
 import { BoardPackEditor } from "./editor-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -97,9 +98,9 @@ export default async function BoardPackEditorPage({ params }: { params: Promise<
       </div>
 
       {error || !render ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800 print:hidden">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800 print:hidden">
           {error ?? "Board pack not found."}
-        </div>
+        </Alert>
       ) : (
         <BoardPackEditor packId={id} initial={render} phase2={phase2} phase3={phase3} tier3={tier3} />
       )}

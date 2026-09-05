@@ -19,6 +19,8 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { useToast } from "@/components/ui/toast";
 import { Sparkles, Check, Pencil, X, Plus, Loader2, Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CAPA_TYPE_OPTIONS } from "@/lib/capa/options";
+import { SelectField } from "@/components/ui/select-field";
 
 type RootCauseSuggestion = {
   text: string;
@@ -191,7 +193,7 @@ export function IncidentIntelligencePanel({
             editingSummary ? (
               <SummaryEditor initial={summary} busy={busy === "summary"} onCancel={() => setEditingSummary(false)} onSave={(t) => acceptSummary(t)} />
             ) : (
-              <div className="rounded-md border border-slate-200 bg-slate-50/60 p-3 text-sm text-slate-800 leading-relaxed">
+              <Card className="rounded-md border-slate-200 bg-slate-50/60 p-3 text-sm leading-relaxed text-slate-800 shadow-none">
                 {summary}
                 {canManage && summarySource === "ai_drafted" && (
                   <div className="flex items-center gap-2 mt-3">
@@ -203,7 +205,7 @@ export function IncidentIntelligencePanel({
                     </Button>
                   </div>
                 )}
-              </div>
+              </Card>
             )
           ) : (
             <div className="flex items-center gap-2">
@@ -222,7 +224,7 @@ export function IncidentIntelligencePanel({
         <section className="space-y-2 pt-3 border-t border-slate-100">
           <div className="text-xs uppercase tracking-wider font-semibold text-slate-500">AI Root-Cause Suggestion</div>
           {suggestion && suggestion.status !== "rejected" ? (
-            <div className="rounded-md border border-violet-200 bg-violet-50/50 p-3">
+            <Card className="rounded-md border-violet-200 bg-violet-50/50 p-3 shadow-none">
               <div className="flex items-start justify-between gap-2">
                 <p className="text-sm text-slate-800">{suggestion.text}</p>
                 <SuggestionChip suggestion={suggestion} />
@@ -240,7 +242,7 @@ export function IncidentIntelligencePanel({
                   onReject={(reason) => rejectSuggestion(reason)}
                 />
               )}
-            </div>
+            </Card>
           ) : (
             <div className="flex items-center gap-2">
               {canManage ? (
@@ -383,7 +385,7 @@ function RootCauseCapaRow({ cause, plantId, canManage, onCreate }: {
   }
 
   return (
-    <div className="rounded-md border border-slate-200 bg-white">
+    <Card className="rounded-md border-slate-200 shadow-none">
       <div className="flex items-center justify-between gap-2 px-3 py-2">
         <span className="text-sm text-slate-700 truncate">{cause}</span>
         {canManage && !open && (
@@ -401,10 +403,12 @@ function RootCauseCapaRow({ cause, plantId, canManage, onCreate }: {
           <div className="grid sm:grid-cols-2 gap-2.5">
             <div>
               <Label className="text-xs">Type</Label>
-              <Select value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="CORRECTIVE">Corrective</option>
-                <option value="PREVENTIVE">Preventive</option>
-              </Select>
+              <SelectField
+                value={type}
+                onChange={setType}
+                ariaLabel="CAPA type"
+                options={CAPA_TYPE_OPTIONS}
+              />
             </div>
             <div>
               <Label className="text-xs">Target Date</Label>
@@ -421,6 +425,6 @@ function RootCauseCapaRow({ cause, plantId, canManage, onCreate }: {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

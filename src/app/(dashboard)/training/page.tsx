@@ -12,6 +12,8 @@ import { TrainingRecordsTable, type TrainingRow, type TrainingClass } from "./tr
 import { FilterTab, FilterTabsList } from "@/components/ui/filter-tabs";
 import { AnalyticsStripSkeleton } from "@/components/dashboard/analytics-strip";
 import { TrainingAnalyticsStrip } from "@/components/training/analytics-strip";
+import { Input } from "@/components/ui/input";
+import { SelectField } from "@/components/ui/select-field";
 
 export const dynamic = "force-dynamic";
 
@@ -142,24 +144,18 @@ export default async function TrainingPage(props: {
 
       <form className="mb-4 flex flex-wrap gap-2" action="/training" method="GET">
         {filter !== "all" && <input type="hidden" name="filter" value={filter} />}
-        <input
+        <Input
           name="q"
           defaultValue={q}
           placeholder="Search employee / program / department…"
-          className="h-9 min-w-[220px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm"
-        />
-        <select
+          className="h-9 min-w-[220px] flex-1 rounded-md border border-slate-300 bg-white px-3 text-sm" />
+        <SelectField
           name="programId"
           defaultValue={programIdFilter ?? ""}
           className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm"
-        >
-          <option value="">All programs</option>
-          {programs.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name} ({p.code})
-            </option>
-          ))}
-        </select>
+          placeholder="All programs"
+          options={programs.map((p) => ({ value: String(p.id), label: `${p.name} (${p.code})` }))}
+        />
         <Button type="submit" size="sm" variant="outline">Apply</Button>
         {(programIdFilter || q || filter !== "all") && (
           <Button asChild size="sm" variant="outline">

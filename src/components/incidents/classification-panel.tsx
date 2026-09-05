@@ -22,7 +22,9 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField, type SelectOption } from "@/components/ui/select-field";
+import { CheckboxField } from "@/components/ui/checkbox-field";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
@@ -66,6 +68,33 @@ const REPORTABLE_DEFAULT: Record<string, string[]> = {
   ENVIRONMENTAL: ["CPCB"],
   PROCESS_SAFETY: ["DGFASLI"]
 };
+
+// The classification dropdowns' fixed scales. Hoisted so each is one array
+// rather than a fresh literal per render, and so the 5x5 wording lives in one
+// place — the panel and the summary chip must never disagree about what a "3"
+// is called.
+const SEVERITY_OPTIONS: SelectOption[] = [
+  { value: "LOW", label: "Low" },
+  { value: "MEDIUM", label: "Medium" },
+  { value: "HIGH", label: "High" },
+  { value: "CRITICAL", label: "Critical" }
+];
+
+const CONSEQUENCE_OPTIONS: SelectOption[] = [
+  { value: "1", label: "1 — Insignificant" },
+  { value: "2", label: "2 — Minor" },
+  { value: "3", label: "3 — Moderate" },
+  { value: "4", label: "4 — Major" },
+  { value: "5", label: "5 — Severe" }
+];
+
+const LIKELIHOOD_OPTIONS: SelectOption[] = [
+  { value: "1", label: "1 — Rare" },
+  { value: "2", label: "2 — Unlikely" },
+  { value: "3", label: "3 — Possible" },
+  { value: "4", label: "4 — Likely" },
+  { value: "5", label: "5 — Almost certain" }
+];
 
 const REGULATIONS = [
   { code: "FACTORIES_ACT", label: "Factories Act 1948 — Form 18" },
@@ -219,18 +248,23 @@ export function ClassificationPanel({
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label>Incident Type <span className="text-rose-600">*</span></Label>
-                <Select value={type} onChange={(e) => setType(e.target.value)} required>
-                  {TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </Select>
+                <SelectField
+                  value={type}
+                  onChange={setType}
+                  required
+                  ariaLabel="Incident type"
+                  options={TYPES.map((t) => ({ value: t.value, label: t.label }))}
+                />
               </div>
               <div>
                 <Label>Severity <span className="text-rose-600">*</span></Label>
-                <Select value={severity} onChange={(e) => setSeverity(e.target.value)} required>
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="CRITICAL">Critical</option>
-                </Select>
+                <SelectField
+                  value={severity}
+                  onChange={setSeverity}
+                  required
+                  ariaLabel="Severity"
+                  options={SEVERITY_OPTIONS}
+                />
               </div>
             </div>
             <div>
@@ -246,27 +280,25 @@ export function ClassificationPanel({
             <div className="grid sm:grid-cols-2 gap-3">
               <div>
                 <Label>Consequence (1–5) <span className="text-rose-600">*</span></Label>
-                <Select value={consequenceScore} onChange={(e) => setConsequenceScore(e.target.value)}>
-                  <option value="1">1 — Insignificant</option>
-                  <option value="2">2 — Minor</option>
-                  <option value="3">3 — Moderate</option>
-                  <option value="4">4 — Major</option>
-                  <option value="5">5 — Severe</option>
-                </Select>
+                <SelectField
+                  value={consequenceScore}
+                  onChange={setConsequenceScore}
+                  ariaLabel="Consequence score"
+                  options={CONSEQUENCE_OPTIONS}
+                />
               </div>
               <div>
                 <Label>Likelihood of Recurrence</Label>
-                <Select value={likelihood} onChange={(e) => setLikelihood(e.target.value)}>
-                  <option value="">Auto (from recurrence trend)</option>
-                  <option value="1">1 — Rare</option>
-                  <option value="2">2 — Unlikely</option>
-                  <option value="3">3 — Possible</option>
-                  <option value="4">4 — Likely</option>
-                  <option value="5">5 — Almost certain</option>
-                </Select>
+                <SelectField
+                  value={likelihood}
+                  onChange={setLikelihood}
+                  ariaLabel="Likelihood of recurrence"
+                  placeholder="Auto (from recurrence trend)"
+                  options={LIKELIHOOD_OPTIONS}
+                />
               </div>
             </div>
-            <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm flex items-center gap-2">
+            <Card className="flex items-center gap-2 rounded-md border-slate-200 bg-slate-50 px-3 py-2 text-sm shadow-none">
               <ShieldAlert size={14} className="text-slate-500" />
               {scorePreview ? (
                 <span>
@@ -282,28 +314,32 @@ export function ClassificationPanel({
               ) : (
                 <span className="text-slate-500 text-xs">Likelihood is auto-derived from the recurrence trend; the severity band is set to Likelihood × Consequence on submit.</span>
               )}
-            </div>
+            </Card>
           </section>
 
           {/* Section 2 — Statutory */}
           <section className="space-y-3 pt-3 border-t border-slate-200">
             <div className="text-xs uppercase tracking-wider font-semibold text-slate-500">2. Statutory Assessment</div>
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="isReportable" checked={isReportable}
-                onChange={(e) => setIsReportable(e.target.checked)} />
-              <Label htmlFor="isReportable" className="!mb-0">This incident is statutorily reportable</Label>
-            </div>
+            <CheckboxField
+              id="isReportable"
+              checked={isReportable}
+              onChange={(e) => setIsReportable(e.target.checked)}
+              label="This incident is statutorily reportable"
+              className="items-center"
+            />
             {isReportable && (
               <>
                 <div>
                   <Label className="block mb-1.5">Under which regulations</Label>
                   <div className="grid sm:grid-cols-2 gap-2">
                     {REGULATIONS.map((r) => (
-                      <label key={r.code} className="flex items-start gap-2 text-sm cursor-pointer rounded-md border border-slate-200 px-3 py-2 hover:bg-slate-50">
-                        <input type="checkbox" checked={reportableUnder.includes(r.code)}
-                          onChange={() => toggleRegulation(r.code)} className="mt-0.5" />
-                        <span>{r.label}</span>
-                      </label>
+                      <CheckboxField
+                        key={r.code}
+                        variant="card"
+                        checked={reportableUnder.includes(r.code)}
+                        onChange={() => toggleRegulation(r.code)}
+                        label={r.label}
+                      />
                     ))}
                   </div>
                 </div>
@@ -381,10 +417,10 @@ export function ClassificationPanel({
           </section>
 
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 flex items-start gap-2">
+            <Alert variant="destructive" size="lg" className="px-3 py-2">
               <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
               <span>{error}</span>
-            </div>
+            </Alert>
           )}
 
           <div className="flex items-center justify-end gap-2 pt-2">

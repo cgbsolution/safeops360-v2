@@ -75,10 +75,9 @@ export function ScheduleSessionsBlock({
         </CardHeader>
         <CardContent className="space-y-2">
           {sessions.map((s) => (
-            <div
+            <Card
               key={s.id}
-              className="rounded-md border border-slate-200 bg-white p-3 flex items-start justify-between gap-3"
-            >
+              className="rounded-md border border-slate-200 bg-white p-3 flex items-start justify-between gap-3 shadow-none">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
@@ -106,7 +105,7 @@ export function ScheduleSessionsBlock({
                   {s.conductedAt ? "Update attendance" : "Capture attendance"}
                 </Button>
               )}
-            </div>
+            </Card>
           ))}
         </CardContent>
       </Card>

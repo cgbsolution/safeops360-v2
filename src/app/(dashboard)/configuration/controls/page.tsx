@@ -1,6 +1,7 @@
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -49,19 +50,19 @@ export default async function ControlsAdminPage() {
         description="Reusable controls organised by the hierarchy of controls. HIRA entries draw from this library to maintain consistency across the register."
       />
 
-      <div className="rounded-xl border bg-slate-50 border-slate-200 p-4 mb-4 text-sm text-slate-700">
+      <Card className="rounded-xl border bg-slate-50 border-slate-200 p-4 mb-4 text-sm text-slate-700 shadow-none">
         <div className="font-medium">Hierarchy of Controls</div>
         <div className="mt-1 text-xs">
           When assessing a hazard, the team considers controls from top to bottom. Higher-tier controls (elimination, substitution)
           remove or reduce the hazard at source; lower-tier (administrative, PPE) rely on human compliance.
         </div>
-      </div>
+      </Card>
 
       <div className="space-y-4">
         {HIERARCHY_ORDER.map((h) => {
           const items = byHierarchy.get(h) ?? [];
           return (
-            <div key={h} className="rounded-xl border bg-white overflow-hidden">
+            <Card key={h} className="rounded-xl border bg-white overflow-hidden shadow-none">
               <div className={`px-4 py-3 border-b ${HIERARCHY_COLOR[h]?.replace("bg-", "bg-opacity-30 bg-") ?? ""}`}>
                 <div className="flex items-center gap-2">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded border ${HIERARCHY_COLOR[h]}`}>
@@ -108,7 +109,7 @@ export default async function ControlsAdminPage() {
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
           );
         })}
       </div>

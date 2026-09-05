@@ -5,6 +5,7 @@ import { PlantSwitcher } from "@/components/plant-switcher";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { ScrollText, ArrowRight, Activity } from "lucide-react";
 import { ScrSyncButton } from "./sync-button";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -52,7 +53,7 @@ export default async function ComplianceDashboardPage(props: {
     return (
       <div>
         <PageHeader title="Statutory Compliance Register" description="Auto-populated statutory registers — single source of truth for legally mandated registers." />
-        <div className="rounded-xl border bg-white p-8 text-sm text-slate-600">Select a plant to view its registers.</div>
+        <Card className="rounded-xl border bg-white p-8 text-sm text-slate-600 shadow-none">Select a plant to view its registers.</Card>
       </div>
     );
   }
@@ -80,10 +81,10 @@ export default async function ComplianceDashboardPage(props: {
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <div className="text-xs uppercase tracking-wider text-slate-500">Compliance health</div>
           <div className={`text-3xl font-bold mt-1 ${healthTone}`}>{data.complianceHealth}%</div>
-        </div>
+        </Card>
         <Stat label="Registers" value={data.registerCount} />
         <Stat label="Total entries" value={data.totalEntries} />
         <Stat label="Sources feeding" value={new Set(data.registers.map((r) => r.sourceModule)).size} />
@@ -93,13 +94,13 @@ export default async function ComplianceDashboardPage(props: {
         <div className="lg:col-span-2">
           <h2 className="text-sm font-semibold text-slate-800 mb-2">Register status</h2>
           {data.registers.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed border-slate-200 bg-white py-12 text-center">
+            <Card className="rounded-xl border-2 border-dashed border-slate-200 bg-white py-12 text-center shadow-none">
               <ScrollText className="mx-auto text-slate-300 mb-2" size={32} />
               <div className="text-sm text-slate-600 font-medium">No registers populated yet</div>
               <div className="text-xs text-slate-500 mt-1">
                 Click <strong>Sync from sources</strong> to auto-populate registers from your existing records.
               </div>
-            </div>
+            </Card>
           ) : (
             <div className="space-y-2.5">
               {data.registers.map((r) => (
@@ -144,7 +145,7 @@ export default async function ComplianceDashboardPage(props: {
           <h2 className="text-sm font-semibold text-slate-800 mb-2 flex items-center gap-1.5">
             <Activity size={14} className="text-primary-600" /> Recent auto-entries
           </h2>
-          <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+          <Card className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 shadow-none">
             {data.activityFeed.length === 0 ? (
               <div className="p-4 text-xs text-slate-400">No entries yet.</div>
             ) : (
@@ -158,7 +159,7 @@ export default async function ComplianceDashboardPage(props: {
                 </div>
               ))
             )}
-          </div>
+          </Card>
         </div>
       </div>
     </div>
@@ -167,9 +168,9 @@ export default async function ComplianceDashboardPage(props: {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="text-xs uppercase tracking-wider text-slate-500">{label}</div>
       <div className="text-3xl font-bold text-slate-900 mt-1">{value}</div>
-    </div>
+    </Card>
   );
 }

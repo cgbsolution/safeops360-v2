@@ -29,6 +29,8 @@ import {
   type Reading,
 } from "@/app/(dashboard)/erm/lib-p2";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 const FEED_LABEL: Record<string, string> = {
   MANUAL: "Manual",
@@ -100,7 +102,7 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
   return (
     <div className="space-y-4">
       {/* Header card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -144,10 +146,10 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
             Enter reading
           </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Trend chart */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Trend vs thresholds</h2>
         {chartData.length === 0 ? (
           <p className="py-12 text-center text-xs text-slate-400">No readings yet — enter one to build the trend.</p>
@@ -184,11 +186,11 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
         <p className="mt-2 text-center text-[11px] text-slate-400">
           Shaded bands are the traffic-light thresholds (green / amber / red) for this {higherIsWorse ? "higher-is-worse" : "lower-is-worse"} KRI.
         </p>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Readings table */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Readings</h2>
           {kri.readings.length === 0 ? (
             <p className="py-6 text-center text-xs text-slate-400">No readings recorded.</p>
@@ -229,10 +231,10 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
               </Table>
             </div>
           )}
-        </div>
+        </Card>
 
         {/* Linked risks */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Linked risks</h2>
           {kri.linkedRisks.length === 0 ? (
             <p className="py-6 text-center text-xs text-slate-400">No linked risks.</p>
@@ -254,11 +256,11 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Breach history */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Breach history</h2>
         {kri.breaches.length === 0 ? (
           <p className="py-6 text-center text-xs text-slate-400">No breaches recorded.</p>
@@ -331,7 +333,7 @@ export function KriDetailView({ kri }: { kri: KriDetail }) {
             </Table>
           </div>
         )}
-      </div>
+      </Card>
 
       {modal === "reading" && (
         <ReadingModal
@@ -409,7 +411,7 @@ function ReadingModal({ kriId, onClose, onDone }: { kriId: string; onClose: () =
     <Modal title="Enter reading" onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Period label (required)</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Period label (required)</Label>
           <Input
             value={periodLabel}
             onChange={(e) => setPeriodLabel(e.target.value)}
@@ -417,7 +419,7 @@ function ReadingModal({ kriId, onClose, onDone }: { kriId: string; onClose: () =
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Period end (optional)</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Period end (optional)</Label>
           <Input
             type="date"
             value={periodEnd}
@@ -425,7 +427,7 @@ function ReadingModal({ kriId, onClose, onDone }: { kriId: string; onClose: () =
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Value (required)</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Value (required)</Label>
           <Input
             type="number"
             value={value}
@@ -433,7 +435,7 @@ function ReadingModal({ kriId, onClose, onDone }: { kriId: string; onClose: () =
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Notes</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Notes</Label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -491,17 +493,17 @@ function AckModal({
           Acknowledge this breach with a note. Tick “resolve” to close it out if the indicator is back within tolerance.
         </p>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Resolution / response notes</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Resolution / response notes</Label>
           <Textarea
             value={resolutionNotes}
             onChange={(e) => setResolutionNotes(e.target.value)}
             rows={3}
           />
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <Label className="flex items-center gap-2 text-sm text-slate-700">
           <Checkbox checked={resolve} onChange={(e) => setResolve(e.target.checked)} />
           Resolve this breach
-        </label>
+        </Label>
         <Button
           type="button"
           disabled={busy || !resolutionNotes.trim()}

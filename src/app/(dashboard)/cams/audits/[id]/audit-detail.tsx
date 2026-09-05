@@ -41,6 +41,9 @@ import { SupplierPanel, type PortalSubmission } from "@/components/assurance/sup
 import { CalendarBookingsPanel } from "@/components/calendar/calendar-bookings-panel";
 import type { CompetenceSnapshotRow, MeetingsResponse } from "../../lib-assurance";
 import type { BookingsResponse } from "../../lib-calendar";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export function AuditDetailView({
   audit, dashboard, userMap, users = [], reports = [], meetings = null, competence = [],
@@ -182,7 +185,7 @@ export function AuditDetailView({
   return (
     <div className="space-y-5">
       {/* Status + factory + meta strip */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <div className="flex flex-wrap items-start gap-x-4 gap-y-2">
           <Chip map={STATUS_CHIP} value={audit.status} label={STATUS_LABEL[audit.status] ?? audit.status} className="text-xs" />
           {/* Target factory — linked to its profile when available */}
@@ -191,9 +194,9 @@ export function AuditDetailView({
               <Building2 size={14} /> {audit.plantName ?? audit.plantId}{audit.plantCode ? <span className="font-normal text-primary-400">· {audit.plantCode}</span> : null}
             </Link>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
+            <Badge variant="neutral" className="inline-flex items-center gap-1.5 rounded-lg bg-slate-50 px-2 py-1 text-xs font-semibold text-slate-700">
               <Building2 size={14} /> {audit.plantName ?? audit.plantId}
-            </span>
+            </Badge>
           )}
           <Meta label="Template" value={audit.templateName ? `${audit.templateName}${audit.templateVersion ? ` · v${audit.templateVersion}` : ""}` : "—"} />
           <Meta label="Lead auditor" value={name(audit.leadAuditorUserId)} />
@@ -234,7 +237,7 @@ export function AuditDetailView({
         {(audit.standards?.length ?? 0) > 0 && (
           <div className="mt-2.5 flex flex-wrap gap-1.5">
             {audit.standards!.map((s) => (
-              <span key={s} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700"><ShieldCheck size={10} /> {s}</span>
+              <Badge variant="violet" key={s} className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700"><ShieldCheck size={10} /> {s}</Badge>
             ))}
           </div>
         )}
@@ -259,7 +262,7 @@ export function AuditDetailView({
             <SummaryStat label="In review" value={`${audit.finalizability.blockerCount}`} tone={audit.finalizability.blockerCount > 0 ? "text-amber-600" : "text-emerald-600"} />
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Who is on this audit, in which seat, over which disciplines. */}
       {audit.team && (
@@ -299,7 +302,7 @@ export function AuditDetailView({
           always carries, so it is true from the moment the rows materialise. */}
       {allocation.total > 0
         && (canAllocate || allocation.unassigned > 0 || allocation.idleCoAuditors > 0) && (
-        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm">
+        <Card className="flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm shadow-none">
           <Users2 size={16} className="text-slate-500" />
           <span className="font-medium text-slate-700">{allocation.assigned} assigned</span>
           <span className="text-slate-300">·</span>
@@ -327,13 +330,13 @@ export function AuditDetailView({
               <Users2 size={14} /> Manage allocation
             </Button>
           )}
-        </div>
+        </Card>
       )}
 
       {/* Dashboard */}
       {dashboard && audit.answeredCheckpoints > 0 && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="text-xs font-medium uppercase tracking-wide text-slate-400">Overall score</div>
             {summary.notAssessed ? (
               <div className="mt-3 text-sm text-slate-400">No assessable checkpoints yet — <span className="font-medium text-slate-500">Not assessed</span> (all N/A).</div>
@@ -365,9 +368,9 @@ export function AuditDetailView({
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="text-xs font-medium uppercase tracking-wide text-slate-400">Critical checkpoint compliance</div>
             <div className="mt-3 flex items-center gap-4">
               <Gauge pct={dashboard.criticalCompliance.pct} accent={dashboard.criticalCompliance.pct >= 100 ? "#10b981" : "#f43f5e"} />
@@ -376,9 +379,9 @@ export function AuditDetailView({
                 <div className="mt-1 text-[11px] text-slate-500">{dashboard.score.critical_failures} critical fail(s) · must be 0 to pass</div>
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="text-xs font-medium uppercase tracking-wide text-slate-400">Finding breakdown</div>
             <div className="mt-1 flex items-center gap-3">
               <div className="h-[120px] w-[120px]">
@@ -406,7 +409,7 @@ export function AuditDetailView({
                 <Legend c="#cbd5e1" label="N/A" v={dashboard.donut.na} />
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
@@ -450,11 +453,11 @@ export function AuditDetailView({
 
       {/* Discipline compliance — RAG bars (always shown; "Not started" pre-conduct) */}
       {disciplineRag.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h3 className="mb-3 text-sm font-semibold text-slate-800">Discipline compliance</h3>
           <div className="space-y-2.5">
             {disciplineRag.map((c) => (
-              <button key={c.id} type="button" onClick={() => document.getElementById(`disc-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="block w-full text-left">
+              <Button variant="ghost" key={c.id} type="button" onClick={() => document.getElementById(`disc-${c.id}`)?.scrollIntoView({ behavior: "smooth", block: "start" })} className="block w-full text-left">
                 <div className="mb-1 flex justify-between text-xs">
                   <span className="text-slate-600 hover:text-primary-700">{c.name}</span>
                   {c.pct == null ? (
@@ -466,20 +469,20 @@ export function AuditDetailView({
                 <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                   <div className={cn("h-full rounded-full transition-all", ragBar(c.pct))} style={{ width: c.pct == null ? "100%" : `${c.pct}%`, opacity: c.pct == null ? 0.4 : 1 }} />
                 </div>
-              </button>
+              </Button>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Findings & responses — the bounded review surface (fail / partial /
           in-flight checkpoints), grouped by discipline, with the auditee +
           plant-manager workflow inline. Pass/N/A rows and the full checklist
           are browsed in the conduct worklist (paginated for large audits). */}
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
         <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3">
           <h3 className="text-sm font-semibold text-slate-800">
-            Findings &amp; responses <span className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{audit.responses.length}{audit.responsesTruncated ? "+" : ""}</span>
+            Findings &amp; responses <Badge variant="neutral" className="ml-1 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{audit.responses.length}{audit.responsesTruncated ? "+" : ""}</Badge>
           </h3>
           <Link href={`/cams/audits/${audit.id}/conduct`} className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-primary-700 hover:underline">
             <ListChecks size={13} /> Browse all {audit.totalCheckpoints ?? 0} checkpoints
@@ -511,7 +514,7 @@ export function AuditDetailView({
             </div>
           ))
         )}
-      </div>
+      </Card>
 
       {/* Reports (A-07) */}
       <ReportsPanel
@@ -525,10 +528,10 @@ export function AuditDetailView({
       />
 
       {audit.status === "closed" && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+        <Alert variant="success" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
           <div className="flex items-center gap-2 font-semibold"><Lock size={15} /> Audit closed on {fmtDate(audit.closedAt)}</div>
           {audit.closingRemarks && <p className="mt-1 text-emerald-800">{audit.closingRemarks}</p>}
-        </div>
+        </Alert>
       )}
 
       {showAllocate && (
@@ -590,15 +593,15 @@ function TeamPanel({ team, onEdit }: { team: AuditTeam; onEdit?: () => void }) {
   ];
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <Users2 size={15} className="text-slate-500" />
         <h2 className="text-sm font-semibold text-slate-800">Audit team &amp; discipline scope</h2>
         <span className="text-[11px] text-slate-400">{team.memberCount ?? 0} assigned</span>
         {(team.unauthorisedCount ?? 0) > 0 && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
+          <Badge variant="warning" className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-800">
             <AlertTriangle size={10} /> {team.unauthorisedCount} no longer authorised
-          </span>
+          </Badge>
         )}
         {onEdit && (
           <Button type="button" variant="outline" size="sm" className="ml-auto h-7 text-xs" onClick={onEdit}>
@@ -618,7 +621,7 @@ function TeamPanel({ team, onEdit }: { team: AuditTeam; onEdit?: () => void }) {
 
       <div className="grid gap-3 md:grid-cols-2">
         {groups.map((g) => (
-          <div key={g.key} className="rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+          <Card key={g.key} className="rounded-lg border border-slate-100 bg-slate-50/60 p-3 shadow-none">
             <div className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">{g.title}</div>
             <div className="mb-2 text-[11px] text-slate-400">{g.note}</div>
             {g.members.length === 0 ? (
@@ -655,9 +658,9 @@ function TeamPanel({ team, onEdit }: { team: AuditTeam; onEdit?: () => void }) {
                           <span className="text-[10px] text-slate-400">No disciplines assigned</span>
                         ) : (
                           m.disciplines.map((d) => (
-                            <span key={d.id} className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
+                            <Badge variant="violet" key={d.id} className="rounded-full bg-indigo-50 px-1.5 py-0.5 text-[10px] font-medium text-indigo-700">
                               {d.name}
-                            </span>
+                            </Badge>
                           ))
                         )}
                       </div>
@@ -666,10 +669,10 @@ function TeamPanel({ team, onEdit }: { team: AuditTeam; onEdit?: () => void }) {
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
         ))}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -730,7 +733,7 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
 
   return (
     <div className="px-4 py-3">
-      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-start gap-3 text-left">
+      <Button variant="ghost" onClick={() => setOpen((o) => !o)} className="flex w-full items-start gap-3 text-left">
         <span className={cn("mt-0.5 size-2.5 shrink-0 rounded-full", meta.dot)} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -761,8 +764,8 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
               </span>
             )}
             {wmeta && ws !== "OPEN" && ws !== "PASSED" && <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-semibold", wmeta.chip)}>{wmeta.label}</span>}
-            {r.currentRound > 0 && <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Round {r.currentRound}</span>}
-            {r.isAdHoc && <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-violet-700">Custom</span>}
+            {r.currentRound > 0 && <Badge variant="neutral" className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">Round {r.currentRound}</Badge>}
+            {r.isAdHoc && <Badge variant="violet" className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-violet-700">Custom</Badge>}
             {/* Who the ball is with. While a finding sits at ESCALATED_PM it is
                 the designated reviewer's, NOT the auditee it was originally
                 routed to — showing the auditee there is what made an escalation
@@ -774,12 +777,12 @@ function FindingRow({ auditId, r, me, userMap, canExecute, canApprove, canUpdate
                 : r.routedToUserId
                   ? <span className="text-[11px] text-slate-400">→ {name(r.routedToUserId)} <span className="text-slate-300">(routed)</span></span>
                   : <span className="text-[11px] font-medium text-amber-600">unassigned</span>}
-            {r.capa?.capa_number && <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800"><AlertTriangle size={10} /> {r.capa.capa_number}</span>}
+            {r.capa?.capa_number && <Badge variant="warning" className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800"><AlertTriangle size={10} /> {r.capa.capa_number}</Badge>}
           </div>
           <div className="mt-1 text-sm text-slate-800">{r.checkpointQuestion}</div>
         </div>
         {open ? <ChevronDown size={16} className="mt-1 text-slate-400" /> : <ChevronRight size={16} className="mt-1 text-slate-400" />}
-      </button>
+      </Button>
 
       {open && (
         <div className="ml-5 mt-3 space-y-3 border-l-2 border-slate-100 pl-4">
@@ -925,7 +928,7 @@ function CheckpointActions({ auditId, r, me, canExecute, canApprove, canUpdate, 
 // to be has simply vanished, which reads as a broken page rather than a rule.
 function BlockedNotice({ title, detail }: { title: string; detail: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+    <Card className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-none">
       <div className="flex items-start gap-2">
         <Lock size={13} className="mt-0.5 shrink-0 text-slate-400" />
         <div>
@@ -933,7 +936,7 @@ function BlockedNotice({ title, detail }: { title: string; detail: string }) {
           <p className="mt-0.5 text-[12px] text-slate-500">{detail}</p>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -958,7 +961,7 @@ function ReassessAction({ auditId, r, onChanged }: { auditId: string; r: Checkpo
     else { const j = await res.json().catch(() => ({})); toast({ variant: "error", title: "Couldn't re-assess", description: apiErrorMessage(j, res.status) }); }
   }
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+    <Card className="rounded-lg border border-slate-200 bg-slate-50/60 p-3 shadow-none">
       <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-600">Re-assess checkpoint</div>
       <Input value={obs} onChange={(e) => setObs(e.target.value)} placeholder="Observation (required for fail/partial)…" className="mb-2 h-8 text-xs" />
       <div className="flex flex-wrap gap-2">
@@ -967,7 +970,7 @@ function ReassessAction({ auditId, r, onChanged }: { auditId: string; r: Checkpo
         <Button type="button" variant="destructive" size="sm" onClick={() => assess("fail")} disabled={!!busy}><XCircle size={14} /> Fail</Button>
         <Button type="button" variant="outline" size="sm" onClick={() => assess("na")} disabled={!!busy}>N/A</Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -993,7 +996,7 @@ function AuditorReview({ auditId, r, canCreateCapa, onChanged }: { auditId: stri
     else toast({ variant: "error", title: "Action failed", description: res.detail ?? "Please try again." });
   }
   return (
-    <div className="rounded-lg border border-violet-200 bg-violet-50/40 p-3">
+    <Alert variant="brand" className="rounded-lg border border-violet-200 bg-violet-50/40 p-3">
       <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-violet-800">Auditor review</div>
       <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Review note (required for more-info)…" className="mb-2 h-8 text-xs" />
       <div className="flex flex-wrap gap-2">
@@ -1014,7 +1017,7 @@ function AuditorReview({ auditId, r, canCreateCapa, onChanged }: { auditId: stri
           the finding instead.
         </p>
       )}
-    </div>
+    </Alert>
   );
 }
 
@@ -1030,7 +1033,7 @@ function PmDecision({ auditId, r, canCreateCapa, onChanged }: { auditId: string;
     else toast({ variant: "error", title: "Action failed", description: res.detail ?? "Please try again." });
   }
   return (
-    <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3">
+    <Alert variant="brand" className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3">
       <div className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-indigo-800">Plant manager decision</div>
       <Input value={comment} onChange={(e) => setComment(e.target.value)} placeholder="Decision comments…" className="mb-2 h-8 text-xs" />
       <div className="flex flex-wrap gap-2">
@@ -1040,7 +1043,7 @@ function PmDecision({ auditId, r, canCreateCapa, onChanged }: { auditId: string;
         )}
         <Button type="button" variant="destructive" size="sm" onClick={() => act("PM_SEND_BACK")} disabled={!!busy}><RotateCcw size={14} /> Send back</Button>
       </div>
-    </div>
+    </Alert>
   );
 }
 
@@ -1081,30 +1084,30 @@ function FinalizeBanner({ auditId, fin }: { auditId: string; fin: Finalizability
   }
   if (fin.finalizable) {
     return (
-      <div className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm">
+      <Alert variant="success" className="flex flex-wrap items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm">
         <ShieldCheck size={16} className="text-emerald-600" />
         <span className="font-medium text-emerald-900">All {fin.total} checkpoints resolved — ready to finalize.</span>
         <Button type="button" variant="success" size="sm" className="ml-auto" onClick={close} disabled={busy}>
           {busy ? <Loader2 size={15} className="animate-spin" /> : <ShieldCheck size={15} />} Close & Finalize
         </Button>
-      </div>
+      </Alert>
     );
   }
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm">
+    <Alert variant="warning" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm">
       <div className="flex items-center gap-2 font-medium text-amber-900">
         <FileWarning size={16} /> {fin.blockerCount} of {fin.total} checkpoint(s) still in review — resolve them before finalizing.
       </div>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {fin.blockers.slice(0, 12).map((b) => (
-          <span key={b.checkpointCode} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] text-amber-800 ring-1 ring-amber-200">
+          <Badge variant="warning" key={b.checkpointCode} className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] text-amber-800 ring-1 ring-amber-200">
             <span className="font-mono">{b.checkpointCode}</span>
             <span className="text-amber-500">{WORKFLOW_STATE_META[b.workflowState]?.label ?? b.workflowState}</span>
-          </span>
+          </Badge>
         ))}
         {fin.blockers.length > 12 && <span className="text-[10px] text-amber-600">+{fin.blockers.length - 12} more</span>}
       </div>
-    </div>
+    </Alert>
   );
 }
 
@@ -1174,11 +1177,11 @@ function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finaliz
   if (!canInterim && reports.length === 0) return null;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
+    <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
       <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
         <FileText size={16} className="text-primary-700" />
         <h3 className="text-sm font-semibold text-slate-800">Audit reports</h3>
-        <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{reports.length}</span>
+        <Badge variant="neutral" className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">{reports.length}</Badge>
         {!isDeptAudit && (
           <div className="ml-auto flex gap-2">
             {canInterim && (
@@ -1249,7 +1252,7 @@ function ReportsPanel({ auditId, reports, userMap, canInterim, canFinal, finaliz
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -1301,7 +1304,7 @@ function RespondForm({ auditId, r, routedToMe, onChanged }: { auditId: string; r
     else toast({ variant: "error", title: "Couldn't submit response", description: res.detail ?? "Please try again." });
   }
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+    <Alert variant="warning" className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
       <div className="mb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-amber-800">Respond to this finding {routedToMe && <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[9px] normal-case">assigned to you</span>}</div>
       <Textarea value={actionTaken} onChange={(e) => setActionTaken(e.target.value)} rows={2} placeholder="Action taken to remediate…" className="min-h-[56px]" />
       <AttachmentStrip attachments={photos} onRemove={removePhoto} className="mt-2" />
@@ -1310,8 +1313,8 @@ function RespondForm({ auditId, r, routedToMe, onChanged }: { auditId: string; r
           the same reason as the conduct screen: the photo input keeps
           `capture` so a phone opens the camera, and documents must not be
           made to travel through a viewfinder. */}
-      <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} capture="environment" className="hidden" onChange={onFile} />
-      <input ref={docRef} type="file" accept={DOCUMENT_ACCEPT} className="hidden" onChange={onFile} />
+      <Input ref={fileRef} type="file" accept={IMAGE_ACCEPT} capture="environment" className="hidden" onChange={onFile} />
+      <Input ref={docRef} type="file" accept={DOCUMENT_ACCEPT} className="hidden" onChange={onFile} />
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <Input type="date" value={actionDate} onChange={(e) => setActionDate(e.target.value)} className="h-8 w-auto text-xs" />
         <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()} disabled={uploading}>{uploading ? <Loader2 size={13} className="animate-spin" /> : <Camera size={13} />} {uploading ? "Uploading…" : "Photo"}</Button>
@@ -1324,7 +1327,7 @@ function RespondForm({ auditId, r, routedToMe, onChanged }: { auditId: string; r
         )}
         <Button type="button" size="sm" className="ml-auto" onClick={submit} disabled={busy}>{busy && <Loader2 size={13} className="animate-spin" />} Submit response</Button>
       </div>
-    </div>
+    </Alert>
   );
 }
 

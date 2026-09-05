@@ -11,6 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { fmtDate } from "../../lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   OBLIGATION_STATUS_CHIP,
   TASK_STATUS_CHIP,
@@ -33,15 +36,15 @@ export function ObligationDetailView({ obligation }: { obligation: ObligationDet
   return (
     <div className="space-y-4">
       {/* Header card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-xs font-semibold text-slate-400">{obligation.obligationCode}</span>
               <h1 className="text-lg font-bold text-slate-900">{obligation.title}</h1>
-              <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+              <Badge variant="neutral" className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
                 {typeLabel(obligation.obligationType)}
-              </span>
+              </Badge>
               <span className={"rounded border px-2 py-0.5 text-[11px] font-medium " + (OBLIGATION_STATUS_CHIP[obligation.status] ?? "")}>
                 {obligation.status.replace(/_/g, " ")}
               </span>
@@ -56,7 +59,7 @@ export function ObligationDetailView({ obligation }: { obligation: ObligationDet
             <div className="text-sm font-semibold text-slate-800">{fmtDate(obligation.validUntil)}</div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-200">
@@ -78,14 +81,14 @@ export function ObligationDetailView({ obligation }: { obligation: ObligationDet
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         {tab === "Overview" && <OverviewTab obligation={obligation} />}
         {tab === "Tasks" && <TasksTab obligation={obligation} onChanged={() => router.refresh()} />}
         {tab === "Evidence" && <EvidenceTab obligation={obligation} />}
         {tab === "Audit" && (
           <p className="py-10 text-center text-sm text-slate-400">Audit trail will surface here in a later pass.</p>
         )}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -386,7 +389,7 @@ export function EvidenceModal({
     <ModalShell title="Add evidence" onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">File name (required)</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">File name (required)</Label>
           <Input
             value={fileName}
             onChange={(e) => setFileName(e.target.value)}
@@ -394,7 +397,7 @@ export function EvidenceModal({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Caption</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Caption</Label>
           <Textarea
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
@@ -444,7 +447,7 @@ export function RemarksModal({
     <ModalShell title={title} onClose={onClose}>
       <div className="space-y-3">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
           <Textarea value={text} onChange={(e) => setText(e.target.value)} rows={3} />
         </div>
         <Button

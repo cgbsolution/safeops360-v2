@@ -22,6 +22,8 @@ import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Pencil, Info, AlertTriangle, RotateCcw } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 
 export type SlaPreview = {
   matched: boolean;
@@ -191,11 +193,12 @@ export function SlaTargetDateField({
       </p>
 
       {editing && (
-        <div className="space-y-1.5 rounded-md border border-amber-200 bg-amber-50/60 p-2.5">
-          <label className="block text-xs font-medium text-amber-900">
+        <Card className="space-y-1.5 rounded-md border-amber-200 bg-amber-50/60 p-2.5 shadow-none">
+          <Label htmlFor="override-reason" className="block text-xs text-amber-900">
             Why does this observation need a different closure date?
-          </label>
+          </Label>
           <Textarea
+            id="override-reason"
             rows={2}
             value={overrideReason}
             onChange={(e) => onOverrideReason(e.target.value)}
@@ -207,7 +210,7 @@ export function SlaTargetDateField({
               ? `${MIN_OVERRIDE_REASON - overrideReason.trim().length} more character(s) required — this is recorded in the audit trail.`
               : "Recorded in the closure-date audit trail with your name."}
           </p>
-        </div>
+        </Card>
       )}
 
       {/* Submitted only on the manual/override path; with a policy in force the

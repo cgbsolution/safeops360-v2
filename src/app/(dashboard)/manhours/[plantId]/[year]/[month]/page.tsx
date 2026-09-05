@@ -254,11 +254,11 @@ export default async function ManhoursDetailPage(
 function Stat({ label, value, hint, tone }: { label: string; value: string; hint?: string; tone?: "default" | "primary" | "danger" }) {
   const cls = tone === "danger" ? "text-rose-700" : tone === "primary" ? "text-primary-800" : "text-slate-900";
   return (
-    <div className="rounded border p-3">
+    <Card className="rounded border p-3 shadow-none">
       <div className="text-xs uppercase tracking-wider text-slate-500">{label}</div>
       <div className={`text-2xl font-bold mt-1 tabular-nums ${cls}`}>{value}</div>
       {hint && <div className="text-[10px] text-slate-500">{hint}</div>}
-    </div>
+    </Card>
   );
 }
 

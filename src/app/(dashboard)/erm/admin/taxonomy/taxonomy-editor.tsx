@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 type SubCategory = Category["subCategories"][number];
 
@@ -133,14 +135,14 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+                  <Label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
                     <Checkbox
                       checked={c.isActive}
                       disabled={busy}
                       onChange={() => toggleActive(c)}
                     />
                     Active
-                  </label>
+                  </Label>
                   <Button
                     type="button"
                     variant="outline"
@@ -168,10 +170,9 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
                       <p className="text-xs text-slate-400">No sub-categories yet.</p>
                     ) : (
                       c.subCategories.map((s) => (
-                        <div
+                        <Card
                           key={s.id}
-                          className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2"
-                        >
+                          className="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2 shadow-none">
                           <div className="flex items-start gap-2">
                             <span className="mt-0.5 rounded bg-white px-1.5 py-0.5 text-[11px] font-mono font-medium text-slate-600 ring-1 ring-slate-200">
                               {s.code}
@@ -192,17 +193,16 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
                               )}
                             </div>
                             <div className="flex shrink-0 items-center gap-1.5">
-                              <label
+                              <Label
                                 className="inline-flex cursor-pointer items-center gap-1 text-[11px] text-slate-500"
-                                title="Active"
-                              >
+                                title="Active">
                                 <Checkbox
                                   checked={s.isActive}
                                   disabled={busy}
                                   onChange={() => toggleSubActive(s)}
                                   className="h-3.5 w-3.5"
                                 />
-                              </label>
+                              </Label>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -215,17 +215,15 @@ export function TaxonomyEditor({ categories }: { categories: Category[] }) {
                                   the always-on solid `destructive` fill would be visually louder than
                                   the original subtle hover-only treatment across every sub-category row;
                                   left raw rather than guess. */}
-                              <button
+                              <Button variant="outline"
                                 onClick={() => deleteSub(s)}
-                                disabled={busy}
-                                className="inline-flex items-center rounded border border-slate-200 bg-white p-1 text-slate-400 hover:border-rose-300 hover:text-rose-600"
-                                title="Delete sub-category"
-                              >
+                                disabled={busy} className="rounded p-1"
+                                title="Delete sub-category">
                                 <Trash2 size={13} />
-                              </button>
+                              </Button>
                             </div>
                           </div>
-                        </div>
+                        </Card>
                       ))
                     )}
                     <Button
@@ -327,7 +325,7 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       {children}
     </div>
   );
@@ -387,21 +385,20 @@ function CategoryModal({
         <div className="flex items-end gap-4">
           <Field label="Colour">
             {/* type=color has no Input equivalent — native swatch control, left raw */}
-            <input
+            <Input
               type="color"
               value={f.colorHex}
               onChange={(e) => setF({ ...f, colorHex: e.target.value })}
-              className="h-10 w-16 cursor-pointer rounded-lg border border-slate-300"
-            />
+              className="h-10 w-16 cursor-pointer rounded-lg border border-slate-300" />
           </Field>
           <span className="rounded bg-slate-100 px-2 py-1 text-xs font-mono text-slate-600">{f.colorHex}</span>
-          <label className="ml-auto inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+          <Label className="ml-auto inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
             <Checkbox
               checked={f.isActive}
               onChange={(e) => setF({ ...f, isActive: e.target.checked })}
             />
             Active
-          </label>
+          </Label>
         </div>
         <Button
           type="button"
@@ -458,13 +455,13 @@ function SubCategoryModal({
             rows={2}
           />
         </Field>
-        <label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
+        <Label className="inline-flex cursor-pointer items-center gap-1.5 text-xs text-slate-600">
           <Checkbox
             checked={f.isActive}
             onChange={(e) => setF({ ...f, isActive: e.target.checked })}
           />
           Active
-        </label>
+        </Label>
         <Button
           type="button"
           disabled={busy || !valid}

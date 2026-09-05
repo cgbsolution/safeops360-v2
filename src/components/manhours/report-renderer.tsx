@@ -8,6 +8,8 @@ import type { ReportData } from "@/lib/manhours/report-builder";
 import { KPI_REGISTRY, type KpiCode } from "@/lib/manhours/kpi-registry";
 import { PerformanceScorecard } from "@/components/manhours/widgets/performance-scorecard";
 import { KpiDrillDownPrint } from "@/app/(dashboard)/manhours/kpi/print-button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
 
 const HEADLINE_KPIS: KpiCode[] = ["LTIFR", "TRIFR", "DART_RATE", "SEVERITY_RATE", "NEAR_MISS_RATE", "DAYS_SINCE_LAST_LTI"];
 const SECONDARY_KPIS: KpiCode[] = ["IFR", "TRIR", "FSI", "HEINRICH_RATIO", "OBSERVATION_RATE", "TRAINING_COMPLIANCE", "INSPECTION_COMPLIANCE", "PTW_FLRA_COMPLIANCE", "CAPA_CLOSURE_RATE", "COST_OF_INCIDENTS"];
@@ -39,7 +41,7 @@ export function ReportRenderer({ data }: { data: ReportData }) {
       `}</style>
 
       {/* Cover header */}
-      <div className="rounded-lg border bg-white p-6 print-section print-shadow">
+      <Card className="rounded-lg border bg-white p-6 print-section print-shadow">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-[11px] uppercase tracking-wider text-slate-500">
@@ -75,10 +77,10 @@ export function ReportRenderer({ data }: { data: ReportData }) {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Executive narrative */}
-      <div className="rounded-lg border bg-white p-6 print-section print-shadow">
+      <Card className="rounded-lg border bg-white p-6 print-section print-shadow">
         <div className="flex items-center gap-2 mb-3">
           <Sparkles size={16} className="text-primary-700" />
           <h2 className="text-base font-semibold text-slate-900">Executive summary</h2>
@@ -97,17 +99,17 @@ export function ReportRenderer({ data }: { data: ReportData }) {
           {data.narrative.narrative}
         </p>
         {data.narrative.fallbackReason && (
-          <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800 no-print">
+          <Alert variant="warning" className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800 no-print">
             <Lightbulb size={12} className="inline mr-1" />
             {data.narrative.fallbackReason}
-          </div>
+          </Alert>
         )}
         {data.narrative.tokenUsage && (
           <div className="mt-2 text-[10px] text-slate-400 no-print">
             {data.narrative.tokenUsage.input} input · {data.narrative.tokenUsage.output} output tokens
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Headline KPI strip */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 print-section">
@@ -127,46 +129,46 @@ export function ReportRenderer({ data }: { data: ReportData }) {
       </div>
 
       {/* Full KPI table */}
-      <div className="rounded-lg border bg-white print-section print-shadow">
+      <Card className="rounded-lg border bg-white print-section print-shadow">
         <div className="border-b bg-slate-50 px-4 py-2 text-xs uppercase tracking-wider text-slate-500">
           Full KPI table
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="border-b text-[11px] uppercase tracking-wider text-slate-500">
-              <tr>
-                <th className="px-3 py-2 text-left">KPI</th>
-                <th className="px-3 py-2 text-left">Code</th>
-                <th className="px-3 py-2 text-left">Reference</th>
-                <th className="px-3 py-2 text-right">Value</th>
-                {data.priorKpis && <th className="px-3 py-2 text-right">{data.priorPeriodLabel}</th>}
-                <th className="px-3 py-2 text-left">Band</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
+          <Table className="w-full text-sm">
+            <TableHeader className="border-b text-[11px] uppercase tracking-wider text-slate-500">
+              <TableRow>
+                <TableHead className="px-3 py-2 text-left">KPI</TableHead>
+                <TableHead className="px-3 py-2 text-left">Code</TableHead>
+                <TableHead className="px-3 py-2 text-left">Reference</TableHead>
+                <TableHead className="px-3 py-2 text-right">Value</TableHead>
+                {data.priorKpis && <TableHead className="px-3 py-2 text-right">{data.priorPeriodLabel}</TableHead>}
+                <TableHead className="px-3 py-2 text-left">Band</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {[...HEADLINE_KPIS, ...SECONDARY_KPIS].map((code) => {
                 const kpi = data.kpis[code];
                 const prior = data.priorKpis?.[code];
                 const def = KPI_REGISTRY[code];
                 if (!kpi) return null;
                 return (
-                  <tr key={code}>
-                    <td className="px-3 py-2 font-medium">{kpi.kpiName}</td>
-                    <td className="px-3 py-2 font-mono text-xs text-slate-500">{code}</td>
-                    <td className="px-3 py-2 text-[11px] text-slate-500">
+                  <TableRow key={code}>
+                    <TableCell className="px-3 py-2 font-medium">{kpi.kpiName}</TableCell>
+                    <TableCell className="px-3 py-2 font-mono text-xs text-slate-500">{code}</TableCell>
+                    <TableCell className="px-3 py-2 text-[11px] text-slate-500">
                       {def.statutoryReference ?? "—"}
-                    </td>
-                    <td className="px-3 py-2 text-right">
+                    </TableCell>
+                    <TableCell className="px-3 py-2 text-right">
                       <span className="font-bold tabular-nums" style={{ color: kpi.bandColor }}>
                         {kpi.formattedValue}
                       </span>
-                    </td>
+                    </TableCell>
                     {data.priorKpis && (
-                      <td className="px-3 py-2 text-right text-slate-500 tabular-nums">
+                      <TableCell className="px-3 py-2 text-right text-slate-500 tabular-nums">
                         {prior?.formattedValue ?? "—"}
-                      </td>
+                      </TableCell>
                     )}
-                    <td className="px-3 py-2">
+                    <TableCell className="px-3 py-2">
                       {kpi.band ? (
                         <span
                           className="inline-block rounded px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider"
@@ -177,14 +179,14 @@ export function ReportRenderer({ data }: { data: ReportData }) {
                       ) : (
                         <span className="text-slate-400 text-xs">—</span>
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
-      </div>
+      </Card>
 
       {/* Plant scorecard — quarterly + annual only */}
       {data.scorecard && (
@@ -194,7 +196,7 @@ export function ReportRenderer({ data }: { data: ReportData }) {
       )}
 
       {/* Incidents in period */}
-      <div className="rounded-lg border bg-white print-section print-shadow">
+      <Card className="rounded-lg border bg-white print-section print-shadow">
         <div className="flex items-center gap-2 border-b bg-slate-50 px-4 py-2">
           <AlertTriangle size={14} className="text-rose-700" />
           <span className="text-xs uppercase tracking-wider text-slate-600">
@@ -222,11 +224,11 @@ export function ReportRenderer({ data }: { data: ReportData }) {
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Open findings — monthly only */}
       {data.openFindings.length > 0 && (
-        <div className="rounded-lg border bg-white print-section print-shadow">
+        <Card className="rounded-lg border bg-white print-section print-shadow">
           <div className="flex items-center gap-2 border-b bg-slate-50 px-4 py-2">
             <FileText size={14} className="text-amber-700" />
             <span className="text-xs uppercase tracking-wider text-slate-600">
@@ -246,11 +248,11 @@ export function ReportRenderer({ data }: { data: ReportData }) {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Footer attribution */}
-      <div className="rounded-lg border bg-slate-50 p-4 text-[11px] text-slate-600 print-section">
+      <Card className="rounded-lg border bg-slate-50 p-4 text-[11px] text-slate-600 print-section shadow-none">
         <div className="font-semibold text-slate-700 mb-1">About this report</div>
         <div>
           KPIs computed per IS 3786:1983 (LTIFR, Severity Rate, FSI) and OSHA 29 CFR 1904 (TRIFR, TRIR, DART).
@@ -259,7 +261,7 @@ export function ReportRenderer({ data }: { data: ReportData }) {
             : " Numbers in this report are computed live from the current state of source modules; running this report again later may produce different values if source incidents are reclassified."}
           {" "}Drill into any KPI from the live dashboard at <code className="text-slate-700">/manhours/kpi</code>.
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -289,7 +291,7 @@ function ReportKpiTile({
           : "bad";
 
   return (
-    <div className="rounded-md border bg-white p-3">
+    <Card className="rounded-md border bg-white p-3 shadow-none">
       <div className="text-[10px] uppercase tracking-wider text-slate-500 leading-tight">{kpi.kpiName}</div>
       <div className="mt-1 text-xl font-bold tabular-nums" style={{ color: kpi.bandColor }}>
         {kpi.formattedValue}
@@ -316,7 +318,7 @@ function ReportKpiTile({
           </span>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 

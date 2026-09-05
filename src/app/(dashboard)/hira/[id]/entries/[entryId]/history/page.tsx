@@ -4,6 +4,7 @@ import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { AccessRestricted } from "@/components/access-restricted";
 import { VersionDiff } from "./version-diff";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -81,13 +82,13 @@ export default async function HiraEntryHistoryPage(
       />
 
       {versions.length === 0 ? (
-        <div className="rounded-xl border bg-white p-8 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-8 text-center text-slate-500 shadow-none">
           No version history yet. Versions are created when an approved or active entry is edited.
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-1">
-            <div className="rounded-xl border bg-white">
+            <Card className="rounded-xl border bg-white shadow-none">
               <div className="px-4 py-2.5 border-b text-xs uppercase tracking-wider text-slate-600">
                 Versions ({versions.length})
               </div>
@@ -149,7 +150,7 @@ export default async function HiraEntryHistoryPage(
                   );
                 })}
               </ul>
-            </div>
+            </Card>
           </div>
 
           <div className="lg:col-span-2">
@@ -161,9 +162,9 @@ export default async function HiraEntryHistoryPage(
                 toLabel={`v${toVersion.versionNumber}`}
               />
             ) : (
-              <div className="rounded-xl border bg-white p-8 text-center text-sm text-slate-500">
+              <Card className="rounded-xl border bg-white p-8 text-center text-sm text-slate-500 shadow-none">
                 Select a "before" and "after" version on the left to see a field-by-field diff.
-              </div>
+              </Card>
             )}
           </div>
         </div>

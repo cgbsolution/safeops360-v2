@@ -7,6 +7,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 
 export function LicenceUpload({ onApplied }: { onApplied?: () => void | Promise<void> }) {
   const [token, setToken] = useState("");
@@ -51,12 +52,11 @@ export function LicenceUpload({ onApplied }: { onApplied?: () => void | Promise<
 
   return (
     <div className="space-y-3">
-      <input
+      <Input
         type="file"
         accept=".lic,.txt,text/plain"
         onChange={onFile}
-        className="block text-sm file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm hover:file:bg-slate-200"
-      />
+        className="block text-sm file:mr-3 file:rounded file:border-0 file:bg-slate-100 file:px-3 file:py-1.5 file:text-sm hover:file:bg-slate-200" />
       <Textarea
         value={token}
         onChange={(e) => setToken(e.target.value)}

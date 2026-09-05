@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { KriAdminView } from "./admin-view";
 import type { KriListResponse, MetricCatalogEntry } from "@/app/(dashboard)/erm/lib-p2";
 import type { RiskListResponse } from "@/app/(dashboard)/erm/lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +44,7 @@ export default async function KriAdminPage() {
         description="Define and maintain Key Risk Indicators — thresholds, direction, feed source and linked enterprise risks."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}.</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}.</Alert>
       ) : (
         <KriAdminView kris={kris.items} categories={categories} catalogue={catalogue} risks={risks} />
       )}

@@ -6,6 +6,7 @@ import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import type { SubmissionOut } from "@/lib/capture/types";
 import { MediaGallery } from "./media-gallery";
 import { TriagePanel } from "./triage-panel";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +91,7 @@ export default async function FieldReportDetailPage(props: { params: Promise<{ i
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-6 lg:col-span-2">
           {/* summary */}
-          <div className="rounded-lg border bg-card p-5">
+          <Card className="p-5 shadow-none">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Report</h2>
             <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div>
@@ -161,20 +162,20 @@ export default async function FieldReportDetailPage(props: { params: Promise<{ i
                 ) : null}
               </div>
             ) : null}
-          </div>
+          </Card>
 
           {/* evidence */}
-          <div className="rounded-lg border bg-card p-5">
+          <Card className="p-5 shadow-none">
             <h2 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
               Evidence ({sub.attachments.length})
             </h2>
             <MediaGallery submissionId={sub.id} attachments={sub.attachments} />
-          </div>
+          </Card>
         </div>
 
         <div className="space-y-6">
           {convertedHref ? (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5 text-sm">
+            <Card className="border-emerald-200 bg-emerald-50 p-5 text-sm shadow-none">
               <p className="font-semibold text-emerald-800">Converted</p>
               <p className="mt-1 text-emerald-700">
                 This report became{" "}
@@ -183,7 +184,7 @@ export default async function FieldReportDetailPage(props: { params: Promise<{ i
                 </Link>
                 {sub.converted.at ? ` on ${new Date(sub.converted.at).toLocaleDateString("en-IN")}` : ""}.
               </p>
-            </div>
+            </Card>
           ) : null}
           <TriagePanel sub={sub} />
         </div>

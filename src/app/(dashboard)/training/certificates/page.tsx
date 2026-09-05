@@ -2,6 +2,7 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { CertificatesTable, type CertificateRow } from "./certificates-table";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -72,12 +73,10 @@ export default async function CertificatesPage(props: { searchParams: Promise<{ 
         breadcrumbs={[{ label: "Training", href: "/training" }, { label: "Certificates" }]}
         action={
           <form action="/api/training/certificates/admin/refresh-states" method="POST">
-            <button
-              type="submit"
-              className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium hover:bg-slate-50"
-            >
+            <Button variant="outline"
+              type="submit" className="rounded-md px-3 py-1.5 text-xs">
               Refresh state machine
-            </button>
+            </Button>
           </form>
         }
       />

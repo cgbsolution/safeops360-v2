@@ -12,6 +12,12 @@ import {
   Trash2
 } from "lucide-react";
 import { ATTACHMENT_CATEGORIES } from "../_meta";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 // MOC supporting-documents uploader + list. Two-phase Supabase signed-URL flow
 // (clone of components/erm/risk-attachments.tsx) retargeted to the MOC
@@ -188,16 +194,14 @@ export function MocAttachments({ crId, canEdit = true }: { crId: string; canEdit
         <div className="space-y-3">
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Category</label>
-              <select value={category} onChange={(e) => setCategory(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm text-slate-700">
-                {ATTACHMENT_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
+              <Label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Category</Label>
+              <SelectField value={category} onChange={setCategory} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm text-slate-700"
+                options={ATTACHMENT_CATEGORIES.map((c) => ({ value: c.value, label: c.label }))}
+              />
             </div>
             <div className="min-w-[220px] flex-1">
-              <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Caption (optional)</label>
-              <input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Short description applied to the next upload" className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+              <Label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Caption (optional)</Label>
+              <Input value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Short description applied to the next upload" className="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
             </div>
           </div>
 
@@ -211,24 +215,24 @@ export function MocAttachments({ crId, canEdit = true }: { crId: string; canEdit
             <Upload size={22} className="mx-auto mb-2 text-slate-400" />
             <p className="text-sm font-medium text-slate-700">Drag &amp; drop drawings, P&amp;IDs, vendor specs</p>
             <div className="mt-3">
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:border-primary-500">
+              <Button variant="outline" type="button" onClick={() => fileInputRef.current?.click()} className="gap-1.5 rounded-lg px-3 py-1.5 text-sm">
                 <Upload size={13} /> Choose files
-              </button>
+              </Button>
             </div>
-            <input ref={fileInputRef} type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
+            <Input ref={fileInputRef} type="file" multiple accept={ACCEPT} className="hidden" onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
             <p className="mt-2 text-[11px] text-slate-500">PDF / PNG / JPEG / WEBP / DOCX / XLSX / CSV / TXT / MSG · up to 25 MB each</p>
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            <Alert variant="destructive" className="flex items-center gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
               <AlertCircle size={14} /> {error}
-            </div>
+            </Alert>
           )}
 
           {uploads.length > 0 && (
             <div className="space-y-2">
               {uploads.map((f) => (
-                <div key={f.tempId} className="flex items-center gap-3 rounded-md border bg-white p-2.5 text-sm">
+                <Card key={f.tempId} className="flex items-center gap-3 rounded-md border bg-white p-2.5 text-sm shadow-none">
                   <FileText size={18} className="shrink-0 text-slate-400" />
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium text-slate-800">{f.file.name}</div>
@@ -241,7 +245,7 @@ export function MocAttachments({ crId, canEdit = true }: { crId: string; canEdit
                   {f.status === "error" && (
                     <span className="flex items-center gap-1 text-xs text-rose-700"><AlertCircle size={12} /> {f.errorMessage ?? "Failed"}</span>
                   )}
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -250,14 +254,14 @@ export function MocAttachments({ crId, canEdit = true }: { crId: string; canEdit
 
       <div>
         {loadError ? (
-          <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">Failed to load documents: {loadError}</div>
+          <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">Failed to load documents: {loadError}</Alert>
         ) : items === null ? (
           <div className="flex items-center justify-center gap-2 py-8 text-sm text-slate-500"><Loader2 size={16} className="animate-spin" /> Loading documents…</div>
         ) : items.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-slate-200 py-8 text-center">
+          <Card className="rounded-lg border border-dashed border-slate-200 py-8 text-center shadow-none">
             <FileText size={22} className="mx-auto mb-2 text-slate-300" />
             <p className="text-sm text-slate-400">No supporting documents yet.</p>
-          </div>
+          </Card>
         ) : (
           <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200">
             {items.map((att) => (
@@ -272,11 +276,11 @@ export function MocAttachments({ crId, canEdit = true }: { crId: string; canEdit
                   {att.caption && <div className="mt-0.5 truncate text-[11px] italic text-slate-600">{att.caption}</div>}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
-                  <button type="button" onClick={() => downloadFile(att)} className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2 py-1 text-[11px] font-medium text-slate-700 hover:border-primary-500">
+                  <Button variant="outline" type="button" onClick={() => downloadFile(att)} className="gap-1 rounded-md px-2 py-1 text-[11px]">
                     <Download size={12} /> Download
-                  </button>
+                  </Button>
                   {canEdit && (
-                    <button type="button" onClick={() => deleteFile(att)} className="rounded-md p-1 text-slate-400 hover:text-rose-600" aria-label="Delete"><Trash2 size={14} /></button>
+                    <Button variant="ghost" type="button" onClick={() => deleteFile(att)} className="rounded-md p-1" aria-label="Delete"><Trash2 size={14} /></Button>
                   )}
                 </div>
               </li>

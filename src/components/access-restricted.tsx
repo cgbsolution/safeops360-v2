@@ -9,6 +9,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { ShieldAlert } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 export function AccessRestricted({
   title = "Access Restricted",
@@ -28,7 +29,7 @@ export function AccessRestricted({
   return (
     <div>
       <PageHeader title={title} description={description} breadcrumbs={breadcrumbs} />
-      <div className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-6 text-sm text-amber-900 max-w-2xl">
+      <Alert variant="warning" className="rounded-xl border border-amber-300 bg-amber-50 px-5 py-6 text-sm text-amber-900 max-w-2xl">
         <div className="flex items-center gap-2 font-semibold mb-1">
           <ShieldAlert size={16} /> You don’t have access to this record.
         </div>
@@ -39,7 +40,7 @@ export function AccessRestricted({
         >
           {backLabel}
         </Link>
-      </div>
+      </Alert>
     </div>
   );
 }

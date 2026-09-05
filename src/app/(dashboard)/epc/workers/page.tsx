@@ -4,6 +4,9 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Users, Plus, HardHat, Upload } from "lucide-react";
 import { RosterStatusBadge } from "@/components/workforce/roster-status-badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -71,70 +74,70 @@ export default async function WorkersPage(
 
       {/* Filter hint */}
       {sp.contractorCompanyId && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm text-cyan-800">
+        <Alert variant="info" className="mb-4 flex items-center gap-2 rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm text-cyan-800">
           <HardHat size={14} />
           Filtered by contractor company ID: <code className="font-mono">{sp.contractorCompanyId}</code>
           <Link href="/epc/workers" className="ml-auto text-xs text-cyan-700 hover:underline">Clear filter</Link>
-        </div>
+        </Alert>
       )}
 
       {workers.length === 0 ? (
-        <div className="rounded-xl border bg-white p-12 text-center">
+        <Card className="rounded-xl border bg-white p-12 text-center shadow-none">
           <Users size={40} className="mx-auto mb-3 text-slate-300" />
           <p className="text-sm font-medium text-slate-600 mb-1">No workers found</p>
           <p className="text-xs text-slate-400 mb-4">Register construction workers to manage mobilization and gate clearance.</p>
           <Button asChild size="sm">
             <Link href="/epc/workers/new"><Plus size={14} className="mr-1" /> Register Worker</Link>
           </Button>
-        </div>
+        </Card>
       ) : (
-        <div className="rounded-xl border bg-white overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                <th className="px-4 py-3">Worker Code</th>
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Trade</th>
-                <th className="px-4 py-3">Contractor Company</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Mobilizations</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="rounded-xl border bg-white overflow-hidden shadow-sm">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <TableHead className="px-4 py-3">Worker Code</TableHead>
+                <TableHead className="px-4 py-3">Name</TableHead>
+                <TableHead className="px-4 py-3">Trade</TableHead>
+                <TableHead className="px-4 py-3">Contractor Company</TableHead>
+                <TableHead className="px-4 py-3">Status</TableHead>
+                <TableHead className="px-4 py-3 text-right">Mobilizations</TableHead>
+                <TableHead className="px-4 py-3"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {workers.map((w, i) => (
-                <tr
+                <TableRow
                   key={w.id}
                   className={`border-b last:border-0 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? "" : "bg-slate-50/40"}`}
                 >
-                  <td className="px-4 py-3 font-mono text-xs text-slate-500">{w.workerCode}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">{w.fullName}</td>
-                  <td className="px-4 py-3 text-slate-600">{w.primaryTrade}</td>
-                  <td className="px-4 py-3 text-slate-600">{w.contractorCompanyName}</td>
-                  <td className="px-4 py-3">
+                  <TableCell className="px-4 py-3 font-mono text-xs text-slate-500">{w.workerCode}</TableCell>
+                  <TableCell className="px-4 py-3 font-semibold text-slate-900">{w.fullName}</TableCell>
+                  <TableCell className="px-4 py-3 text-slate-600">{w.primaryTrade}</TableCell>
+                  <TableCell className="px-4 py-3 text-slate-600">{w.contractorCompanyName}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1">
                       <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(w.status ?? "")}`}>
                         {humanizeStatus(w.status ?? "unknown")}
                       </span>
                       <RosterStatusBadge status={w.rosterStatus} />
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right tabular-nums text-slate-700">
                     {w.activeMobilizations}
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <Link
                       href={`/epc/workers/${w.id}`}
                       className="text-xs font-medium text-cyan-700 hover:underline"
                     >
                       View &rarr;
                     </Link>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

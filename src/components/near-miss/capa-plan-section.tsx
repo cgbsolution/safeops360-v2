@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { UserPicker } from "@/components/ui/user-picker";
 import {
@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { formatDate, formatDateTime, cn } from "@/lib/utils";
 import { toDateInputValue, toTargetIso, todayInAppZone } from "@/lib/near-miss/target-date";
+import { Alert } from "@/components/ui/alert";
 
 type Capa = {
   id: string;
@@ -163,7 +164,7 @@ function AddCapaForm({
   }
 
   return (
-    <div className="rounded-md border bg-slate-50 p-3 space-y-2">
+    <Card className="space-y-2 rounded-md bg-slate-50 p-3 shadow-none">
       <div>
         <Label>Description</Label>
         <Textarea rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What needs to happen?" />
@@ -171,10 +172,14 @@ function AddCapaForm({
       <div className="grid sm:grid-cols-3 gap-2">
         <div>
           <Label>Type</Label>
-          <Select value={type} onChange={(e) => setType(e.target.value as any)}>
-            <option value="CORRECTIVE">Corrective</option>
-            <option value="PREVENTIVE">Preventive</option>
-          </Select>
+          <SelectField
+            value={type}
+            onChange={(v) => setType(v as any)}
+            options={[
+              { value: "CORRECTIVE", label: "Corrective" },
+              { value: "PREVENTIVE", label: "Preventive" }
+            ]}
+          />
         </div>
         <div className="sm:col-span-2">
           <Label>Owner</Label>
@@ -189,7 +194,7 @@ function AddCapaForm({
       <Button size="sm" onClick={go} disabled={busy}>
         {busy ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />} Add CAPA
       </Button>
-    </div>
+    </Card>
   );
 }
 
@@ -243,7 +248,7 @@ function CapaRow({
   }
 
   return (
-    <div className="border rounded-md p-3 space-y-2">
+    <Card className="border rounded-md p-3 space-y-2 shadow-none">
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -270,14 +275,14 @@ function CapaRow({
             {capa.verifiedAt && <> · Verified {formatDateTime(capa.verifiedAt)}</>}
           </div>
           {capa.completionNotes && (
-            <div className="mt-2 text-xs bg-slate-50 border rounded p-2 italic text-slate-700">
+            <Card className="mt-2 text-xs bg-slate-50 border rounded p-2 italic text-slate-700 shadow-none">
               "{capa.completionNotes}"
-            </div>
+            </Card>
           )}
           {capa.rejectionReason && capa.status === "REJECTED" && (
-            <div className="mt-2 text-xs bg-rose-50 border border-rose-200 rounded p-2 text-rose-800">
+            <Alert variant="destructive" className="mt-2 text-xs bg-rose-50 border border-rose-200 rounded p-2 text-rose-800">
               <strong>Rejection reason:</strong> {capa.rejectionReason}
-            </div>
+            </Alert>
           )}
         </div>
       </div>
@@ -288,7 +293,7 @@ function CapaRow({
         </Button>
       )}
       {mode === "assign" && (
-        <div className="space-y-2 rounded-md border border-slate-200 bg-slate-50/60 p-2">
+        <Card className="space-y-2 rounded-md border-slate-200 bg-slate-50/60 p-2 shadow-none">
           <div>
             <Label className="text-xs">Owner</Label>
             <UserPicker
@@ -325,7 +330,7 @@ function CapaRow({
               Cancel
             </Button>
           </div>
-        </div>
+        </Card>
       )}
       {ownerCanSubmit && mode === "idle" && (
         <Button size="sm" onClick={() => setMode("submit")}>
@@ -367,10 +372,10 @@ function CapaRow({
         </div>
       )}
       {err && (
-        <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded p-2 flex items-start gap-1">
+        <Alert variant="destructive" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded p-2 flex items-start gap-1">
           <AlertCircle size={12} className="mt-0.5 flex-shrink-0" /> {err}
-        </div>
+        </Alert>
       )}
-    </div>
+    </Card>
   );
 }

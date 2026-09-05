@@ -12,6 +12,8 @@ import {
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { CoverageByTypeChart } from "./coverage-chart";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -59,16 +61,16 @@ export default async function InsuranceDashboardPage() {
       />
 
       {error || !data ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "No dashboard data"}. Ensure the ERM Tier 3 seed has been run, and you are logged in with an insurance role.
-        </div>
+        </Alert>
       ) : (
         <div className="space-y-5">
           {renewalDue && (
-            <div className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+            <Alert variant="destructive" className="flex items-center gap-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
               <AlertTriangle size={16} className="flex-shrink-0" />
               Renewal due — one or more policies are expiring soon or have lapsed. Review the renewal calendar below.
-            </div>
+            </Alert>
           )}
 
           {/* KPI strip */}
@@ -83,7 +85,7 @@ export default async function InsuranceDashboardPage() {
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
             {/* Renewal calendar */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-1 text-sm font-semibold text-slate-900">Renewal Calendar (next 90 days)</h2>
               <p className="mb-3 text-xs text-slate-500">Policies approaching expiry — red rows need renewal action.</p>
               {(data.renewalCalendar ?? []).length === 0 ? (
@@ -119,18 +121,18 @@ export default async function InsuranceDashboardPage() {
                   </Table>
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Coverage by type */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-1 text-sm font-semibold text-slate-900">Coverage Map by Policy Type</h2>
               <p className="mb-3 text-xs text-slate-500">Sum insured concentrated by line of cover.</p>
               <CoverageByTypeChart data={data.coverageByType ?? []} />
-            </div>
+            </Card>
           </div>
 
           {/* Open claims */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-1 text-sm font-semibold text-slate-900">Open Claims</h2>
             <p className="mb-3 text-xs text-slate-500">Claims not yet settled or repudiated — manage on the relevant policy.</p>
             {(data.openClaims ?? []).length === 0 ? (
@@ -163,7 +165,7 @@ export default async function InsuranceDashboardPage() {
                 </Table>
               </div>
             )}
-          </div>
+          </Card>
         </div>
       )}
     </div>

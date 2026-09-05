@@ -3,6 +3,9 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { DEF_SEVERITY_CHIP, DEF_STATUS_CHIP, type DeficiencyListResponse } from "@/app/(dashboard)/erm/lib-t3";
 import { DeficiencyRowActions } from "./deficiency-actions";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -69,9 +72,9 @@ export default async function DeficienciesPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Tier 3 seed has been run and you are logged in with a controls role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -95,35 +98,35 @@ export default async function DeficienciesPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.items.length} of {data.total} shown</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Deficiency</th>
-                  <th className="px-3 py-2.5">Control</th>
-                  <th className="px-3 py-2.5">Severity</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Remediation CAPA</th>
-                  <th className="px-3 py-2.5 text-center">Reported</th>
-                  <th className="px-3 py-2.5 text-right">Age</th>
-                  <th className="px-3 py-2.5 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1100px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Deficiency</TableHead>
+                  <TableHead className="px-3 py-2.5">Control</TableHead>
+                  <TableHead className="px-3 py-2.5">Severity</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5">Remediation CAPA</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Reported</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">Age</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="px-3 py-10 text-center text-sm text-slate-400">No deficiencies match the current filter.</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={8} className="px-3 py-10 text-center text-sm text-slate-400">No deficiencies match the current filter.</TableCell>
+                  </TableRow>
                 ) : (
                   rows.map((def) => {
                     const isMw = def.severity === "MATERIAL_WEAKNESS";
                     return (
-                      <tr key={def.id} className={"border-t border-slate-100 align-top " + (isMw ? "bg-rose-50/50" : "hover:bg-slate-50/70")}>
-                        <td className="px-3 py-2.5">
+                      <TableRow key={def.id} className={"border-t border-slate-100 align-top " + (isMw ? "bg-rose-50/50" : "hover:bg-slate-50/70")}>
+                        <TableCell className="px-3 py-2.5">
                           <span className="font-mono text-xs font-semibold text-slate-800">{def.deficiencyCode}</span>
                           {def.description && <p className="mt-0.5 max-w-[280px] text-xs text-slate-500">{def.description}</p>}
-                        </td>
-                        <td className="px-3 py-2.5">
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5">
                           {def.controlId ? (
                             <Link href={`/erm/controls/${def.controlId}`} className="font-mono text-xs font-medium text-primary-700 hover:underline">
                               {def.controlCode ?? "—"}
@@ -132,14 +135,14 @@ export default async function DeficienciesPage(props: {
                             <span className="font-mono text-xs text-slate-600">{def.controlCode ?? "—"}</span>
                           )}
                           {def.controlName && <p className="text-xs text-slate-500">{def.controlName}</p>}
-                        </td>
-                        <td className="px-3 py-2.5">
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5">
                           <span className={"rounded border px-2 py-0.5 text-[11px] " + (DEF_SEVERITY_CHIP[def.severity] ?? "")}>{tidy(def.severity)}</span>
-                        </td>
-                        <td className="px-3 py-2.5">
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5">
                           <span className={"rounded border px-2 py-0.5 text-[11px] " + (DEF_STATUS_CHIP[def.status] ?? "")}>{tidy(def.status)}</span>
-                        </td>
-                        <td className="px-3 py-2.5 text-xs">
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-xs">
                           {def.remediationCapaId ? (
                             <Link href={`/capa/${def.remediationCapaId}`} className="inline-flex items-center gap-1.5 text-primary-700 hover:underline">
                               <span className="font-medium">View CAPA</span>
@@ -150,25 +153,25 @@ export default async function DeficienciesPage(props: {
                           ) : (
                             <span className="text-slate-400">No CAPA</span>
                           )}
-                        </td>
-                        <td className="px-3 py-2.5 text-center">
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-center">
                           {def.reportedToAuditCommittee ? (
                             <span className="text-emerald-600" title={def.auditCommitteeReference ?? "Reported"}>✓</span>
                           ) : (
                             <span className="text-slate-300">✗</span>
                           )}
-                        </td>
-                        <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-600">{def.ageDays}d</td>
-                        <td className="px-3 py-2.5">
+                        </TableCell>
+                        <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-600">{def.ageDays}d</TableCell>
+                        <TableCell className="px-3 py-2.5">
                           <DeficiencyRowActions def={def} />
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

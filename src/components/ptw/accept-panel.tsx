@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { CheckCircle2, Loader2, PlayCircle } from "lucide-react";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
 import {
   EvidenceCapture,
   evidenceComplete,
@@ -84,11 +85,11 @@ export function AcceptPanel({
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
         {!gateOk && (
-          <div className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+          <Alert variant="warning" className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
             The activation gate still shows blockers (see the panel above).
             Resolve them first — acceptance will be refused until every
             blocker clears.
-          </div>
+          </Alert>
         )}
 
         <EvidenceCapture
@@ -109,9 +110,9 @@ export function AcceptPanel({
         </div>
 
         {error && (
-          <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 whitespace-pre-wrap">
+          <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 whitespace-pre-wrap">
             {error}
-          </div>
+          </Alert>
         )}
 
         <Button onClick={accept} disabled={busy || !ready} variant="success">

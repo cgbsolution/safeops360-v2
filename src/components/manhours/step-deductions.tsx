@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { formatNumber } from "@/lib/utils";
 import type { WizardSubmission } from "./wizard-types";
 import { patchSubmission } from "./wizard-api";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 interface DeductionField {
   key:
@@ -105,7 +107,7 @@ export function StepDeductions({
         ))}
       </div>
 
-      <div className="rounded-md border bg-slate-50 p-4">
+      <Card className="rounded-md border bg-slate-50 p-4 shadow-none">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
           <Stat label="Gross hours" value={formatNumber(gross)} />
           <Stat label="Total deductions" value={formatNumber(sum)} hint={`${pct.toFixed(1)}% of gross`} />
@@ -125,10 +127,10 @@ export function StepDeductions({
             }
           />
         </div>
-      </div>
+      </Card>
 
       {error && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</Alert>
       )}
 
       <div className="flex items-center justify-between pt-2">

@@ -25,6 +25,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MX, RegisterRow, fireFetch } from "../lib";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
 
 type Plant = { id: string; code: string; name: string };
 
@@ -154,9 +159,9 @@ export function RegisterDialog({
 
   const F = ({ label, children }: { label: string; children: React.ReactNode }) => (
     <div>
-      <label className={LABEL} style={{ color: MX.muted }}>
+      <Label variant="eyebrow" style={{ color: MX.muted }}>
         {label}
-      </label>
+      </Label>
       {children}
     </div>
   );
@@ -178,41 +183,32 @@ export function RegisterDialog({
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {!row && (
               <F label="Plant">
-                <select
+                <SelectField
                   value={f.plantId}
-                  onChange={(e) => set("plantId", e.target.value)}
-                  className={FIELD}
+                  onChange={(v) => set("plantId", v)}
+                  ariaLabel="Plant"
                   style={{ borderColor: MX.iceLine, color: MX.ink }}
-                >
-                  {plants.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.code} — {p.name}
-                    </option>
-                  ))}
-                </select>
+                  options={plants.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+                />
               </F>
             )}
             <F label="Manufacturer Serial No.">
-              <input value={f.serialNo} onChange={(e) => set("serialNo", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine }} />
+              <Input inputSize="compact" value={f.serialNo} onChange={(e) => set("serialNo", e.target.value)} style={{ borderColor: MX.iceLine }} />
             </F>
             <F label="Alloted Serial No.">
-              <input
+              <Input inputSize="compact"
                 value={f.allottedSerialNo}
                 onChange={(e) => set("allottedSerialNo", e.target.value)}
                 placeholder="Tag on the cylinder"
-                className={FIELD}
-                style={{ borderColor: MX.iceLine }}
-              />
+                style={{ borderColor: MX.iceLine }} />
             </F>
             <F label="Type">
-              <input
+              <Input inputSize="compact"
                 list="fe-types"
                 value={f.type}
                 onChange={(e) => set("type", e.target.value)}
                 placeholder="CO2 / ABC / DCP"
-                className={FIELD}
-                style={{ borderColor: MX.iceLine }}
-              />
+                style={{ borderColor: MX.iceLine }} />
               <datalist id="fe-types">
                 {FE_TYPES.map((t) => (
                   <option key={t} value={t} />
@@ -220,62 +216,59 @@ export function RegisterDialog({
               </datalist>
             </F>
             <F label="Capacity">
-              <input value={f.capacity} onChange={(e) => set("capacity", e.target.value)} placeholder="2KG / 9L" className={FIELD} style={{ borderColor: MX.iceLine }} />
+              <Input inputSize="compact" value={f.capacity} onChange={(e) => set("capacity", e.target.value)} placeholder="2KG / 9L" style={{ borderColor: MX.iceLine }} />
             </F>
             <F label="Year Manufacture">
-              <input type="number" value={f.yearOfManufacture} onChange={(e) => set("yearOfManufacture", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine }} />
+              <Input inputSize="compact" type="number" value={f.yearOfManufacture} onChange={(e) => set("yearOfManufacture", e.target.value)} style={{ borderColor: MX.iceLine }} />
             </F>
             <F label="Expiry Date (cylinder life)">
-              <input type="date" value={f.expiryDate} onChange={(e) => set("expiryDate", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine }} />
+              <Input inputSize="compact" type="date" value={f.expiryDate} onChange={(e) => set("expiryDate", e.target.value)} style={{ borderColor: MX.iceLine }} />
             </F>
             <F label="Make">
-              <input value={f.make} onChange={(e) => set("make", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine }} />
+              <Input inputSize="compact" value={f.make} onChange={(e) => set("make", e.target.value)} style={{ borderColor: MX.iceLine }} />
             </F>
             <F label="Weight in Kgs">
-              <input type="number" step="any" value={f.weightKg} onChange={(e) => set("weightKg", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine }} />
+              <Input inputSize="compact" type="number" step="any" value={f.weightKg} onChange={(e) => set("weightKg", e.target.value)} style={{ borderColor: MX.iceLine }} />
             </F>
           </div>
 
           <F label="Location">
-            <input
+            <Input inputSize="compact"
               value={f.location}
               onChange={(e) => set("location", e.target.value)}
               placeholder="Block-A — Stitching Floor, Col 4"
-              className={FIELD}
-              style={{ borderColor: MX.iceLine }}
-            />
+              style={{ borderColor: MX.iceLine }} />
           </F>
 
-          <div
-            className="rounded-lg border p-3"
-            style={{ borderColor: MX.iceLine, background: MX.ice }}
-          >
+          <Card
+            className="rounded-lg border p-3 shadow-none"
+            style={{ borderColor: MX.iceLine, background: MX.ice }}>
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider" style={{ color: MX.navy }}>
               Hydrostatic test &amp; refill
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <F label="HP tested on">
-                <input type="date" value={f.hpTestedOn} onChange={(e) => set("hpTestedOn", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine, background: "#fff" }} />
+                <Input inputSize="compact" type="date" value={f.hpTestedOn} onChange={(e) => set("hpTestedOn", e.target.value)} style={{ borderColor: MX.iceLine, background: "#fff" }} />
               </F>
               <F label="HP Test due date">
-                <input type="date" value={f.hpTestDueDate} onChange={(e) => set("hpTestDueDate", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine, background: "#fff" }} />
+                <Input inputSize="compact" type="date" value={f.hpTestDueDate} onChange={(e) => set("hpTestDueDate", e.target.value)} style={{ borderColor: MX.iceLine, background: "#fff" }} />
               </F>
               <F label="Refilled on">
-                <input type="date" value={f.refilledOn} onChange={(e) => set("refilledOn", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine, background: "#fff" }} />
+                <Input inputSize="compact" type="date" value={f.refilledOn} onChange={(e) => set("refilledOn", e.target.value)} style={{ borderColor: MX.iceLine, background: "#fff" }} />
               </F>
               <F label="Due for refilling">
-                <input type="date" value={f.dueForRefilling} onChange={(e) => set("dueForRefilling", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine, background: "#fff" }} />
+                <Input inputSize="compact" type="date" value={f.dueForRefilling} onChange={(e) => set("dueForRefilling", e.target.value)} style={{ borderColor: MX.iceLine, background: "#fff" }} />
               </F>
             </div>
-          </div>
+          </Card>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <F label="Date of Discharge">
-              <input type="date" value={f.dateOfDischarge} onChange={(e) => set("dateOfDischarge", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine }} />
+              <Input inputSize="compact" type="date" value={f.dateOfDischarge} onChange={(e) => set("dateOfDischarge", e.target.value)} style={{ borderColor: MX.iceLine }} />
             </F>
             <div className="sm:col-span-2">
               <F label="Remarks">
-                <input value={f.remarks} onChange={(e) => set("remarks", e.target.value)} className={FIELD} style={{ borderColor: MX.iceLine }} />
+                <Input inputSize="compact" value={f.remarks} onChange={(e) => set("remarks", e.target.value)} style={{ borderColor: MX.iceLine }} />
               </F>
             </div>
           </div>

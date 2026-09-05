@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
 import { Search, Shield, X } from "lucide-react";
@@ -337,14 +337,12 @@ export default function LoginPage() {
                     className="h-9 pl-9 pr-8 text-sm"
                   />
                   {searchQuery && (
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => setSearchQuery("")}
-                      aria-label="Clear search"
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                    >
+                      aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2">
                       <X size={14} />
-                    </button>
+                    </Button>
                   )}
                 </div>
 
@@ -360,7 +358,7 @@ export default function LoginPage() {
                     {searchHits.length > 0 && (
                       <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
                         {searchHits.map((u) => (
-                          <div key={u.email} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                          <Card key={u.email} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-2 shadow-none">
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-[11px] font-semibold text-slate-900">{u.name}</div>
                               <div className="truncate text-[10px] text-slate-500">
@@ -371,7 +369,7 @@ export default function LoginPage() {
                               <div className="truncate font-mono text-[10px] text-slate-400">{u.email}</div>
                             </div>
                             <Button type="button" size="sm" onClick={() => fillPersona(u.email)} className="shrink-0">Use this</Button>
-                          </div>
+                          </Card>
                         ))}
                       </div>
                     )}
@@ -384,20 +382,18 @@ export default function LoginPage() {
 
               {/* Mode toggle — hidden while a search is running so the card stays compact */}
               <div className={`flex items-center gap-1 bg-slate-100 rounded-lg p-0.5 ${searchActive ? "hidden" : ""}`}>
-                <button
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setPickerMode("persona")}
-                  className={`flex-1 text-[11px] font-medium py-1.5 px-2 rounded-md transition-colors ${pickerMode === "persona" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-                >
+                  className={`flex-1 text-[11px] font-medium py-1.5 px-2 rounded-md transition-colors ${pickerMode === "persona" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>
                   Key Accounts
-                </button>
-                <button
+                </Button>
+                <Button variant="ghost"
                   type="button"
                   onClick={() => setPickerMode("matrix")}
-                  className={`flex-1 text-[11px] font-medium py-1.5 px-2 rounded-md transition-colors ${pickerMode === "matrix" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}
-                >
+                  className={`flex-1 text-[11px] font-medium py-1.5 px-2 rounded-md transition-colors ${pickerMode === "matrix" ? "bg-white shadow-sm text-slate-900" : "text-slate-500 hover:text-slate-700"}`}>
                   Meridian Full Matrix
-                </button>
+                </Button>
               </div>
 
               {/* ── Key Accounts mode — single plant-wide base accounts ── */}
@@ -409,7 +405,7 @@ export default function LoginPage() {
                       <div key={grp} className="space-y-1.5">
                         <div className="pt-1 text-[10px] font-semibold uppercase tracking-wider text-slate-400">{grp}</div>
                         {KEY_PERSONAS.filter((p) => p.group === grp).map((p) => (
-                          <div key={p.email} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-2">
+                          <Card key={p.email} className="flex items-center justify-between gap-2 rounded-md border border-slate-200 bg-slate-50 p-2 shadow-none">
                             <div className="min-w-0 flex-1">
                               <div className="truncate text-[11px] font-semibold text-slate-900">
                                 {p.name} <span className="font-normal text-slate-500">· {p.designation}</span>
@@ -418,7 +414,7 @@ export default function LoginPage() {
                               <div className="truncate font-mono text-[10px] text-slate-400">{p.email}</div>
                             </div>
                             <Button type="button" size="sm" onClick={() => fillPersona(p.email)} className="shrink-0">Use this</Button>
-                          </div>
+                          </Card>
                         ))}
                       </div>
                     ))}
@@ -438,30 +434,24 @@ export default function LoginPage() {
                   <div className="grid grid-cols-3 gap-2">
                     <div>
                       <Label className="text-[10px] text-slate-500 uppercase tracking-wider">Plant</Label>
-                      <Select value={plantSlug} onChange={(e) => setPlantSlug(e.target.value)} className="h-9 text-sm">
-                        {DEMO_PLANTS.map((p) => (
-                          <option key={p.slug} value={p.slug}>{p.code}</option>
-                        ))}
-                      </Select>
+                      <SelectField value={plantSlug} onChange={(value) => setPlantSlug(value)} className="h-9 text-sm"
+                        options={DEMO_PLANTS.map((p) => ({ value: String(p.slug), label: p.code }))}
+                      />
                     </div>
                     <div>
                       <Label className="text-[10px] text-slate-500 uppercase tracking-wider">Department</Label>
-                      <Select value={deptSlug} onChange={(e) => setDeptSlug(e.target.value)} className="h-9 text-sm">
-                        {DEMO_DEPARTMENTS.map((d) => (
-                          <option key={d.slug} value={d.slug}>{d.name}</option>
-                        ))}
-                      </Select>
+                      <SelectField value={deptSlug} onChange={(value) => setDeptSlug(value)} className="h-9 text-sm"
+                        options={DEMO_DEPARTMENTS.map((d) => ({ value: String(d.slug), label: d.name }))}
+                      />
                     </div>
                     <div>
                       <Label className="text-[10px] text-slate-500 uppercase tracking-wider">Role</Label>
-                      <Select value={roleSlug} onChange={(e) => setRoleSlug(e.target.value)} className="h-9 text-sm">
-                        {DEMO_ROLES.map((r) => (
-                          <option key={r.emailSlug} value={r.emailSlug}>{r.label}</option>
-                        ))}
-                      </Select>
+                      <SelectField value={roleSlug} onChange={(value) => setRoleSlug(value)} className="h-9 text-sm"
+                        options={DEMO_ROLES.map((r) => ({ value: String(r.emailSlug), label: r.label }))}
+                      />
                     </div>
                   </div>
-                  <div className="rounded-md bg-slate-50 border border-slate-200 p-2.5 text-[11px] flex items-center justify-between gap-2">
+                  <Card className="rounded-md bg-slate-50 border border-slate-200 p-2.5 text-[11px] flex items-center justify-between gap-2 shadow-none">
                     <div className="min-w-0 flex-1">
                       <div className="font-medium text-slate-900 truncate">
                         {demoUserLoading ? "…" : demoUserName ?? <span className="text-slate-400 italic">No user seeded for this combo</span>}
@@ -469,7 +459,7 @@ export default function LoginPage() {
                       <div className="font-mono text-slate-500 truncate text-[10px]">{composedEmail}</div>
                     </div>
                     <Button type="button" size="sm" onClick={fillFromFilter} disabled={!demoUserName}>Use this</Button>
-                  </div>
+                  </Card>
                   <div className="text-[11px] text-slate-500">
                     <strong>{selectedRole?.label}</strong> in <strong>{selectedDept?.name}</strong> at <strong>{selectedPlant?.code}</strong> ·
                     Password: <code className="font-mono bg-slate-100 px-1.5 py-0.5 rounded">{DEMO_PASSWORD}</code>
@@ -481,13 +471,11 @@ export default function LoginPage() {
                 <div className="text-[11px] text-slate-500">
                   Cross-plant admin:
                 </div>
-                <button
+                <Button variant="link"
                   type="button"
-                  onClick={fillAnchorAdmin}
-                  className="text-[11px] font-mono text-primary-700 hover:text-primary-900 underline"
-                >
+                  onClick={fillAnchorAdmin} className="text-[11px] font-mono underline">
                   admin@safeops360.in
-                </button>
+                </Button>
               </div>
             </div>
           </CardContent>

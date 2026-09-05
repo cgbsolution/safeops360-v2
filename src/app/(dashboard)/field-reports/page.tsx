@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { backendFetch } from "@/lib/backend/fetch";
 import type { SubmissionOut } from "@/lib/capture/types";
 import { FilterTabs } from "./filter-tabs";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -80,19 +81,19 @@ export default async function FieldReportsPage(props: {
               className="flex flex-wrap items-center gap-3 rounded-lg border bg-card p-4 transition-colors hover:bg-accent/40"
             >
               <span className="font-mono text-sm font-semibold">{sub.number}</span>
-              <span className="rounded-full border px-2.5 py-0.5 text-xs font-medium">
+              <Badge variant="outline" className="text-xs font-medium">
                 {TYPE_LABEL[sub.type] ?? sub.type}
-              </span>
+              </Badge>
               <span className="min-w-0 flex-1 truncate text-sm">
                 {l1 ? `${l1}${l2 ? " — " + l2 : ""}` : (sub.description ?? "—")}
               </span>
-              <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${SEVERITY_STYLE[sub.severitySelfReported] ?? ""}`}>
+              <Badge variant="outline" className={`text-xs font-medium ${SEVERITY_STYLE[sub.severitySelfReported] ?? ""}`}>
                 {sub.severitySelfReported}
-              </span>
+              </Badge>
               {sub.triage.riskLevel ? (
-                <span className="rounded-full border border-violet-200 bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700">
+                <Badge variant="violet" className="bg-violet-50 text-xs font-medium text-violet-700">
                   {sub.triage.riskLevel} ({sub.triage.riskScore})
-                </span>
+                </Badge>
               ) : null}
               <span className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLE[sub.status] ?? ""}`}>
                 {sub.status}

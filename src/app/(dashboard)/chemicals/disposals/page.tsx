@@ -14,6 +14,9 @@ import type { DisposalRow } from "@/lib/chemicals/types";
 import { fmtDate, fmtQty, prettyLabel } from "@/lib/chemicals/types";
 import { EmptyState, ErrorState, Kpi, SubNav } from "../_components";
 import { EvidenceLink } from "../evidence-link";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -76,7 +79,7 @@ export default async function DisposalRegisterPage({
           </div>
 
           {unlinked > 0 && (
-            <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4">
+            <Alert variant="warning" size="lg" className="mb-4 rounded-xl p-4">
               <div className="text-sm font-semibold text-amber-800">
                 {unlinked} disposal{unlinked === 1 ? " is" : "s are"} not represented in the EAI Register
               </div>
@@ -90,7 +93,7 @@ export default async function DisposalRegisterPage({
               <Link href="/eai" className="mt-2 inline-block text-xs font-medium text-amber-800 underline">
                 Open the EAI Register →
               </Link>
-            </div>
+            </Alert>
           )}
 
           {rows.length === 0 ? (
@@ -99,32 +102,32 @@ export default async function DisposalRegisterPage({
               hint="A disposal is posted against a batch and requires a manifest reference and an authorised vendor."
             />
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-              <table className="w-full text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-semibold">Date</th>
-                    <th className="px-4 py-2.5 font-semibold">Chemical</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">Quantity</th>
-                    <th className="px-4 py-2.5 font-semibold">Manifest</th>
-                    <th className="px-4 py-2.5 font-semibold">Vendor</th>
-                    <th className="px-4 py-2.5 font-semibold">Waste category</th>
-                    <th className="px-4 py-2.5 font-semibold">EAI</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+            <Card className="overflow-x-auto rounded-xl shadow-none">
+              <Table className="w-full text-sm">
+                <TableHeader className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableRow>
+                    <TableHead className="px-4 py-2.5 font-semibold">Date</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Chemical</TableHead>
+                    <TableHead className="px-4 py-2.5 text-right font-semibold">Quantity</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Manifest</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Vendor</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Waste category</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">EAI</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {rows.map((r) => (
-                    <tr key={r.id} className="hover:bg-slate-50">
-                      <td className="whitespace-nowrap px-4 py-2.5 text-slate-600">{fmtDate(r.disposalDate)}</td>
-                      <td className="px-4 py-2.5">
+                    <TableRow key={r.id} className="hover:bg-slate-50">
+                      <TableCell className="whitespace-nowrap px-4 py-2.5 text-slate-600">{fmtDate(r.disposalDate)}</TableCell>
+                      <TableCell className="px-4 py-2.5">
                         <Link href={`/chemicals/${r.chemicalId}`} className="font-medium text-slate-900 hover:underline">
                           {r.chemicalName}
                         </Link>
-                      </td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-800">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-right tabular-nums text-slate-800">
                         {fmtQty(r.quantity, r.unit)}
-                      </td>
-                      <td className="px-4 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5">
                         <div className="text-slate-700">{r.manifestReference}</div>
                         {r.manifestAttachmentId ? (
                           <EvidenceLink
@@ -137,31 +140,31 @@ export default async function DisposalRegisterPage({
                         ) : (
                           <span className="text-[11px] text-amber-600">No scan attached</span>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-700">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-slate-700">
                         {r.disposalVendor}
                         {r.vendorAuthorisationNo && (
                           <div className="text-[11px] text-slate-400">Auth {r.vendorAuthorisationNo}</div>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-slate-600">
                         {r.wasteCategory ?? "—"}
                         {r.disposalMethod && (
                           <div className="text-[11px] text-slate-400">{prettyLabel(r.disposalMethod)}</div>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5">
                         {r.eaiEntryId ? (
                           <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200">Linked</Badge>
                         ) : (
                           <Badge className="bg-amber-50 text-amber-800 border-amber-200">Not linked</Badge>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </>
       )}

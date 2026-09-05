@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { CaptureWizard } from "./wizard";
 import { MyReports } from "./my-reports";
+import { Spinner } from "@/components/ui/spinner";
 
 export function CaptureGate({
   view,
@@ -30,7 +31,7 @@ export function CaptureGate({
   if (status !== "authenticated") {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#E8EEF7] border-t-[#C9A961]" />
+        <Spinner size="lg" tone="gold" />
       </div>
     );
   }

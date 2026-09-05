@@ -34,6 +34,8 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 import {
   BOOKING_LABEL, ROLE_LABEL, ROOM_STATUS_CHIP, ROOM_STATUS_LABEL, STATUS_CHIP,
   STATUS_LABEL, fmtDateTime, fmtTimeRange, toLocalInput,
@@ -214,23 +216,23 @@ export function CalendarBookingsPanel({
       </p>
 
       {provider === "NONE" && (
-        <div className="mt-2.5 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
+        <Alert variant="warning" className="mt-2.5 flex gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-[11px] text-amber-900">
           <Info size={14} className="mt-px shrink-0" />
           <span>
             No calendar channel is configured, so these bookings are recorded but nothing has been
             sent. Configure SMTP to email calendar invitations, or Microsoft Graph credentials to
             write directly into Microsoft 365 calendars with a Teams link.
           </span>
-        </div>
+        </Alert>
       )}
       {provider === "ICS" && (
-        <div className="mt-2.5 flex gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600">
+        <Card className="mt-2.5 flex gap-2 rounded-lg border border-slate-200 bg-slate-50 p-2.5 text-[11px] text-slate-600 shadow-none">
           <Info size={14} className="mt-px shrink-0" />
           <span>
             Sent as calendar invitations by email. The time is held once each participant accepts.
             Add Microsoft Graph credentials to book calendars directly and attach Teams links.
           </span>
-        </div>
+        </Card>
       )}
 
       <div className="mt-3 space-y-2.5">
@@ -392,14 +394,12 @@ function BookingRow({
         {canManage && !cancelled && (
           <div className="ml-auto flex items-center gap-1">
             {!isBlock && (
-              <button
+              <Button variant="ghost"
                 type="button"
                 disabled={busy}
-                onClick={() => setEditing((v) => !v)}
-                className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-slate-500 hover:bg-slate-100 hover:text-slate-700"
-              >
+                onClick={() => setEditing((v) => !v)} className="gap-1 rounded px-1.5 py-0.5 text-[11px]">
                 <Pencil size={11} /> Move
-              </button>
+              </Button>
             )}
             <button
               type="button"
@@ -409,14 +409,12 @@ function BookingRow({
             >
               <DoorOpen size={11} /> {b.roomEmail ? "Change room" : "Add room"}
             </button>
-            <button
+            <Button variant="destructive"
               type="button"
               disabled={busy}
-              onClick={onCancel}
-              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-slate-500 hover:bg-rose-50 hover:text-rose-700"
-            >
+              onClick={onCancel} className="gap-1 rounded px-1.5 py-0.5 text-[11px]">
               <X size={11} /> Withdraw
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -445,7 +443,7 @@ function BookingRow({
 
       {editing && (
         <div className="mt-2 flex flex-wrap items-end gap-2 rounded-lg bg-slate-50 p-2">
-          <label className="text-[11px] text-slate-500">
+          <Label className="text-[11px] text-slate-500">
             Starts
             <Input
               type="datetime-local"
@@ -453,8 +451,8 @@ function BookingRow({
               onChange={(e) => setStart(e.target.value)}
               className="mt-0.5 h-8 text-xs"
             />
-          </label>
-          <label className="text-[11px] text-slate-500">
+          </Label>
+          <Label className="text-[11px] text-slate-500">
             Ends
             <Input
               type="datetime-local"
@@ -462,7 +460,7 @@ function BookingRow({
               onChange={(e) => setEnd(e.target.value)}
               className="mt-0.5 h-8 text-xs"
             />
-          </label>
+          </Label>
           <Button type="button" size="sm" disabled={busy} onClick={save}>
             {busy ? <Loader2 size={14} className="animate-spin" /> : null} Save &amp; notify
           </Button>
@@ -496,7 +494,7 @@ function BookingRow({
                 {rooms.rooms.map((room) => {
                   const current = room.email.toLowerCase() === (b.roomEmail ?? "").toLowerCase();
                   return (
-                    <button
+                    <Button variant="ghost"
                       key={room.email}
                       type="button"
                       disabled={busy || current}
@@ -506,25 +504,22 @@ function BookingRow({
                         current
                           ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                           : "border-slate-200 bg-white text-slate-700 hover:border-primary-300 hover:bg-primary-50",
-                      )}
-                    >
+                      )}>
                       {room.name}
                       {room.capacity ? (
                         <span className="ml-1 text-slate-400">{room.capacity} seats</span>
                       ) : null}
                       {current && <span className="ml-1">· current</span>}
-                    </button>
+                    </Button>
                   );
                 })}
                 {b.roomEmail && (
-                  <button
+                  <Button variant="outline"
                     type="button"
                     disabled={busy}
-                    onClick={() => saveRoom(null)}
-                    className="rounded border border-dashed border-slate-300 px-2 py-1 text-[11px] text-slate-500 hover:bg-white"
-                  >
+                    onClick={() => saveRoom(null)} className="rounded border-dashed px-2 py-1 text-[11px]">
                     No room
-                  </button>
+                  </Button>
                 )}
               </div>
             </>
@@ -566,13 +561,13 @@ function BookingRow({
       {/* The provider's own words. A scheduler can act on "mailbox not found";
           they cannot act on "delivery failed". */}
       {b.lastError && b.status !== "CANCELLED" && (
-        <div className="mt-1.5 flex gap-1.5 rounded border border-rose-100 bg-rose-50 p-1.5 text-[10px] text-rose-800">
+        <Alert variant="destructive" className="mt-1.5 flex gap-1.5 rounded border border-rose-100 bg-rose-50 p-1.5 text-[10px] text-rose-800">
           <AlertTriangle size={11} className="mt-px shrink-0" />
           <span>
             {b.lastError}
             {b.status === "PENDING" && " — this will be retried automatically."}
           </span>
-        </div>
+        </Alert>
       )}
 
       {isBlock && canManage && !cancelled && (

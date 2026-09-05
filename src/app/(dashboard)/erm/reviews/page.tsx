@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/page-header";
 import { BandBadge } from "@/components/erm/shared";
 import { BAND_HEX, fmtDate } from "@/app/(dashboard)/erm/lib";
 import { CRITICALITY_CHIP, type ProcessListResponse, type PlanListResponse } from "@/app/(dashboard)/erm/lib-p3";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -158,7 +160,7 @@ export default async function ReviewCalendarPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -171,24 +173,24 @@ export default async function ReviewCalendarPage(props: {
           </div>
 
           {overdue.length > 0 && (
-            <div className="mb-5 rounded-xl border border-rose-200 bg-rose-50/60 p-5">
+            <Alert variant="destructive" className="mb-5 rounded-xl border border-rose-200 bg-rose-50/60 p-5">
               <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-rose-800">
                 <AlertTriangle size={16} /> Overdue ({overdue.length})
               </h2>
               <div className="space-y-2">
                 {overdue.map((i) => <ReviewRow key={`${i.kind}-${i.id}`} item={i} />)}
               </div>
-            </div>
+            </Alert>
           )}
 
           {upcoming.length === 0 && overdue.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
+            <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
               No reviews {mine ? "assigned to you " : ""}scheduled.
-            </div>
+            </Card>
           ) : (
             <div className="space-y-5">
               {sortedKeys.map((k) => (
-                <div key={k} className="rounded-xl border border-slate-200 bg-white p-5">
+                <Card key={k} className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
                   <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-800">
                     <CalendarClock size={16} className="text-slate-400" /> {monthLabel(k)}
                     <span className="text-[11px] font-normal text-slate-400">({groups.get(k)!.length})</span>
@@ -196,7 +198,7 @@ export default async function ReviewCalendarPage(props: {
                   <div className="space-y-2">
                     {groups.get(k)!.map((i) => <ReviewRow key={`${i.kind}-${i.id}`} item={i} />)}
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           )}
@@ -209,10 +211,9 @@ export default async function ReviewCalendarPage(props: {
 function ReviewRow({ item }: { item: CalItem }) {
   const accent = item.kind === "RISK" ? (BAND_HEX[(item.band ?? "").toUpperCase()] ?? KIND_ACCENT.RISK) : KIND_ACCENT[item.kind];
   return (
-    <div
-      className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-100 bg-white py-2.5 pl-3 pr-3"
-      style={{ borderLeft: `3px solid ${accent}` }}
-    >
+    <Card
+      className="flex flex-wrap items-center gap-3 rounded-lg border border-slate-100 bg-white py-2.5 pl-3 pr-3 shadow-none"
+      style={{ borderLeft: `3px solid ${accent}` }}>
       <span className={"shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold " + (KIND_CHIP[item.kind] ?? "")}>{KIND_LABEL[item.kind]}</span>
       <Link href={item.href} className="font-medium text-primary-700 hover:underline">{item.code}</Link>
       <span className="min-w-0 flex-1 truncate text-sm text-slate-700">{item.title}</span>
@@ -226,6 +227,6 @@ function ReviewRow({ item }: { item: CalItem }) {
       {item.overdueDays > 0 && (
         <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">{item.overdueDays}d overdue</span>
       )}
-    </div>
+    </Card>
   );
 }

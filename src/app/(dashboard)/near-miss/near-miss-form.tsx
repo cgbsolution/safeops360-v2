@@ -11,7 +11,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectField } from "@/components/ui/select-field";
@@ -668,7 +669,7 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                   Calculator. Shown here too because it is what the rest of
                   this section reads against. */}
               {effectiveCategory && (
-                <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50/60 p-2.5">
+                <Card className="flex items-center gap-2 rounded-md border-slate-200 bg-slate-50/60 p-2.5 shadow-none">
                   <span className="text-[10px] uppercase tracking-wider text-slate-500">
                     Risk category
                   </span>
@@ -678,7 +679,7 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                   {effectiveRating != null && (
                     <span className="text-xs text-slate-600">rating {effectiveRating}</span>
                   )}
-                </div>
+                </Card>
               )}
 
               <div>
@@ -859,7 +860,7 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                 : "Up to 5 photos / videos / PDFs, 50 MB each"
             }
           >
-            <div className="rounded-md border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center">
+            <Card className="rounded-md border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-5 text-center shadow-none">
               <Upload size={20} className="mx-auto text-slate-400 mb-1.5" />
               <p className="text-sm text-slate-700 font-medium">Drag &amp; drop or use the buttons</p>
               <div className="mt-2 flex items-center justify-center gap-2">
@@ -894,11 +895,11 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                 aria-hidden="true"
                 onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
               />
-            </div>
+            </Card>
             {photos.length > 0 && (
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mt-2">
                 {photos.map((p) => (
-                  <div key={p.tempId} className="relative aspect-square rounded-md border bg-slate-100 overflow-hidden">
+                  <Card key={p.tempId} className="relative aspect-square overflow-hidden rounded-md bg-slate-100 shadow-none">
                     {p.previewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
@@ -916,7 +917,7 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
                       <X size={12} />
                     </Button>
                     {p.error && <div className="absolute inset-x-0 bottom-0 bg-rose-600 text-white text-[10px] px-1 py-0.5 truncate">{p.error}</div>}
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
@@ -1006,16 +1007,18 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
           </Section>
 
           {error && (
-            <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 flex items-start gap-2">
+            <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 flex items-start gap-2">
               <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
               <span>{error}</span>
-            </div>
+            </Alert>
           )}
 
           {uploadFailures.length > 0 && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
-              Submitted, but {uploadFailures.length} photo{uploadFailures.length === 1 ? "" : "s"} failed. Add them from the detail page.
-            </div>
+            <Alert variant="warning" size="lg" className="border-amber-300">
+              <AlertDescription>
+                Submitted, but {uploadFailures.length} photo{uploadFailures.length === 1 ? "" : "s"} failed. Add them from the detail page.
+              </AlertDescription>
+            </Alert>
           )}
 
           <div className="sticky bottom-0 bg-white border-t pt-3 flex gap-3">
@@ -1038,13 +1041,13 @@ export function NearMissForm({ plants }: { plants: Plant[] }) {
 
 function Section({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-md border bg-white">
-      <div className="px-4 pt-3 pb-2 border-b bg-slate-50">
-        <div className="text-sm font-semibold text-slate-900">{title}</div>
-        {subtitle && <div className="text-[11px] text-slate-500">{subtitle}</div>}
-      </div>
-      <div className="p-4">{children}</div>
-    </div>
+    <Card className="rounded-md shadow-none">
+      <CardHeader className="border-b bg-slate-50 px-4 pb-2 pt-3">
+        <CardTitle className="text-sm text-slate-900">{title}</CardTitle>
+        {subtitle && <CardDescription className="text-[11px]">{subtitle}</CardDescription>}
+      </CardHeader>
+      <CardContent className="p-4 pt-4">{children}</CardContent>
+    </Card>
   );
 }
 
@@ -1111,7 +1114,7 @@ function SeverityAdder({ onAdd }: { onAdd: (level: RiskLevel, label: string) => 
   }
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50/60 p-2">
+    <Card className="rounded-md border-slate-200 bg-slate-50/60 p-2 shadow-none">
       <div className="mb-1.5 text-xs font-medium text-slate-500">
         Describe a severity this card does not cover
       </div>
@@ -1146,14 +1149,20 @@ function SeverityAdder({ onAdd }: { onAdd: (level: RiskLevel, label: string) => 
           Add
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
-/** The CAPAs a reporter writes on the form. Each is a line of what should be
- *  done and whether it is corrective or preventive; no owner and no date,
- *  because the Safety Officer sets both at the next workflow step and the step
- *  will not close until they have. */
+/** The CAPAs a reporter writes on the form.
+ *
+ *  Laid out as a small labelled form rather than one inline row: the action
+ *  text is the substance of a CAPA and a share of a line was not enough to
+ *  write it in, and a bare dropdown next to a bare box did not read as
+ *  "defining an action" at all. Type is a radio pair because there are two of
+ *  them and both should be visible.
+ *
+ *  No owner and no date, because the Safety Officer sets both at the next
+ *  workflow step and that step will not close until they have. */
 function CapaListInput({
   value,
   onChange
@@ -1163,83 +1172,57 @@ function CapaListInput({
 }) {
   const [description, setDescription] = useState("");
   const [type, setType] = useState<CapaType>("CORRECTIVE");
+  const [error, setError] = useState("");
 
   function add() {
     const next = description.trim();
-    if (next.length < 3) return;
+    if (next.length < 3) {
+      setError("Describe the action in a few words.");
+      return;
+    }
     if (value.some((c) => c.description.toLowerCase() === next.toLowerCase())) {
-      setDescription("");
+      setError("That action is already on the list.");
       return;
     }
     onChange([...value, { description: next, type }]);
     setDescription("");
     setType("CORRECTIVE");
+    setError("");
   }
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50/60 p-2">
-      <div className="mb-1.5 text-xs font-medium text-slate-500">
-        Describe one action, then Add
-      </div>
-      <div className="flex items-start gap-2">
-        <div className="w-36 shrink-0">
-          <SelectField
-            value={type}
-            onChange={(v) => setType(v as CapaType)}
-            ariaLabel="CAPA type"
-            options={[
-              { value: "CORRECTIVE", label: "Corrective" },
-              { value: "PREVENTIVE", label: "Preventive" }
-            ]}
-          />
-        </div>
-        <Input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          onKeyDown={(e) => {
-            // Enter inside a form submits it. Here it means "add this one".
-            if (e.key === "Enter") {
-              e.preventDefault();
-              add();
-            }
-          }}
-          placeholder="e.g. Fit a self-closing latch on the ramp gate"
-          className="min-w-0 flex-1"
-        />
-        <Button
-          type="button"
-          onClick={add}
-          title="Add this CAPA"
-          aria-label="Add this CAPA"
-          className="shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Add
-        </Button>
-      </div>
+    <div className="space-y-2">
       {value.length > 0 && (
-        <ol className="mt-2 space-y-1.5">
+        <ol className="space-y-1.5">
           {value.map((c, i) => (
             <li
               key={c.description}
-              className="flex items-start gap-2 rounded-md border border-slate-200 bg-white p-2"
+              className="flex items-start gap-2.5 rounded-md border border-slate-200 bg-white p-2.5"
             >
-              <Badge
-                className={cn(
-                  "mt-0.5 shrink-0 border-transparent",
-                  c.type === "PREVENTIVE"
-                    ? "bg-sky-100 text-sky-800"
-                    : "bg-violet-100 text-violet-800"
-                )}
-              >
-                {c.type === "PREVENTIVE" ? "Preventive" : "Corrective"}
-              </Badge>
-              <span className="min-w-0 flex-1 text-sm text-slate-700">{c.description}</span>
+              <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[11px] font-bold text-slate-600">
+                {i + 1}
+              </span>
+              <span className="min-w-0 flex-1">
+                <Badge
+                  className={cn(
+                    "mb-1 border-transparent",
+                    c.type === "PREVENTIVE"
+                      ? "bg-sky-100 text-sky-800"
+                      : "bg-violet-100 text-violet-800"
+                  )}
+                >
+                  {c.type === "PREVENTIVE" ? "Preventive" : "Corrective"}
+                </Badge>
+                <span className="block text-sm text-slate-800">{c.description}</span>
+                <span className="mt-0.5 block text-xs text-slate-500">
+                  Owner and target date assigned by the Safety Officer
+                </span>
+              </span>
               <Button
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label={`Remove CAPA ${i + 1}`}
+                aria-label={`Remove action ${i + 1}`}
                 onClick={() => onChange(value.filter((x) => x.description !== c.description))}
                 className="h-6 w-6 shrink-0 rounded-full p-0"
               >
@@ -1249,6 +1232,45 @@ function CapaListInput({
           ))}
         </ol>
       )}
+
+      <Card className="space-y-3 rounded-md border-slate-200 bg-slate-50/60 p-3 shadow-none">
+        <div className="text-xs font-medium text-slate-500">
+          {value.length === 0 ? "Add the first action" : `Add action ${value.length + 1}`}
+        </div>
+        <div>
+          <Label className="text-xs font-normal text-slate-600">Action type</Label>
+          <RadioRow
+            name="capaType"
+            options={[
+              { value: "CORRECTIVE", label: "Corrective — fixes what went wrong" },
+              { value: "PREVENTIVE", label: "Preventive — stops it recurring" }
+            ]}
+            value={type}
+            onChange={(v) => setType(v as CapaType)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="capaDescription" className="text-xs font-normal text-slate-600">
+            What should be done?
+          </Label>
+          <Textarea
+            id="capaDescription"
+            rows={2}
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setError("");
+            }}
+            placeholder="e.g. Fit a self-closing latch on the ramp gate"
+            className="mt-1"
+          />
+        </div>
+        {error && <p className="text-xs text-rose-700">{error}</p>}
+        <Button type="button" onClick={add} size="sm">
+          <Plus className="h-4 w-4" />
+          Add this action
+        </Button>
+      </Card>
     </div>
   );
 }
@@ -1373,7 +1395,7 @@ function TextListInput({
   }
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50/60 p-2">
+    <Card className="rounded-md border-slate-200 bg-slate-50/60 p-2 shadow-none">
       <div className="mb-1.5 text-xs font-medium text-slate-500">{label}</div>
       <div className="flex items-start gap-2">
         <Input
@@ -1416,7 +1438,7 @@ function TextListInput({
           ))}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

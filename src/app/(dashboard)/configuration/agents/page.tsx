@@ -26,6 +26,7 @@ import {
   Settings2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -93,9 +94,9 @@ export default async function AgentsConfigPage() {
       {isStaleSession && <StaleSessionBanner />}
 
       {fetchError && !isStaleSession && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-rose-900 text-sm mb-4">
+        <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-rose-900 text-sm mb-4">
           {fetchError}
-        </div>
+        </Alert>
       )}
 
       {agents && agents.length === 0 && !fetchError && (
@@ -127,7 +128,7 @@ function AgentRow({ agent }: { agent: AgentRow }) {
       : null;
 
   return (
-    <div className="border border-slate-200 rounded-lg bg-white hover:border-violet-300 hover:shadow-sm transition">
+    <Alert variant="brand" className="border border-slate-200 rounded-lg bg-white hover:border-violet-300 hover:shadow-sm transition">
       <div className="p-4 flex items-start gap-4">
         <div className="w-10 h-10 rounded-md bg-violet-50 text-violet-700 flex items-center justify-center flex-shrink-0">
           <Sparkles size={18} />
@@ -205,7 +206,7 @@ function AgentRow({ agent }: { agent: AgentRow }) {
           </div>
         </div>
       </div>
-    </div>
+    </Alert>
   );
 }
 
@@ -240,7 +241,7 @@ function StatusBadges({ agent }: { agent: AgentRow }) {
 
 function HowToUse() {
   return (
-    <div className="mb-4 rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50/40 p-4">
+    <Alert variant="brand" className="mb-4 rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50/40 p-4">
       <div className="flex items-start gap-3">
         <div className="w-8 h-8 rounded-md bg-violet-100 text-violet-700 flex items-center justify-center flex-shrink-0">
           <Sparkles size={16} />
@@ -262,7 +263,7 @@ function HowToUse() {
           </p>
         </div>
       </div>
-    </div>
+    </Alert>
   );
 }
 
@@ -276,10 +277,10 @@ function Stat({
   hint?: string;
 }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5">
+    <Card className="rounded-md border border-slate-200 bg-slate-50 px-2 py-1.5 shadow-none">
       <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
       <div className="text-sm font-semibold text-slate-800 mt-0.5">{value}</div>
       {hint && <div className="text-[10px] text-slate-400 mt-0.5">{hint}</div>}
-    </div>
+    </Card>
   );
 }

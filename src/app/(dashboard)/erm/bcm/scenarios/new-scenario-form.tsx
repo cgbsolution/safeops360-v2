@@ -9,6 +9,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { SCENARIO_CATEGORIES } from "@/app/(dashboard)/erm/lib-p3";
 import { IMPACT_DIMENSIONS, DIMENSION_LABEL } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const CATEGORY_LABEL: Record<string, string> = {
   NATURAL_DISASTER: "Natural Disaster",
@@ -115,7 +119,7 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Scenario</h2>
           <Button
@@ -132,7 +136,7 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Title</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Title</Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -143,52 +147,37 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
-              <Select
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Category</Label>
+              <SelectField
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={setCategory}
                 className="outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-              >
-                {SCENARIO_CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {CATEGORY_LABEL[c] ?? c.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </Select>
+                options={SCENARIO_CATEGORIES.map((c) => ({ value: c, label: `${CATEGORY_LABEL[c] ?? c.replace(/_/g, " ")}` }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Probability</label>
-              <Select
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Probability</Label>
+              <SelectField
                 value={probabilityQualitative}
-                onChange={(e) => setProbabilityQualitative(e.target.value)}
+                onChange={setProbabilityQualitative}
                 className="outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-              >
-                {PROBABILITIES.map((p) => (
-                  <option key={p} value={p}>
-                    {p.charAt(0) + p.slice(1).toLowerCase()}
-                  </option>
-                ))}
-              </Select>
+                options={PROBABILITIES.map((p) => ({ value: p, label: `${p.charAt(0) + p.slice(1).toLowerCase()}` }))}
+              />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Time horizon</label>
-            <Select
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Time horizon</Label>
+            <SelectField
               value={timeHorizon}
-              onChange={(e) => setTimeHorizon(e.target.value)}
+              onChange={setTimeHorizon}
               className="outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
-            >
-              {TIME_HORIZONS.map((t) => (
-                <option key={t.value} value={t.value}>
-                  {t.label}
-                </option>
-              ))}
-            </Select>
+              options={TIME_HORIZONS.map((t) => ({ value: t.value, label: `${t.label}` }))}
+            />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Narrative</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Narrative</Label>
             <Textarea
               value={narrative}
               onChange={(e) => setNarrative(e.target.value)}
@@ -200,7 +189,7 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
 
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-600">Impact estimates</label>
+              <Label className="text-xs font-medium text-slate-600">Impact estimates</Label>
               <Button
                 variant="outline"
                 onClick={addImpact}
@@ -212,28 +201,19 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
             <div className="space-y-2">
               {impacts.map((row, idx) => (
                 <div key={idx} className="flex items-center gap-2">
-                  <Select
+                  <SelectField
                     value={row.dimension}
-                    onChange={(e) => updateImpact(idx, { dimension: e.target.value })}
+                    onChange={(value) => updateImpact(idx, { dimension: value })}
                     className="w-40 shrink-0 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
-                  >
-                    {IMPACT_DIMENSIONS.map((d) => (
-                      <option key={d} value={d}>
-                        {DIMENSION_LABEL[d]}
-                      </option>
-                    ))}
-                  </Select>
-                  <Select
-                    value={row.estimatedLevel}
-                    onChange={(e) => updateImpact(idx, { estimatedLevel: Number(e.target.value) })}
-                    className="w-16 shrink-0 px-2 py-1.5 text-xs outline-none focus:border-primary-500"
-                  >
-                    {[1, 2, 3, 4, 5].map((l) => (
-                      <option key={l} value={l}>
-                        L{l}
-                      </option>
-                    ))}
-                  </Select>
+                    options={IMPACT_DIMENSIONS.map((d) => ({ value: d, label: `${DIMENSION_LABEL[d]}` }))}
+                  />
+                  <SelectField
+                    value={String(row.estimatedLevel)}
+                    ariaLabel="Estimated impact level"
+                    onChange={(value) => updateImpact(idx, { estimatedLevel: Number(value) })}
+                    className="w-16 shrink-0 px-2 py-1.5 text-xs"
+                    options={[1, 2, 3, 4, 5].map((l) => ({ value: String(l), label: `L${l}` }))}
+                  />
                   <Input
                     value={row.estimateBasisNotes}
                     onChange={(e) => updateImpact(idx, { estimateBasisNotes: e.target.value })}
@@ -255,7 +235,7 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
           </div>
 
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>
+            <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>
           )}
         </div>
 
@@ -267,7 +247,7 @@ function NewScenarioModal({ onClose, router }: { onClose: () => void; router: Re
             {busy ? "Creating…" : "Create Scenario"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

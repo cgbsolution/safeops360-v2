@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { ProcessDetail } from "@/app/(dashboard)/erm/lib-p3";
 import { ProcessDetailView } from "./process-detail-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +29,10 @@ export default async function ProcessDetailPage(props: { params: Promise<{ id: s
             { label: "Not found" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Process not found."}{" "}
           <Link href="/erm/bcm/processes" className="font-medium underline">Back to processes</Link>
-        </div>
+        </Alert>
       </div>
     );
   }

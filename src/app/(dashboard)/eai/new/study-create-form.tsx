@@ -4,6 +4,13 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Plant = {
   id: string;
@@ -207,124 +214,91 @@ export function EaiStudyCreateForm({
     <div className="space-y-6">
       <Section title="Scope">
         <Field label="Plant" required>
-          <select
+          <SelectField
             value={plantId}
-            onChange={(e) => {
-              setPlantId(e.target.value);
+            onChange={(value) => {
+              setPlantId(value);
               setDepartmentId("");
               setAreaId("");
             }}
             className="form-input"
-          >
-            <option value="">Select plant...</option>
-            {safePlants.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.code} — {p.name}
-              </option>
-            ))}
-          </select>
+            placeholder="Select plant..."
+            options={safePlants.map((p) => ({ value: p.id, label: `${p.code} — ${p.name}` }))}
+          />
         </Field>
 
         <Field label="Scope type" required>
-          <select
+          <SelectField
             value={scopeType}
-            onChange={(e) => setScopeType(e.target.value)}
+            onChange={setScopeType}
             className="form-input"
-          >
-            {SCOPE_TYPES.map((s) => (
-              <option key={s.code} value={s.code}>
-                {s.label}
-              </option>
-            ))}
-          </select>
+            options={SCOPE_TYPES.map((s) => ({ value: s.code, label: `${s.label}` }))}
+          />
         </Field>
 
         {scopeType === "DEPARTMENT" && (
           <Field label="Department" required>
-            <select
+            <SelectField
               value={departmentId}
-              onChange={(e) => setDepartmentId(e.target.value)}
+              onChange={setDepartmentId}
               className="form-input"
-            >
-              <option value="">Select department...</option>
-              {selectedPlant?.departments.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Select department..."
+              options={(selectedPlant?.departments ?? []).map((d) => ({ value: d.id, label: `${d.name}` }))}
+            />
           </Field>
         )}
 
         {scopeType === "AREA" && (
           <Field label="Area" required>
-            <select
+            <SelectField
               value={areaId}
-              onChange={(e) => setAreaId(e.target.value)}
+              onChange={setAreaId}
               className="form-input"
-            >
-              <option value="">Select area...</option>
-              {selectedPlant?.areas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Select area..."
+              options={(selectedPlant?.areas ?? []).map((a) => ({ value: a.id, label: `${a.name}` }))}
+            />
           </Field>
         )}
 
         <Field label="Title" required>
-          <input
+          <Input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="e.g., Cement Mill 2 — environmental aspects 2026 review"
-            className="form-input"
-          />
+            className="form-input" />
         </Field>
 
         <Field label="Description">
-          <textarea
+          <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
-            className="form-input"
-          />
+            className="form-input" />
         </Field>
       </Section>
 
       <Section title="Methodology">
         <Field label="Impact matrix" required>
-          <select
+          <SelectField
             value={impactMatrixId}
-            onChange={(e) => setImpactMatrixId(e.target.value)}
+            onChange={setImpactMatrixId}
             className="form-input"
-          >
-            <option value="">Select impact matrix...</option>
-            {safeMatrices.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name} ({m.likelihoodLevels}×{m.magnitudeLevels})
-                {m.isDefault ? " — default" : ""}
-              </option>
-            ))}
-          </select>
+            placeholder="Select impact matrix..."
+            options={safeMatrices.map((m) => ({ value: m.id, label: `${m.name} (${m.likelihoodLevels}×${m.magnitudeLevels}) ${m.isDefault ? " — default" : ""}` }))}
+          />
         </Field>
 
         <Field label="Review frequency">
           <div className="flex gap-2">
-            <select
+            <SelectField
               value={reviewFrequency}
-              onChange={(e) => setReviewFrequency(e.target.value)}
+              onChange={setReviewFrequency}
               className="form-input flex-1"
-            >
-              {REVIEW_FREQUENCIES.map((f) => (
-                <option key={f.code} value={f.code}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
+              options={REVIEW_FREQUENCIES.map((f) => ({ value: f.code, label: `${f.label}` }))}
+            />
             {reviewFrequency === "CUSTOM" && (
-              <input
+              <Input
                 type="number"
                 min={1}
                 max={60}
@@ -333,36 +307,29 @@ export function EaiStudyCreateForm({
                 onChange={(e) =>
                   setCustomReviewMonths(e.target.value ? Number(e.target.value) : null)
                 }
-                className="form-input w-28"
-              />
+                className="form-input w-28" />
             )}
           </div>
         </Field>
 
         <Field label="Target completion date">
-          <input
+          <Input
             type="date"
             value={targetCompletionDate}
             onChange={(e) => setTargetCompletionDate(e.target.value)}
-            className="form-input"
-          />
+            className="form-input" />
         </Field>
       </Section>
 
       <Section title="Team">
         <Field label="Team leader" required>
-          <select
+          <SelectField
             value={teamLeaderId}
-            onChange={(e) => setTeamLeaderId(e.target.value)}
+            onChange={setTeamLeaderId}
             className="form-input"
-          >
-            <option value="">Select team leader...</option>
-            {plantUsers.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name} ({u.email})
-              </option>
-            ))}
-          </select>
+            placeholder="Select team leader..."
+            options={plantUsers.map((u) => ({ value: u.id, label: `${u.name} (${u.email})` }))}
+          />
         </Field>
 
         <div>
@@ -382,37 +349,25 @@ export function EaiStudyCreateForm({
             <ul className="space-y-2">
               {team.map((m, i) => (
                 <li key={i} className="flex gap-2 items-start">
-                  <select
+                  <SelectField
                     value={m.userId}
-                    onChange={(e) => updateTeamMember(i, { userId: e.target.value })}
+                    onChange={(value) => updateTeamMember(i, { userId: value })}
                     className="form-input flex-1"
-                  >
-                    <option value="">Select user...</option>
-                    {plantUsers.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                      </option>
-                    ))}
-                  </select>
-                  <select
+                    placeholder="Select user..."
+                    options={plantUsers.map((u) => ({ value: u.id, label: `${u.name}` }))}
+                  />
+                  <SelectField
                     value={m.teamRole}
-                    onChange={(e) => updateTeamMember(i, { teamRole: e.target.value })}
+                    onChange={(value) => updateTeamMember(i, { teamRole: value })}
                     className="form-input w-48"
-                  >
-                    {TEAM_ROLES.map((r) => (
-                      <option key={r.code} value={r.code}>
-                        {r.label}
-                      </option>
-                    ))}
-                  </select>
-                  <button
+                    options={TEAM_ROLES.map((r) => ({ value: r.code, label: `${r.label}` }))}
+                  />
+                  <Button variant="ghost"
                     type="button"
-                    onClick={() => removeTeamMember(i)}
-                    className="p-2 text-slate-400 hover:text-rose-600"
-                    aria-label="Remove team member"
-                  >
+                    onClick={() => removeTeamMember(i)} className="p-2"
+                    aria-label="Remove team member">
                     <Trash2 size={14} />
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -421,40 +376,37 @@ export function EaiStudyCreateForm({
       </Section>
 
       <Section title="Applicable regulations">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5 max-h-64 overflow-auto border rounded p-2">
+        <Card className="grid grid-cols-1 md:grid-cols-2 gap-1.5 max-h-64 overflow-auto border rounded p-2 shadow-none">
           {safeRegulations.map((r) => (
-            <label
+            <Label
               key={r.id}
-              className="flex items-start gap-2 text-xs cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded"
-            >
-              <input
-                type="checkbox"
+              className="flex items-start gap-2 text-xs cursor-pointer hover:bg-slate-50 px-1 py-0.5 rounded">
+              <Checkbox
+               
                 checked={applicableRegulations.includes(r.code)}
                 onChange={() => toggleRegulation(r.code)}
-                className="mt-0.5"
-              />
+                className="mt-0.5" />
               <span>
                 <span className="font-mono text-[10px] text-slate-500">{r.code}</span>
                 <br />
                 {r.name}
               </span>
-            </label>
+            </Label>
           ))}
-        </div>
-        <label className="flex items-center gap-2 mt-2 text-xs">
-          <input
-            type="checkbox"
+        </Card>
+        <Label className="flex items-center gap-2 mt-2 text-xs">
+          <Checkbox
+           
             checked={regulatoryReviewRequired}
-            onChange={(e) => setRegulatoryReviewRequired(e.target.checked)}
-          />
+            onChange={(e) => setRegulatoryReviewRequired(e.target.checked)} />
           <span>Regulatory review required before approval</span>
-        </label>
+        </Label>
       </Section>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="flex justify-end gap-2 pt-4 border-t">
@@ -496,9 +448,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="form-label">
+      <Label className="form-label">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );

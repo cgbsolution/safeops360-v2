@@ -32,6 +32,7 @@ import {
 import { DISPLAY_FONT, MX, fmtDate } from "../lib";
 import { ChecklistEditor } from "./editor";
 import { ChecklistSummary, Caps, fireApi } from "./types";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 
 const STATUS_STYLE: Record<string, { bg: string; fg: string }> = {
   DRAFT: { bg: MX.ice, fg: MX.muted },
@@ -123,17 +124,16 @@ export function ChecklistLibrary({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <label className="flex items-center gap-1.5 text-[12px]" style={{ color: MX.muted }}>
-          <input
-            type="checkbox"
-            checked={showRetired}
-            onChange={(e) => {
-              setShowRetired(e.target.checked);
-              reload(e.target.checked).catch(() => {});
-            }}
-          />
-          Show retired revisions
-        </label>
+        <CheckboxField
+          className="items-center gap-1.5 text-[12px]"
+          style={{ color: MX.muted }}
+          checked={showRetired}
+          onChange={(e) => {
+            setShowRetired(e.target.checked);
+            reload(e.target.checked).catch(() => {});
+          }}
+          label="Show retired revisions"
+        />
         <span className="text-[11.5px]" style={{ color: MX.muted }}>
           {visible.length} checklist{visible.length === 1 ? "" : "s"}
         </span>

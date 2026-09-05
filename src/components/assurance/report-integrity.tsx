@@ -22,6 +22,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   INTEGRITY_CHIP,
   INTEGRITY_LABEL,
@@ -63,7 +65,7 @@ export function ReportIntegrity({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 print:hidden">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 print:hidden shadow-none">
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
           <ShieldCheck size={16} className="text-violet-700" />
@@ -106,13 +108,13 @@ export function ReportIntegrity({
       </p>
 
       {err && (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
           {err}
-        </div>
+        </Alert>
       )}
 
       {verdict && (
-        <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+        <Card className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-none">
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
@@ -131,18 +133,16 @@ export function ReportIntegrity({
             <div className="flex flex-wrap items-center gap-1">
               <dt className="font-medium">Computed</dt>
               <dd className="break-all font-mono">{verdict.computedHashFull}</dd>
-              <button
+              <Button variant="ghost"
                 type="button"
-                className="text-slate-400 hover:text-violet-700"
                 onClick={() => {
                   navigator.clipboard?.writeText(verdict.computedHashFull);
                   setCopied(true);
                   setTimeout(() => setCopied(false), 1500);
                 }}
-                aria-label="Copy hash"
-              >
+                aria-label="Copy hash">
                 {copied ? <Check size={12} /> : <Copy size={12} />}
-              </button>
+              </Button>
             </div>
             {verdict.storedHashFull && (
               <div className="flex flex-wrap gap-1">
@@ -152,7 +152,7 @@ export function ReportIntegrity({
             )}
             <div className="text-slate-400">{verdict.algorithm}</div>
           </dl>
-        </div>
+        </Card>
       )}
 
       {errata.length > 0 && (
@@ -217,7 +217,7 @@ export function ReportIntegrity({
           }}
         />
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -299,9 +299,9 @@ function GovernedTextDialog({
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex justify-end gap-2">

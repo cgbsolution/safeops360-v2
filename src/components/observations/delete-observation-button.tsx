@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 import { Can } from "@/components/auth/can";
+import { Alert } from "@/components/ui/alert";
 
 export function DeleteObservationButton({
   observationId,
@@ -54,9 +55,9 @@ export function DeleteObservationButton({
           Delete observation
         </Button>
         {error && (
-          <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1">
+          <Alert variant="destructive" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded px-2 py-1">
             {error}
-          </div>
+          </Alert>
         )}
       </div>
     </Can>

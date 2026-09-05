@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/page-header";
 import { KpiTile } from "@/components/erm/shared";
 import { ONBOARDING_CHIP, type VendorDashboard } from "@/app/(dashboard)/erm/lib-t3";
 import { DualBandDonuts } from "./dashboard-charts";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -55,9 +57,9 @@ export default async function VendorDashboardPage() {
       />
 
       {error || !data ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "No dashboard data"}. Ensure the ERM Tier 3 seed has been run, and you are logged in with a vendor role.
-        </div>
+        </Alert>
       ) : (
         <div className="space-y-5">
           {/* KPI strip */}
@@ -78,7 +80,7 @@ export default async function VendorDashboardPage() {
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
             {/* Spend-weighted exposure */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-1 text-sm font-semibold text-slate-900">Spend-Weighted ESG Exposure</h2>
               <p className="mb-4 text-xs text-slate-500">% of annual spend committed to LAGGING-ESG vendors.</p>
               <div className="flex items-baseline gap-2">
@@ -98,10 +100,10 @@ export default async function VendorDashboardPage() {
               <p className="mt-2 text-[11px] text-slate-400">
                 Spend concentration with the worst ESG performers — the headline supply-chain ESG risk number.
               </p>
-            </div>
+            </Card>
 
             {/* Onboarding pipeline */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2 shadow-none">
               <h2 className="mb-1 text-sm font-semibold text-slate-900">Onboarding Pipeline</h2>
               <p className="mb-4 text-xs text-slate-500">Vendors by onboarding stage.</p>
               {(() => {
@@ -142,7 +144,7 @@ export default async function VendorDashboardPage() {
                   <PlusCircle size={14} /> Onboard a vendor
                 </Link>
               </div>
-            </div>
+            </Card>
           </div>
         </div>
       )}

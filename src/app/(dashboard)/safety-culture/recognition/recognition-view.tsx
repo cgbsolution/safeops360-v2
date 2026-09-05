@@ -6,6 +6,7 @@ import { PALETTE, scoreColor, cultureGet, cultureSend, type PlantOption } from "
 import { EmptyState } from "../ui";
 import { formatUserRefText, type UserDirectory } from "@/lib/users/user-ref";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 // ── Types (mirror the /recognition backend contract) ─────────────────────────
 export type IndividualEntry = {
@@ -117,10 +118,9 @@ function Points({ entry, size = "sm" }: { entry: IndividualEntry; size?: "sm" | 
 
 function FormulaCard() {
   return (
-    <div
-      className="rounded-xl border p-4 text-sm"
-      style={{ borderColor: PALETTE.gold, background: "#FBF7EC" }}
-    >
+    <Card
+      className="rounded-xl border p-4 text-sm shadow-none"
+      style={{ borderColor: PALETTE.gold, background: "#FBF7EC" }}>
       <div className="mb-2 flex items-center gap-2">
         <span className="text-lg" style={{ color: PALETTE.gold }}>
           ◆
@@ -147,7 +147,7 @@ function FormulaCard() {
         Points from any observation under an unresolved BBS integrity flag are frozen until a reviewer clears it — so
         Recognition can never contradict the BBS Quality integrity status.
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -304,7 +304,7 @@ export function RecognitionView({
 
             {/* Ranked remainder */}
             {rest.length > 0 && (
-              <div className="rounded-xl border bg-white p-5">
+              <Card className="rounded-xl border bg-white p-5 shadow-none">
                 <p className="mb-3 text-sm font-semibold" style={{ color: PALETTE.navy }}>
                   Leaderboard
                 </p>
@@ -345,14 +345,14 @@ export function RecognitionView({
                     );
                   })}
                 </div>
-              </div>
+              </Card>
             )}
           </div>
 
           {/* Side column: most improved + streak detail */}
           <div className="space-y-5">
             {/* Most improved */}
-            <div className="rounded-xl border bg-white p-5" style={{ borderColor: PALETTE.gold }}>
+            <Card className="rounded-xl border bg-white p-5 shadow-none" style={{ borderColor: PALETTE.gold }}>
               <div className="mb-3 flex items-center gap-2">
                 <span className="text-lg" style={{ color: PALETTE.gold }}>▲</span>
                 <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
@@ -389,7 +389,7 @@ export function RecognitionView({
                   })}
                 </div>
               )}
-            </div>
+            </Card>
 
             {/* Streak detail */}
             <StreakPanel
@@ -428,16 +428,16 @@ function StreakPanel({
 }) {
   if (!open) {
     return (
-      <div className="flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-500">
+      <Card className="flex items-center justify-center rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center text-xs text-slate-500 shadow-none">
         Select a person to see their streak, points and recognition history.
-      </div>
+      </Card>
     );
   }
 
   const history = Array.isArray(streak?.history) ? streak!.history : [];
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-3 flex items-start justify-between gap-3">
         <p className="min-w-0 truncate text-sm font-semibold text-slate-800">{name || "—"}</p>
         <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-auto w-auto shrink-0 p-1 text-xs text-slate-400 hover:text-slate-600">
@@ -498,6 +498,6 @@ function StreakPanel({
           )}
         </>
       )}
-    </div>
+    </Card>
   );
 }

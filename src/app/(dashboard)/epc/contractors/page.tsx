@@ -3,6 +3,9 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { HardHat, Users, Plus, Star } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -58,59 +61,59 @@ export default async function ContractorsPage() {
       />
 
       {contractors.length === 0 ? (
-        <div className="rounded-xl border bg-white p-12 text-center">
+        <Card className="rounded-xl border bg-white p-12 text-center shadow-none">
           <HardHat size={40} className="mx-auto mb-3 text-slate-300" />
           <p className="text-sm font-medium text-slate-600 mb-1">No contractor companies registered</p>
           <p className="text-xs text-slate-400 mb-4">Register your first contractor company to begin the prequalification process.</p>
           <Button asChild size="sm">
             <Link href="/epc/contractors/new"><Plus size={14} className="mr-1" /> Register Contractor</Link>
           </Button>
-        </div>
+        </Card>
       ) : (
-        <div className="rounded-xl border bg-white overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                <th className="px-4 py-3">Code</th>
-                <th className="px-4 py-3">Company Name</th>
-                <th className="px-4 py-3">Trade Categories</th>
-                <th className="px-4 py-3">Prequalification</th>
-                <th className="px-4 py-3">Score</th>
-                <th className="px-4 py-3">Tier</th>
-                <th className="px-4 py-3 text-right">Workers</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="rounded-xl border bg-white overflow-hidden shadow-sm">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <TableHead className="px-4 py-3">Code</TableHead>
+                <TableHead className="px-4 py-3">Company Name</TableHead>
+                <TableHead className="px-4 py-3">Trade Categories</TableHead>
+                <TableHead className="px-4 py-3">Prequalification</TableHead>
+                <TableHead className="px-4 py-3">Score</TableHead>
+                <TableHead className="px-4 py-3">Tier</TableHead>
+                <TableHead className="px-4 py-3 text-right">Workers</TableHead>
+                <TableHead className="px-4 py-3"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {contractors.map((c, i) => {
                 const tier = tierLabel(c.prequalificationScore);
                 return (
-                  <tr
+                  <TableRow
                     key={c.id}
                     className={`border-b last:border-0 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? "" : "bg-slate-50/40"}`}
                   >
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{c.companyCode}</td>
-                    <td className="px-4 py-3 font-semibold text-slate-900">{c.companyName}</td>
-                    <td className="px-4 py-3">
+                    <TableCell className="px-4 py-3 font-mono text-xs text-slate-500">{c.companyCode}</TableCell>
+                    <TableCell className="px-4 py-3 font-semibold text-slate-900">{c.companyName}</TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {(c.tradeCategories ?? []).slice(0, 3).map((t) => (
-                          <span key={t} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
+                          <Badge variant="neutral" key={t} className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-600">
                             {t}
-                          </span>
+                          </Badge>
                         ))}
                         {(c.tradeCategories ?? []).length > 3 && (
-                          <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">
+                          <Badge variant="neutral" className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[11px] text-slate-500">
                             +{c.tradeCategories.length - 3}
-                          </span>
+                          </Badge>
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(c.prequalificationStatus)}`}>
                         {humanizeStatus(c.prequalificationStatus)}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums text-slate-700">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 tabular-nums text-slate-700">
                       {c.prequalificationScore !== null ? (
                         <div className="flex items-center gap-2">
                           <div className="h-1.5 w-16 rounded-full bg-slate-200 overflow-hidden">
@@ -129,8 +132,8 @@ export default async function ContractorsPage() {
                       ) : (
                         <span className="text-slate-400 text-xs">N/A</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       {tier ? (
                         <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tier.cls}`}>
                           <Star size={10} /> {tier.label}
@@ -138,26 +141,26 @@ export default async function ContractorsPage() {
                       ) : (
                         <span className="text-slate-400 text-xs">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-right tabular-nums">
                       <span className="flex items-center justify-end gap-1 text-slate-700">
                         <Users size={12} /> {c.activeWorkerCount}
                       </span>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       <Link
                         href={`/epc/contractors/${c.id}`}
                         className="text-xs font-medium text-cyan-700 hover:underline"
                       >
                         View &rarr;
                       </Link>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth/server";
 import { can } from "@/lib/auth/permissions";
 import { AddFactoryWizard, type SiteOption } from "./add-factory-wizard";
 import type { FactoryProfileListResponse } from "../lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -64,7 +65,7 @@ export default async function NewFactoryPage() {
         }
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <AddFactoryWizard sites={sites} canLinkSite={canLinkSite} />
       )}

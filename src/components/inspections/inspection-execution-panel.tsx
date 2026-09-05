@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { CheckCircle2, AlertCircle, Send, Loader2 } from "lucide-react";
 import { formatDateTime } from "@/lib/utils";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 function safeParseList(s: string | null | undefined): string[] {
   if (!s) return [];
@@ -141,33 +143,36 @@ export function InspectionExecutionPanel({
 
         <div className="space-y-2">
           <Label>Overall Result<span className="text-rose-600">*</span></Label>
-          <Select value={overall} onChange={(e) => setOverall(e.target.value)}>
-            <option value="Pass">Pass</option>
-            <option value="Partial">Partial / Minor</option>
-            <option value="Fail">Fail</option>
-          </Select>
+          <SelectField value={overall} onChange={setOverall}
+            options={[
+            { value: "Pass", label: "Pass" },
+            { value: "Partial", label: "Partial / Minor" },
+            { value: "Fail", label: "Fail" }
+          ]}
+          />
         </div>
 
         {checklistItems.length > 0 ? (
           <div>
             <Label>Checklist Items</Label>
-            <div className="mt-2 space-y-2 border rounded-md p-3 bg-white">
+            <Card className="mt-2 space-y-2 border rounded-md p-3 bg-white shadow-none">
               {checklistItems.map((item, i) => (
                 <div key={i} className="flex items-center justify-between gap-3 text-sm">
                   <span className="flex-1 min-w-0">{item}</span>
-                  <Select
+                  <SelectField
                     className="w-32"
                     value={results[item] ?? "Pass"}
-                    onChange={(e) => setResults({ ...results, [item]: e.target.value })}
-                  >
-                    <option>Pass</option>
-                    <option>Marginal</option>
-                    <option>Fail</option>
-                    <option>N/A</option>
-                  </Select>
+                    onChange={(value) => setResults({ ...results, [item]: value })}
+                    options={[
+                    { value: "Pass", label: "Pass" },
+                    { value: "Marginal", label: "Marginal" },
+                    { value: "Fail", label: "Fail" },
+                    { value: "N/A", label: "N/A" }
+                  ]}
+                  />
                 </div>
               ))}
-            </div>
+            </Card>
           </div>
         ) : (
           <p className="text-xs text-amber-800 bg-amber-50/60 border border-amber-200 rounded p-2">
@@ -185,7 +190,7 @@ export function InspectionExecutionPanel({
           />
         </div>
 
-        {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
+        {error && <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</Alert>}
 
         <div className="flex gap-2 pt-1">
           <Button onClick={submit} disabled={busy} variant="success">

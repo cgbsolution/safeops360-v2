@@ -4,6 +4,10 @@ import { PageHeader } from "@/components/page-header";
 import { fmtDate } from "../../lib";
 import { OBLIGATION_STATUS_CHIP, type ObligationListResponse } from "../../lib-p2";
 import { NewObligationButton } from "./new-obligation";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -101,7 +105,7 @@ export default async function ObligationRegisterPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -117,72 +121,72 @@ export default async function ObligationRegisterPage(props: {
             </div>
           )}
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1200px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Title</th>
-                  <th className="px-3 py-2.5">Type</th>
-                  <th className="px-3 py-2.5">Statute</th>
-                  <th className="px-3 py-2.5">Regulator</th>
-                  <th className="px-3 py-2.5">Site</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                  <th className="px-3 py-2.5">Frequency</th>
-                  <th className="px-3 py-2.5">Valid Until</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Tasks</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1200px] text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Title</TableHead>
+                  <TableHead className="px-3 py-2.5">Type</TableHead>
+                  <TableHead className="px-3 py-2.5">Statute</TableHead>
+                  <TableHead className="px-3 py-2.5">Regulator</TableHead>
+                  <TableHead className="px-3 py-2.5">Site</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                  <TableHead className="px-3 py-2.5">Frequency</TableHead>
+                  <TableHead className="px-3 py-2.5">Valid Until</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5">Tasks</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
                       No obligations match the current filter.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((o) => (
-                    <tr key={o.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={o.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/compliance/${o.id}`} className="font-medium text-primary-700 hover:underline">
                           {o.obligationCode}
                         </Link>
-                      </td>
-                      <td className="max-w-[240px] px-3 py-2.5 text-slate-700">{o.title}</td>
-                      <td className="px-3 py-2.5">
-                        <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      </TableCell>
+                      <TableCell className="max-w-[240px] px-3 py-2.5 text-slate-700">{o.title}</TableCell>
+                      <TableCell className="px-3 py-2.5">
+                        <Badge variant="neutral" className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
                           {typeLabel(o.obligationType)}
-                        </span>
-                      </td>
-                      <td className="max-w-[180px] truncate px-3 py-2.5 text-xs text-slate-600" title={o.statuteReference}>
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[180px] truncate px-3 py-2.5 text-xs text-slate-600" title={o.statuteReference}>
                         {o.statuteReference || "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{o.regulatorName || "—"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{o.siteName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{o.ownerName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{typeLabel(o.frequency)}</td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">{fmtDate(o.validUntil)}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{o.regulatorName || "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{o.siteName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{o.ownerName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{typeLabel(o.frequency)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums text-slate-500">{fmtDate(o.validUntil)}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"inline-block rounded border px-2 py-0.5 text-[11px] " + (OBLIGATION_STATUS_CHIP[o.status] ?? "")}>
                           {o.status.replace(/_/g, " ")}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-center">
                         {o.openTaskCount > 0 ? (
-                          <span className="inline-flex min-w-6 items-center justify-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
+                          <Badge variant="warning" className="inline-flex min-w-6 items-center justify-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
                             {o.openTaskCount}
-                          </span>
+                          </Badge>
                         ) : (
                           <span className="text-xs text-slate-300">0</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

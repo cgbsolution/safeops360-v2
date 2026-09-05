@@ -9,6 +9,7 @@ import {
   FileVideo, FileSpreadsheet
 } from "lucide-react";
 import { cn, formatDateTime } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 type AttachmentRow = {
   id: string;
@@ -225,7 +226,7 @@ function AttachmentTile({
   const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
   return (
-    <div className="rounded-lg border bg-white overflow-hidden flex flex-col">
+    <Card className="flex flex-col overflow-hidden">
       <button
         type="button"
         onClick={onPreview}
@@ -260,7 +261,7 @@ function AttachmentTile({
           </Button>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -273,9 +274,9 @@ export function MissingInitialPhotosBanner({
 }) {
   if (!show) return null;
   return (
-    <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 flex items-center gap-2">
+    <Alert variant="warning" size="lg" className="border-amber-300">
       <AlertTriangle size={14} />
       No site photos attached yet. Photos are mandatory for incidents at MTC severity and above — add at least one below.
-    </div>
+    </Alert>
   );
 }

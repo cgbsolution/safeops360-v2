@@ -15,6 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Search } from "lucide-react";
 import { RiskMatrixGrid } from "@/components/hira/risk-matrix-grid";
 import { parseApiError } from "@/lib/api-error";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type Likelihood = { id: string; score: number; label: string; description: string; frequencyGuidance?: string | null };
 type Severity = { id: string; score: number; label: string; description: string };
@@ -215,62 +222,48 @@ export function EntryCreateForm({
   return (
     <form onSubmit={onSubmit} className="space-y-6">
       {error && (
-        <div className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">{error}</div>
+        <Alert variant="destructive" className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">{error}</Alert>
       )}
 
       {/* Section 1 */}
       <Section title="1 — Activity">
         <Field label="Activity description" required>
-          <textarea
+          <Textarea
             className={TEXTAREA_CLASS}
             rows={3}
             value={activityDescription}
             onChange={(e) => setActivityDescription(e.target.value)}
-            placeholder="e.g. Loading cement bags onto trailer using forklift"
-          />
+            placeholder="e.g. Loading cement bags onto trailer using forklift" />
         </Field>
         <Grid>
           <Field label="Area">
-            <select className={INPUT_CLASS} value={areaId} onChange={(e) => setAreaId(e.target.value)}>
-              <option value="">— Select —</option>
-              {areas.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
+            <SelectField className={INPUT_CLASS} value={areaId} onChange={setAreaId}
+              placeholder="— Select —"
+              options={areas.map((a) => ({ value: a.id, label: `${a.name}` }))}
+            />
           </Field>
           <Field label="Sub-location / specifics">
-            <input className={INPUT_CLASS} value={subLocation} onChange={(e) => setSubLocation(e.target.value)} />
+            <Input className={INPUT_CLASS} value={subLocation} onChange={(e) => setSubLocation(e.target.value)} />
           </Field>
           <Field label="Routine type" required>
-            <select className={INPUT_CLASS} value={routine} onChange={(e) => setRoutine(e.target.value)}>
-              {ROUTINE.map((r) => (
-                <option key={r.code} value={r.code}>
-                  {r.label}
-                </option>
-              ))}
-            </select>
+            <SelectField className={INPUT_CLASS} value={routine} onChange={setRoutine}
+              options={ROUTINE.map((r) => ({ value: r.code, label: `${r.label}` }))}
+            />
           </Field>
           <Field label="Frequency" required>
-            <select className={INPUT_CLASS} value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-              {FREQUENCY.map((f) => (
-                <option key={f.code} value={f.code}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
+            <SelectField className={INPUT_CLASS} value={frequency} onChange={setFrequency}
+              options={FREQUENCY.map((f) => ({ value: f.code, label: `${f.label}` }))}
+            />
           </Field>
           <Field label="Typical duration (min)">
-            <input
+            <Input
               type="number"
               min={1}
               className={INPUT_CLASS}
               value={typicalDurationMin}
               onChange={(e) =>
                 setTypicalDurationMin(e.target.value === "" ? "" : parseInt(e.target.value, 10))
-              }
-            />
+              } />
           </Field>
         </Grid>
         <div className="mt-3">
@@ -283,13 +276,12 @@ export function EntryCreateForm({
           </div>
         </div>
         <Field label="Affected person groups (optional)">
-          <textarea
+          <Textarea
             className={TEXTAREA_CLASS}
             rows={2}
             value={affectedPersonGroups}
             onChange={(e) => setAffectedPersonGroups(e.target.value)}
-            placeholder="e.g. Maintenance crew, nearby operators, visitors in aisle 3"
-          />
+            placeholder="e.g. Maintenance crew, nearby operators, visitors in aisle 3" />
         </Field>
       </Section>
 
@@ -301,7 +293,7 @@ export function EntryCreateForm({
               const h = hazards.find((x) => x.id === p.hazardId);
               if (!h) return null;
               return (
-                <div key={p.hazardId} className="rounded-md border bg-slate-50 p-3">
+                <Card key={p.hazardId} className="rounded-md border bg-slate-50 p-3 shadow-none">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-medium text-sm">{h.name}</div>
@@ -309,26 +301,23 @@ export function EntryCreateForm({
                         {h.category.replace(/_/g, " ")} · {h.code}
                       </div>
                     </div>
-                    <button
+                    <Button variant="destructive"
                       type="button"
-                      onClick={() => removeHazard(p.hazardId)}
-                      className="text-rose-600 hover:bg-rose-50 rounded p-1"
-                      aria-label="Remove hazard"
-                    >
+                      onClick={() => removeHazard(p.hazardId)} className="rounded p-1"
+                      aria-label="Remove hazard">
                       <Trash2 size={14} />
-                    </button>
+                    </Button>
                   </div>
-                  <textarea
+                  <Textarea
                     className={`${TEXTAREA_CLASS} mt-2`}
                     rows={2}
                     placeholder="How this hazard manifests in THIS activity (optional)"
                     value={p.contextualDescription}
-                    onChange={(e) => updateContext(p.hazardId, e.target.value)}
-                  />
-                  <label className="block text-[10px] uppercase text-slate-500 mt-2 mb-0.5">
+                    onChange={(e) => updateContext(p.hazardId, e.target.value)} />
+                  <Label className="block text-[10px] uppercase text-slate-500 mt-2 mb-0.5">
                     Consequence <span className="text-rose-600">*</span>
-                  </label>
-                  <textarea
+                  </Label>
+                  <Textarea
                     className={`${TEXTAREA_CLASS} ${
                       !p.consequence.trim() ? "border-amber-400 bg-amber-50/40" : ""
                     }`}
@@ -336,8 +325,7 @@ export function EntryCreateForm({
                     required
                     placeholder="Consequence if hazard is realised — worst credible outcome"
                     value={p.consequence}
-                    onChange={(e) => updateConsequence(p.hazardId, e.target.value)}
-                  />
+                    onChange={(e) => updateConsequence(p.hazardId, e.target.value)} />
                   {h.factoriesActSection && (
                     <p className="mt-1 text-[11px] text-slate-500">
                       Regulatory citation will be pre-filled from the library as{" "}
@@ -347,52 +335,45 @@ export function EntryCreateForm({
                       — editable on the entry once created.
                     </p>
                   )}
-                </div>
+                </Card>
               );
             })}
           </div>
         ) : (
-          <div className="rounded-md border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 mb-3">
+          <Card className="rounded-md border border-dashed border-slate-300 p-4 text-center text-sm text-slate-500 mb-3 shadow-none">
             No hazards picked yet. Search the library below.
-          </div>
+          </Card>
         )}
 
-        <div className="border rounded-md bg-white">
+        <Card className="border rounded-md bg-white shadow-none">
           <div className="p-2 border-b flex gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 text-slate-400" size={16} />
-              <input
+              <Input
                 className={`${INPUT_CLASS} pl-8`}
                 placeholder="Search hazards by name, description, or code"
                 value={hazardSearch}
-                onChange={(e) => setHazardSearch(e.target.value)}
-              />
+                onChange={(e) => setHazardSearch(e.target.value)} />
             </div>
-            <select
+            <SelectField
               className={`${INPUT_CLASS} w-48`}
               value={hazardCategory}
-              onChange={(e) => setHazardCategory(e.target.value)}
-            >
-              <option value="">All categories</option>
-              {hazardCategories.map((c) => (
-                <option key={c} value={c}>
-                  {c.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+              onChange={setHazardCategory}
+              placeholder="All categories"
+              options={hazardCategories.map((c) => ({ value: c, label: `${c.replace(/_/g, " ")}` }))}
+            />
           </div>
           <div className="max-h-80 overflow-y-auto divide-y">
             {filteredHazards.slice(0, 60).map((h) => {
               const already = pickedHazards.some((p) => p.hazardId === h.id);
               return (
-                <button
+                <Button
                   key={h.id}
                   type="button"
+                  variant="ghost"
                   disabled={already}
                   onClick={() => addHazard(h)}
-                  className={`w-full text-left px-3 py-2 hover:bg-slate-50 ${
-                    already ? "opacity-40 cursor-not-allowed" : ""
-                  }`}
+                  className="h-auto w-full justify-start px-3 py-2 text-left"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-medium text-sm">{h.name}</div>
@@ -401,7 +382,7 @@ export function EntryCreateForm({
                     </div>
                   </div>
                   <div className="text-xs text-slate-600 mt-0.5 line-clamp-1">{h.description}</div>
-                </button>
+                </Button>
               );
             })}
             {filteredHazards.length === 0 && (
@@ -413,7 +394,7 @@ export function EntryCreateForm({
               Showing first 60 of {filteredHazards.length}. Refine your search to see more.
             </p>
           )}
-        </div>
+        </Card>
       </Section>
 
       {/* Section 3 — initial risk */}
@@ -436,10 +417,9 @@ export function EntryCreateForm({
         />
 
         {selectedCell && (
-          <div
-            className="mt-3 rounded-md border p-3"
-            style={{ backgroundColor: selectedCell.colorHex + "22" }}
-          >
+          <Card
+            className="mt-3 rounded-md border p-3 shadow-none"
+            style={{ backgroundColor: selectedCell.colorHex + "22" }}>
             <div className="text-sm font-medium" style={{ color: selectedCell.colorHex }}>
               {selectedCell.riskLevel} risk — score {selectedCell.riskScore}
             </div>
@@ -447,35 +427,33 @@ export function EntryCreateForm({
             <div className="text-[11px] text-slate-500 mt-1">
               Response time: within {selectedCell.responseTimeDays} days
             </div>
-          </div>
+          </Card>
         )}
 
         <Grid>
           <Field label="Likelihood rationale">
-            <textarea
+            <Textarea
               className={TEXTAREA_CLASS}
               rows={2}
               value={likelihoodRationale}
               onChange={(e) => setLikelihoodRationale(e.target.value)}
-              placeholder="Why this likelihood score? Past incidents, near misses, exposure."
-            />
+              placeholder="Why this likelihood score? Past incidents, near misses, exposure." />
           </Field>
           <Field label="Severity rationale">
-            <textarea
+            <Textarea
               className={TEXTAREA_CLASS}
               rows={2}
               value={severityRationale}
               onChange={(e) => setSeverityRationale(e.target.value)}
-              placeholder="Why this severity? Worst credible outcome if the hazard is realised."
-            />
+              placeholder="Why this severity? Worst credible outcome if the hazard is realised." />
           </Field>
         </Grid>
       </Section>
 
-      <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+      <Alert variant="warning" className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
         <strong>Sections 4–9 (existing controls, residual risk, recommended controls, cross-module links, regulatory refs)</strong>{" "}
         are added by editing the entry after creation. They will land in Phase 3 follow-on.
-      </div>
+      </Alert>
 
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>
@@ -505,9 +483,9 @@ function Grid({ children }: { children: React.ReactNode }) {
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">
+      <Label className="block text-xs font-medium text-slate-600 mb-1">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );
@@ -524,14 +502,13 @@ function NumberInput({
 }) {
   return (
     <div>
-      <label className="block text-[11px] text-slate-500 mb-0.5">{label}</label>
-      <input
+      <Label className="block text-[11px] text-slate-500 mb-0.5">{label}</Label>
+      <Input
         type="number"
         min={0}
         className={INPUT_CLASS}
         value={value}
-        onChange={(e) => onChange(parseInt(e.target.value, 10) || 0)}
-      />
+        onChange={(e) => onChange(parseInt(e.target.value, 10) || 0)} />
     </div>
   );
 }

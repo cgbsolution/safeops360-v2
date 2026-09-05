@@ -6,6 +6,9 @@
 
 import Link from "next/link";
 import type { WeeklyInsight } from "@/lib/weekly-insights";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 const NAVY_BG = "linear-gradient(150deg,#0B1F4D,#0E2A5E)";
 const GOLD = "#C9A961";
@@ -43,19 +46,21 @@ export function InsightHero({ hero }: { hero: WeeklyInsight }) {
         {/* ── left: the claim ── */}
         <div className="flex flex-col gap-4 p-6 sm:p-7">
           <div className="flex flex-wrap items-center gap-2">
-            <span
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wider"
+            <Badge
+              size="eyebrow"
+              className="gap-2 px-3 py-1 text-[11px]"
               style={{ background: "rgba(201,169,97,0.14)", color: "#DBC08A" }}
             >
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: GOLD }} />
               {typeLabel}
-            </span>
-            <span
-              className="rounded-full border px-2.5 py-0.5 text-[10.5px] font-bold uppercase tracking-wider"
+            </Badge>
+            <Badge
+              size="eyebrow"
+              className="border-current bg-transparent px-2.5 text-[10.5px]"
               style={{ borderColor: life.color, color: life.color }}
             >
               {life.label}
-            </span>
+            </Badge>
           </div>
 
           <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -72,12 +77,13 @@ export function InsightHero({ hero }: { hero: WeeklyInsight }) {
               </span>
             )}
             {d.qualifier && (
-              <span
-                className="rounded-full border px-2.5 py-0.5 text-[11px] font-medium"
+              <Badge
+                size="sm"
+                className="border-current bg-transparent px-2.5 text-[11px] font-medium normal-case tracking-normal"
                 style={{ borderColor: "rgba(232,238,247,0.28)", color: "#C6D2E6" }}
               >
                 {d.qualifier}
-              </span>
+              </Badge>
             )}
           </div>
 
@@ -86,14 +92,17 @@ export function InsightHero({ hero }: { hero: WeeklyInsight }) {
           </h2>
 
           {d.actionLabel && (
-            <Link
-              href={d.actionHref || "#"}
-              className="mt-1 inline-flex w-fit items-center gap-2 rounded-lg border px-4 py-2.5 text-[13px] font-bold transition hover:bg-white/[0.06]"
+            <Button
+              asChild
+              variant="outline"
+              className="mt-1 w-fit border bg-transparent text-[13px] font-bold hover:bg-white/[0.06]"
               style={{ borderColor: "rgba(232,238,247,0.55)", color: ICE }}
             >
-              {d.actionLabel}
-              <span aria-hidden>→</span>
-            </Link>
+              <Link href={d.actionHref || "#"}>
+                {d.actionLabel}
+                <span aria-hidden>→</span>
+              </Link>
+            </Button>
           )}
         </div>
 
@@ -112,12 +121,15 @@ export function InsightHero({ hero }: { hero: WeeklyInsight }) {
                     <span className="truncate text-[13px]" title={b.label} style={{ color: "#DCE4F0" }}>
                       {b.label}
                     </span>
-                    <span className="h-2.5 overflow-hidden rounded-full" style={{ background: "rgba(232,238,247,0.10)" }}>
-                      <span
-                        className="block h-full rounded-full"
-                        style={{ width: `${Math.max(6, (b.value / maxBar) * 100)}%`, background: GOLD, opacity: b.emphasis ? 1 : 0.82 }}
-                      />
-                    </span>
+                    <Progress
+                      value={b.value}
+                      max={maxBar}
+                      minVisiblePercent={6}
+                      className="bg-transparent"
+                      style={{ background: "rgba(232,238,247,0.10)" }}
+                      indicatorClassName={b.emphasis ? "opacity-100" : "opacity-[0.82]"}
+                      indicatorStyle={{ background: GOLD }}
+                    />
                     <span className="text-right text-[13px] font-semibold tabular-nums">{b.value}</span>
                   </div>
                 ))}

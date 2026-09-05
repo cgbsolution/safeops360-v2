@@ -6,7 +6,7 @@ import { Plus, Printer, ShieldCheck, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import {
@@ -17,6 +17,9 @@ import {
   type InsuranceDashboard,
 } from "@/app/(dashboard)/erm/lib-t3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const GAP_TYPES = ["FULLY_COVERED", "PARTIALLY_COVERED", "UNCOVERED", "UNINSURABLE_ACCEPTED"] as const;
 const GAP_LABEL: Record<string, string> = {
@@ -72,7 +75,7 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
       )}
 
       {/* Headline + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div>
           <p className="text-2xl font-bold text-slate-900">
             <span className={uncoveredCount > 0 ? "text-rose-600" : "text-emerald-600"}>{uncoveredCount}</span> of {totalCritical} critical risks not fully transferred
@@ -94,7 +97,7 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
             <Plus size={16} /> New assessment
           </Button>
         </div>
-      </div>
+      </Card>
 
       {/* Sub tabs */}
       <div className="flex flex-wrap gap-1 border-b border-slate-200">
@@ -126,11 +129,11 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
       {sub === "assessment" && (
         <>
           {latest?.summaryNotes && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+            <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-none">
               <span className="font-medium text-slate-700">Summary: </span>{latest.summaryNotes}
-            </div>
+            </Card>
           )}
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
             <Table className="min-w-[940px]">
               <TableHeader>
                 <TableRow>
@@ -185,12 +188,12 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
                 )}
               </TableBody>
             </Table>
-          </div>
+          </Card>
         </>
       )}
 
       {sub === "claims" && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">Open claims log</h2>
           <p className="mb-3 text-xs text-slate-500">Aggregate of open claims across the portfolio. Individual claims are managed on each policy&rsquo;s detail page.</p>
           {openClaims.length === 0 ? (
@@ -223,7 +226,7 @@ export function GapView({ gaps, openClaims }: { gaps: CoverageGap[]; openClaims:
               </Table>
             </div>
           )}
-        </div>
+        </Card>
       )}
 
       {newOpen && (
@@ -312,7 +315,7 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[92vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New coverage-gap assessment</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">
@@ -323,29 +326,29 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Assessment cycle label</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Assessment cycle label</Label>
               <Input value={assessmentCycleLabel} onChange={(e) => setAssessmentCycleLabel(e.target.value)} placeholder="e.g. FY2026-27 Annual" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Review date</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Review date</Label>
               <Input type="date" value={reviewDate} onChange={(e) => setReviewDate(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Risk lines</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Risk lines</Label>
             {risksError ? (
               <p className="text-xs text-rose-600">Failed to load critical risks: {risksError}</p>
             ) : risks.length === 0 ? (
               <p className="text-xs text-slate-400">No critical risks returned.</p>
             ) : (
-              <div className="max-h-[40vh] space-y-2 overflow-y-auto rounded-md border border-slate-200 p-2">
+              <Card className="max-h-[40vh] space-y-2 overflow-y-auto rounded-md border border-slate-200 p-2 shadow-none">
                 {risks.map((r) => {
                   const ls = lines[r.riskId];
                   if (!ls) return null;
                   const needsNote = ls.gapType === "UNINSURABLE_ACCEPTED";
                   return (
-                    <div key={r.riskId} className="rounded-md border border-slate-200 p-2.5">
+                    <Card key={r.riskId} className="rounded-md border border-slate-200 p-2.5 shadow-none">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-sm font-medium text-slate-800">
                           {r.riskCode} <span className="text-xs font-normal text-slate-500">{r.title}</span>
@@ -353,11 +356,9 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
                         {r.residualBand && <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] text-slate-600">{r.residualBand}</span>}
                       </div>
                       <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        <Select value={ls.gapType} onChange={(e) => update(r.riskId, { gapType: e.target.value })}>
-                          {GAP_TYPES.map((g) => (
-                            <option key={g} value={g}>{GAP_LABEL[g]}</option>
-                          ))}
-                        </Select>
+                        <SelectField value={ls.gapType} onChange={(value) => update(r.riskId, { gapType: value })}
+                          options={GAP_TYPES.map((g) => ({ value: g, label: GAP_LABEL[g] }))}
+                        />
                         <Input value={ls.recommendedAction} onChange={(e) => update(r.riskId, { recommendedAction: e.target.value })} placeholder="Recommended action (optional)" />
                       </div>
                       <Input
@@ -366,19 +367,19 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
                         placeholder={needsNote ? "Justification (required for uninsurable-accepted)" : "Gap notes"}
                         className={cn("mt-2", needsNote && !ls.gapNotes.trim() ? "border-rose-300" : "border-slate-300")}
                       />
-                    </div>
+                    </Card>
                   );
                 })}
-              </div>
+              </Card>
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Summary notes</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Summary notes</Label>
             <Textarea value={summaryNotes} onChange={(e) => setSummaryNotes(e.target.value)} rows={2} />
           </div>
 
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
@@ -387,7 +388,7 @@ function NewAssessmentModal({ onClose, onDone }: { onClose: () => void; onDone: 
             {busy ? "Saving…" : "Save assessment"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

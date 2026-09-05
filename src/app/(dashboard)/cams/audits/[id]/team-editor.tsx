@@ -20,7 +20,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Loader2, Users2, X, Plus, AlertTriangle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -28,6 +28,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { AuditDetail, DisciplineRollup, apiErrorMessage } from "../lib";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type Candidate = { id: string; name: string; role?: string | null; department?: string | null };
 type Slots = {
@@ -226,13 +229,13 @@ export function TeamEditor({ audit, disciplines, onClose, onSaved }: {
               />
 
               {uncovered.length > 0 && (
-                <div className="flex items-start gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/60 px-3 py-2 text-[12px] text-amber-900">
+                <Alert variant="warning" className="flex items-start gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/60 px-3 py-2 text-[12px] text-amber-900">
                   <Info size={14} className="mt-0.5 shrink-0" />
                   <span>
                     No auditee yet for {uncovered.map((d) => d.categoryName).join(", ")}. Findings
                     there will route to the plant manager until someone is named.
                   </span>
-                </div>
+                </Alert>
               )}
 
               <SeatGroup
@@ -249,7 +252,7 @@ export function TeamEditor({ audit, disciplines, onClose, onSaved }: {
                 onToggle={toggleDiscipline}
               />
 
-              <div className="rounded-lg border border-slate-200 p-3">
+              <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
                 <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
                   Plant manager (reviewer)
                 </Label>
@@ -257,15 +260,13 @@ export function TeamEditor({ audit, disciplines, onClose, onSaved }: {
                   Accepts, sends back or escalates auditee responses, and receives findings in
                   disciplines with no named auditee.
                 </p>
-                <Select value={plantManagerUserId} onChange={(e) => setPM(e.target.value)} className="h-8 text-xs">
-                  <option value="">— none —</option>
-                  {slots.plantManager.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </Select>
-              </div>
+                <SelectField value={plantManagerUserId} onChange={setPM} className="h-8 text-xs"
+                  placeholder="— none —"
+                  options={slots.plantManager.map((u) => ({ value: u.id, label: u.name }))}
+                />
+              </Card>
 
-              <label className="flex items-start gap-2 text-[12px] text-slate-600">
+              <Label className="flex items-start gap-2 text-[12px] text-slate-600">
                 <Checkbox
                   checked={overrideManual}
                   onChange={(e) => setOverrideManual(e.target.checked)}
@@ -278,16 +279,16 @@ export function TeamEditor({ audit, disciplines, onClose, onSaved }: {
                     undone by a discipline-level default.
                   </span>
                 </span>
-              </label>
+              </Label>
 
               {clash.length > 0 && (
-                <div className="flex items-start gap-2 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-[12px] text-rose-800">
+                <Alert variant="destructive" className="flex items-start gap-2 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-[12px] text-rose-800">
                   <AlertTriangle size={14} className="mt-0.5 shrink-0" />
                   <span>
                     {clash.map(nameOf).join(", ")} {clash.length === 1 ? "is" : "are"} seated as both
                     auditor and auditee. One person cannot audit their own area.
                   </span>
-                </div>
+                </Alert>
               )}
             </>
           )}
@@ -318,30 +319,25 @@ function SeatGroup({
   const available = candidates.filter((c) => !seated.has(c.id));
 
   return (
-    <div className="rounded-lg border border-slate-200 p-3">
+    <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
       <div className="flex flex-wrap items-center gap-2">
         <Label className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">{title}</Label>
         <span className="text-[11px] text-slate-400">{seats.length} seated</span>
-        <Select
+        <SelectField
           value=""
           className="ml-auto h-8 w-56 text-xs"
-          onChange={(e) => { onAdd(kind, e.target.value); e.target.value = ""; }}
+          onChange={(value) => { onAdd(kind, value); value = ""; }}
           disabled={available.length === 0}
-        >
-          <option value="">{available.length ? "Add person →" : "No one else authorised"}</option>
-          {available.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.name}{u.department ? ` · ${u.department}` : ""}
-            </option>
-          ))}
-        </Select>
+          placeholder={available.length ? "Add person →" : "No one else authorised"}
+          options={available.map((u) => ({ value: u.id, label: `${u.name}${u.department ? ` · ${u.department}` : ""}` }))}
+        />
       </div>
       <p className="mb-2 mt-1 text-[11px] text-slate-400">{note}</p>
 
       {seats.length === 0 ? (
-        <div className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-400">
+        <Card className="rounded-md border border-dashed border-slate-200 px-3 py-3 text-center text-xs text-slate-400 shadow-none">
           — none assigned yet —
-        </div>
+        </Card>
       ) : (
         <ul className="space-y-2">
           {seats.map((s) => (
@@ -355,9 +351,9 @@ function SeatGroup({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-slate-800">{nameOf(s.userId)}</span>
                 {s.disciplineIds.length === 0 && (
-                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                  <Badge variant="warning" className="rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                     no disciplines
-                  </span>
+                  </Badge>
                 )}
                 <Button
                   type="button" variant="ghost" size="icon"
@@ -390,6 +386,6 @@ function SeatGroup({
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }

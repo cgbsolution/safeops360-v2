@@ -17,6 +17,8 @@
 import * as React from "react";
 import { Download, ExternalLink, Loader2, QrCode, X } from "lucide-react";
 import { DISPLAY_FONT, MX } from "../lib";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export type QrTarget = {
   id: string;
@@ -81,16 +83,15 @@ export function QrStickerDialog({
               {target.equipmentCode}
             </div>
           </div>
-          <button type="button" onClick={onClose} className="rounded p-1 text-white/80 hover:bg-white/10" aria-label="Close">
+          <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-auto w-auto rounded p-1 text-white/80 hover:bg-white/10 hover:text-white" aria-label="Close">
             <X size={16} />
-          </button>
+          </Button>
         </div>
 
         <div className="p-4">
-          <div
-            className="mx-auto flex h-[210px] w-[210px] items-center justify-center rounded-lg border bg-white"
-            style={{ borderColor: MX.iceLine }}
-          >
+          <Card
+            className="mx-auto flex h-[210px] w-[210px] items-center justify-center rounded-lg border bg-white shadow-none"
+            style={{ borderColor: MX.iceLine }}>
             {!loaded && !failed && <Loader2 size={18} className="animate-spin" style={{ color: MX.muted }} />}
             {failed ? (
               <span className="px-4 text-center text-[11.5px]" style={{ color: MX.red }}>
@@ -106,7 +107,7 @@ export function QrStickerDialog({
                 onError={() => setFailed(true)}
               />
             )}
-          </div>
+          </Card>
 
           <div className="mt-2.5 text-center">
             <div className="text-[12.5px] font-semibold" style={{ color: MX.navy }}>

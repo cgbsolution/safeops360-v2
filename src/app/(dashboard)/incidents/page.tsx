@@ -18,6 +18,7 @@ import { InsightHero } from "@/components/observations/insight-hero";
 import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
 import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
 import { fetchInsights, type InsightBundle } from "@/lib/insights";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -202,10 +203,10 @@ export default async function IncidentsPage(
       />
 
       {showDenied && (
-        <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm text-amber-900 flex items-start gap-2">
+        <Alert variant="warning" size="lg" className="mb-4 border-amber-300">
           <span className="font-semibold">Access denied:</span>
           <span>You don't have permission to view that incident. The Incident Investigation matrix limits Workers and Contractor Workmen to records they reported themselves; Supervisors / Permit Issuers / Department Heads to records in their department; HSE Manager / Plant Head to records at their plant.</span>
-        </div>
+        </Alert>
       )}
 
       <div className="mb-4">

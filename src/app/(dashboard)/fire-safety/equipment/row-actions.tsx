@@ -31,6 +31,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Can } from "@/components/auth/can";
+import { SelectField } from "@/components/ui/select-field";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 // Editing a register row is FIRE.UPDATE — not the INCIDENT.UPDATE this borrowed
 // before the dedicated grants existed. Same code the backend route enforces.
@@ -227,48 +233,52 @@ export function RowActions({ row, zones }: { row: EquipmentRow; zones: Zone[] })
           </DialogHeader>
           <form onSubmit={save} className="space-y-4">
             {error && (
-              <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+              <Alert variant="destructive" size="lg" className="rounded-lg border-rose-300 text-rose-900">
                 {error}
-              </div>
+              </Alert>
             )}
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <label className={LABEL}>Type</label>
-                <select className={FIELD} value={form.type} onChange={(e) => set("type", e.target.value)}>
-                  {/* The STORED value may predate this list (seed data uses its
-                      own vocabulary), so it is offered rather than silently
-                      reset. Keyed on row.type, not form.type — keying on the
-                      latter made the legacy option vanish the moment the user
-                      picked anything else, with no way back to the original. */}
-                  {typeOptions.map((t) => (
-                    <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
-                  ))}
-                </select>
+                <Label variant="eyebrow">Type</Label>
+                {/* The STORED value may predate this list (seed data uses its
+                    own vocabulary), so it is offered rather than silently
+                    reset. `typeOptions` is keyed on row.type, not form.type —
+                    keying on the latter made the legacy option vanish the
+                    moment the user picked anything else, with no way back. */}
+                <SelectField
+                  value={form.type}
+                  onChange={(v) => set("type", v)}
+                  ariaLabel="Asset type"
+                  options={typeOptions.map((t) => ({ value: t, label: t.replace(/_/g, " ") }))}
+                />
               </div>
               <div>
-                <label className={LABEL}>Subtype</label>
-                <input className={FIELD} value={form.assetSubtype ?? ""} onChange={(e) => set("assetSubtype", e.target.value)} />
+                <Label variant="eyebrow">Subtype</Label>
+                <Input inputSize="compact" value={form.assetSubtype ?? ""} onChange={(e) => set("assetSubtype", e.target.value)} />
               </div>
               <div className="sm:col-span-2">
-                <label className={LABEL}>Location *</label>
-                <input className={FIELD} value={form.location} onChange={(e) => set("location", e.target.value)} />
+                <Label variant="eyebrow">Location *</Label>
+                <Input inputSize="compact" value={form.location} onChange={(e) => set("location", e.target.value)} />
               </div>
               <div>
-                <label className={LABEL}>Zone</label>
-                <select className={FIELD} value={form.zoneId ?? ""} onChange={(e) => set("zoneId", e.target.value)}>
-                  <option value="">— Unzoned —</option>
-                  {zones.map((z) => (
-                    <option key={z.id} value={z.id}>{z.zoneCode} — {z.name}</option>
-                  ))}
-                  {/* The asset's current zone, when the fetched list does not
-                      contain it — the list is empty until the Fire & Life Safety
-                      DDL runs. Without this the select falls back to the only
-                      option present, "Unzoned", and saving quietly unlinks a zone
-                      the user never touched. */}
-                  {orphanZoneId && (
-                    <option value={orphanZoneId}>Current zone ({orphanZoneId.slice(0, 8)}…)</option>
-                  )}
-                </select>
+                <Label variant="eyebrow">Zone</Label>
+                {/* The asset's current zone is appended when the fetched list
+                    does not contain it — the list is empty until the Fire &
+                    Life Safety DDL runs. Without it the picker falls back to
+                    the only option present, "Unzoned", and saving quietly
+                    unlinks a zone the user never touched. */}
+                <SelectField
+                  value={form.zoneId ?? ""}
+                  onChange={(v) => set("zoneId", v)}
+                  ariaLabel="Zone"
+                  placeholder="— Unzoned —"
+                  options={[
+                    ...zones.map((z) => ({ value: z.id, label: `${z.zoneCode} — ${z.name}` })),
+                    ...(orphanZoneId
+                      ? [{ value: orphanZoneId, label: `Current zone (${orphanZoneId.slice(0, 8)}…)` }]
+                      : [])
+                  ]}
+                />
                 {orphanZoneId && (
                   <p className="mt-1 text-[11px] text-amber-600">
                     Zone list unavailable — the current zone is preserved unless you change it.
@@ -276,33 +286,33 @@ export function RowActions({ row, zones }: { row: EquipmentRow; zones: Zone[] })
                 )}
               </div>
               <div>
-                <label className={LABEL}>Capacity / spec</label>
-                <input className={FIELD} value={form.capacitySpec ?? ""} onChange={(e) => set("capacitySpec", e.target.value)} />
+                <Label variant="eyebrow">Capacity / spec</Label>
+                <Input inputSize="compact" value={form.capacitySpec ?? ""} onChange={(e) => set("capacitySpec", e.target.value)} />
               </div>
               <div>
-                <label className={LABEL}>Make</label>
-                <input className={FIELD} value={form.make ?? ""} onChange={(e) => set("make", e.target.value)} />
+                <Label variant="eyebrow">Make</Label>
+                <Input inputSize="compact" value={form.make ?? ""} onChange={(e) => set("make", e.target.value)} />
               </div>
               <div>
-                <label className={LABEL}>Model</label>
-                <input className={FIELD} value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} />
+                <Label variant="eyebrow">Model</Label>
+                <Input inputSize="compact" value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} />
               </div>
               <div>
-                <label className={LABEL}>Serial no.</label>
-                <input className={FIELD} value={form.serialNo ?? ""} onChange={(e) => set("serialNo", e.target.value)} />
+                <Label variant="eyebrow">Serial no.</Label>
+                <Input inputSize="compact" value={form.serialNo ?? ""} onChange={(e) => set("serialNo", e.target.value)} />
               </div>
               <div>
-                <label className={LABEL}>Maintenance contractor</label>
-                <input className={FIELD} value={form.maintenanceContractor ?? ""} onChange={(e) => set("maintenanceContractor", e.target.value)} />
+                <Label variant="eyebrow">Maintenance contractor</Label>
+                <Input inputSize="compact" value={form.maintenanceContractor ?? ""} onChange={(e) => set("maintenanceContractor", e.target.value)} />
               </div>
             </div>
             <DialogFooter>
-              <button type="button" onClick={() => setEditOpen(false)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:border-slate-400">
+              <Button type="button" variant="outline" size="sm" onClick={() => setEditOpen(false)} className="rounded-lg text-sm">
                 Cancel
-              </button>
-              <button type="submit" disabled={pending} className="rounded-lg bg-primary-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-700 disabled:opacity-60">
+              </Button>
+              <Button type="submit" size="sm" disabled={pending} className="rounded-lg text-sm">
                 {pending ? "Saving…" : "Save changes"}
-              </button>
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -320,14 +330,13 @@ export function RowActions({ row, zones }: { row: EquipmentRow; zones: Zone[] })
             </DialogDescription>
           </DialogHeader>
           {error && (
-            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+            <Alert variant="destructive" size="lg" className="rounded-lg border-rose-300 text-rose-900">
               {error}
-            </div>
+            </Alert>
           )}
           <div>
-            <label className={LABEL}>Reason * (min 10 characters)</label>
-            <textarea
-              className={FIELD}
+            <Label variant="eyebrow">Reason * (min 10 characters)</Label>
+            <Textarea
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -336,9 +345,9 @@ export function RowActions({ row, zones }: { row: EquipmentRow; zones: Zone[] })
             <p className="mt-1 text-[11px] text-slate-400">{reason.trim().length}/10</p>
           </div>
           <DialogFooter>
-            <button type="button" onClick={() => setDelOpen(false)} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm text-slate-700 hover:border-slate-400">
+            <Button type="button" variant="outline" size="sm" onClick={() => setDelOpen(false)} className="rounded-lg text-sm">
               Cancel
-            </button>
+            </Button>
             <button
               type="button"
               onClick={remove}

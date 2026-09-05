@@ -5,6 +5,7 @@ import { X, History, RotateCcw, Loader2, User as UserIcon, Layers } from "lucide
 import { Button } from "@/components/ui/button";
 import { formatDateTime } from "@/lib/utils";
 import { cn } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 type Version = {
   id: string;
@@ -74,9 +75,9 @@ export function VersionHistoryDrawer({
               <div className="text-[11px] text-slate-500">Every save is captured. Restore rolls the workflow back.</div>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <Button variant="ghost" size="icon" aria-label="Close" title="Close" className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-600" onClick={onClose}>
             <X size={18} />
-          </button>
+          </Button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4">
@@ -85,7 +86,7 @@ export function VersionHistoryDrawer({
               <Loader2 size={14} className="animate-spin" /> Loading…
             </div>
           )}
-          {error && <div className="text-sm text-rose-600 p-3 bg-rose-50 border border-rose-200 rounded-md">{error}</div>}
+          {error && <Alert variant="destructive" className="text-sm text-rose-600 p-3 bg-rose-50 border border-rose-200 rounded-md">{error}</Alert>}
           {!loading && !error && versions.length === 0 && (
             <div className="text-center py-12 text-sm text-slate-500">
               <History size={28} className="mx-auto text-slate-300 mb-2" />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import {
   HardHat,
   Users,
@@ -109,9 +110,9 @@ export default async function ContractorDetailPage({ params }: { params: Promise
 
   if (!contractor) {
     return (
-      <div className="rounded-xl border bg-white p-10 text-center text-sm text-slate-500">
+      <Card className="rounded-xl border bg-white p-10 text-center text-sm text-slate-500 shadow-none">
         Contractor not found or failed to load.
-      </div>
+      </Card>
     );
   }
 
@@ -147,7 +148,7 @@ export default async function ContractorDetailPage({ params }: { params: Promise
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         {/* Left: Company identity */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
             <FileText size={15} /> Company Identity
           </h2>
@@ -207,10 +208,10 @@ export default async function ContractorDetailPage({ params }: { params: Promise
               )}
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Right: Prequalification */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
             <Star size={15} /> Pre-Qualification Status
           </h2>
@@ -244,16 +245,16 @@ export default async function ContractorDetailPage({ params }: { params: Promise
               </div>
             </div>
           ) : (
-            <div className="mb-6 rounded-lg bg-slate-50 border border-dashed p-4 text-center text-sm text-slate-500">
+            <Card className="mb-6 rounded-lg bg-slate-50 border border-dashed p-4 text-center text-sm text-slate-500 shadow-none">
               No prequalification score assigned yet.
-            </div>
+            </Card>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Compliance Documents */}
       {docs.length > 0 && (
-        <div className="rounded-xl border bg-white shadow-sm overflow-hidden mb-6">
+        <Card className="rounded-xl border bg-white shadow-sm overflow-hidden mb-6">
           <div className="px-4 py-3 border-b">
             <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
               <FileText size={15} /> Compliance Documents
@@ -284,11 +285,11 @@ export default async function ContractorDetailPage({ params }: { params: Promise
               ))}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       )}
 
       {/* Workers table */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+      <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
             <Users size={15} /> Workers ({workers.length})
@@ -332,7 +333,7 @@ export default async function ContractorDetailPage({ params }: { params: Promise
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

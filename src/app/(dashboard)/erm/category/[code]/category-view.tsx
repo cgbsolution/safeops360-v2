@@ -5,6 +5,8 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from "recha
 import { HeatMap, BandBadge, KpiTile } from "@/components/erm/shared";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { STATE_CHIP, type Band, type HeatMapCell } from "../../lib";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 // Response shape of GET /api/erm/dashboard/category/{code}
 export type CategoryDrilldown = {
@@ -33,14 +35,14 @@ export function CategoryDrilldownView({ data }: { data: CategoryDrilldown }) {
   return (
     <div className="space-y-5">
       {/* Header card */}
-      <div className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <span className="h-10 w-10 shrink-0 rounded-lg" style={{ backgroundColor: category.colorHex }} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-bold text-slate-900">{category.name}</h2>
-            <span className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white" style={{ backgroundColor: category.colorHex }}>
+            <Badge variant="neutral" className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white" style={{ backgroundColor: category.colorHex }}>
               {category.code}
-            </span>
+            </Badge>
           </div>
           {category.description && <p className="mt-0.5 text-sm text-slate-500">{category.description}</p>}
         </div>
@@ -48,7 +50,7 @@ export function CategoryDrilldownView({ data }: { data: CategoryDrilldown }) {
           <div className="text-2xl font-bold tabular-nums text-slate-900">{total}</div>
           <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total risks</div>
         </div>
-      </div>
+      </Card>
 
       {/* Band KPI tiles */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -60,7 +62,7 @@ export function CategoryDrilldownView({ data }: { data: CategoryDrilldown }) {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Sub-category donut */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Sub-category Mix</h2>
           {donutData.length === 0 ? (
             <p className="py-10 text-center text-xs text-slate-400">No sub-categories with risks.</p>
@@ -77,20 +79,20 @@ export function CategoryDrilldownView({ data }: { data: CategoryDrilldown }) {
               </PieChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </Card>
 
         {/* Category heat map */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Residual Heat Map</h2>
           <p className="mb-3 text-xs text-slate-500">Residual exposure for {category.name} risks</p>
           <div className="flex justify-center py-2">
             <HeatMap cells={residualHeatMap} />
           </div>
-        </div>
+        </Card>
       </div>
 
       {/* Risks table */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Risks in this category</h2>
         <Table>
           <TableHeader>
@@ -130,7 +132,7 @@ export function CategoryDrilldownView({ data }: { data: CategoryDrilldown }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 }

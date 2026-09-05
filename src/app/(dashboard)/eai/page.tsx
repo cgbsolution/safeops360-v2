@@ -16,6 +16,9 @@ import { InsightHero } from "@/components/observations/insight-hero";
 import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
 import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
 import { fetchInsights } from "@/lib/insights";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -229,22 +232,22 @@ export default async function EaiStudiesPage(
       {studies.length === 0 ? (
         <EmptyState plantId={plantId} />
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-emerald-50 text-emerald-900 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-3">Study</th>
-                <th className="text-left px-4 py-3">Scope</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Entries</th>
-                <th className="text-left px-4 py-3">Significant</th>
-                <th className="text-left px-4 py-3">Next Review</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-emerald-50 text-emerald-900 text-xs uppercase tracking-wider">
+              <TableRow>
+                <TableHead className="text-left px-4 py-3">Study</TableHead>
+                <TableHead className="text-left px-4 py-3">Scope</TableHead>
+                <TableHead className="text-left px-4 py-3">Status</TableHead>
+                <TableHead className="text-left px-4 py-3">Entries</TableHead>
+                <TableHead className="text-left px-4 py-3">Significant</TableHead>
+                <TableHead className="text-left px-4 py-3">Next Review</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {visibleStudies.map((s) => (
-                <tr key={s.id} className="hover:bg-emerald-50/40">
-                  <td className="px-4 py-3">
+                <TableRow key={s.id} className="hover:bg-emerald-50/40">
+                  <TableCell className="px-4 py-3">
                     <Link
                       href={`/eai/${s.id}`}
                       className="font-medium text-emerald-700 hover:underline"
@@ -254,13 +257,13 @@ export default async function EaiStudiesPage(
                     <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">
                       {s.title}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-xs">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-xs">
                     <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-700">
                       {s.scopeType.replace(/_/g, " ")}
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <div className="flex flex-wrap items-center gap-1.5">
                       <span
                         className={`inline-block px-2 py-0.5 text-xs rounded border ${
@@ -273,25 +276,25 @@ export default async function EaiStudiesPage(
                         <SignalChip signal={insights.signalByRecord.get(s.id)!} href={`/eai/${s.id}`} />
                       )}
                     </div>
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">{s.entryCount}</td>
-                  <td className="px-4 py-3 text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-slate-700">{s.entryCount}</TableCell>
+                  <TableCell className="px-4 py-3 text-slate-700">
                     {s.significantCount > 0 ? (
                       <span className="font-medium text-rose-700">{s.significantCount}</span>
                     ) : (
                       <span className="text-slate-400">0</span>
                     )}
-                  </td>
-                  <td className="px-4 py-3 text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-slate-700">
                     {s.nextScheduledReviewDate
                       ? new Date(s.nextScheduledReviewDate).toLocaleDateString()
                       : "—"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -299,7 +302,7 @@ export default async function EaiStudiesPage(
 
 function EmptyState({ plantId }: { plantId: string }) {
   return (
-    <div className="rounded-xl border-2 border-dashed border-slate-200 bg-white py-16 px-6 text-center">
+    <Card className="rounded-xl border-2 border-dashed border-slate-200 bg-white py-16 px-6 text-center shadow-none">
       <div className="mx-auto mb-4 inline-flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
         <Leaf className="text-emerald-500" size={28} />
       </div>
@@ -323,13 +326,13 @@ function EmptyState({ plantId }: { plantId: string }) {
         </Link>
         .
       </div>
-    </div>
+    </Card>
   );
 }
 
 function PlantSelectorEmptyState() {
   return (
-    <div className="rounded-xl border bg-white p-8 text-sm text-slate-600">
+    <Card className="rounded-xl border bg-white p-8 text-sm text-slate-600 shadow-none">
       <div className="font-medium text-slate-800 mb-1">Select a plant to view EAI studies</div>
       <p>
         Add{" "}
@@ -337,13 +340,13 @@ function PlantSelectorEmptyState() {
         to the URL to view environmental aspect & impact studies for that plant.
         EAI is enabled per plant; ask the Plant Head to flip the feature flag.
       </p>
-    </div>
+    </Card>
   );
 }
 
 function FeatureDisabledNotice({ plantId }: { plantId: string }) {
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm">
+    <Alert variant="warning" className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-sm">
       <div className="font-medium text-amber-900 mb-2">EAI Register is not enabled for this plant</div>
       <p className="text-amber-800">
         The HIRA Phase 2 EAI Register is currently disabled for plant{" "}
@@ -359,6 +362,6 @@ function FeatureDisabledNotice({ plantId }: { plantId: string }) {
         </Link>
         .
       </p>
-    </div>
+    </Alert>
   );
 }

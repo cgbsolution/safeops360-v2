@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { BreachesView } from "./breaches-view";
 import type { AppetiteBreach } from "@/app/(dashboard)/erm/lib-p2";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function AppetiteBreachesPage() {
         description="Tolerance breaches awaiting a committee decision. The CRO can review, mandate treatment, temporarily accept, or resolve each breach."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <BreachesView breaches={breaches} />
       )}

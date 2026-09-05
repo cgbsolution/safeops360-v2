@@ -190,15 +190,13 @@ export function PhotoAnnotator({
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-900">
       <div className="flex items-center gap-2 px-3 py-2 text-white">
         <span className="text-sm font-medium">Mark up evidence</span>
-        <button
+        <Button variant="ghost"
           type="button"
-          onClick={onDiscard}
-          className="ml-auto rounded p-1 hover:bg-white/10"
+          onClick={onDiscard} className="ml-auto rounded p-1"
           aria-label="Discard photo"
-          title="Discard — nothing is attached"
-        >
+          title="Discard — nothing is attached">
           <X size={18} />
-        </button>
+        </Button>
       </div>
 
       <div className="relative flex flex-1 items-center justify-center overflow-hidden p-2">
@@ -235,7 +233,7 @@ export function PhotoAnnotator({
             ["free", <Pencil key="f" size={18} />, "Freehand"],
           ] as const
         ).map(([t, icon, label]) => (
-          <button
+          <Button variant="ghost"
             key={t}
             type="button"
             onClick={() => setTool(t)}
@@ -244,20 +242,17 @@ export function PhotoAnnotator({
             className={cn(
               "flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-white",
               tool === t ? "bg-rose-600" : "bg-white/10 hover:bg-white/20",
-            )}
-          >
+            )}>
             {icon}
-          </button>
+          </Button>
         ))}
-        <button
+        <Button variant="ghost"
           type="button"
           onClick={() => setShapes((s) => s.slice(0, -1))}
           disabled={!shapes.length}
-          aria-label="Undo"
-          className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg bg-white/10 text-white hover:bg-white/20 disabled:opacity-40"
-        >
+          aria-label="Undo" className="flex min-h-[44px] min-w-[44px] rounded-lg text-white">
           <Undo2 size={18} />
-        </button>
+        </Button>
         <Button
           type="button"
           size="sm"

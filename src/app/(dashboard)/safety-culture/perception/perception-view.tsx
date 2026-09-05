@@ -23,6 +23,12 @@ import {
 } from "recharts";
 import { ScoreDial } from "../ui";
 import { PALETTE, scoreColor, cultureSend, type PlantOption } from "../lib";
+import { Input } from "@/components/ui/input";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 // ── Types (perception surveys aren't in the shared lib; declared here) ────────
 export type ResponseRate = {
@@ -166,7 +172,7 @@ function DimensionTrendCard({ trend }: { trend: PerceptionTrend }) {
   const series = trend?.series ?? [];
   if (series.length < 2) {
     return (
-      <div className="rounded-xl border bg-white p-5">
+      <Card className="rounded-xl border bg-white p-5 shadow-none">
         <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
           Dimension trend
         </p>
@@ -175,7 +181,7 @@ function DimensionTrendCard({ trend }: { trend: PerceptionTrend }) {
           <span className="font-semibold">two or more</span> threshold-met survey periods. So far:{" "}
           {series.length === 1 ? "one period" : "no periods"}.
         </p>
-      </div>
+      </Card>
     );
   }
 
@@ -188,7 +194,7 @@ function DimensionTrendCard({ trend }: { trend: PerceptionTrend }) {
   }));
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
           Dimension trend
@@ -234,17 +240,16 @@ function DimensionTrendCard({ trend }: { trend: PerceptionTrend }) {
         Benchmark line is the cross-site average composite for the latest period — directional only, not an external
         dataset.
       </p>
-    </div>
+    </Card>
   );
 }
 
 // ── Anonymity headline ──────────────────────────────────────────────────────
 function AnonymityBanner() {
   return (
-    <div
-      className="flex items-start gap-3 rounded-xl border p-4 text-sm"
-      style={{ borderColor: PALETTE.gold, background: "linear-gradient(90deg,#0B1F4D,#122a5e)" }}
-    >
+    <Card
+      className="flex items-start gap-3 rounded-xl border p-4 text-sm shadow-none"
+      style={{ borderColor: PALETTE.gold, background: "linear-gradient(90deg,#0B1F4D,#122a5e)" }}>
       <span className="mt-0.5 text-lg" style={{ color: PALETTE.gold }}>
         ◆
       </span>
@@ -253,14 +258,14 @@ function AnonymityBanner() {
         ever linked to an individual. Dimension scores are withheld until a minimum response threshold is
         met to protect anonymity.
       </div>
-    </div>
+    </Card>
   );
 }
 
 // ── Perception index (radar + composite, or withheld notice) ────────────────
 function PerceptionIndexCard({ index, period }: { index: PerceptionIndex; period: string }) {
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-4 flex items-center justify-between">
         <div>
           <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
@@ -279,7 +284,7 @@ function PerceptionIndexCard({ index, period }: { index: PerceptionIndex; period
           responseRatePercent={index.responseRatePercent}
         />
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -350,7 +355,7 @@ function IndexWithheld({
 }) {
   const pct = clamp(responseRatePercent);
   return (
-    <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-center">
+    <Card className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5 text-center shadow-none">
       <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg shadow-sm">
         🔒
       </div>
@@ -371,7 +376,7 @@ function IndexWithheld({
           {responseCount} anonymous {responseCount === 1 ? "response" : "responses"} so far
         </p>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -379,7 +384,7 @@ function IndexWithheld({
 function ResponseRateCard({ rate, period }: { rate: ResponseRate; period: string }) {
   const pct = clamp(rate?.responseRatePercent ?? 0);
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="mb-4 flex items-start justify-between">
         <div>
           <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
@@ -388,15 +393,15 @@ function ResponseRateCard({ rate, period }: { rate: ResponseRate; period: string
           <p className="text-xs text-slate-500">Period {period}</p>
         </div>
         {rate?.thresholdMet ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+          <Badge variant="success" className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
             Threshold met
-          </span>
+          </Badge>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
+          <Badge variant="warning" className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
             <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
             Below threshold
-          </span>
+          </Badge>
         )}
       </div>
 
@@ -418,7 +423,7 @@ function ResponseRateCard({ rate, period }: { rate: ResponseRate; period: string
         <span className="font-semibold text-slate-800">{rate?.responseCount ?? 0}</span> anonymous{" "}
         {(rate?.responseCount ?? 0) === 1 ? "response" : "responses"} collected this period.
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -466,7 +471,7 @@ function SurveyCard({
   }
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
         Take the survey
       </p>
@@ -476,11 +481,11 @@ function SurveyCard({
       </p>
 
       {!active ? (
-        <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500">
+        <Card className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-sm text-slate-500 shadow-none">
           No active survey is available for this period.
-        </div>
+        </Card>
       ) : done ? (
-        <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
+        <Alert variant="success" className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-6 text-center">
           <div className="mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-white text-lg shadow-sm">
             ✓
           </div>
@@ -488,11 +493,11 @@ function SurveyCard({
           <p className="mt-1 text-xs text-emerald-700">
             It has been captured anonymously and cannot be traced back to you.
           </p>
-        </div>
+        </Alert>
       ) : (
         <div className="mt-4 space-y-4">
           {questions.map((q, i) => (
-            <div key={q.id} className="rounded-lg border border-slate-200 p-3">
+            <Card key={q.id} className="rounded-lg border border-slate-200 p-3 shadow-none">
               <p className="mb-2 text-sm text-slate-700">
                 <span className="mr-1.5 text-xs font-semibold text-slate-400">{i + 1}.</span>
                 {q.text}
@@ -516,13 +521,13 @@ function SurveyCard({
                   );
                 })}
               </div>
-            </div>
+            </Card>
           ))}
 
           {error && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+            <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
               {error}
-            </div>
+            </Alert>
           )}
 
           <div className="flex items-center justify-between">
@@ -540,7 +545,7 @@ function SurveyCard({
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -614,7 +619,7 @@ function AdminPanel({ templates }: { templates: SurveyTemplate[] }) {
   }
 
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold" style={{ color: PALETTE.navy }}>
           Survey templates
@@ -637,7 +642,7 @@ function AdminPanel({ templates }: { templates: SurveyTemplate[] }) {
         {templates.map((t) => {
           const dims = Array.from(new Set((t.questions ?? []).map((q) => q.dimension)));
           return (
-            <div key={t.id} className="rounded-lg border border-slate-200 p-3">
+            <Card key={t.id} className="rounded-lg border border-slate-200 p-3 shadow-none">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-slate-800">{t.name}</p>
                 <span
@@ -660,7 +665,7 @@ function AdminPanel({ templates }: { templates: SurveyTemplate[] }) {
                   </span>
                 ))}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>
@@ -669,24 +674,21 @@ function AdminPanel({ templates }: { templates: SurveyTemplate[] }) {
       {open && !blocked && (
         <div className="mt-4 space-y-3 border-t border-slate-100 pt-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">New template</p>
-          <input
+          <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Template name"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
-          />
-          <input
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" />
+          <Input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description (optional)"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
-          />
-          <input
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" />
+          <Input
             value={industryVertical}
             onChange={(e) => setIndustryVertical(e.target.value)}
             placeholder="Industry vertical (optional)"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
-          />
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" />
 
           <div className="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
             Cadence <span className="font-semibold text-slate-700">Quarterly</span>
@@ -695,54 +697,43 @@ function AdminPanel({ templates }: { templates: SurveyTemplate[] }) {
           <div className="space-y-2">
             {rows.map((r, i) => (
               <div key={r.id} className="flex items-center gap-2">
-                <input
+                <Input
                   value={r.text}
                   onChange={(e) =>
                     setRows((rs) => rs.map((x) => (x.id === r.id ? { ...x, text: e.target.value } : x)))
                   }
                   placeholder={`Question ${i + 1}`}
-                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none"
-                />
-                <select
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none" />
+                <SelectField
                   value={r.dimension}
-                  onChange={(e) =>
-                    setRows((rs) =>
-                      rs.map((x) => (x.id === r.id ? { ...x, dimension: e.target.value as Dimension } : x))
+                  onChange={(value) => setRows((rs) =>
+                      rs.map((x) => (x.id === r.id ? { ...x, dimension: value as Dimension } : x))
                     )
                   }
                   className="rounded-lg border border-slate-300 px-2 py-2 text-xs text-slate-600 focus:border-primary-500 focus:outline-none"
-                >
-                  {DIMENSIONS.map((d) => (
-                    <option key={d.value} value={d.value}>
-                      {d.label}
-                    </option>
-                  ))}
-                </select>
+                  options={DIMENSIONS.map((d) => ({ value: String(d.value), label: `${d.label}` }))}
+                />
                 {rows.length > 1 && (
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => setRows((rs) => rs.filter((x) => x.id !== r.id))}
-                    className="text-slate-400 hover:text-rose-600"
-                    aria-label="Remove question"
-                  >
+                    aria-label="Remove question">
                     ✕
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
-            <button
+            <Button variant="ghost"
               type="button"
-              onClick={() => setRows((rs) => [...rs, newRow()])}
-              className="text-xs font-semibold text-slate-500 hover:text-slate-700"
-            >
+              onClick={() => setRows((rs) => [...rs, newRow()])} className="text-xs">
               + Add question
-            </button>
+            </Button>
           </div>
 
           {error && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+            <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
               {error}
-            </div>
+            </Alert>
           )}
           {ok && <p className="text-xs text-emerald-700">Template created.</p>}
 
@@ -762,7 +753,7 @@ function AdminPanel({ templates }: { templates: SurveyTemplate[] }) {
           Template management requires the Survey Admin role.
         </p>
       )}
-    </div>
+    </Card>
   );
 }
 

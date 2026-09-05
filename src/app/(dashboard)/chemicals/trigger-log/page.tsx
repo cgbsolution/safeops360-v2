@@ -18,6 +18,8 @@ import type { TriggerLogEntry } from "@/lib/chemicals/types";
 import { fmtQty, prettyLabel } from "@/lib/chemicals/types";
 import { EmptyState, ErrorState, Kpi, StatusChip, SubNav } from "../_components";
 import { AcknowledgeButton } from "./acknowledge-button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -121,27 +123,27 @@ export default async function TriggerLogPage({
               }
             />
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-              <table className="w-full text-sm">
-                <thead className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-semibold">When</th>
-                    <th className="px-4 py-2.5 font-semibold">Trigger</th>
-                    <th className="px-4 py-2.5 font-semibold">Schedule</th>
-                    <th className="px-4 py-2.5 text-right font-semibold">Observed / limit</th>
-                    <th className="px-4 py-2.5 font-semibold">Outcome</th>
-                    <th className="px-4 py-2.5 font-semibold">Detail</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+            <Card className="overflow-x-auto rounded-xl shadow-none">
+              <Table className="w-full text-sm">
+                <TableHeader className="border-b border-slate-200 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableRow>
+                    <TableHead className="px-4 py-2.5 font-semibold">When</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Trigger</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Schedule</TableHead>
+                    <TableHead className="px-4 py-2.5 text-right font-semibold">Observed / limit</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Outcome</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Detail</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {d.entries.map((e) => (
-                    <tr key={e.id} className={e.status === "FAILED" ? "bg-rose-50/40" : "hover:bg-slate-50"}>
-                      <td className="whitespace-nowrap px-4 py-2.5 text-slate-600">
+                    <TableRow key={e.id} className={e.status === "FAILED" ? "bg-rose-50/40" : "hover:bg-slate-50"}>
+                      <TableCell className="whitespace-nowrap px-4 py-2.5 text-slate-600">
                         {new Date(e.triggeredAt).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-700">{prettyLabel(e.triggerType)}</td>
-                      <td className="px-4 py-2.5 text-slate-700">{e.scheduleReference ?? "—"}</td>
-                      <td className="px-4 py-2.5 text-right tabular-nums text-slate-700">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-slate-700">{prettyLabel(e.triggerType)}</TableCell>
+                      <TableCell className="px-4 py-2.5 text-slate-700">{e.scheduleReference ?? "—"}</TableCell>
+                      <TableCell className="px-4 py-2.5 text-right tabular-nums text-slate-700">
                         {e.observedQuantity === null ? (
                           "—"
                         ) : (
@@ -150,9 +152,9 @@ export default async function TriggerLogPage({
                             <span className="text-slate-400"> / {fmtQty(e.thresholdQuantity, e.unit)}</span>
                           </>
                         )}
-                      </td>
-                      <td className="px-4 py-2.5"><StatusChip status={e.status} /></td>
-                      <td className="px-4 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5"><StatusChip status={e.status} /></TableCell>
+                      <TableCell className="px-4 py-2.5">
                         {e.status === "FAILED" ? (
                           <div>
                             <div className="text-xs font-medium text-rose-700">
@@ -177,16 +179,16 @@ export default async function TriggerLogPage({
                         ) : (
                           <span className="text-xs text-slate-500">{e.reason ?? "—"}</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
               <div className="border-t border-slate-100 px-4 py-2 text-[11px] text-slate-400">
                 A FAILED row always carries a reason — that is a database constraint, not a
                 convention, so a failure cannot be written without one.
               </div>
-            </div>
+            </Card>
           )}
         </>
       )}

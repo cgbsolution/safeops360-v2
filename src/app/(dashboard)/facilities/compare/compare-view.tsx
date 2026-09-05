@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { complianceBand, BAND_HEX, fmtNum, fmtDate, type FactoryProfile } from "../lib";
+import { Card } from "@/components/ui/card";
 
 type Row = { label: string; get: (f: FactoryProfile) => string; tone?: (f: FactoryProfile) => string | undefined; best?: "high" | "low" };
 
@@ -48,11 +49,11 @@ export function CompareView({ factories }: { factories: FactoryProfile[] }) {
       </div>
 
       {chosen.length < 2 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400 shadow-none">
           Select at least two factories to compare.
-        </div>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+        <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
           <Table className="w-full min-w-[640px] text-sm">
             <TableHeader className="bg-slate-50/95">
               <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
@@ -90,7 +91,7 @@ export function CompareView({ factories }: { factories: FactoryProfile[] }) {
               })}
             </TableBody>
           </Table>
-        </div>
+        </Card>
       )}
     </div>
   );

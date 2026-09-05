@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { readApiError } from "@/lib/client-errors";
 import { UserRefLabel, type UserDirectory } from "@/lib/users/user-ref";
+import { Alert } from "@/components/ui/alert";
 import {
   siteText,
   type ApprovalReport, type ProgrammeCycleRow, type ProgrammeRow, type ReviewRow,
@@ -180,22 +181,20 @@ export function CycleGovernance({
       </div>
 
       {cycle.status === "ACTIVE" && needsReview && (
-        <button
+        <Button variant="outline"
           type="button"
-          onClick={onGoToReviews}
-          className="mt-2 flex w-full items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-left text-xs text-sky-900 hover:bg-sky-100"
-        >
+          onClick={onGoToReviews} className="mt-2 flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left text-xs">
           <Info size={13} className="mt-0.5 shrink-0" />
           <span>
             This cycle has no programme review. ISO 19011 §5.6 asks how you know the
             <em> programme itself</em> is working, and closure is gated on it —{" "}
             <span className="underline">record one now</span>.
           </span>
-        </button>
+        </Button>
       )}
 
       {blockers.length > 0 && cycle.status === "UNDER_REVIEW" && (
-        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+        <Alert variant="warning" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
           <div className="flex items-center gap-2 text-xs font-semibold text-amber-900">
             <AlertTriangle size={14} />
             {blockers.length} thing{blockers.length === 1 ? "" : "s"} block approval
@@ -225,13 +224,13 @@ export function CycleGovernance({
               Fix on the Scope tab
             </Button>
           )}
-        </div>
+        </Alert>
       )}
 
       {err && (
-        <div className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <Alert variant="destructive" className="mt-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
           {err}
-        </div>
+        </Alert>
       )}
     </Card>
   );

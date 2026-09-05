@@ -3,6 +3,8 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { PROB_LABEL, READINESS_CHIP, type Scenario } from "@/app/(dashboard)/erm/lib-p3";
 import { NewScenarioButton } from "./new-scenario-form";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -61,17 +63,17 @@ export default async function ScenarioLibraryPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 3 (BCM) seed has been run and you are logged in with a BCM role.
-        </div>
+        </Alert>
       ) : scenarios.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
+        <Card className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-none">
           <p className="text-sm font-medium text-slate-700">No scenarios yet</p>
           <p className="max-w-sm text-xs text-slate-500">
             Build your first what-if scenario. Each one estimates impact across dimensions and can stress the
             enterprise heat map to show where risk migrates under disruption.
           </p>
-        </div>
+        </Card>
       ) : (
         <div className="space-y-6">
           {sortedCategories.map((cat) => (

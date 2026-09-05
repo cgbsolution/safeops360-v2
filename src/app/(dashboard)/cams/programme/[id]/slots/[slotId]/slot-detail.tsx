@@ -21,6 +21,7 @@ import { usePermission } from "@/components/auth/can";
 import { UserRefLabel, type UserDirectory } from "@/lib/users/user-ref";
 import { MaterialiseDialog } from "@/components/programme/materialise-dialog";
 import { SlotTransitionDialog } from "@/components/programme/slot-transition-dialog";
+import { Alert } from "@/components/ui/alert";
 import {
   ORIGIN_LABEL, SLOT_STATUS_CHIP, fmtDate, siteText, type SlotDetail,
 } from "@/app/(dashboard)/cams/programme/lib-programme";
@@ -151,7 +152,7 @@ export function SlotDetailView({
           <h3 className="text-sm font-semibold text-slate-800">What happened</h3>
 
           {slot.engagementId ? (
-            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+            <Alert variant="success" className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
               <div className="flex items-center gap-1.5 text-xs font-medium text-emerald-900">
                 <Link2 size={13} /> Materialised as {slot.engagementKind?.toLowerCase()}
               </div>
@@ -159,9 +160,9 @@ export function SlotDetailView({
                 className="mt-1 inline-flex items-center gap-1 text-sm text-emerald-900 hover:underline">
                 Open the engagement <ArrowRight size={13} />
               </Link>
-            </div>
+            </Alert>
           ) : (
-            <div className="mt-3 rounded-lg border border-dashed border-slate-300 p-4 text-center">
+            <Card className="mt-3 rounded-lg border border-dashed border-slate-300 p-4 text-center shadow-none">
               <p className="text-sm text-slate-600">Not materialised yet.</p>
               <p className="mx-auto mt-1 max-w-sm text-xs text-slate-500">
                 Materialising creates the engagement this slot planned — pre-filled with its scope,
@@ -172,7 +173,7 @@ export function SlotDetailView({
                   <Zap size={14} /> Materialise
                 </Button>
               )}
-            </div>
+            </Card>
           )}
 
           <div className="mt-4">
@@ -186,7 +187,7 @@ export function SlotDetailView({
             ) : (
               <div className="mt-1.5 space-y-2">
                 {amendments.map((a) => (
-                  <div key={a.id} className="rounded-lg border border-slate-200 p-2.5">
+                  <Card key={a.id} className="rounded-lg border border-slate-200 p-2.5 shadow-none">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="rounded border border-amber-200 bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-800">
                         {a.amendmentType.replace(/_/g, " ").toLowerCase()}
@@ -197,7 +198,7 @@ export function SlotDetailView({
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-slate-700">{a.reason}</p>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}

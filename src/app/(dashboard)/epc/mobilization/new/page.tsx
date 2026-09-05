@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 type Site = { id: string; siteName: string; siteCode: string };
 type Worker = { id: string; fullName: string; workerCode: string; primaryTrade: string; contractorCompanyName?: string };
@@ -84,55 +86,50 @@ export default function NewMobilizationPage() {
 
       <form onSubmit={handleSubmit} className="rounded-xl border bg-white shadow-sm p-6 space-y-5">
         {error && (
-          <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">{error}</div>
+          <Alert variant="destructive" className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">{error}</Alert>
         )}
 
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <Label htmlFor="siteId">Construction Site *</Label>
-            <Select
+            <SelectField
               id="siteId"
               required
               value={form.siteId}
-              onChange={e => setForm(f => ({ ...f, siteId: e.target.value }))}
+              onChange={(value) => setForm(f => ({ ...f, siteId: value }))}
               className="mt-1"
-            >
-              <option value="">Select a site...</option>
-              {sites.map(s => (
-                <option key={s.id} value={s.id}>{s.siteName} ({s.siteCode})</option>
-              ))}
-            </Select>
+              placeholder="Select a site..."
+              options={sites.map((s) => ({ value: String(s.id), label: `${s.siteName} (${s.siteCode})` }))}
+            />
           </div>
 
           <div className="sm:col-span-2">
             <Label htmlFor="contractorWorkerId">Contractor Worker *</Label>
-            <Select
+            <SelectField
               id="contractorWorkerId"
               required
               value={form.contractorWorkerId}
-              onChange={e => setForm(f => ({ ...f, contractorWorkerId: e.target.value }))}
+              onChange={(value) => setForm(f => ({ ...f, contractorWorkerId: value }))}
               className="mt-1"
-            >
-              <option value="">Select a worker...</option>
-              {workers.map(w => (
-                <option key={w.id} value={w.id}>{w.fullName} — {w.primaryTrade} ({w.workerCode})</option>
-              ))}
-            </Select>
+              placeholder="Select a worker..."
+              options={workers.map((w) => ({ value: String(w.id), label: `${w.fullName} — ${w.primaryTrade} (${w.workerCode})` }))}
+            />
           </div>
 
           <div>
             <Label htmlFor="mobilizationType">Mobilization Type</Label>
-            <Select
+            <SelectField
               id="mobilizationType"
               value={form.mobilizationType}
-              onChange={e => setForm(f => ({ ...f, mobilizationType: e.target.value }))}
+              onChange={(value) => setForm(f => ({ ...f, mobilizationType: value }))}
               className="mt-1"
-            >
-              <option value="new_deployment">New Deployment</option>
-              <option value="re_deployment">Re-deployment</option>
-              <option value="trade_change">Trade Change</option>
-              <option value="replacement">Replacement</option>
-            </Select>
+              options={[
+              { value: "new_deployment", label: "New Deployment" },
+              { value: "re_deployment", label: "Re-deployment" },
+              { value: "trade_change", label: "Trade Change" },
+              { value: "replacement", label: "Replacement" }
+            ]}
+            />
           </div>
 
           <div>
@@ -182,9 +179,9 @@ export default function NewMobilizationPage() {
           </div>
         </div>
 
-        <div className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-xs text-amber-700">
+        <Alert variant="warning" className="rounded-lg bg-amber-50 border border-amber-200 p-4 text-xs text-amber-700">
           <strong>Note:</strong> After submitting, the system will automatically run pre-mobilization checks (contractor status, medical fitness, worker eligibility). The mobilization record will be created with status <strong>Pending Checks</strong> if any gaps are found, or <strong>Pending Approval</strong> if all checks pass. A site HSE manager must then approve.
-        </div>
+        </Alert>
 
         <div className="flex items-center justify-end gap-3 pt-2">
           <Link href="/epc/mobilization">

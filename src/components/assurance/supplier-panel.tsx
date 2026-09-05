@@ -23,6 +23,9 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast";
 import { readApiError } from "@/lib/client-errors";
 import type { SupplierDetail } from "@/app/(dashboard)/cams/audits/lib";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export type PortalSubmission = {
   id: string;
@@ -106,7 +109,7 @@ export function SupplierPanel({
   }
 
   return (
-    <div className="rounded-xl border border-amber-200 bg-amber-50/40">
+    <Alert variant="warning" className="rounded-xl border border-amber-200 bg-amber-50/40">
       <div className="flex flex-wrap items-start gap-3 border-b border-amber-200 p-4">
         <Building2 size={18} className="mt-0.5 shrink-0 text-amber-700" />
         <div className="min-w-0 flex-1">
@@ -118,14 +121,14 @@ export function SupplierPanel({
               </span>
             )}
             {supplier.criticality && (
-              <span className="rounded-full bg-amber-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+              <Badge variant="warning" className="rounded-full bg-amber-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                 {supplier.criticality}
-              </span>
+              </Badge>
             )}
             {supplier.isSingleSource && (
-              <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+              <Badge variant="danger" className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                 Single source
-              </span>
+              </Badge>
             )}
           </div>
           <p className="mt-0.5 text-[11px] text-slate-500">
@@ -176,7 +179,7 @@ export function SupplierPanel({
         <p className="text-[11px] leading-relaxed text-slate-600">{supplier.responseChannelNote}</p>
 
         {canManage && (
-          <div className="space-y-2 rounded-lg border border-slate-200 bg-white p-3">
+          <Card className="space-y-2 rounded-lg border border-slate-200 bg-white p-3 shadow-none">
             {!live && (
               <>
                 <Label className="text-[11px]">Supplier contact email</Label>
@@ -220,7 +223,7 @@ export function SupplierPanel({
             {/* The link is displayed exactly once — the server stores only a
                 hash, so there is no way to show it again later. */}
             {issuedLink && (
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 p-2">
+              <Alert variant="success" className="rounded-md border border-emerald-200 bg-emerald-50 p-2">
                 <div className="mb-1 text-[11px] font-semibold text-emerald-800">
                   Copy this link now — it cannot be shown again.
                 </div>
@@ -237,9 +240,9 @@ export function SupplierPanel({
                     {copied ? <Check size={13} /> : <Copy size={13} />}
                   </Button>
                 </div>
-              </div>
+              </Alert>
             )}
-          </div>
+          </Card>
         )}
 
         {/* ── What the supplier actually sent ────────────────────────── */}
@@ -249,10 +252,9 @@ export function SupplierPanel({
               From the supplier
             </div>
             {submissions.map((s) => (
-              <div
+              <Alert variant="info"
                 key={s.id}
-                className="rounded-lg border border-sky-200 bg-sky-50/60 p-2 text-[12px]"
-              >
+                className="rounded-lg border border-sky-200 bg-sky-50/60 p-2 text-[12px]">
                 <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
                   {/* The structural distinction: these rows come from
                       SupplierPortalSubmission, never from CapaComment, so a
@@ -267,18 +269,18 @@ export function SupplierPanel({
                   </span>
                   <span className="text-slate-400">{s.submittedAt?.slice(0, 10)}</span>
                   {!s.acknowledgedAt && (
-                    <span className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                    <Badge variant="warning" className="ml-auto rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
                       Not yet reviewed
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 {s.fileName && <div className="mt-1 font-medium text-slate-700">{s.fileName}</div>}
                 {s.body && <div className="mt-0.5 whitespace-pre-wrap text-slate-600">{s.body}</div>}
-              </div>
+              </Alert>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </Alert>
   );
 }

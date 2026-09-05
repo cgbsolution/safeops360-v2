@@ -19,6 +19,9 @@ import { Select } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/toast";
 import { apiSend, Field, FormError } from "../_client";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
 
 export function NewStorageLocationDialog({
   plantId,
@@ -102,46 +105,48 @@ export function NewStorageLocationDialog({
                 <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Flammable store — Block A" />
               </Field>
               <Field label="Storage type">
-                <Select value={type} onChange={(e) => setType(e.target.value)}>
-                  <option value="FLAMMABLE_CABINET">Flammable cabinet</option>
-                  <option value="VENTILATED_STORE">Ventilated store</option>
-                  <option value="COLD_STORE">Cold store</option>
-                  <option value="GENERAL">General</option>
-                  <option value="OUTDOOR_BUND">Outdoor bund</option>
-                </Select>
+                <SelectField value={type} onChange={setType}
+                  options={[
+                  { value: "FLAMMABLE_CABINET", label: "Flammable cabinet" },
+                  { value: "VENTILATED_STORE", label: "Ventilated store" },
+                  { value: "COLD_STORE", label: "Cold store" },
+                  { value: "GENERAL", label: "General" },
+                  { value: "OUTDOOR_BUND", label: "Outdoor bund" }
+                ]}
+                />
               </Field>
               <Field label="Fire zone" hint="Reuses the Fire & Life Safety zone model.">
-                <Select value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
-                  <option value="">Not linked</option>
-                  {zones.map((z) => (
-                    <option key={z.id} value={z.id}>{z.name} ({z.zoneCode})</option>
-                  ))}
-                </Select>
+                <SelectField value={zoneId} onChange={setZoneId}
+                  placeholder="Not linked"
+                  options={zones.map((z) => ({ value: z.id, label: "{z.name} ({z.zoneCode})" }))}
+                />
               </Field>
               <Field label="Maximum capacity">
                 <Input type="number" min="0" step="any" value={capacity} onChange={(e) => setCapacity(e.target.value)} />
               </Field>
               <Field label="Capacity unit">
-                <Select value={capacityUnit} onChange={(e) => setCapacityUnit(e.target.value)}>
-                  <option value="KG">KG</option>
-                  <option value="L">L</option>
-                  <option value="T">T</option>
-                </Select>
+                <SelectField value={capacityUnit} onChange={setCapacityUnit}
+                  options={[
+                  { value: "KG", label: "KG" },
+                  { value: "L", label: "L" },
+                  { value: "T", label: "T" }
+                ]}
+                />
               </Field>
             </div>
 
             <Field label="Containment features">
-              <div className="flex flex-wrap gap-4 rounded-lg border border-slate-200 p-3">
-                <label className="flex items-center gap-2 text-xs text-slate-700">
+              <Card className="flex flex-wrap gap-4 rounded-lg p-3 shadow-none">
+                <Label className="flex items-center gap-2 text-xs text-slate-700">
                   <Checkbox checked={ventilated} onChange={(e) => setVentilated(e.target.checked)} /> Ventilated
-                </label>
-                <label className="flex items-center gap-2 text-xs text-slate-700">
+                </Label>
+                <Label className="flex items-center gap-2 text-xs text-slate-700">
                   <Checkbox checked={bunded} onChange={(e) => setBunded(e.target.checked)} /> Bunded
-                </label>
-                <label className="flex items-center gap-2 text-xs text-slate-700">
+                </Label>
+                <Label className="flex items-center gap-2 text-xs text-slate-700">
                   <Checkbox checked={tempControlled} onChange={(e) => setTempControlled(e.target.checked)} /> Temperature-controlled
-                </label>
-              </div>
+                </Label>
+              </Card>
             </Field>
           </div>
 

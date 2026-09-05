@@ -2,6 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export type PlantFlags = {
   plantId: string;
@@ -69,52 +72,52 @@ export function FeatureFlagsGrid({
   return (
     <div className="space-y-3">
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       )}
 
-      <div className="overflow-x-auto rounded-xl border bg-white">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-700">
-            <tr>
-              <th className="text-left px-4 py-3">Plant</th>
+      <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-slate-50 text-xs uppercase tracking-wider text-slate-700">
+            <TableRow>
+              <TableHead className="text-left px-4 py-3">Plant</TableHead>
               {FLAGS.map((f) => (
-                <th key={f.key} className="text-center px-4 py-3" title={f.hint}>
+                <TableHead key={f.key} className="text-center px-4 py-3" title={f.hint}>
                   {f.label}
-                </th>
+                </TableHead>
               ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y divide-slate-100">
             {state.map((row) => (
-              <tr
+              <TableRow
                 key={row.plantId}
                 className={
                   row.plantId === highlightPlantId ? "bg-primary-50/40" : "hover:bg-slate-50"
                 }
               >
-                <td className="px-4 py-3">
+                <TableCell className="px-4 py-3">
                   <div className="font-medium text-slate-900">{row.plantCode}</div>
                   <div className="text-xs text-slate-500">{row.plantName}</div>
-                </td>
+                </TableCell>
                 {FLAGS.map((f) => {
                   const cellId = `${row.plantId}:${f.key}`;
                   return (
-                    <td key={f.key} className="px-4 py-3 text-center">
+                    <TableCell key={f.key} className="px-4 py-3 text-center">
                       <Toggle
                         checked={row[f.key]}
                         disabled={pending && busy === cellId}
                         onChange={(next) => toggle(row.plantId, f.key, next)}
                       />
-                    </td>
+                    </TableCell>
                   );
                 })}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Card>
 
       <p className="text-xs text-slate-400">
         Flags apply per plant and take effect immediately. Enabling a module

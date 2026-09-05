@@ -2,6 +2,8 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import {
   Building2,
   Users,
@@ -155,10 +157,10 @@ export default async function EpcDashboardPage() {
         </div>
 
         {sites.length === 0 ? (
-          <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+          <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
             <Building2 size={36} className="mx-auto mb-2 text-slate-300" />
             <p className="text-sm">No sites found. <Link href="/epc/sites/new" className="text-cyan-700 hover:underline">Register a site</Link> to get started.</p>
-          </div>
+          </Card>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {sites.map((site) => (
@@ -218,23 +220,23 @@ export default async function EpcDashboardPage() {
             All contractors <ExternalLink size={12} />
           </Link>
         </div>
-        <div className="rounded-xl border bg-white overflow-hidden shadow-sm">
+        <Card className="rounded-xl border bg-white overflow-hidden shadow-sm">
           {contractors.length === 0 ? (
             <div className="p-8 text-center text-sm text-slate-500">
               No contractor data available.
             </div>
           ) : (
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                  <th className="px-4 py-3">Company</th>
-                  <th className="px-4 py-3">Prequalification Status</th>
-                  <th className="px-4 py-3">Score</th>
-                  <th className="px-4 py-3">Tier</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                  <TableHead className="px-4 py-3">Company</TableHead>
+                  <TableHead className="px-4 py-3">Prequalification Status</TableHead>
+                  <TableHead className="px-4 py-3">Score</TableHead>
+                  <TableHead className="px-4 py-3">Tier</TableHead>
+                  <TableHead className="px-4 py-3"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {contractors.map((c, i) => {
                   const score = c.prequalificationScore;
                   const tier =
@@ -245,14 +247,14 @@ export default async function EpcDashboardPage() {
                     : { label: "Watch", cls: "bg-rose-100 text-rose-800 border-rose-200" };
 
                   return (
-                    <tr key={c.id} className={`border-b last:border-0 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? "" : "bg-slate-50/40"}`}>
-                      <td className="px-4 py-3 font-medium text-slate-900">{c.companyName}</td>
-                      <td className="px-4 py-3">
+                    <TableRow key={c.id} className={`border-b last:border-0 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? "" : "bg-slate-50/40"}`}>
+                      <TableCell className="px-4 py-3 font-medium text-slate-900">{c.companyName}</TableCell>
+                      <TableCell className="px-4 py-3">
                         <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${prequaliColor(c.prequalificationStatus)}`}>
                           {humanizeStatus(c.prequalificationStatus)}
                         </span>
-                      </td>
-                      <td className="px-4 py-3 tabular-nums text-slate-700">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 tabular-nums text-slate-700">
                         {score !== null ? (
                           <div className="flex items-center gap-2">
                             <div className="h-1.5 w-20 rounded-full bg-slate-200 overflow-hidden">
@@ -266,8 +268,8 @@ export default async function EpcDashboardPage() {
                         ) : (
                           <span className="text-slate-400 text-xs">N/A</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
                         {tier ? (
                           <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${tier.cls}`}>
                             {tier.label}
@@ -275,19 +277,19 @@ export default async function EpcDashboardPage() {
                         ) : (
                           <span className="text-slate-400 text-xs">—</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
                         <Link href={`/epc/contractors/${c.id}`} className="text-xs text-cyan-700 hover:underline">
                           View
                         </Link>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

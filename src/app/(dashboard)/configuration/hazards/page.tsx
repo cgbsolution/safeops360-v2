@@ -2,6 +2,8 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { PermitGateToggle } from "./permit-gate-toggle";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -72,12 +74,12 @@ export default async function HazardsAdminPage(
         description="Structured hazard library used by HIRA studies. Global hazards are pre-seeded; tenants add organisation-specific entries."
       />
 
-      <div className="rounded-xl border bg-amber-50 border-amber-200 p-4 mb-4 text-sm text-amber-900">
+      <Alert variant="warning" className="rounded-xl border bg-amber-50 border-amber-200 p-4 mb-4 text-sm text-amber-900">
         <div className="font-medium">{hazards.length} hazards shown</div>
         <div className="mt-1 text-xs">
           The current set is a 20-row stub. PM-owned full library (~150+ rows across 17 categories) delivers by end of week 5.
         </div>
-      </div>
+      </Alert>
 
       <div className="flex flex-wrap gap-2 mb-4">
         <FilterChip href="/configuration/hazards" label="All" count={total} active={!searchParams.category} />
@@ -101,7 +103,7 @@ export default async function HazardsAdminPage(
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {items.map((h) => (
-                <div key={h.id} className="rounded-lg border bg-white p-4">
+                <Card key={h.id} className="rounded-lg border bg-white p-4 shadow-none">
                   <div className="flex items-start justify-between gap-2">
                     <div className="font-medium text-slate-900">{h.name}</div>
                     <div className="flex items-center gap-1 flex-shrink-0">
@@ -143,7 +145,7 @@ export default async function HazardsAdminPage(
                     requiresPermit={h.requiresPermit ?? false}
                     permitTypes={h.permitTypes ?? []}
                   />
-                </div>
+                </Card>
               ))}
             </div>
           </div>

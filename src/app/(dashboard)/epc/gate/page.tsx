@@ -16,7 +16,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -234,17 +236,14 @@ export default function GateClearancePage() {
       {/* Site selector */}
       <div className="mb-4">
         <Label htmlFor="site-select" className="text-xs text-slate-600 font-medium">Select Site</Label>
-        <Select
+        <SelectField
           id="site-select"
           value={selectedSiteId}
-          onChange={(e) => { setSelectedSiteId(e.target.value); handleClear(); }}
+          onChange={(value) => { setSelectedSiteId(value); handleClear(); }}
           className="mt-1 font-medium"
-        >
-          <option value="">— Select a site —</option>
-          {sites.map((s) => (
-            <option key={s.id} value={s.id}>{s.siteName} ({s.siteCode})</option>
-          ))}
-        </Select>
+          placeholder="— Select a site —"
+          options={sites.map((s) => ({ value: String(s.id), label: `${s.siteName} (${s.siteCode})` }))}
+        />
       </div>
 
       {/* Search form */}
@@ -277,17 +276,17 @@ export default function GateClearancePage() {
 
       {/* Error */}
       {checkError && (
-        <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 flex items-start gap-2">
+        <Alert variant="destructive" className="mb-4 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 flex items-start gap-2">
           <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
           <div>
             <span className="font-semibold">Check failed: </span>{checkError}
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Result card */}
       {result && cfg && (
-        <div className="mb-6 rounded-2xl border overflow-hidden shadow-lg">
+        <Card className="mb-6 rounded-2xl border overflow-hidden shadow-lg">
           {/* Colored header */}
           <div className={`${cfg.headerBg} px-6 py-5`}>
             <div className="flex items-center gap-4">
@@ -317,24 +316,24 @@ export default function GateClearancePage() {
 
             {/* Warnings */}
             {(result.warnings ?? []).length > 0 && (
-              <div className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
+              <Alert variant="warning" className="mt-3 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
                 {result.warnings.map((w, i) => (
                   <p key={i} className="text-sm text-amber-800 flex items-start gap-2">
                     <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" /> {w}
                   </p>
                 ))}
-              </div>
+              </Alert>
             )}
 
             {/* Blocking reasons */}
             {(result.blockingReasons ?? []).length > 0 && (
-              <div className="mt-3 rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+              <Alert variant="destructive" className="mt-3 rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
                 {result.blockingReasons.map((r, i) => (
                   <p key={i} className="text-sm text-rose-800 flex items-start gap-2">
                     <XCircle size={14} className="flex-shrink-0 mt-0.5" /> {r}
                   </p>
                 ))}
-              </div>
+              </Alert>
             )}
 
             {/* Gate pass / Deny footer */}
@@ -353,7 +352,7 @@ export default function GateClearancePage() {
                   )}
                 </div>
                 {/* QR Code for gate pass */}
-                <div className="flex flex-col items-center mt-4 p-4 bg-white rounded-xl border border-emerald-200">
+                <Alert variant="success" className="flex flex-col items-center mt-4 p-4 bg-white rounded-xl border border-emerald-200">
                   <p className="text-xs text-slate-500 mb-2 font-medium">Gate Pass QR Code</p>
                   <img
                     src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(result.gatePassNumber)}&bgcolor=ffffff&color=000000`}
@@ -372,7 +371,7 @@ export default function GateClearancePage() {
                         })
                       : "end of shift"}
                   </p>
-                </div>
+                </Alert>
               </div>
             )}
 
@@ -404,11 +403,11 @@ export default function GateClearancePage() {
               {humanizeStatus(result.result)}
             </span>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Today's Gate Log */}
-      <div className="rounded-xl border bg-white shadow-sm overflow-hidden">
+      <Card className="rounded-xl border bg-white shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
             <ClipboardCheck size={14} /> Today&apos;s Gate Log
@@ -461,7 +460,7 @@ export default function GateClearancePage() {
             </TableBody>
           </Table>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

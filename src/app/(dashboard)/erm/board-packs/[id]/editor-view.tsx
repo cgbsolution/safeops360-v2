@@ -11,6 +11,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import type { BoardPackRender, BoardPackPhase2, BoardPackPhase3 } from "./page";
 import type { Tier3Summary } from "@/app/(dashboard)/erm/lib-t3";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const READINESS_HEX: Record<string, string> = { NO_PLAN: "#C0392B", PLAN_EXISTS: "#E6A817", PLAN_TESTED: "#2E8B57" };
 const SIGNAL_HEX: Record<string, string> = { STRONG: "#C0392B", EMERGING: "#E6A817", WEAK: "#94a3b8" };
@@ -146,25 +149,25 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
     <div className="flex flex-col gap-5 lg:flex-row print:block">
       {/* ── Config panel (screen only) ───────────────────────────────── */}
       <aside className="w-full shrink-0 space-y-4 lg:w-80 print:hidden">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <div className="mb-3 flex items-center gap-2">
             <Settings2 size={16} className="text-slate-500" />
             <h2 className="text-sm font-semibold text-slate-900">Pack Sections</h2>
           </div>
           <div className="space-y-2">
             {SECTION_DEFS.map((s) => (
-              <label key={s.key} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <Label key={s.key} className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <Checkbox
                   checked={!!sections[s.key]}
                   onChange={() => toggleSection(s.key)}
                 />
                 {s.label}
-              </label>
+              </Label>
             ))}
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">Top-10 Commentary</h2>
           <p className="mb-3 text-xs text-slate-500">
             Board narrative shown beneath each top risk in the printed pack.
@@ -172,9 +175,9 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
           <div className="space-y-3">
             {top10.map((r) => (
               <div key={r.id}>
-                <label className="mb-1 block text-[11px] font-semibold text-slate-600">
+                <Label className="mb-1 block text-[11px] font-semibold text-slate-600">
                   {r.riskCode} — {r.title}
-                </label>
+                </Label>
                 <Textarea
                   value={commentary[r.id] ?? ""}
                   onChange={(e) => setComment(r.id, e.target.value)}
@@ -188,18 +191,18 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
               <p className="text-xs text-slate-400">No top risks to annotate.</p>
             )}
           </div>
-        </div>
+        </Card>
 
-        <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="space-y-2 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
               {error}
-            </div>
+            </Alert>
           )}
           {saved && !error && (
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+            <Alert variant="success" className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
               Saved.
-            </div>
+            </Alert>
           )}
           <Button
             variant="outline"
@@ -229,13 +232,13 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
               {status}
             </span>
           </div>
-        </div>
+        </Card>
       </aside>
 
       {/* ── Print-optimised preview pane ──────────────────────────────── */}
       <main className="min-w-0 flex-1">
         <PrintStyles />
-        <div className="board-pack mx-auto max-w-[1100px] rounded-xl border border-slate-200 bg-white p-0 shadow-sm print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+        <Card className="board-pack mx-auto max-w-[1100px] rounded-xl border border-slate-200 bg-white p-0 shadow-sm print:max-w-none print:rounded-none print:border-0 print:shadow-none">
           {/* Cover page */}
           <section className="bp-page bp-cover">
             <div className="flex h-full flex-col items-center justify-center gap-6 px-12 py-16 text-center">
@@ -668,7 +671,7 @@ export function BoardPackEditor({ packId, initial, phase2, phase3, tier3 }: { pa
           <div className="border-t border-slate-200 px-8 py-4 text-center text-[11px] text-slate-400 print:hidden">
             {FOOTER_TEXT}
           </div>
-        </div>
+        </Card>
       </main>
     </div>
   );

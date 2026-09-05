@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +40,9 @@ export default async function FireSafetyPage() {
         breadcrumbs={[{ label: "Operational Safety" }, { label: "Fire Safety" }]}
         description="Equipment lifecycle, inspection rounds (via the CAMS engine), assembly points, emergency plans and evacuation drills — every regulatory question, one screen." />
       {error || !d ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}. Run seed_fire_safety.py and ensure you have an HSE role.</div>
+        <Alert variant="destructive" size="lg" className="rounded-xl p-6">
+          {error}. Run seed_fire_safety.py and ensure you have an HSE role.
+        </Alert>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-6">
@@ -58,7 +62,7 @@ export default async function FireSafetyPage() {
               asset list and the controlled extinguisher sheet as tabs. The
               overdue state is not a separate destination either: it is the badge
               column on that register and the "act now" panel below. */}
-          <div className="mb-4 rounded-xl border border-[#D3DEEE] bg-white p-3">
+          <Card className="mb-4 rounded-xl border-[#D3DEEE] p-3 shadow-none">
             <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-[#5A6273]">
               Register &amp; controlled checklists — Page Industries EHS
             </div>
@@ -84,7 +88,7 @@ export default async function FireSafetyPage() {
                 </Link>
               ))}
             </div>
-          </div>
+          </Card>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div className={TILE}>

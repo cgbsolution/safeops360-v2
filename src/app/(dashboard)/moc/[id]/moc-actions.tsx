@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/toast";
+import { Card } from "@/components/ui/card";
 
 // Next logical state for each lifecycle step (the "advance" button).
 const NEXT: Record<string, { to: string; label: string }> = {
@@ -88,16 +89,16 @@ export function MocActions({ crId, status, urgency }: { crId: string; status: st
 
   if (CLOSED.has(status)) {
     return (
-      <div className="rounded-xl border bg-slate-50 p-3 text-sm text-slate-500">
+      <Card className="rounded-xl border bg-slate-50 p-3 text-sm text-slate-500 shadow-none">
         This change request is closed — read-only.
-      </div>
+      </Card>
     );
   }
 
   const next = NEXT[status];
 
   return (
-    <div className="rounded-xl border bg-white p-3 flex flex-wrap items-center gap-2">
+    <Card className="rounded-xl border bg-white p-3 flex flex-wrap items-center gap-2 shadow-none">
       <span className="text-xs uppercase tracking-wider text-slate-500 mr-1">Actions</span>
 
       {status === "under_approval" ? (
@@ -139,6 +140,6 @@ export function MocActions({ crId, status, urgency }: { crId: string; status: st
       >
         Withdraw
       </Button>
-    </div>
+    </Card>
   );
 }

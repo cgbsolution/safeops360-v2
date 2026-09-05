@@ -170,7 +170,7 @@ export default async function TrainingProgramDetailPage(props: {
               </CardHeader>
               <CardContent className="space-y-2 text-xs">
                 {program.questions.map((q: any) => (
-                  <div key={q.id} className="rounded-md border border-slate-200 bg-white p-2">
+                  <Card key={q.id} className="rounded-md border border-slate-200 bg-white p-2 shadow-none">
                     <div className="flex items-start justify-between gap-2">
                       <div className="font-medium text-slate-800">
                         Q{q.sequence}. {q.questionText}
@@ -189,7 +189,7 @@ export default async function TrainingProgramDetailPage(props: {
                         </Badge>
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 ))}
               </CardContent>
             </Card>

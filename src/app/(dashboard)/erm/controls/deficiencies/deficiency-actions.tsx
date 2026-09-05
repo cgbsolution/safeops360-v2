@@ -6,6 +6,8 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Deficiency } from "@/app/(dashboard)/erm/lib-t3";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 const NEXT_STATUS: Record<string, string[]> = {
   OPEN: ["REMEDIATION_ACTIVE"],
@@ -108,12 +110,12 @@ function ReportModal({ onClose, onSubmit, busy }: { onClose: () => void; onSubmi
   const [ref, setRef] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="w-full max-w-md rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Report to Audit Committee</h2>
           <Button variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
-        <label className="mb-1 block text-xs font-medium text-slate-600">Audit Committee reference</label>
+        <Label className="mb-1 block text-xs font-medium text-slate-600">Audit Committee reference</Label>
         <Input
           value={ref}
           onChange={(e) => setRef(e.target.value)}
@@ -129,7 +131,7 @@ function ReportModal({ onClose, onSubmit, busy }: { onClose: () => void; onSubmi
             {busy ? "Reporting…" : "Report"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

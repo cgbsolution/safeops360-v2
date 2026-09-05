@@ -1,4 +1,6 @@
 "use client";
+import { Card } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Version diff display — renders field-by-field changes between two
 // HiraVersion snapshots. Skips child arrays (hazards, controls, etc.)
@@ -99,7 +101,7 @@ export function VersionDiff({
   }
 
   return (
-    <div className="rounded-xl border bg-white">
+    <Card className="rounded-xl border bg-white shadow-none">
       <div className="px-4 py-3 border-b">
         <div className="text-xs uppercase tracking-wider text-slate-600">Field-by-field diff</div>
         <div className="text-sm font-medium mt-1">
@@ -113,32 +115,32 @@ export function VersionDiff({
           No top-level field differences between these versions. Children (hazards, controls, regulations) may still differ.
         </div>
       ) : (
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-600">
-            <tr>
-              <th className="text-left px-4 py-2">Field</th>
-              <th className="text-left px-4 py-2 bg-amber-50">Before ({fromLabel})</th>
-              <th className="text-left px-4 py-2 bg-emerald-50">After ({toLabel})</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
+        <Table className="w-full text-sm">
+          <TableHeader className="bg-slate-50 text-xs uppercase tracking-wider text-slate-600">
+            <TableRow>
+              <TableHead className="text-left px-4 py-2">Field</TableHead>
+              <TableHead className="text-left px-4 py-2 bg-amber-50">Before ({fromLabel})</TableHead>
+              <TableHead className="text-left px-4 py-2 bg-emerald-50">After ({toLabel})</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody className="divide-y">
             {changes.map((c) => (
-              <tr key={c.field} className="align-top">
-                <td className="px-4 py-2 font-medium text-slate-800 whitespace-nowrap">
+              <TableRow key={c.field} className="align-top">
+                <TableCell className="px-4 py-2 font-medium text-slate-800 whitespace-nowrap">
                   {FIELD_LABEL[c.field] ?? c.field}
-                </td>
-                <td className="px-4 py-2 bg-amber-50/40">
+                </TableCell>
+                <TableCell className="px-4 py-2 bg-amber-50/40">
                   <ValueDisplay v={c.from} />
-                </td>
-                <td className="px-4 py-2 bg-emerald-50/40">
+                </TableCell>
+                <TableCell className="px-4 py-2 bg-emerald-50/40">
                   <ValueDisplay v={c.to} />
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       )}
-    </div>
+    </Card>
   );
 }
 

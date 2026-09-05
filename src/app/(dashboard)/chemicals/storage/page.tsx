@@ -22,6 +22,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn } from "@/lib/utils";
 import { EmptyState, ErrorState, HazardChips, Kpi, SubNav, TableNote } from "../_components";
 import { NewStorageLocationDialog } from "./storage-actions";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -182,7 +183,7 @@ export default async function StorageMapPage({
           </div>
 
           {blockCount > 0 && (
-            <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50 p-4">
+            <Alert variant="destructive" size="lg" className="mb-4 rounded-xl p-4">
               <div className="text-sm font-semibold text-rose-800">
                 {blockCount} blocking co-storage conflict{blockCount === 1 ? "" : "s"} present
               </div>
@@ -192,7 +193,7 @@ export default async function StorageMapPage({
                 was tightened afterwards — either way, segregate them and check the incompatibility
                 matrix for a recent change.
               </div>
-            </div>
+            </Alert>
           )}
 
           {locations.length === 0 ? (
@@ -303,7 +304,7 @@ export default async function StorageMapPage({
           )}
 
           {overrides.length > 0 && (
-            <div className="mt-5 overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <Card className="mt-5 overflow-x-auto rounded-xl shadow-none">
               <div className="border-b border-slate-200 px-4 py-3">
                 <h2 className="text-sm font-semibold text-slate-900">Co-storage overrides pending review</h2>
                 <p className="text-[11px] text-slate-500">
@@ -311,29 +312,29 @@ export default async function StorageMapPage({
                   accepted risk with no owner.
                 </p>
               </div>
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <tr>
-                    <th className="px-4 py-2.5 font-semibold">Raised</th>
-                    <th className="px-4 py-2.5 font-semibold">Severity</th>
-                    <th className="px-4 py-2.5 font-semibold">Reason given</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
+              <Table className="w-full text-sm">
+                <TableHeader className="bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableRow>
+                    <TableHead className="px-4 py-2.5 font-semibold">Raised</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Severity</TableHead>
+                    <TableHead className="px-4 py-2.5 font-semibold">Reason given</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y divide-slate-100">
                   {overrides.map((o) => (
-                    <tr key={o.id}>
-                      <td className="px-4 py-2.5 text-slate-600">
+                    <TableRow key={o.id}>
+                      <TableCell className="px-4 py-2.5 text-slate-600">
                         {new Date(o.overriddenAt).toLocaleString()}
-                      </td>
-                      <td className="px-4 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5">
                         <Badge className="bg-amber-50 text-amber-800 border-amber-200">{o.severity}</Badge>
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-700">{o.overrideReason || "—"}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-4 py-2.5 text-slate-700">{o.overrideReason || "—"}</TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </Card>
           )}
         </>
       )}

@@ -33,6 +33,7 @@ import {
   CircleDashed
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
 
 const POLL_INTERVAL_MS = 2500;
 const POLL_MAX_MS = 180_000;
@@ -314,7 +315,7 @@ export function CapaAssistantCard({ capaId }: { capaId: string }) {
         )}
 
         {status === "ERRORED" && (
-          <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-rose-900 text-sm space-y-2">
+          <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-rose-900 text-sm space-y-2">
             <div className="flex items-start gap-2">
               <AlertCircle size={14} className="mt-0.5" />
               <div className="font-medium">
@@ -330,7 +331,7 @@ export function CapaAssistantCard({ capaId }: { capaId: string }) {
             <Button size="sm" variant="outline" onClick={() => startInvocation(false)} disabled={starting}>
               {starting ? "Retrying…" : "Retry"}
             </Button>
-          </div>
+          </Alert>
         )}
 
         {(status === "PENDING_REVIEW" || status === "ACCEPTED" || status === "REJECTED" || status === "MODIFIED") && (
@@ -342,7 +343,7 @@ export function CapaAssistantCard({ capaId }: { capaId: string }) {
         )}
 
         {status === "PENDING_REVIEW" && (
-          <div className="rounded-md border border-violet-200 bg-white/70 p-2.5 text-xs text-violet-800 space-y-2">
+          <Alert variant="brand" className="rounded-md border border-violet-200 bg-white/70 p-2.5 text-xs text-violet-800 space-y-2">
             <p>
               This is an advisory draft. Copy what you want into the <strong>Submit RCA</strong> form below —
               recording a decision here only trains the assistant, it does not write to the CAPA.
@@ -355,7 +356,7 @@ export function CapaAssistantCard({ capaId }: { capaId: string }) {
                 <XIcon size={13} /> Dismiss
               </Button>
             </div>
-          </div>
+          </Alert>
         )}
 
         {/* Footer — rerun / deep analysis */}
@@ -387,9 +388,9 @@ function IdleCard({ onStart, starting }: { onStart: (force?: boolean) => void; s
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-violet-900 text-base">
           <Sparkles size={16} /> CAPA Assistant
-          <span className="ml-2 rounded-full bg-violet-100 px-2 py-px text-[10px] font-medium text-violet-700">
+          <Badge variant="violet" size="sm" className="ml-2 py-px font-medium">
             AI · advisory
-          </span>
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-sm text-violet-900">
@@ -463,7 +464,7 @@ function RunningView({
         {note ?? "Loading CAPA context and analysing…"}
       </div>
       {(error || overdue) && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900 space-y-2">
+        <Alert variant="warning" className="rounded-md border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900 space-y-2">
           <div className="flex items-start gap-1.5">
             <AlertCircle size={13} className="mt-0.5 flex-shrink-0" />
             <span>{error ?? "This is taking longer than usual — the draft is often ready already."}</span>
@@ -476,7 +477,7 @@ function RunningView({
               <Sparkles size={12} /> Start over
             </Button>
           </div>
-        </div>
+        </Alert>
       )}
     </div>
   );
@@ -528,22 +529,20 @@ function SuggestionView({
           Overall confidence: <span className="font-medium">{Math.round(s.overallConfidence * 100)}%</span>
         </div>
       )}
-      {s.notes && <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">{s.notes}</div>}
+      {s.notes && <Alert variant="warning" className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">{s.notes}</Alert>}
     </div>
   );
 }
 
 function CopyBtn({ text, k, copied, onCopy }: { text: string; k: string; copied: string | null; onCopy: (t: string, k: string) => void }) {
   return (
-    <button
+    <Button variant="outline"
       type="button"
-      onClick={() => onCopy(text, k)}
-      className="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] text-slate-500 hover:border-violet-300 hover:text-violet-700"
-      title="Copy to clipboard"
-    >
+      onClick={() => onCopy(text, k)} className="gap-1 rounded px-1.5 py-0.5 text-[10px]"
+      title="Copy to clipboard">
       {copied === k ? <Check size={10} className="text-emerald-600" /> : <Copy size={10} />}
       {copied === k ? "Copied" : "Copy"}
-    </button>
+    </Button>
   );
 }
 
@@ -561,7 +560,7 @@ function RootCauses({
     <div className="space-y-2">
       <Heading text={`Candidate root causes (${suggestions.length})`} />
       {suggestions.map((rc, i) => (
-        <div key={i} className="rounded-lg border border-violet-100 bg-white p-2.5">
+        <Alert variant="brand" key={i} className="rounded-lg border border-violet-100 bg-white p-2.5">
           <div className="flex items-start justify-between gap-2">
             <span className="text-sm font-medium text-slate-800">{rc.description}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
@@ -583,7 +582,7 @@ function RootCauses({
               </ul>
             </div>
           )}
-        </div>
+        </Alert>
       ))}
     </div>
   );
@@ -603,7 +602,7 @@ function Actions({
     <div className="space-y-2">
       <Heading text={`Proposed actions (${suggestions.length})`} />
       {suggestions.map((a, i) => (
-        <div key={i} className="rounded-lg border border-violet-100 bg-white p-2.5">
+        <Alert variant="brand" key={i} className="rounded-lg border border-violet-100 bg-white p-2.5">
           <div className="flex items-start justify-between gap-2">
             <span className="text-sm font-medium text-slate-800">{a.description}</span>
             <div className="flex items-center gap-1 flex-shrink-0">
@@ -624,7 +623,7 @@ function Actions({
               {a.verificationCriterion}
             </div>
           )}
-        </div>
+        </Alert>
       ))}
     </div>
   );
@@ -642,7 +641,7 @@ function Verification({
   return (
     <div className="space-y-2">
       <Heading text="Verification approach" />
-      <div className="rounded-lg border border-violet-100 bg-white p-2.5 space-y-1.5">
+      <Alert variant="brand" className="rounded-lg border border-violet-100 bg-white p-2.5 space-y-1.5">
         {s.criterion && (
           <div className="flex items-start justify-between gap-2">
             <div className="text-sm text-slate-800">
@@ -677,7 +676,7 @@ function Verification({
             </ul>
           </div>
         )}
-      </div>
+      </Alert>
     </div>
   );
 }

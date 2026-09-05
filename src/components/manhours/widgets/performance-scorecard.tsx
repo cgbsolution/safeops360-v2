@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Trophy } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export interface ScorecardRow {
   plantId: string;
@@ -57,28 +58,28 @@ export function PerformanceScorecard({
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-xs uppercase tracking-wider text-slate-500 border-b">
-              <tr>
-                <th className="px-2 py-2 text-left">Rank</th>
-                <th className="px-2 py-2 text-left">Plant</th>
-                <th className="px-2 py-2 text-right">Score</th>
-                <th className="px-2 py-2 text-left">Band</th>
-                <th className="px-2 py-2"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
+          <Table className="w-full text-sm">
+            <TableHeader className="text-xs uppercase tracking-wider text-slate-500 border-b">
+              <TableRow>
+                <TableHead className="px-2 py-2 text-left">Rank</TableHead>
+                <TableHead className="px-2 py-2 text-left">Plant</TableHead>
+                <TableHead className="px-2 py-2 text-right">Score</TableHead>
+                <TableHead className="px-2 py-2 text-left">Band</TableHead>
+                <TableHead className="px-2 py-2"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y">
               {sorted.map((r, i) => {
                 const tone = BAND_TONE[r.band];
                 const rowHref = href ? href(r) : null;
                 // Plant-name cell is the click target when href is set —
-                // wrapping the whole row in an <a> would put <td>s inside
+                // wrapping the whole row in an <a> would put <TableCell>s inside
                 // an anchor, which is invalid HTML and triggers React's
                 // hydration error. Per-cell anchors keep the table valid.
                 return (
-                  <tr key={r.plantId} className={rowHref ? "hover:bg-slate-50" : ""}>
-                    <td className="px-2 py-2 font-mono text-xs tabular-nums">{i + 1}</td>
-                    <td className="px-2 py-2">
+                  <TableRow key={r.plantId} className={rowHref ? "hover:bg-slate-50" : ""}>
+                    <TableCell className="px-2 py-2 font-mono text-xs tabular-nums">{i + 1}</TableCell>
+                    <TableCell className="px-2 py-2">
                       {rowHref ? (
                         <Link href={rowHref} className="block hover:text-primary-700 transition">
                           <div className="font-medium">{r.plantName}</div>
@@ -90,19 +91,19 @@ export function PerformanceScorecard({
                           <div className="text-[10px] text-slate-500">{r.plantCode}</div>
                         </>
                       )}
-                    </td>
-                    <td className="px-2 py-2 text-right">
+                    </TableCell>
+                    <TableCell className="px-2 py-2 text-right">
                       <span className="font-bold tabular-nums">{r.score.toFixed(1)}</span>
                       <span className="text-slate-400 text-xs"> / 100</span>
-                    </td>
-                    <td className="px-2 py-2">
+                    </TableCell>
+                    <TableCell className="px-2 py-2">
                       <span
                         className={cn("inline-block rounded px-2 py-0.5 text-[10px] font-medium uppercase", tone.chip)}
                       >
                         {r.band.replace(/_/g, " ")}
                       </span>
-                    </td>
-                    <td className="px-2 py-2 text-right">
+                    </TableCell>
+                    <TableCell className="px-2 py-2 text-right">
                       {/* Mini score bar */}
                       <div className="relative h-1.5 w-24 ml-auto rounded bg-slate-200 overflow-hidden">
                         <div
@@ -110,12 +111,12 @@ export function PerformanceScorecard({
                           style={{ width: `${Math.max(0, Math.min(100, r.score))}%` }}
                         />
                       </div>
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       </CardContent>
     </Card>

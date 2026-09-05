@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InsightKind, InsightSeverity, Signal } from "@/lib/insights";
+import { Button } from "@/components/ui/button";
 
 const KIND_ICON: Record<InsightKind, LucideIcon> = {
   trend: TrendingUp,
@@ -86,7 +87,7 @@ export function SignalChip({
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false);
       }}
     >
-      <button
+      <Button variant="ghost"
         type="button"
         aria-describedby={open ? popId : undefined}
         aria-expanded={open}
@@ -98,11 +99,10 @@ export function SignalChip({
           "chip gap-1 whitespace-nowrap border text-[10px] font-semibold",
           filterable ? "cursor-pointer" : "cursor-help",
           SEV_CHIP[signal.severity] ?? SEV_CHIP.info
-        )}
-      >
+        )}>
         <Icon size={11} strokeWidth={2.5} aria-hidden />
         {signal.label}
-      </button>
+      </Button>
 
       {open && (
         <span

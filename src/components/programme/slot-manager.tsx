@@ -30,6 +30,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { UserPicker } from "@/components/ui/user-picker";
 import { readApiError } from "@/lib/client-errors";
 import { SlotTransitionDialog } from "@/components/programme/slot-transition-dialog";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 import {
   ORIGIN_LABEL,
   SLOT_STATUS_CHIP,
@@ -287,12 +289,16 @@ function CreateSlotDialog({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <Label htmlFor="period" className="text-xs">Period</Label>
-            <Select id="period" value={String(periodIndex)}
-              onChange={(e) => setPeriodIndex(Number(e.target.value))} className="mt-1">
-              {Array.from({ length: cycle.periodsPerCycle }, (_, i) => (
-                <option key={i} value={i}>P{i + 1}</option>
-              ))}
-            </Select>
+            <SelectField
+              id="period"
+              value={String(periodIndex)}
+              onChange={(value) => setPeriodIndex(Number(value))}
+              className="mt-1"
+              options={Array.from({ length: cycle.periodsPerCycle }, (_, i) => ({
+                value: String(i),
+                label: `P${i + 1}`
+              }))}
+            />
           </div>
           <div>
             <Label htmlFor="days" className="text-xs">Estimated auditor-days</Label>
@@ -303,10 +309,12 @@ function CreateSlotDialog({
 
         <div>
           <Label htmlFor="origin" className="text-xs">Origin</Label>
-          <Select id="origin" value={origin} onChange={(e) => setOrigin(e.target.value)} className="mt-1">
-            <option value="INTERNAL">Internal — our own planned audit</option>
-            <option value="EXTERNAL">External body — brand, SMETA, certification surveillance</option>
-          </Select>
+          <SelectField id="origin" value={origin} onChange={setOrigin} className="mt-1"
+            options={[
+            { value: "INTERNAL", label: "Internal — our own planned audit" },
+            { value: "EXTERNAL", label: "External body — brand, SMETA, certification surveillance" }
+          ]}
+          />
           {origin === "EXTERNAL" && (
             <>
               <Input value={externalBody} onChange={(e) => setExternalBody(e.target.value)}
@@ -331,9 +339,9 @@ function CreateSlotDialog({
 
         <div>
           <Label htmlFor="sampling" className="text-xs">Sampling approach</Label>
-          <Select id="sampling" value={sampling} onChange={(e) => setSampling(e.target.value)} className="mt-1">
-            {SAMPLING.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-          </Select>
+          <SelectField id="sampling" value={sampling} onChange={setSampling} className="mt-1"
+            options={SAMPLING.map((s) => ({ value: s.value, label: s.label }))}
+          />
           {sampling !== "FULL" && (
             <>
               <Textarea rows={2} value={justification} onChange={(e) => setJustification(e.target.value)}
@@ -351,11 +359,11 @@ function CreateSlotDialog({
           <Label className="text-xs">
             Scope units covered <span className="text-rose-600">*</span>
           </Label>
-          <div className="mt-1 max-h-40 overflow-y-auto rounded-md border border-slate-200">
+          <Card className="mt-1 max-h-40 overflow-y-auto rounded-md border border-slate-200 shadow-none">
             {scopeUnits.map((u) => {
               const on = unitIds.includes(u.id);
               return (
-                <button
+                <Button variant="ghost"
                   key={u.id}
                   type="button"
                   onClick={() =>
@@ -364,8 +372,7 @@ function CreateSlotDialog({
                   className={cn(
                     "flex w-full items-center gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50",
                     on && "bg-violet-50/60",
-                  )}
-                >
+                  )}>
                   <span className={cn("flex size-3.5 items-center justify-center rounded border text-[9px]",
                     on ? "border-violet-600 bg-violet-600 text-white" : "border-slate-300")}>
                     {on && "✓"}
@@ -374,10 +381,10 @@ function CreateSlotDialog({
                   <span className="ml-auto shrink-0 text-[10px] text-slate-400">
                     {siteText(u, { short: true })}
                   </span>
-                </button>
+                </Button>
               );
             })}
-          </div>
+          </Card>
           {unitIds.length === 0 && (
             <p className="mt-1 text-[11px] text-slate-400">
               A slot must cover at least one scope unit, or it contributes nothing to coverage.
@@ -387,9 +394,9 @@ function CreateSlotDialog({
       </div>
 
       {err && (
-        <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+        <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
           {err}
-        </div>
+        </Alert>
       )}
 
       <Footer

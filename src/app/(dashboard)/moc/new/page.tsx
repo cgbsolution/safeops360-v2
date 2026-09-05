@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { ChangeWizard } from "./change-wizard";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -24,9 +25,9 @@ export default async function NewMocPage(props: {
       {plantId ? (
         <ChangeWizard plantId={plantId} />
       ) : (
-        <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
           No plant in context — open this from the MOC register with a plant selected.
-        </div>
+        </Card>
       )}
     </div>
   );

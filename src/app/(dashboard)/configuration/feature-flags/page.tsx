@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { FeatureFlagsGrid, type PlantFlags } from "./feature-flags-grid";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -50,10 +51,10 @@ export default async function FeatureFlagsPage(props: {
       />
 
       {plants.length === 0 ? (
-        <div className="rounded-xl border bg-white p-8 text-sm text-slate-600">
+        <Card className="rounded-xl border bg-white p-8 text-sm text-slate-600 shadow-none">
           No plants are accessible to your account, so there are no feature
           flags to manage. Contact a System Administrator.
-        </div>
+        </Card>
       ) : (
         <FeatureFlagsGrid rows={rows} highlightPlantId={sp.plantId ?? null} />
       )}

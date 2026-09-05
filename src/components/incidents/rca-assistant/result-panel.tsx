@@ -23,6 +23,8 @@ import {
 import { cn } from "@/lib/utils";
 
 import { RCA_METHOD_LABELS } from "@/lib/rca/types";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   isParsedSuggestion,
   type AgentInvocationOut,
@@ -44,10 +46,10 @@ export function ResultPanel({
   const suggestion = invocation.agentSuggestion;
   if (!suggestion) {
     return (
-      <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900 text-xs">
+      <Alert variant="warning" className="p-3">
         The agent finished but produced no parsed suggestion. The reasoning
         may still be useful — open "View Full Reasoning" below.
-      </div>
+      </Alert>
     );
   }
 
@@ -56,10 +58,10 @@ export function ResultPanel({
   if (!isParsedSuggestion(suggestion)) {
     return (
       <div className="space-y-2">
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-amber-900 text-xs">
+        <Alert variant="warning" className="p-3">
           The agent emitted a suggestion block that wasn't valid JSON. Raw
           contents below — review and capture the analysis manually.
-        </div>
+        </Alert>
         <pre className="text-[11px] whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-2 max-h-60 overflow-auto">
           {(suggestion as { _unparsed: string })._unparsed}
         </pre>
@@ -89,9 +91,9 @@ export function ResultPanel({
       </div>
 
       {reasoningOpen && invocation.agentReasoning && (
-        <div className="rounded-md border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-700 whitespace-pre-wrap">
+        <Card className="whitespace-pre-wrap rounded-md border-slate-200 p-3 text-xs leading-relaxed text-slate-700 shadow-none">
           {invocation.agentReasoning}
-        </div>
+        </Card>
       )}
 
       {/* Recommended methodology + Load Into Editor */}

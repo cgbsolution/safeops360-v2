@@ -19,6 +19,9 @@ import { useState } from "react";
 import { AlertTriangle, ChevronDown, Repeat } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { InsightBand, ReportInsights, ReportInsightPattern } from "../../../lib";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 // Band -> classes. The BANDING DECISION is not made here: the backend already
 // assigned every gauge and bar its band and froze it. This only says what each
@@ -61,7 +64,7 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
           unchanged — this is the same critical-fail gate the verdict already
           applied, only visible. */}
       {criticalBanner && (
-        <div className="mb-3 flex items-start gap-2 rounded-md border-l-4 border-l-rose-600 bg-rose-50 px-3 py-2">
+        <Alert variant="destructive" className="mb-3 flex items-start gap-2 rounded-md border-l-4 border-l-rose-600 bg-rose-50 px-3 py-2">
           <AlertTriangle size={16} className="mt-0.5 shrink-0 text-rose-600" />
           <div>
             <div className="text-[13px] font-bold text-rose-800">{criticalBanner.headline}</div>
@@ -71,7 +74,7 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
               </div>
             )}
           </div>
-        </div>
+        </Alert>
       )}
 
       {/* Gauge + headline counts */}
@@ -172,19 +175,19 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
           below, which is the whole point: a repeat finding buried among its
           category peers is the one a reader most needs not to miss. */}
       {repeats && repeats.count > 0 && (
-        <div className="mt-4 rounded-md border border-rose-200 bg-rose-50/70 p-3">
+        <Alert variant="destructive" className="mt-4 rounded-md border border-rose-200 bg-rose-50/70 p-3">
           <div className="flex items-center gap-2">
             <Repeat size={15} className="shrink-0 text-rose-600" />
             <div className="text-[13px] font-bold text-rose-800">{repeats.headline}</div>
           </div>
           <div className="mt-2 space-y-2">
             {repeats.items.map((it) => (
-              <div key={it.checkpointCode} className="rounded border border-rose-200 bg-white p-2">
+              <Alert variant="destructive" key={it.checkpointCode} className="rounded border border-rose-200 bg-white p-2">
                 <div className="flex flex-wrap items-center gap-2 text-[11px]">
                   <span className="font-mono font-semibold text-rose-700">{it.checkpointCode}</span>
-                  <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-rose-700">
+                  <Badge variant="danger" className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-rose-700">
                     {it.statusLabel}
-                  </span>
+                  </Badge>
                   <span className="text-slate-400">{it.discipline}</span>
                   {it.capaNumber && (
                     <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] text-amber-800">{it.capaNumber}</span>
@@ -194,7 +197,7 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
                 {it.observation && (
                   <div className="mt-0.5 text-[11px] italic text-slate-500">{it.observation}</div>
                 )}
-              </div>
+              </Alert>
             ))}
           </div>
           {repeats.truncated > 0 && (
@@ -202,7 +205,7 @@ export function InsightSummary({ insights }: { insights: ReportInsights }) {
               {repeats.truncated} further repeat finding(s) appear in the findings register below.
             </p>
           )}
-        </div>
+        </Alert>
       )}
 
       {/* CAPA status strip */}
@@ -314,9 +317,9 @@ function PatternCard({ pattern: p }: { pattern: ReportInsightPattern }) {
         <div className={cn("text-[12.5px] font-bold", SEV_TEXT[p.severity] ?? SEV_TEXT.info)}>
           {p.headline}
         </div>
-        <span className="shrink-0 rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-slate-500">
+        <Badge variant="neutral" className="shrink-0 rounded-full bg-white/70 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-slate-500">
           {p.confidence} confidence
-        </span>
+        </Badge>
       </div>
       <p className="mt-0.5 text-[11.5px] leading-relaxed text-slate-600">{p.evidence}</p>
       {/* The wording pattern is the one tier grounded in freeform text rather
@@ -332,14 +335,12 @@ function PatternCard({ pattern: p }: { pattern: ReportInsightPattern }) {
         <p className="mt-1 text-[11px] font-medium text-primary-800">{p.suggestedAction}</p>
       )}
       {p.recordRefs.length > 0 && (
-        <button
+        <Button variant="ghost"
           type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-slate-500 hover:text-slate-700 print:hidden"
-        >
+          onClick={() => setOpen((v) => !v)} className="mt-1 gap-1 text-[10px] print:hidden">
           <ChevronDown size={11} className={cn("transition-transform", open && "rotate-180")} />
           {p.refCount} checkpoint(s)
-        </button>
+        </Button>
       )}
       <div className={cn("mt-1 font-mono text-[10px] text-slate-500", !open && "hidden print:block")}>
         {p.recordRefs.join(", ")}

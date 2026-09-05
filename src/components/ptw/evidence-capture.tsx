@@ -20,6 +20,7 @@ import { GpsCaptureStatus } from "@/components/ui/gps-capture";
 import { SignatureField } from "@/components/ui/signature-pad";
 import { Button } from "@/components/ui/button";
 import { readApiError } from "@/lib/client-errors";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 
 export type PtwEvidence = {
   gpsLatitude: number | null;
@@ -183,15 +184,13 @@ export function EvidenceCapture({
 
       {/* Declaration */}
       {declaration && (
-        <label className="flex items-start gap-2 rounded-md border border-slate-200 bg-white p-2 text-xs">
-          <input
-            type="checkbox"
-            checked={declarationAgreed}
-            onChange={(e) => setDeclarationAgreed(e.target.checked)}
-            className="mt-0.5"
-          />
-          <span className="text-slate-700">{declaration}</span>
-        </label>
+        <CheckboxField
+          variant="card"
+          className="text-xs"
+          checked={declarationAgreed}
+          onChange={(e) => setDeclarationAgreed(e.target.checked)}
+          label={<span className="text-slate-700">{declaration}</span>}
+        />
       )}
     </div>
   );

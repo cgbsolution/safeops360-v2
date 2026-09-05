@@ -9,6 +9,11 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 const INPUT =
   "flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-600";
@@ -134,52 +139,45 @@ export function SourceIntakeForm({
   return (
     <form onSubmit={onSubmit} className="space-y-6 max-w-4xl">
       {error && (
-        <div className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">
+        <Alert variant="destructive" className="rounded-lg border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm text-rose-900">
           {error}
-        </div>
+        </Alert>
       )}
 
-      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+      <Alert variant="info" className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
         <div className="font-medium">{config.sourceLabel}</div>
         <div className="text-xs mt-1">{config.intro}</div>
-      </div>
+      </Alert>
 
       <Section title={`1 — ${config.sourceLabel} Details`}>
         <Grid>
           {config.fields.map((f) => (
             <div key={f.key} className={f.type === "textarea" ? "md:col-span-2" : ""}>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
+              <Label className="block text-xs font-medium text-slate-600 mb-1">
                 {f.label} {f.required && <span className="text-rose-600">*</span>}
-              </label>
+              </Label>
               {f.type === "textarea" ? (
-                <textarea
+                <Textarea
                   className={TEXTAREA}
                   rows={3}
                   value={sourceMeta[f.key] ?? ""}
                   onChange={(e) => setMetaField(f.key, e.target.value)}
-                  placeholder={f.placeholder}
-                />
+                  placeholder={f.placeholder} />
               ) : f.type === "select" ? (
-                <select
+                <SelectField
                   className={INPUT}
                   value={sourceMeta[f.key] ?? ""}
-                  onChange={(e) => setMetaField(f.key, e.target.value)}
-                >
-                  <option value="">— Select —</option>
-                  {f.options?.map((opt) => (
-                    <option key={opt.code} value={opt.code}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(value) => setMetaField(f.key, value)}
+                  placeholder="— Select —"
+                  options={f.options?.map((opt) => ({ value: opt.code, label: `${opt.label}` }))}
+                />
               ) : (
-                <input
+                <Input
                   type={f.type}
                   className={INPUT}
                   value={sourceMeta[f.key] ?? ""}
                   onChange={(e) => setMetaField(f.key, e.target.value)}
-                  placeholder={f.placeholder}
-                />
+                  placeholder={f.placeholder} />
               )}
               {f.hint && <div className="text-[10px] text-slate-500 mt-0.5">{f.hint}</div>}
             </div>
@@ -190,94 +188,69 @@ export function SourceIntakeForm({
       <Section title="2 — Scope">
         <Grid>
           <Field label="Plant" required>
-            <select className={INPUT} value={plantId} onChange={(e) => setPlantId(e.target.value)}>
-              {plants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            <SelectField className={INPUT} value={plantId} onChange={setPlantId}
+              options={plants.map((p) => ({ value: p.id, label: `${p.name}` }))}
+            />
           </Field>
           <Field label="Detected at" required>
-            <input
+            <Input
               type="date"
               className={INPUT}
               value={detectedAt}
-              onChange={(e) => setDetectedAt(e.target.value)}
-            />
+              onChange={(e) => setDetectedAt(e.target.value)} />
           </Field>
         </Grid>
       </Section>
 
       <Section title="3 — Problem">
         <Field label="Title" required>
-          <input className={INPUT} value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input className={INPUT} value={title} onChange={(e) => setTitle(e.target.value)} />
         </Field>
         <Field label="Problem description (min 50 chars)" required>
-          <textarea
+          <Textarea
             className={TEXTAREA}
             rows={4}
             value={problemDescription}
-            onChange={(e) => setProblemDescription(e.target.value)}
-          />
+            onChange={(e) => setProblemDescription(e.target.value)} />
           <div className="text-[10px] text-slate-500 mt-0.5">{problemDescription.length} / 50</div>
         </Field>
         <Field label="Impact if not addressed">
-          <textarea
+          <Textarea
             className={TEXTAREA}
             rows={2}
             value={problemImpact}
-            onChange={(e) => setProblemImpact(e.target.value)}
-          />
+            onChange={(e) => setProblemImpact(e.target.value)} />
         </Field>
       </Section>
 
       <Section title="4 — Classification & Ownership">
         <Grid>
           <Field label="Primary category" required>
-            <select
+            <SelectField
               className={INPUT}
               value={primaryCategory}
-              onChange={(e) => setPrimaryCategory(e.target.value)}
-            >
-              {PRIMARY_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+              onChange={setPrimaryCategory}
+              options={PRIMARY_CATEGORIES.map((c) => ({ value: c, label: `${c.replace(/_/g, " ")}` }))}
+            />
           </Field>
           <Field label="Severity" required>
-            <select className={INPUT} value={severity} onChange={(e) => setSeverity(e.target.value)}>
-              {SEVERITIES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <SelectField className={INPUT} value={severity} onChange={setSeverity}
+              options={SEVERITIES.map((s) => ({ value: s, label: `${s}` }))}
+            />
           </Field>
           <Field label="Priority" required>
-            <select className={INPUT} value={priority} onChange={(e) => setPriority(e.target.value)}>
-              {PRIORITIES.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </select>
+            <SelectField className={INPUT} value={priority} onChange={setPriority}
+              options={PRIORITIES.map((p) => ({ value: p, label: `${p}` }))}
+            />
           </Field>
           <Field label="Primary owner" required>
-            <select
+            <SelectField
               className={INPUT}
               value={primaryOwnerUserId}
-              onChange={(e) => setPrimaryOwnerUserId(e.target.value)}
-            >
-              <option value="">— Select —</option>
-              {plantUsers.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.name}
-                </option>
-              ))}
-            </select>
+              onChange={setPrimaryOwnerUserId}
+              placeholder="— Select —"
+              options={plantUsers.map((u) => ({ value: u.id, label: `${u.name}` }))}
+            />
           </Field>
         </Grid>
       </Section>
@@ -318,9 +291,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">
+      <Label className="block text-xs font-medium text-slate-600 mb-1">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );

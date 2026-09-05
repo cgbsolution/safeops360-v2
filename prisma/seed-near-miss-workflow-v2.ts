@@ -16,8 +16,14 @@
 //   1  Reported                  reporter — CAPAs defined here
 //   2  Safety Officer Review     verifies; assigns each CAPA's owner
 //   3  CAPA Execution            the assigned owners, in parallel
-//   4  Verify CAPAs              HSE Manager checks the evidence
-//   5  Final Closure             HSE Manager closes
+//   4  Verify CAPAs              the SAME Safety Officer who handed them out
+//   5  Final Closure             Plant Head
+//
+// Verification goes back to the officer who assigned the work rather than to
+// an HSE Manager: they are the one who knows what they asked for, so they are
+// the one who can tell whether the evidence answers it. Closure sits with the
+// Plant Head, which keeps the person who signed the work off and the person
+// who closes the record apart.
 //
 // IN-FLIGHT RECORDS. The old definition is deactivated, not deleted, and no
 // instance is touched. `workflow_engine.initiate` picks a definition by
@@ -86,17 +92,21 @@ const STEPS = [
     sequence: 4,
     stepType: "VERIFIER",
     name: "Verify CAPAs",
-    approverRole: "HSE_MANAGER",
-    escalationRole: "PLANT_HEAD",
+    // Same resolution as step 2, so the same named officer comes back to check
+    // the evidence for the actions they assigned.
+    approverField: "SAFETY_OFFICER",
+    approverRole: "SAFETY_OFFICER",
+    escalationRole: "HSE_MANAGER",
     slaHours: 120,
-    notes: "Check the evidence on every CAPA before the record is closed."
+    notes:
+      "Check the evidence on every CAPA you assigned before the record goes for closure."
   },
   {
     sequence: 5,
     stepType: "CLOSURE",
     name: "Final Closure",
-    approverRole: "HSE_MANAGER",
-    escalationRole: "PLANT_HEAD",
+    approverRole: "PLANT_HEAD",
+    escalationRole: "CORPORATE_HSE",
     slaHours: 48,
     notes: "Close the near miss."
   }

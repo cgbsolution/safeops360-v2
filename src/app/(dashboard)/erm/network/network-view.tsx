@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -26,6 +26,10 @@ import {
 import "@xyflow/react/dist/style.css";
 import { ExternalLink, Plus, Trash2, Filter, Crosshair, X } from "lucide-react";
 import { BAND_HEX, BAND_CHIP, LINKAGE_LABEL, type NetworkGraph } from "../lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 type GraphNode = NetworkGraph["nodes"][number];
 type GraphEdge = NetworkGraph["edges"][number];
@@ -64,15 +68,14 @@ function RiskNode({ data }: NodeProps<RiskFlowNode>) {
   const bg = data.categoryColor ?? "#475569";
   const chip = BAND_CHIP[(data.residualBand ?? "").toUpperCase()] ?? "bg-white/20 text-white border-white/30";
   return (
-    <div
+    <Card
       className="rounded-lg border-2 px-3 py-2 text-white shadow-md transition-opacity"
       style={{
         backgroundColor: bg,
         borderColor: data.selected ? "#0f172a" : "rgba(255,255,255,0.5)",
         opacity: data.dim ? 0.18 : 1,
         boxShadow: data.selected ? "0 0 0 3px rgba(15,23,42,0.35)" : undefined,
-      }}
-    >
+      }}>
       <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
       <div className="flex items-center gap-1.5">
         <span className="text-[11px] font-bold tabular-nums">{data.riskCode}</span>
@@ -92,7 +95,7 @@ function RiskNode({ data }: NodeProps<RiskFlowNode>) {
         </span>
       )}
       <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
-    </div>
+    </Card>
   );
 }
 
@@ -355,7 +358,7 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
   return (
     <div className="space-y-3">
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
+      <Card className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
         <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
           <Filter size={13} /> Category
         </span>
@@ -411,11 +414,11 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
             <Plus size={14} /> {addMode ? "Adding linkage…" : "Add linkage"}
           </Button>
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_320px]">
         {/* Graph */}
-        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50" style={{ height: "70vh" }}>
+        <Card className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-none" style={{ height: "70vh" }}>
           <ReactFlow
             nodes={syncedNodes}
             edges={syncedEdges}
@@ -433,12 +436,12 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
             <Background color="#cbd5e1" gap={20} />
             <Controls showInteractive={false} />
           </ReactFlow>
-        </div>
+        </Card>
 
         {/* Side panel */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           {actionError && (
-            <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] text-rose-700">{actionError}</div>
+            <Alert variant="destructive" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[11px] text-rose-700">{actionError}</Alert>
           )}
 
           {addMode ? (
@@ -460,20 +463,15 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
                 </li>
               </ol>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Linkage type</label>
-                <Select
+                <Label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Linkage type</Label>
+                <SelectField
                   value={linkType}
-                  onChange={(e) => setLinkType(e.target.value as LinkageType)}
-                >
-                  {LINKAGE_TYPES.map((t) => (
-                    <option key={t} value={t}>
-                      {LINKAGE_LABEL[t] ?? t}
-                    </option>
-                  ))}
-                </Select>
+                  onChange={(value) => setLinkType(value as LinkageType)}
+                  options={LINKAGE_TYPES.map((t) => ({ value: t, label: `${LINKAGE_LABEL[t] ?? t}` }))}
+                />
               </div>
               <div>
-                <label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Notes</label>
+                <Label className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-500">Notes</Label>
                 <Textarea
                   value={linkNotes}
                   onChange={(e) => setLinkNotes(e.target.value)}
@@ -514,9 +512,9 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
                   </span>
                 )}
                 {selectedNode.categoryCode && (
-                  <span className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white" style={{ backgroundColor: selectedNode.categoryColor ?? "#475569" }}>
+                  <Badge variant="neutral" className="rounded-full px-2 py-0.5 text-[11px] font-medium text-white" style={{ backgroundColor: selectedNode.categoryColor ?? "#475569" }}>
                     {selectedNode.categoryCode}
-                  </span>
+                  </Badge>
                 )}
                 <span className="rounded border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
                   {selectedNode.lifecycleState.replace(/_/g, " ")}
@@ -541,12 +539,11 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-slate-900">Linkage</h3>
-                <span
+                <Badge variant="neutral"
                   className="rounded-full px-2 py-0.5 text-[11px] font-semibold text-white"
-                  style={{ backgroundColor: edgeColor(selectedEdge.linkageType) }}
-                >
+                  style={{ backgroundColor: edgeColor(selectedEdge.linkageType) }}>
                   {LINKAGE_LABEL[selectedEdge.linkageType] ?? selectedEdge.linkageType}
-                </span>
+                </Badge>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="font-semibold text-slate-700">{nodeById.get(selectedEdge.source)?.riskCode ?? "?"}</span>
@@ -594,7 +591,7 @@ function InnerNetwork({ graph }: { graph: NetworkGraph }) {
               <p>Click a node or edge to inspect it. Select a node then toggle <span className="font-medium text-slate-700">Isolate</span> to focus on its direct connections.</p>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

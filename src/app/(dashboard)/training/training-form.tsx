@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 
 type Program = {
   id: string;
@@ -83,16 +85,16 @@ export function TrainingForm({
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label>Employee<span className="text-rose-600 ml-0.5">*</span></Label>
-            <Select name="employeeId" required>
-              {employees.map((e) => <option key={e.id} value={e.id}>{e.name} — {e.designation ?? "—"} ({e.department ?? "—"})</option>)}
-            </Select>
+            <SelectField name="employeeId" required
+              options={employees.map((e) => ({ value: String(e.id), label: `${e.name} — ${e.designation ?? "—"} (${e.department ?? "—"})` }))}
+            />
           </div>
 
           <div className="space-y-2">
             <Label>Training Program<span className="text-rose-600 ml-0.5">*</span></Label>
-            <Select name="programId" required value={programId} onChange={(e) => setProgramId(e.target.value)}>
-              {programs.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.code}) — {p.durationHours}h, valid {p.validityMonths}m, pass ≥ {p.passingScore}</option>)}
-            </Select>
+            <SelectField name="programId" required value={programId} onChange={(value) => setProgramId(value)}
+              options={programs.map((p) => ({ value: String(p.id), label: `${p.name} (${p.code}) — ${p.durationHours}h, valid ${p.validityMonths}m, pass ≥ ${p.passingScore}` }))}
+            />
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -104,12 +106,11 @@ export function TrainingForm({
               <Label>
                 Trainer<span className="text-rose-600 ml-0.5">*</span>
                 <span className="ml-3 inline-flex items-center gap-1 text-xs font-normal text-slate-500">
-                  <input
-                    type="checkbox"
+                  <Checkbox
+                   
                     checked={externalTrainer}
                     onChange={(e) => onTrainerToggle(e.target.checked)}
-                    className="rounded border-slate-300"
-                  />
+                    className="rounded border-slate-300" />
                   External trainer
                 </span>
               </Label>
@@ -151,10 +152,12 @@ export function TrainingForm({
             </div>
             <div className="space-y-2">
               <Label>Outcome<span className="text-rose-600 ml-0.5">*</span></Label>
-              <Select name="passed" required defaultValue="true">
-                <option value="true">Pass</option>
-                <option value="false">Fail (re-attempt required)</option>
-              </Select>
+              <SelectField name="passed" required defaultValue="true"
+                options={[
+                { value: "true", label: "Pass" },
+                { value: "false", label: "Fail (re-attempt required)" }
+              ]}
+              />
               {scoreBelowPass && (
                 <p className="text-[11px] text-amber-700">
                   Score is below {passingScore} — outcome must be Fail.
@@ -168,7 +171,7 @@ export function TrainingForm({
             <Textarea name="remarks" rows={2} placeholder="Any specific observations from the training..." />
           </div>
 
-          {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">{error}</div>}
+          {error && <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3">{error}</Alert>}
 
           <div className="flex gap-3">
             <Button type="submit" disabled={submitting || !trainerReady}>

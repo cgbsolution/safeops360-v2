@@ -39,6 +39,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { UserPicker } from "@/components/ui/user-picker";
 import { usePermission } from "@/components/auth/can";
+import { Alert } from "@/components/ui/alert";
 import {
   OUTCOME_META, REGISTER_STATUS, SOURCE_LABEL, engagementHref,
   type IndependenceEventRow, type IndependenceEventsResponse,
@@ -434,7 +435,7 @@ function EventCard({ event }: { event: IndependenceEventRow }) {
       </div>
 
       {event.waiver ? (
-        <div className="mt-2 rounded-lg border border-violet-200 bg-violet-50 p-2.5">
+        <Alert variant="brand" className="mt-2 rounded-lg border border-violet-200 bg-violet-50 p-2.5">
           <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-violet-900">
             <CheckCircle2 size={12} />
             Waived by {event.waiver.approvedByUserName ?? event.waiver.approvedByUserId}
@@ -443,7 +444,7 @@ function EventCard({ event }: { event: IndependenceEventRow }) {
             )}
           </div>
           <p className="mt-1 text-[11px] text-violet-900">{event.waiver.justification}</p>
-        </div>
+        </Alert>
       ) : event.outcome === "BLOCKED" ? (
         <p className="mt-2 text-[11px] text-emerald-700">
           Never overridden — no waiver was granted for this conflict.

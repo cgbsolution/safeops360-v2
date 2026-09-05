@@ -6,6 +6,8 @@ import {
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   ENGAGEMENT_STATUS_CHIP, ENGAGEMENT_TYPE_CHIP, SEVERITY_CHIP, fmtDate,
   engagementTypeLabel, labelize,
@@ -28,11 +30,11 @@ function Kpi({ label, value, sub, tone = "slate" }: { label: string; value: stri
     rose: "text-rose-700", blue: "text-blue-700",
   };
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
       <div className={"mt-1 text-2xl font-bold tabular-nums " + (toneCls[tone] ?? toneCls.slate)}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -74,7 +76,7 @@ export default async function CamsCommandCentre() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
@@ -97,7 +99,7 @@ export default async function CamsCommandCentre() {
           </div>
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-            <div className="lg:col-span-2 rounded-xl border border-slate-200 bg-white">
+            <Card className="lg:col-span-2 rounded-xl border border-slate-200 bg-white shadow-none">
               <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
                 <CalendarRange size={16} className="text-slate-500" />
                 <h2 className="text-sm font-semibold text-slate-800">Upcoming & in-progress engagements</h2>
@@ -124,9 +126,9 @@ export default async function CamsCommandCentre() {
                   ))
                 )}
               </div>
-            </div>
+            </Card>
 
-            <div className="rounded-xl border border-slate-200 bg-white">
+            <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
               <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
                 <ShieldCheck size={16} className="text-slate-500" />
                 <h2 className="text-sm font-semibold text-slate-800">Findings by severity</h2>
@@ -144,7 +146,7 @@ export default async function CamsCommandCentre() {
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           </div>
         </>
       )}

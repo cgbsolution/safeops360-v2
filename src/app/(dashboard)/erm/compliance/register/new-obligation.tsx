@@ -7,7 +7,9 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
 
 const OBLIGATION_TYPES = [
   "LICENSE",
@@ -107,7 +109,7 @@ function NewObligationModal({ onClose }: { onClose: () => void }) {
           </Button>
         </div>
 
-        {err && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
+        {err && <Alert variant="destructive" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
 
         <div className="space-y-3">
           <Field label="Title (required)">
@@ -120,22 +122,14 @@ function NewObligationModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Obligation type">
-              <Select value={obligationType} onChange={(e) => setObligationType(e.target.value)}>
-                {OBLIGATION_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {label(t)}
-                  </option>
-                ))}
-              </Select>
+              <SelectField value={obligationType} onChange={setObligationType}
+                options={OBLIGATION_TYPES.map((t) => ({ value: t, label: `${label(t)}` }))}
+              />
             </Field>
             <Field label="Frequency">
-              <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-                {FREQUENCIES.map((f) => (
-                  <option key={f} value={f}>
-                    {label(f)}
-                  </option>
-                ))}
-              </Select>
+              <SelectField value={frequency} onChange={setFrequency}
+                options={FREQUENCIES.map((f) => ({ value: f, label: `${label(f)}` }))}
+              />
             </Field>
           </div>
 
@@ -211,7 +205,7 @@ function NewObligationModal({ onClose }: { onClose: () => void }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       {children}
     </div>
   );

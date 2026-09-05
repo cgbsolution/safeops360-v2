@@ -6,9 +6,11 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import {
   AlertTriangle,
   BadgeCheck,
@@ -79,7 +81,7 @@ export function PpeTabs(props: {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex flex-wrap rounded-lg border border-slate-200 bg-white p-0.5">
+        <Card className="inline-flex flex-wrap rounded-lg border border-slate-200 bg-white p-0.5 shadow-none">
           {TABS.map((t) => (
             <Button
               key={t.key}
@@ -101,7 +103,7 @@ export function PpeTabs(props: {
               ) : null}
             </Button>
           ))}
-        </div>
+        </Card>
         <div className="flex gap-2">
           <Button type="button" onClick={() => setModal({ kind: "issue" })} className="gap-1.5">
             <UserCheck size={14} /> Issue PPE
@@ -214,7 +216,7 @@ function DashboardView({ d, onJump }: { d: DashboardData | null; onJump: (t: Tab
         ))}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
           <BadgeCheck size={16} className="text-cyan-700" /> Workforce PPE compliance
           <span className="ml-auto text-xs font-normal text-slate-500">{s.totalPeople} people with PPE requirements</span>
@@ -229,7 +231,7 @@ function DashboardView({ d, onJump }: { d: DashboardData | null; onJump: (t: Tab
           <Legend color="bg-amber-400" label="Gaps" value={s.gaps} />
           <Legend color="bg-rose-500" label="Critical gaps" value={s.criticalGaps} />
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -256,13 +258,13 @@ function ItemsView({ items, onAct }: { items: Item[]; onAct: (m: Modal) => void 
   const statuses = Array.from(new Set(items.map((i) => i.status)));
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
+    <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
       <div className="flex flex-wrap items-center gap-2 border-b p-3">
         <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search item / serial / type…" className="w-64" />
-        <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">All statuses</option>
-          {statuses.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
-        </Select>
+        <SelectField value={status} onChange={setStatus}
+          placeholder="All statuses"
+          options={statuses.map((s) => ({ value: String(s), label: s.replace(/_/g, " ") }))}
+        />
         <span className="ml-auto text-xs text-slate-500">{filtered.length} items</span>
       </div>
       <div className="overflow-x-auto">
@@ -316,7 +318,7 @@ function ItemsView({ items, onAct }: { items: Item[]; onAct: (m: Modal) => void 
           </TableBody>
         </Table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -339,7 +341,7 @@ function PeopleView({ people, onIssue }: { people: PeopleCompliance | null; onIs
           </Button>
         ))}
       </div>
-      <div className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100">
+      <Card className="rounded-xl border border-slate-200 bg-white divide-y divide-slate-100 shadow-none">
         {rows.map((p) => {
           const o = OVERALL_CHIP[p.overall];
           const open = expanded === p.userId;
@@ -386,7 +388,7 @@ function PeopleView({ people, onIssue }: { people: PeopleCompliance | null; onIs
           );
         })}
         {rows.length === 0 && <div className="p-8 text-center text-sm text-slate-400">No people in this filter.</div>}
-      </div>
+      </Card>
     </div>
   );
 }
@@ -445,11 +447,11 @@ function IssuancesView({ issuances, onReturn }: { issuances: Issuance[]; onRetur
   const [showReturned, setShowReturned] = useState(false);
   const rows = showReturned ? issuances : issuances.filter((i) => i.status === "active");
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
+    <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
       <div className="flex items-center gap-2 border-b p-3">
-        <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+        <Label className="inline-flex items-center gap-2 text-sm text-slate-600">
           <Checkbox checked={showReturned} onChange={(e) => setShowReturned(e.target.checked)} /> Include closed
-        </label>
+        </Label>
         <span className="ml-auto text-xs text-slate-500">{rows.length} issuances</span>
       </div>
       <div className="overflow-x-auto">
@@ -491,7 +493,7 @@ function IssuancesView({ issuances, onReturn }: { issuances: Issuance[]; onRetur
           </TableBody>
         </Table>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -649,21 +651,21 @@ function ActionModal({
           {modal.kind === "issue" && (
             <>
               <Field label="PPE item (in stock)">
-                <Select value={itemId} onChange={(e) => setItemId(e.target.value)}>
-                  <option value="">Select an item…</option>
-                  {inStock.map((i) => <option key={i.id} value={i.id}>{i.itemNumber} — {i.ppeTypeName}</option>)}
-                </Select>
+                <SelectField value={itemId} onChange={setItemId}
+                  placeholder="Select an item…"
+                  options={inStock.map((i) => ({ value: String(i.id), label: `${i.itemNumber} — ${i.ppeTypeName}` }))}
+                />
               </Field>
               <Field label="Issue to">
-                <Select value={toUserId} onChange={(e) => setToUserId(e.target.value)}>
-                  <option value="">Select a person…</option>
-                  {people.map((p) => <option key={p.userId} value={p.userId}>{p.name} — {p.role?.replace(/_/g, " ")}</option>)}
-                </Select>
+                <SelectField value={toUserId} onChange={setToUserId}
+                  placeholder="Select a person…"
+                  options={people.map((p) => ({ value: String(p.userId), label: `${p.name} — ${p.role?.replace(/_/g, " ")}` }))}
+                />
               </Field>
               <Field label="Purpose">
-                <Select value={purpose} onChange={(e) => setPurpose(e.target.value)}>
-                  {["personal_assignment", "permit_task", "training", "temporary_loan"].map((p) => <option key={p} value={p}>{p.replace(/_/g, " ")}</option>)}
-                </Select>
+                <SelectField value={purpose} onChange={setPurpose}
+                  options={["personal_assignment", "permit_task", "training", "temporary_loan"].map((p) => ({ value: String(p), label: p.replace(/_/g, " ") }))}
+                />
               </Field>
             </>
           )}
@@ -672,9 +674,9 @@ function ActionModal({
             <>
               <p className="text-slate-600">Returning <span className="font-medium">{modal.issuance.serialNumber}</span> from {modal.issuance.issuedToName}.</p>
               <Field label="Condition at return">
-                <Select value={condition} onChange={(e) => setCondition(e.target.value)}>
-                  {["good", "fair", "damaged", "destroyed"].map((c) => <option key={c} value={c}>{c}</option>)}
-                </Select>
+                <SelectField value={condition} onChange={setCondition}
+                  options={["good", "fair", "damaged", "destroyed"].map((c) => ({ value: String(c), label: c }))}
+                />
               </Field>
             </>
           )}
@@ -683,11 +685,13 @@ function ActionModal({
             <>
               <p className="text-slate-600">Inspecting <span className="font-medium">{modal.item.itemNumber}</span> — {modal.item.ppeTypeName}.</p>
               <Field label="Overall result">
-                <Select value={result} onChange={(e) => setResult(e.target.value)}>
-                  <option value="pass">Pass — return to service</option>
-                  <option value="conditional_pass">Conditional pass</option>
-                  <option value="fail">Fail — quarantine</option>
-                </Select>
+                <SelectField value={result} onChange={setResult}
+                  options={[
+                  { value: "pass", label: "Pass — return to service" },
+                  { value: "conditional_pass", label: "Conditional pass" },
+                  { value: "fail", label: "Fail — quarantine" }
+                ]}
+                />
               </Field>
             </>
           )}
@@ -704,10 +708,10 @@ function ActionModal({
           {modal.kind === "commission" && (
             <>
               <Field label="PPE type">
-                <Select value={typeId} onChange={(e) => setTypeId(e.target.value)}>
-                  <option value="">Select a type…</option>
-                  {catalog.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
-                </Select>
+                <SelectField value={typeId} onChange={setTypeId}
+                  placeholder="Select a type…"
+                  options={catalog.map((c) => ({ value: String(c.id), label: `${c.name} (${c.code})` }))}
+                />
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Quantity"><Input type="number" min={1} max={200} value={qty} onChange={(e) => setQty(Number(e.target.value))} /></Field>
@@ -746,10 +750,10 @@ function ActionModal({
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <label className="block">
+    <Label className="block">
       <span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>
       {children}
-    </label>
+    </Label>
   );
 }
 function IconBtn({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
@@ -759,5 +763,5 @@ function IconBtn({ title, onClick, children }: { title: string; onClick: () => v
   );
 }
 function Empty({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500">{children}</div>;
+  return <Card className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-none">{children}</Card>;
 }

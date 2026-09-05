@@ -13,10 +13,12 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { readApiError } from "@/lib/client-errors";
 import type { SubmissionOut } from "@/lib/capture/types";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 
 const INCIDENT_TYPES = [
   "FIRST_AID", "MTC", "RWC", "LTI", "FATALITY",
@@ -92,7 +94,7 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
     <Can permission="CAPTURE.TRIAGE">
       <div className="space-y-6">
         {/* triage */}
-        <div className="rounded-lg border bg-card p-5">
+        <Card className="p-5 shadow-none">
           <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Triage — 5×5</h2>
           <p className="mb-4 text-xs text-muted-foreground">Likelihood × Severity. High/Critical fires a cluster-check event.</p>
 
@@ -161,11 +163,11 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
               {busy === "triage" ? "Saving…" : "Save triage"}
             </Button>
           </div>
-        </div>
+        </Card>
 
         {/* convert */}
         {!terminal ? (
-          <div className="rounded-lg border bg-card p-5">
+          <Card className="p-5 shadow-none">
             <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-muted-foreground">Convert</h2>
             <p className="mb-4 text-xs text-muted-foreground">
               Creates the real module record (its normal workflow starts) and links it back to this report.
@@ -197,11 +199,9 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
                 → Near-Miss
               </Button>
               <div className="flex gap-2">
-                <Select value={incidentType} onChange={(e) => setIncidentType(e.target.value)} className="form-select flex-1">
-                  {INCIDENT_TYPES.map((t) => (
-                    <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
-                  ))}
-                </Select>
+                <SelectField value={incidentType} onChange={setIncidentType} className="form-select flex-1"
+                  options={INCIDENT_TYPES.map((t) => ({ value: t, label: t.replace(/_/g, " ") }))}
+                />
                 <Button
                   type="button"
                   variant="outline"
@@ -218,7 +218,7 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
               {/* PTW — the officer supplies the authorisation chain a field
                   tech can't (permit type, validity, issuer, receiver); the real
                   create_permit workflow starts from the DRAFT (spec §8.2). */}
-              <div className="rounded-md border">
+              <Card className="rounded-md shadow-none">
                 <Button
                   type="button"
                   variant="ghost"
@@ -231,29 +231,27 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
                 {openConvert === "ptw" ? (
                   <div className="space-y-2 border-t p-3 text-sm">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Permit type</label>
-                      <Select value={permitType} onChange={(e) => setPermitType(e.target.value)} className="form-select">
-                        {PERMIT_TYPES.map((pt) => (
-                          <option key={pt} value={pt}>{pt.replace(/_/g, " ")}</option>
-                        ))}
-                      </Select>
+                      <Label className="mb-1 block text-xs font-medium text-muted-foreground">Permit type</Label>
+                      <SelectField value={permitType} onChange={setPermitType} className="form-select"
+                        options={PERMIT_TYPES.map((pt) => ({ value: pt, label: pt.replace(/_/g, " ") }))}
+                      />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-muted-foreground">Valid from</label>
+                        <Label className="mb-1 block text-xs font-medium text-muted-foreground">Valid from</Label>
                         <Input type="datetime-local" value={validFrom} onChange={(e) => setValidFrom(e.target.value)} className="form-input" />
                       </div>
                       <div>
-                        <label className="mb-1 block text-xs font-medium text-muted-foreground">Valid to</label>
+                        <Label className="mb-1 block text-xs font-medium text-muted-foreground">Valid to</Label>
                         <Input type="datetime-local" value={validTo} onChange={(e) => setValidTo(e.target.value)} className="form-input" />
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Issuer</label>
+                      <Label className="mb-1 block text-xs font-medium text-muted-foreground">Issuer</Label>
                       <UserPicker value={issuerId} onChange={(id) => setIssuerId(id)} filter={{ plantId: sub.plantId, roleFallback: true }} placeholder="Select issuer" />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Receiver</label>
+                      <Label className="mb-1 block text-xs font-medium text-muted-foreground">Receiver</Label>
                       <UserPicker value={receiverId} onChange={(id) => setReceiverId(id)} filter={{ plantId: sub.plantId, roleFallback: true }} placeholder="Select receiver" />
                     </div>
                     <Button
@@ -280,11 +278,11 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
                     </Button>
                   </div>
                 ) : null}
-              </div>
+              </Card>
 
               {/* FLRA — the officer supplies crew + toolbox-talk; create_flra
                   runs its crew-signoff workflow from there. */}
-              <div className="rounded-md border">
+              <Card className="rounded-md shadow-none">
                 <Button
                   type="button"
                   variant="ghost"
@@ -297,11 +295,11 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
                 {openConvert === "flra" ? (
                   <div className="space-y-2 border-t p-3 text-sm">
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Crew (team members)</label>
+                      <Label className="mb-1 block text-xs font-medium text-muted-foreground">Crew (team members)</Label>
                       <UserPicker multiple value={teamMemberIds} onChange={(ids) => setTeamMemberIds(ids)} filter={{ plantId: sub.plantId }} placeholder="Add crew members" />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">Toolbox talk by</label>
+                      <Label className="mb-1 block text-xs font-medium text-muted-foreground">Toolbox talk by</Label>
                       <UserPicker value={toolboxTalkById} onChange={(id) => setToolboxTalkById(id)} filter={{ plantId: sub.plantId, roleFallback: true }} placeholder="Who conducted the toolbox talk" />
                     </div>
                     <Button
@@ -320,31 +318,29 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
                     </Button>
                   </div>
                 ) : null}
-              </div>
+              </Card>
             </div>
-          </div>
+          </Card>
         ) : null}
 
         {/* reject + unmask */}
         {!terminal ? (
-          <div className="rounded-lg border bg-card p-5">
-            <button
+          <Card className="p-5 shadow-none">
+            <Button variant="destructive"
               type="button"
               disabled={busy !== null}
               onClick={() => {
                 const reason = window.prompt("Reason for rejecting this field report:");
                 if (reason && reason.trim().length >= 3) void post("reject", { reason: reason.trim() }, "Report rejected");
-              }}
-              className="w-full rounded-md border border-red-200 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
-            >
+              }} className="w-full rounded-md px-4 py-2.5 text-sm">
               Reject report
-            </button>
-          </div>
+            </Button>
+          </Card>
         ) : null}
 
         {sub.isAnonymous ? (
           <Can permission="CAPTURE.UNMASK">
-            <div className="rounded-lg border bg-card p-5">
+            <Card className="p-5 shadow-none">
               <Button
                 type="button"
                 variant="outline"
@@ -370,7 +366,7 @@ export function TriagePanel({ sub }: { sub: SubmissionOut }) {
               >
                 Unmask anonymous reporter (audited)
               </Button>
-            </div>
+            </Card>
           </Can>
         ) : null}
       </div>

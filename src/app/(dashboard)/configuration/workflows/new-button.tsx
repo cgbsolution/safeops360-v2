@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Plus, X, Loader2 } from "lucide-react";
 
 const MODULES = [
@@ -69,9 +69,9 @@ export function NewWorkflowButton() {
                 <div className="text-base font-semibold">New workflow</div>
                 <div className="text-xs text-slate-500">A starter workflow with Maker → Checker → Closure will be created. Edit it on the canvas.</div>
               </div>
-              <button onClick={() => !busy && setOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <Button variant="ghost" size="icon" aria-label="Close" title="Close" className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-600" onClick={() => !busy && setOpen(false)}>
                 <X size={18} />
-              </button>
+              </Button>
             </div>
             <div className="p-5 space-y-4">
               <div className="space-y-1.5">
@@ -80,9 +80,9 @@ export function NewWorkflowButton() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="wf-module">Module</Label>
-                <Select id="wf-module" value={module} onChange={(e) => setModule(e.target.value)}>
-                  {MODULES.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-                </Select>
+                <SelectField id="wf-module" value={module} onChange={(value) => setModule(value)}
+                  options={MODULES.map((m) => ({ value: String(m.value), label: m.label }))}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="wf-rt">Record sub-type <span className="text-slate-400 font-normal">(optional)</span></Label>

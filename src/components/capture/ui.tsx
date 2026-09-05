@@ -11,6 +11,7 @@ import { Volume2 } from "lucide-react";
 import type { Lang } from "@/lib/capture/i18n";
 import { speak } from "@/lib/capture/i18n";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export const MX = {
   navy: "#0B1F4D",
@@ -124,7 +125,7 @@ export function BigButton({
   testId?: string;
 }) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -136,14 +137,13 @@ export function BigButton({
         variant === "ghost" && "border-2 border-[#D9E1EF] bg-white text-[#0B1F4D]",
         variant === "danger" && "bg-[#C0392B] text-white",
         className,
-      )}
-    >
+      )}>
       {Icon ? <Icon className="h-6 w-6 shrink-0" /> : null}
       <span className="flex flex-col items-center leading-tight">
         <span>{primary}</span>
         {secondary ? <span className="text-xs font-normal opacity-70">{secondary}</span> : null}
       </span>
-    </button>
+    </Button>
   );
 }
 
@@ -186,14 +186,12 @@ export function ScreenHeading({
         </h1>
         {secondary ? <p className="mt-0.5 text-sm text-[#5A6273]">{secondary}</p> : null}
       </div>
-      <button
+      <Button variant="ghost"
         type="button"
         aria-label="Listen"
-        onClick={() => speak(primary, lang)}
-        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95"
-      >
+        onClick={() => speak(primary, lang)} className="flex h-11 w-11 shrink-0 rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95">
         <Volume2 className="h-5 w-5" />
-      </button>
+      </Button>
     </div>
   );
 }

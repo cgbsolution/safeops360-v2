@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { KriDashboardView } from "./dashboard-view";
 import type { KriListResponse } from "@/app/(dashboard)/erm/lib-p2";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -52,9 +53,9 @@ export default async function KriDashboardPage({
         description="Leading-indicator dashboard — early-warning signals across the enterprise risk landscape, grouped by category and traffic-lit against thresholds."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 2 seed has been run and you are logged in with an ERM role.
-        </div>
+        </Alert>
       ) : (
         <KriDashboardView data={data} filters={filters} />
       )}

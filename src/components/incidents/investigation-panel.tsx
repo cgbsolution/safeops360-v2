@@ -21,7 +21,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { UserPicker } from "@/components/ui/user-picker";
@@ -37,6 +37,9 @@ import {
 } from "lucide-react";
 import { cn, formatDate, formatDateTime } from "@/lib/utils";
 import { WITNESS_LANGUAGES } from "@/lib/languages";
+import { RemoveRowButton } from "@/components/ui/remove-row-button";
+import { CheckboxField } from "@/components/ui/checkbox-field";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type Capa = {
   id: string;
@@ -245,18 +248,20 @@ export function InvestigationPanel({
             const isActive = activeTab === t.key;
             const isReady = t.status === "ready";
             return (
-              <button key={t.key} type="button" onClick={() => setActiveTab(t.key)}
+              <Button key={t.key} type="button" variant="ghost" size="sm"
+                onClick={() => setActiveTab(t.key)}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "px-3 py-1.5 rounded-t-md text-xs font-medium border-x border-t transition flex items-center gap-1.5",
+                  "h-auto gap-1.5 rounded-b-none rounded-t-md border-x border-t px-3 py-1.5 text-xs font-medium",
                   isActive
-                    ? "bg-white border-slate-300 text-primary-800"
-                    : "bg-transparent border-transparent text-slate-600 hover:text-slate-900",
+                    ? "border-slate-300 bg-white text-primary-800 hover:bg-white"
+                    : "border-transparent bg-transparent text-slate-600 hover:text-slate-900",
                   !isReady && !isActive && "opacity-60"
                 )}>
                 <Icon size={12} />
                 {t.label}
                 {!isReady && <span className="ml-0.5 text-[9px] uppercase tracking-wider text-slate-400">(soon)</span>}
-              </button>
+              </Button>
             );
           })}
         </div>
@@ -332,10 +337,10 @@ export function InvestigationPanel({
           {activeTab === "statutory" && <StatutoryTab incidentId={incidentId} />}
 
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800 flex items-start gap-2">
+            <Alert variant="destructive" size="lg" className="px-3 py-2">
               <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
               <span>{error}</span>
-            </div>
+            </Alert>
           )}
 
           {/* Submit investigation report */}
@@ -372,9 +377,9 @@ function OverviewTab({ capas, rcaMethod, readyCount, totalTabs, isReportable, st
           hint="Other tabs land in Commit 5" />
       </div>
       {isReportable && statutoryDeadline && (
-        <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900 text-xs">
+        <Alert variant="warning" className="border-amber-300 px-3 py-2">
           <strong>Statutory deadline:</strong> {formatDateTime(statutoryDeadline)} — Form 18 / DGFASLI submission gates the closure step.
-        </div>
+        </Alert>
       )}
       <p className="text-xs text-slate-500">
         Switch to <strong>Cause Analysis</strong> to perform root-cause investigation, then add <strong>CAPAs</strong>.
@@ -386,11 +391,11 @@ function OverviewTab({ capas, rcaMethod, readyCount, totalTabs, isReportable, st
 
 function Stat({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+    <Card className="rounded-md border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
       <div className="text-[10px] uppercase tracking-wider text-slate-500">{label}</div>
       <div className="text-sm font-semibold text-slate-800 mt-0.5">{value}</div>
       {hint && <div className="text-[10px] text-slate-400 mt-0.5">{hint}</div>}
-    </div>
+    </Card>
   );
 }
 
@@ -442,16 +447,16 @@ function CauseAnalysisTab({
       <div className="grid sm:grid-cols-3 gap-3 items-end">
         <div className="sm:col-span-2">
           <Label>Root Cause Method</Label>
-          <Select value={method} onChange={(e) => onMethodChange(e.target.value as RcaMethod)}>
-            {RCA_METHODS_LIST.map((m) => <option key={m.code} value={m.code}>{m.label}</option>)}
-          </Select>
+          <SelectField value={method} onChange={(value) => onMethodChange(value as RcaMethod)}
+            options={RCA_METHODS_LIST.map((m) => ({ value: m.code, label: m.label }))}
+          />
         </div>
         <Button type="button" size="sm" variant="outline" onClick={onSave}>Save Cause Analysis</Button>
       </div>
 
-      <div className="rounded-md border border-slate-200 bg-white p-3">
+      <Card className="rounded-md border-slate-200 p-3 shadow-none">
         <RcaEditor method={method} value={data} onChange={onDataChange} readOnly={false} />
-      </div>
+      </Card>
 
       <div className="grid sm:grid-cols-2 gap-3 pt-3 border-t border-slate-200">
         <div>
@@ -546,10 +551,7 @@ function CapasTab({ capas, loading, plantId, rootCauses, onAdd, onDelete }: {
                 )}
               </div>
               {c.status === "PENDING" && (
-                <button type="button" onClick={() => onDelete(c.id)}
-                  className="text-slate-400 hover:text-rose-600">
-                  <Trash2 size={14} />
-                </button>
+                <RemoveRowButton label="Remove contributing factor" onClick={() => onDelete(c.id)} />
               )}
             </li>
           ))}
@@ -559,7 +561,7 @@ function CapasTab({ capas, loading, plantId, rootCauses, onAdd, onDelete }: {
       {!showForm ? (
         <Button type="button" size="sm" variant="outline" onClick={() => setShowForm(true)}>+ Add CAPA</Button>
       ) : (
-        <div className="rounded-lg border border-slate-300 bg-slate-50/60 p-3 space-y-3">
+        <Card className="space-y-3 border-slate-300 bg-slate-50/60 p-3 shadow-none">
           <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">New CAPA</div>
           <div>
             <Label>Description <span className="text-rose-600">*</span></Label>
@@ -569,17 +571,19 @@ function CapasTab({ capas, loading, plantId, rootCauses, onAdd, onDelete }: {
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <Label>Type</Label>
-              <Select value={type} onChange={(e) => setType(e.target.value as "CORRECTIVE" | "PREVENTIVE")}>
-                <option value="CORRECTIVE">Corrective</option>
-                <option value="PREVENTIVE">Preventive</option>
-              </Select>
+              <SelectField value={type} onChange={(value) => setType(value as "CORRECTIVE" | "PREVENTIVE")}
+                options={[
+                { value: "CORRECTIVE", label: "Corrective" },
+                { value: "PREVENTIVE", label: "Preventive" }
+              ]}
+              />
             </div>
             <div>
               <Label>Root Cause Addressed</Label>
-              <Select value={rootCauseAddressed} onChange={(e) => setRootCauseAddressed(e.target.value)}>
-                <option value="">— Select root cause —</option>
-                {rootCauses.map((rc, i) => <option key={i} value={rc}>{rc.slice(0, 80)}</option>)}
-              </Select>
+              <SelectField value={rootCauseAddressed} onChange={setRootCauseAddressed}
+                placeholder="— Select root cause —"
+                options={rootCauses.map((rc) => ({ value: rc, label: rc.slice(0, 80) }))}
+              />
             </div>
             <div>
               <Label>Owner <span className="text-rose-600">*</span></Label>
@@ -598,7 +602,7 @@ function CapasTab({ capas, loading, plantId, rootCauses, onAdd, onDelete }: {
               {busy ? "Adding…" : "Add CAPA"}
             </Button>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -606,14 +610,14 @@ function CapasTab({ capas, loading, plantId, rootCauses, onAdd, onDelete }: {
 
 function PlaceholderTab({ tab }: { tab: TabKey }) {
   return (
-    <div className="rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+    <Card className="border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center shadow-none">
       <div className="text-sm font-semibold text-slate-700">
         {TABS.find((t) => t.key === tab)?.label} — landing in Commit 7
       </div>
       <p className="text-xs text-slate-500 mt-1">
         Data model is in place. UI ships alongside Form 18 / DGFASLI generation.
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -698,7 +702,7 @@ function TimelineTab({ incidentId }: { incidentId: string }) {
           {rows.map((r) => (
             <li key={r.id} className="relative">
               <span className="absolute -left-[22px] top-1 w-3 h-3 rounded-full bg-primary-600 border-2 border-white" />
-              <div className="rounded-md border border-slate-200 bg-white p-3 flex items-start gap-3">
+              <Card className="flex items-start gap-3 rounded-md border-slate-200 p-3 shadow-none">
                 <div className="text-xs text-slate-500 font-mono whitespace-nowrap">
                   #{r.sequence}<br />{formatDateTime(r.timestamp)}
                 </div>
@@ -709,11 +713,8 @@ function TimelineTab({ incidentId }: { incidentId: string }) {
                     {r.sourceReference && ` · ${r.sourceReference}`}
                   </div>
                 </div>
-                <button type="button" onClick={() => remove(r.id)}
-                  className="text-slate-400 hover:text-rose-600">
-                  <Trash2 size={14} />
-                </button>
-              </div>
+                <RemoveRowButton label="Remove finding" onClick={() => remove(r.id)} />
+              </Card>
             </li>
           ))}
         </ol>
@@ -722,7 +723,7 @@ function TimelineTab({ incidentId }: { incidentId: string }) {
       {!showForm ? (
         <Button type="button" size="sm" variant="outline" onClick={() => setShowForm(true)}>+ Add Timeline Event</Button>
       ) : (
-        <div className="rounded-lg border border-slate-300 bg-slate-50/60 p-3 space-y-3">
+        <Card className="space-y-3 border-slate-300 bg-slate-50/60 p-3 shadow-none">
           <div className="grid sm:grid-cols-3 gap-3">
             <div>
               <Label>Timestamp</Label>
@@ -730,13 +731,15 @@ function TimelineTab({ incidentId }: { incidentId: string }) {
             </div>
             <div>
               <Label>Source</Label>
-              <Select value={source} onChange={(e) => setSource(e.target.value)}>
-                <option value="WITNESS">Witness</option>
-                <option value="CCTV">CCTV</option>
-                <option value="EQUIPMENT_DATA">Equipment Data</option>
-                <option value="INTERVIEW">Interview</option>
-                <option value="DOCUMENT">Document</option>
-              </Select>
+              <SelectField value={source} onChange={setSource}
+                options={[
+                { value: "WITNESS", label: "Witness" },
+                { value: "CCTV", label: "CCTV" },
+                { value: "EQUIPMENT_DATA", label: "Equipment Data" },
+                { value: "INTERVIEW", label: "Interview" },
+                { value: "DOCUMENT", label: "Document" }
+              ]}
+              />
             </div>
             <div>
               <Label>Source Reference</Label>
@@ -755,7 +758,7 @@ function TimelineTab({ incidentId }: { incidentId: string }) {
               {busy ? "Adding…" : "Add Event"}
             </Button>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -825,9 +828,9 @@ function WitnessesTab({ incidentId }: { incidentId: string }) {
   if (loading) return <div className="text-sm text-slate-500">Loading witnesses…</div>;
   if (rows.length === 0) {
     return (
-      <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+      <Card className="rounded-md border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 shadow-none">
         No witnesses were captured during Phase 1. Add them by editing the incident's reporter context.
-      </div>
+      </Card>
     );
   }
 
@@ -861,9 +864,9 @@ function WitnessesTab({ incidentId }: { incidentId: string }) {
                   {/* One shared list — see @/lib/languages. This used to be
                       declared inline here and again on the report form, and the
                       two had drifted apart. */}
-                  <Select value={draft.language ?? "English"} onChange={(e) => setDraft((prev) => ({ ...prev, language: e.target.value }))}>
-                    {WITNESS_LANGUAGES.map((l) => <option key={l}>{l}</option>)}
-                  </Select>
+                  <SelectField value={draft.language ?? "English"} onChange={(value) => setDraft((prev) => ({ ...prev, language: value }))}
+                    options={WITNESS_LANGUAGES.map((l) => ({ value: l, label: l }))}
+                  />
                 </div>
               </div>
               <div>
@@ -892,7 +895,7 @@ function WitnessesTab({ incidentId }: { incidentId: string }) {
               </div>
             </div>
           ) : w.statementText ? (
-            <div className="mt-2 rounded-md bg-slate-50 border border-slate-200 p-2.5 text-sm text-slate-700 whitespace-pre-wrap italic">
+            <Card className="mt-2 whitespace-pre-wrap rounded-md border-slate-200 bg-slate-50 p-2.5 text-sm italic text-slate-700 shadow-none">
               "{w.statementText}"
               {(w.statementFileUrl || w.audioRecordingUrl) && (
                 <div className="mt-2 flex gap-3 text-xs not-italic">
@@ -900,7 +903,7 @@ function WitnessesTab({ incidentId }: { incidentId: string }) {
                   {w.audioRecordingUrl && <a href={w.audioRecordingUrl} target="_blank" className="text-primary-700 underline">Audio</a>}
                 </div>
               )}
-            </div>
+            </Card>
           ) : (
             <div className="mt-2 text-xs text-slate-500 italic">No statement recorded yet.</div>
           )}
@@ -1010,10 +1013,7 @@ function EvidenceTab({ incidentId }: { incidentId: string }) {
                     <div className="text-[10px] text-slate-400 mt-1">collected {formatDateTime(e.collectedAt)}</div>
                   )}
                 </div>
-                <button type="button" onClick={() => remove(e.id)}
-                  className="text-slate-400 hover:text-rose-600 ml-2">
-                  <Trash2 size={14} />
-                </button>
+                <RemoveRowButton label="Remove evidence item" className="ml-2" onClick={() => remove(e.id)} />
               </div>
             </div>
           ))}
@@ -1023,27 +1023,31 @@ function EvidenceTab({ incidentId }: { incidentId: string }) {
       {!showForm ? (
         <Button type="button" size="sm" variant="outline" onClick={() => setShowForm(true)}>+ Add Evidence</Button>
       ) : (
-        <div className="rounded-lg border border-slate-300 bg-slate-50/60 p-3 space-y-3">
+        <Card className="space-y-3 border-slate-300 bg-slate-50/60 p-3 shadow-none">
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <Label>Category</Label>
-              <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-                <option value="PHOTO">Photo</option>
-                <option value="VIDEO">Video</option>
-                <option value="CCTV">CCTV</option>
-                <option value="EQUIPMENT_DATA">Equipment Data</option>
-                <option value="DOCUMENT">Document</option>
-                <option value="SKETCH">Sketch</option>
-                <option value="EXTERNAL_REPORT">External Report</option>
-              </Select>
+              <SelectField value={category} onChange={setCategory}
+                options={[
+                { value: "PHOTO", label: "Photo" },
+                { value: "VIDEO", label: "Video" },
+                { value: "CCTV", label: "CCTV" },
+                { value: "EQUIPMENT_DATA", label: "Equipment Data" },
+                { value: "DOCUMENT", label: "Document" },
+                { value: "SKETCH", label: "Sketch" },
+                { value: "EXTERNAL_REPORT", label: "External Report" }
+              ]}
+              />
             </div>
             <div>
               <Label>Preservation Purpose</Label>
-              <Select value={preservedFor} onChange={(e) => setPreservedFor(e.target.value)}>
-                <option value="internal">Internal</option>
-                <option value="regulatory">Regulatory</option>
-                <option value="legal">Legal</option>
-              </Select>
+              <SelectField value={preservedFor} onChange={setPreservedFor}
+                options={[
+                { value: "internal", label: "Internal" },
+                { value: "regulatory", label: "Regulatory" },
+                { value: "legal", label: "Legal" }
+              ]}
+              />
             </div>
           </div>
           <div>
@@ -1071,7 +1075,7 @@ function EvidenceTab({ incidentId }: { incidentId: string }) {
               {busy ? "Adding…" : "Add Evidence"}
             </Button>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -1184,12 +1188,14 @@ function PersonsTab({ incidentId }: { incidentId: string }) {
               </div>
               <div>
                 <Label>Severity</Label>
-                <Select value={draft.injurySeverity ?? ""} onChange={(e) => setDraft((prev) => ({ ...prev, injurySeverity: e.target.value }))}>
-                  <option value="">—</option>
-                  <option value="MINOR">Minor</option>
-                  <option value="MAJOR">Major</option>
-                  <option value="FATAL">Fatal</option>
-                </Select>
+                <SelectField value={draft.injurySeverity ?? ""} onChange={(value) => setDraft((prev) => ({ ...prev, injurySeverity: value }))}
+                  placeholder="—"
+                  options={[
+                  { value: "MINOR", label: "Minor" },
+                  { value: "MAJOR", label: "Major" },
+                  { value: "FATAL", label: "Fatal" }
+                ]}
+                />
               </div>
               <div className="sm:col-span-2">
                 <Label>Treatment</Label>
@@ -1212,11 +1218,13 @@ function PersonsTab({ incidentId }: { incidentId: string }) {
                 <Input type="date" value={draft.returnToWorkDate ? draft.returnToWorkDate.slice(0, 10) : ""}
                   onChange={(e) => setDraft((prev) => ({ ...prev, returnToWorkDate: e.target.value || null }))} />
               </div>
-              <div className="sm:col-span-3 flex items-center gap-2">
-                <input type="checkbox" id={`fit-${p.id}`} checked={!!draft.isFitForDuty}
-                  onChange={(e) => setDraft((prev) => ({ ...prev, isFitForDuty: e.target.checked }))} />
-                <Label htmlFor={`fit-${p.id}`} className="!mb-0">Assessed fit for duty</Label>
-              </div>
+              <CheckboxField
+                id={`fit-${p.id}`}
+                className="items-center sm:col-span-3"
+                checked={!!draft.isFitForDuty}
+                onChange={(e) => setDraft((prev) => ({ ...prev, isFitForDuty: e.target.checked }))}
+                label="Assessed fit for duty"
+              />
               <div className="sm:col-span-3 flex justify-end gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
                 <Button type="button" size="sm" onClick={() => save(p.id)}>Save</Button>
@@ -1307,12 +1315,14 @@ function EquipmentTab({ incidentId }: { incidentId: string }) {
             <div className="mt-3 pt-3 border-t border-slate-200 grid sm:grid-cols-3 gap-3">
               <div>
                 <Label>Involvement</Label>
-                <Select value={draft.involvement ?? ""} onChange={(ev) => setDraft((prev) => ({ ...prev, involvement: ev.target.value }))}>
-                  <option value="DIRECTLY_INVOLVED">Directly involved</option>
-                  <option value="DAMAGED">Damaged</option>
-                  <option value="INADEQUATE_GUARDING">Inadequate guarding</option>
-                  <option value="MALFUNCTION">Malfunction</option>
-                </Select>
+                <SelectField value={draft.involvement ?? ""} onChange={(value) => setDraft((prev) => ({ ...prev, involvement: value }))}
+                  options={[
+                  { value: "DIRECTLY_INVOLVED", label: "Directly involved" },
+                  { value: "DAMAGED", label: "Damaged" },
+                  { value: "INADEQUATE_GUARDING", label: "Inadequate guarding" },
+                  { value: "MALFUNCTION", label: "Malfunction" }
+                ]}
+                />
               </div>
               <div>
                 <Label>Damage Estimate (₹)</Label>
@@ -1321,14 +1331,16 @@ function EquipmentTab({ incidentId }: { incidentId: string }) {
               </div>
               <div>
                 <Label>Repair Status</Label>
-                <Select value={draft.repairStatus ?? ""} onChange={(ev) => setDraft((prev) => ({ ...prev, repairStatus: ev.target.value }))}>
-                  <option value="">—</option>
-                  <option value="PENDING">Pending</option>
-                  <option value="IN_PROGRESS">In progress</option>
-                  <option value="REPAIRED">Repaired</option>
-                  <option value="REPLACED">Replaced</option>
-                  <option value="DECOMMISSIONED">Decommissioned</option>
-                </Select>
+                <SelectField value={draft.repairStatus ?? ""} onChange={(value) => setDraft((prev) => ({ ...prev, repairStatus: value }))}
+                  placeholder="—"
+                  options={[
+                  { value: "PENDING", label: "Pending" },
+                  { value: "IN_PROGRESS", label: "In progress" },
+                  { value: "REPAIRED", label: "Repaired" },
+                  { value: "REPLACED", label: "Replaced" },
+                  { value: "DECOMMISSIONED", label: "Decommissioned" }
+                ]}
+                />
               </div>
               <div className="sm:col-span-3 flex justify-end gap-2">
                 <Button type="button" size="sm" variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
@@ -1436,9 +1448,7 @@ function DocumentsTab({ incidentId }: { incidentId: string }) {
                 {d.reviewNotes && <div className="text-xs text-slate-600 mt-1">{d.reviewNotes}</div>}
                 {d.documentLinkId && <div className="text-[10px] text-slate-400 mt-0.5 font-mono">linked: {d.documentLinkId}</div>}
               </div>
-              <button type="button" onClick={() => remove(d.id)} className="text-slate-400 hover:text-rose-600">
-                <Trash2 size={14} />
-              </button>
+              <RemoveRowButton label="Remove document review" onClick={() => remove(d.id)} />
             </li>
           ))}
         </ul>
@@ -1447,27 +1457,31 @@ function DocumentsTab({ incidentId }: { incidentId: string }) {
       {!showForm ? (
         <Button type="button" size="sm" variant="outline" onClick={() => setShowForm(true)}>+ Add Document Review</Button>
       ) : (
-        <div className="rounded-lg border border-slate-300 bg-slate-50/60 p-3 space-y-3">
+        <Card className="space-y-3 border-slate-300 bg-slate-50/60 p-3 shadow-none">
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
               <Label>Document Type</Label>
-              <Select value={documentType} onChange={(e) => setDocumentType(e.target.value)}>
-                <option value="SOP">SOP</option>
-                <option value="PERMIT">Permit</option>
-                <option value="TRAINING_RECORD">Training Record</option>
-                <option value="INSPECTION_RECORD">Inspection Record</option>
-                <option value="MOC">MOC (Management of Change)</option>
-                <option value="PSM">PSM</option>
-              </Select>
+              <SelectField value={documentType} onChange={setDocumentType}
+                options={[
+                { value: "SOP", label: "SOP" },
+                { value: "PERMIT", label: "Permit" },
+                { value: "TRAINING_RECORD", label: "Training Record" },
+                { value: "INSPECTION_RECORD", label: "Inspection Record" },
+                { value: "MOC", label: "MOC (Management of Change)" },
+                { value: "PSM", label: "PSM" }
+              ]}
+              />
             </div>
             <div>
               <Label>Compliance Finding</Label>
-              <Select value={complianceFinding} onChange={(e) => setComplianceFinding(e.target.value)}>
-                <option value="">— Select —</option>
-                <option value="COMPLIANT">Compliant</option>
-                <option value="NON_COMPLIANT">Non-compliant</option>
-                <option value="NOT_APPLICABLE">Not applicable</option>
-              </Select>
+              <SelectField value={complianceFinding} onChange={setComplianceFinding}
+                placeholder="— Select —"
+                options={[
+                { value: "COMPLIANT", label: "Compliant" },
+                { value: "NON_COMPLIANT", label: "Non-compliant" },
+                { value: "NOT_APPLICABLE", label: "Not applicable" }
+              ]}
+              />
             </div>
           </div>
           <div>
@@ -1491,7 +1505,7 @@ function DocumentsTab({ incidentId }: { incidentId: string }) {
               {busy ? "Adding…" : "Add Review"}
             </Button>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -1586,10 +1600,10 @@ function StatutoryTab({ incidentId }: { incidentId: string }) {
 
   if (!state.isReportable) {
     return (
-      <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+      <Card className="rounded-md border-slate-200 bg-slate-50 p-4 text-sm text-slate-600 shadow-none">
         This incident is classified as <strong>not statutorily reportable</strong>. If that's incorrect,
         re-classify the incident first via Phase 2 → Statutory Assessment.
-      </div>
+      </Card>
     );
   }
 
@@ -1796,7 +1810,7 @@ function CostTab({ incidentId }: { incidentId: string }) {
         {input("costOther", "Other")}
       </div>
 
-      <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+      <Card className="border-slate-200 bg-slate-50/60 p-3 shadow-none">
         <div className="text-xs font-semibold uppercase tracking-wider text-slate-600 mb-2">Lost Production</div>
         <div className="grid sm:grid-cols-3 gap-3 items-end">
           <div>
@@ -1809,14 +1823,14 @@ function CostTab({ incidentId }: { incidentId: string }) {
           </div>
           {input("costLostProduction", "Total Lost Production")}
         </div>
-      </div>
+      </Card>
 
-      <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 flex items-center justify-between">
+      <Card className="flex items-center justify-between rounded-md border-emerald-200 bg-emerald-50 px-3 py-2.5 shadow-none">
         <div className="text-sm font-semibold text-emerald-900">Total Cost of Incident</div>
         <div className="text-lg font-bold text-emerald-900 font-mono">
           ₹ {total.toLocaleString("en-IN", { maximumFractionDigits: 2 })}
         </div>
-      </div>
+      </Card>
 
       <div className="flex justify-end">
         <Button type="button" onClick={save} disabled={busy}>{busy ? "Saving…" : "Save Cost Breakdown"}</Button>

@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import type { ControlDetail } from "@/app/(dashboard)/erm/lib-t3";
 import { ControlDetailView } from "./control-detail-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -28,10 +29,10 @@ export default async function ControlDetailPage(props: { params: Promise<{ id: s
             { label: "Not found" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Control not found."}. Ensure the ERM Tier 3 seed has been run and you are logged in with a controls role.{" "}
           <Link href="/erm/controls/library" className="font-medium underline">Back to library</Link>
-        </div>
+        </Alert>
       </div>
     );
   }

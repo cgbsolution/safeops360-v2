@@ -22,6 +22,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { cn } from "@/lib/utils";
 import { downloadCsv, stamp } from "../csv";
 import { certificationRegisterCsv } from "../registers-csv";
+import { Card } from "@/components/ui/card";
 import {
   CERT_STATUS_CHIP,
   CERT_TYPE_LABEL,
@@ -435,7 +436,7 @@ export function CertificationsRegisterView({ data }: { data: CertificationRegist
       </div>
 
       {/* Register table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="w-full min-w-[920px] text-sm">
           <TableHeader className="bg-slate-50/95">
             <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
@@ -492,7 +493,7 @@ export function CertificationsRegisterView({ data }: { data: CertificationRegist
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       {/* Footer summary */}
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[11px] text-slate-500">
@@ -583,13 +584,13 @@ function DetailPanel({ row, onClose }: { row: CertificationRegisterRow; onClose:
         </Section>
 
         <Section title="Renewal">
-          <div className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-500">
+          <Card className="flex items-start gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-500 shadow-none">
             <CalendarClock size={15} className="mt-0.5 shrink-0 text-slate-400" />
             <span>
               Linking renewals to a scheduled audit on the CAMS Audit Calendar is a planned follow-up. For now, renewal
               audits are scheduled from the CAMS module and this certificate is updated from the Factory Profile.
             </span>
-          </div>
+          </Card>
         </Section>
 
         <div className="mt-auto border-t border-slate-100 px-5 py-4">

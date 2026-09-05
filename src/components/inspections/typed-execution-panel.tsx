@@ -8,6 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
+import { SelectField } from "@/components/ui/select-field";
 import {
   CheckCircle2, XCircle, AlertCircle, Camera, MessageSquare,
   Star, Send, Save, Loader2, ShieldAlert, AlertTriangle
@@ -179,7 +181,7 @@ export function TypedExecutionPanel({ inspectionId, inspectionNumber, items, exi
       </Card>
 
       {stats.criticalFails > 0 && (
-        <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm flex items-start gap-2">
+        <Alert variant="destructive" className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm flex items-start gap-2">
           <AlertTriangle size={18} className="text-rose-600 mt-0.5" />
           <div>
             <div className="font-medium text-rose-900">
@@ -189,7 +191,7 @@ export function TypedExecutionPanel({ inspectionId, inspectionNumber, items, exi
               Each critical failure will spawn a Critical Finding on submit, and an Observation (UNSAFE_CONDITION, HIGH) will be raised for plant-wide visibility.
             </div>
           </div>
-        </div>
+        </Alert>
       )}
 
       <div className="space-y-3">
@@ -271,17 +273,18 @@ export function TypedExecutionPanel({ inspectionId, inspectionNumber, items, exi
                         </div>
                       )}
                       {item.itemType === "SELECT" && (
-                        <select
-                          className="px-3 py-2 border border-slate-200 rounded-md text-sm"
+                        <SelectField
+                          className="rounded-md px-3 py-2 text-sm"
                           value={s.valueText}
-                          onChange={(e) => update(item.id, { valueText: e.target.value, resultStatus: e.target.value ? "PASS" : "PENDING" })}
+                          ariaLabel={item.itemText}
+                          placeholder="— Select —"
+                          onChange={(value) => update(item.id, { valueText: value, resultStatus: value ? "PASS" : "PENDING" })}
                           disabled={readOnly}
-                        >
-                          <option value="">— Select —</option>
-                          {(Array.isArray(item.options) ? item.options : []).map((opt: any) => (
-                            <option key={opt.value ?? opt} value={opt.value ?? opt}>{opt.label ?? opt.value ?? opt}</option>
-                          ))}
-                        </select>
+                          options={(Array.isArray(item.options) ? item.options : []).map((opt: any) => ({
+                            value: String(opt.value ?? opt),
+                            label: String(opt.label ?? opt.value ?? opt)
+                          }))}
+                        />
                       )}
                       {item.itemType === "TEXT" && (
                         <Textarea
@@ -334,7 +337,7 @@ export function TypedExecutionPanel({ inspectionId, inspectionNumber, items, exi
       </div>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</Alert>
       )}
 
       {!readOnly && (

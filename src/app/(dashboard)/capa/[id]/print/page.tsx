@@ -5,6 +5,7 @@ import { AccessRestricted } from "@/components/access-restricted";
 import { PrintButton } from "@/components/ui/print-button";
 import { formatUserRefText, type UserDirectory } from "@/lib/users/user-ref";
 import { capaRcaMethodLabel } from "@/lib/rca/types";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
@@ -94,8 +95,8 @@ export default async function CapaPrintPage(
           </div>
         </div>
 
-        <table className="w-full text-sm mb-6">
-          <tbody>
+        <Table className="w-full text-sm mb-6">
+          <TableBody>
             {[
               ["Source type", capa.sourceTypeCode.replace(/_/g, " ")],
               ["Source reference", capa.sourceReferenceSummary ?? "—"],
@@ -110,13 +111,13 @@ export default async function CapaPrintPage(
               ["Closure target", capa.closureTargetDate ? new Date(capa.closureTargetDate).toLocaleDateString() : "—"],
               ["Closed at", capa.closedAt ? new Date(capa.closedAt).toLocaleString() : "Not closed"]
             ].map(([k, v]) => (
-              <tr key={k} className="border-b border-slate-200">
-                <td className="py-1.5 pr-4 text-slate-500 w-48">{k}</td>
-                <td className="py-1.5 font-medium text-slate-900">{v}</td>
-              </tr>
+              <TableRow key={k} className="border-b border-slate-200">
+                <TableCell className="py-1.5 pr-4 text-slate-500 w-48">{k}</TableCell>
+                <TableCell className="py-1.5 font-medium text-slate-900">{v}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
 
         <h2 className="text-sm uppercase tracking-wider font-semibold text-slate-700 mb-2">
           Problem Statement
@@ -132,20 +133,20 @@ export default async function CapaPrintPage(
         <h2 className="text-sm uppercase tracking-wider font-semibold text-slate-700 mt-6 mb-2">
           Root Cause Analysis
         </h2>
-        <table className="w-full text-sm border mb-4">
-          <tbody>
-            <tr className="border-t">
-              <td className="px-2 py-1.5 text-slate-500 w-48">Methodology</td>
-              <td className="px-2 py-1.5">{capaRcaMethodLabel(capa.rcaMethodology)}</td>
-            </tr>
-            <tr className="border-t">
-              <td className="px-2 py-1.5 text-slate-500">Completed</td>
-              <td className="px-2 py-1.5">
+        <Table className="w-full text-sm border mb-4">
+          <TableBody>
+            <TableRow className="border-t">
+              <TableCell className="px-2 py-1.5 text-slate-500 w-48">Methodology</TableCell>
+              <TableCell className="px-2 py-1.5">{capaRcaMethodLabel(capa.rcaMethodology)}</TableCell>
+            </TableRow>
+            <TableRow className="border-t">
+              <TableCell className="px-2 py-1.5 text-slate-500">Completed</TableCell>
+              <TableCell className="px-2 py-1.5">
                 {capa.rcaCompletedAt ? new Date(capa.rcaCompletedAt).toLocaleDateString() : "—"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
         {capa.rcaSummary && (
           <>
             <h3 className="text-xs uppercase font-semibold text-slate-600">Summary</h3>
@@ -172,62 +173,62 @@ export default async function CapaPrintPage(
         {capa.actions.length === 0 ? (
           <p className="text-sm italic text-slate-500">No actions recorded.</p>
         ) : (
-          <table className="w-full text-sm border">
-            <thead className="bg-slate-50 text-xs uppercase">
-              <tr>
-                <th className="text-left px-2 py-1.5">Type</th>
-                <th className="text-left px-2 py-1.5">Description</th>
-                <th className="text-left px-2 py-1.5">Owner</th>
-                <th className="text-left px-2 py-1.5">Due</th>
-                <th className="text-left px-2 py-1.5">Status</th>
-                <th className="text-left px-2 py-1.5">Completed</th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table className="w-full text-sm border">
+            <TableHeader className="bg-slate-50 text-xs uppercase">
+              <TableRow>
+                <TableHead className="text-left px-2 py-1.5">Type</TableHead>
+                <TableHead className="text-left px-2 py-1.5">Description</TableHead>
+                <TableHead className="text-left px-2 py-1.5">Owner</TableHead>
+                <TableHead className="text-left px-2 py-1.5">Due</TableHead>
+                <TableHead className="text-left px-2 py-1.5">Status</TableHead>
+                <TableHead className="text-left px-2 py-1.5">Completed</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {capa.actions.map((a) => (
-                <tr key={a.id} className="border-t">
-                  <td className="px-2 py-1.5 text-xs">{a.actionType.replace(/_/g, " ")}</td>
-                  <td className="px-2 py-1.5">{a.description}</td>
-                  <td className="px-2 py-1.5 text-xs">{formatUserRefText(capa.userDirectory, a.ownerUserId)}</td>
-                  <td className="px-2 py-1.5 text-xs">{new Date(a.dueDate).toLocaleDateString()}</td>
-                  <td className="px-2 py-1.5 text-xs">{a.status.replace(/_/g, " ")}</td>
-                  <td className="px-2 py-1.5 text-xs">
+                <TableRow key={a.id} className="border-t">
+                  <TableCell className="px-2 py-1.5 text-xs">{a.actionType.replace(/_/g, " ")}</TableCell>
+                  <TableCell className="px-2 py-1.5">{a.description}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-xs">{formatUserRefText(capa.userDirectory, a.ownerUserId)}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-xs">{new Date(a.dueDate).toLocaleDateString()}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-xs">{a.status.replace(/_/g, " ")}</TableCell>
+                  <TableCell className="px-2 py-1.5 text-xs">
                     {a.completedAt ? new Date(a.completedAt).toLocaleDateString() : "—"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         )}
 
         <h2 className="text-sm uppercase tracking-wider font-semibold text-slate-700 mt-6 mb-2">
           Effectiveness Verification
         </h2>
-        <table className="w-full text-sm border">
-          <tbody>
-            <tr className="border-t">
-              <td className="px-2 py-1.5 text-slate-500 w-48">Success criteria</td>
-              <td className="px-2 py-1.5">{capa.verificationSuccessCriteria ?? "—"}</td>
-            </tr>
-            <tr className="border-t">
-              <td className="px-2 py-1.5 text-slate-500">Completed at</td>
-              <td className="px-2 py-1.5">
+        <Table className="w-full text-sm border">
+          <TableBody>
+            <TableRow className="border-t">
+              <TableCell className="px-2 py-1.5 text-slate-500 w-48">Success criteria</TableCell>
+              <TableCell className="px-2 py-1.5">{capa.verificationSuccessCriteria ?? "—"}</TableCell>
+            </TableRow>
+            <TableRow className="border-t">
+              <TableCell className="px-2 py-1.5 text-slate-500">Completed at</TableCell>
+              <TableCell className="px-2 py-1.5">
                 {capa.verificationCompletedAt ? new Date(capa.verificationCompletedAt).toLocaleString() : "—"}
-              </td>
-            </tr>
-            <tr className="border-t">
-              <td className="px-2 py-1.5 text-slate-500">Result</td>
-              <td
+              </TableCell>
+            </TableRow>
+            <TableRow className="border-t">
+              <TableCell className="px-2 py-1.5 text-slate-500">Result</TableCell>
+              <TableCell
                 className="px-2 py-1.5 font-semibold"
                 style={{
                   color: capa.verificationResult === "EFFECTIVE" ? "#065F46" : "#92400E"
                 }}
               >
                 {capa.verificationResult ?? "Not yet verified"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
         {capa.verificationEvidence && (
           <>
             <h3 className="text-xs uppercase font-semibold text-slate-600 mt-3">Evidence</h3>

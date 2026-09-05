@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Plus, CheckCircle2, ShieldCheck, Trash2 } from "lucide-react";
 import { Can } from "@/components/auth/can";
+import { Card } from "@/components/ui/card";
 
 const CAPA_TYPE = ["CORRECTION", "CORRECTIVE_ACTION", "PREVENTIVE_ACTION"] as const;
 
@@ -96,7 +97,7 @@ export function FindingCapaList({
       {capas.map((c) => {
         const overdue = c.dueDate && new Date(c.dueDate) < new Date() && !["COMPLETED", "VERIFIED", "REJECTED"].includes(c.status);
         return (
-          <div key={c.id} className="border border-slate-200 rounded-md p-3">
+          <Card key={c.id} className="border border-slate-200 rounded-md p-3 shadow-none">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -132,7 +133,7 @@ export function FindingCapaList({
                 )}
               </div>
             </div>
-          </div>
+          </Card>
         );
       })}
 
@@ -143,12 +144,12 @@ export function FindingCapaList({
               <Plus size={14} /> Add CAPA
             </Button>
           ) : (
-            <div className="border border-primary-200 rounded-md p-3 space-y-2 bg-primary-50/30">
+            <Card className="border border-primary-200 rounded-md p-3 space-y-2 bg-primary-50/30 shadow-none">
               <div>
                 <Label>Type</Label>
-                <Select value={type} onChange={(e) => setType(e.target.value as any)}>
-                  {CAPA_TYPE.map((t) => <option key={t} value={t}>{t.replace(/_/g, " ")}</option>)}
-                </Select>
+                <SelectField value={type} onChange={(value) => setType(value as any)}
+                  options={CAPA_TYPE.map((t) => ({ value: String(t), label: t.replace(/_/g, " ") }))}
+                />
               </div>
               <div>
                 <Label>Description *</Label>
@@ -162,7 +163,7 @@ export function FindingCapaList({
                 <Button variant="ghost" onClick={() => setAdding(false)} disabled={busy}>Cancel</Button>
                 <Button onClick={addCapa} disabled={busy || !description.trim()}>Add</Button>
               </div>
-            </div>
+            </Card>
           )}
         </Can>
       )}

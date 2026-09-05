@@ -19,9 +19,11 @@ import { ChevronDown, ChevronRight, Layers, Pencil, Plus, Trash2 } from "lucide-
 import { Can, usePermission } from "@/components/auth/can";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
 import {
   ACTIVITY_TYPES,
   ACTIVITY_TYPE_CHIP,
@@ -130,7 +132,7 @@ function activityMeasures(a: FloorActivity): string[] {
 function Labelled({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{label}</label>
+      <Label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{label}</Label>
       {children}
     </div>
   );
@@ -303,11 +305,9 @@ export function FloorMapping({
 
   return (
     <div className="border-t border-slate-100 bg-slate-50/60">
-      <button
+      <Button variant="ghost"
         type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-slate-600 hover:bg-slate-100"
-      >
+        onClick={() => setOpen((o) => !o)} className="flex w-full gap-2 px-3 py-2 text-left text-xs">
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         <Layers size={13} className="text-slate-400" />
         <span className="font-medium">Floors &amp; process mapping</span>
@@ -315,7 +315,7 @@ export function FloorMapping({
           {floors.length} {floors.length === 1 ? "floor" : "floors"} · {activityCount}{" "}
           {activityCount === 1 ? "activity" : "activities"}
         </span>
-      </button>
+      </Button>
 
       {open && (
         <div className="space-y-2 px-3 pb-3">
@@ -326,7 +326,7 @@ export function FloorMapping({
           )}
 
           {floors.map((f) => (
-            <div key={f.id} className="rounded-lg border border-slate-200 bg-white">
+            <Card key={f.id} className="rounded-lg border border-slate-200 bg-white shadow-none">
               {editFloorId === f.id ? (
                 <div className="flex flex-wrap items-end gap-2 p-2">
                   <Labelled label="Floor name">
@@ -482,17 +482,12 @@ export function FloorMapping({
                 <div className="space-y-2 border-t border-slate-100 bg-primary-50/30 p-3">
                   <div className="flex flex-wrap items-end gap-2">
                     <Labelled label="Type">
-                      <Select
+                      <SelectField
                         className="w-44"
                         value={af.activityType}
-                        onChange={(e) => setAf({ ...af, activityType: e.target.value })}
-                      >
-                        {ACTIVITY_TYPES.map((t) => (
-                          <option key={t} value={t}>
-                            {ACTIVITY_TYPE_LABEL[t]}
-                          </option>
-                        ))}
-                      </Select>
+                        onChange={(value) => setAf({ ...af, activityType: value })}
+                        options={ACTIVITY_TYPES.map((t) => ({ value: String(t), label: `${ACTIVITY_TYPE_LABEL[t]}` }))}
+                      />
                     </Labelled>
                     <Labelled label="Activity">
                       <Input
@@ -504,27 +499,22 @@ export function FloorMapping({
                     </Labelled>
                     {af.activityType === "PROCESS" && processes.length > 0 && (
                       <Labelled label="Linked process">
-                        <Select
+                        <SelectField
                           className="w-48"
                           value={af.processId}
-                          onChange={(e) => {
-                            const p = processes.find((x) => x.id === e.target.value);
+                          onChange={(value) => {
+                            const p = processes.find((x) => x.id === value);
                             setAf({
                               ...af,
-                              processId: e.target.value,
+                              processId: value,
                               // Naming the process is the common case — prefill it,
                               // but never overwrite something already typed.
                               activityName: af.activityName.trim() || p?.processName || "",
                             });
                           }}
-                        >
-                          <option value="">Not linked</option>
-                          {processes.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.processName}
-                            </option>
-                          ))}
-                        </Select>
+                          placeholder="Not linked"
+                          options={processes.map((p) => ({ value: String(p.id), label: `${p.processName}` }))}
+                        />
                       </Labelled>
                     )}
                   </div>
@@ -562,12 +552,12 @@ export function FloorMapping({
                   </div>
                 </div>
               )}
-            </div>
+            </Card>
           ))}
 
           <Can permission="FACILITY.UPDATE">
             {addingFloor ? (
-              <div className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-2">
+              <Card className="flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-none">
                 <Labelled label="Level">
                   <Input
                     type="number"
@@ -613,7 +603,7 @@ export function FloorMapping({
                 <Button type="button" size="sm" variant="outline" onClick={() => setAddingFloor(false)} disabled={busy}>
                   Cancel
                 </Button>
-              </div>
+              </Card>
             ) : (
               <Button type="button" size="sm" variant="outline" onClick={startAddFloor} disabled={busy}>
                 <Plus size={14} /> Add floor

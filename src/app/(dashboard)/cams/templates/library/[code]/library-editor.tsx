@@ -29,7 +29,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -37,6 +37,9 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/toast";
 import { Can } from "@/components/auth/can";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   apiErrorMessage, REQUIREMENT_TYPE_META, CRITICALITY_CHIP, CRITICALITY_FALLBACK,
   type RequirementType,
@@ -152,7 +155,7 @@ export function LibraryEditor({ library }: { library: LibraryDetail }) {
     <div className="space-y-4">
       {/* The one thing a user must understand before editing. Not a tooltip —
           it changes what they should expect to happen. */}
-      <div className="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-2.5 text-[12px] leading-relaxed text-sky-900">
+      <Alert variant="info" className="flex items-start gap-2 rounded-xl border border-sky-200 bg-sky-50/70 px-4 py-2.5 text-[12px] leading-relaxed text-sky-900">
         <Info size={15} className="mt-0.5 shrink-0" />
         <span>
           Edits here apply to the <strong>next audit scheduled</strong>. Audits already created keep
@@ -160,7 +163,7 @@ export function LibraryEditor({ library }: { library: LibraryDetail }) {
           auditor assessed last quarter. The library version moves on every edit
           (currently <strong>v{library.version}</strong>) so two audits can be told apart.
         </span>
-      </div>
+      </Alert>
 
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative">
@@ -182,15 +185,15 @@ export function LibraryEditor({ library }: { library: LibraryDetail }) {
       </div>
 
       {categories.length === 0 && (
-        <div className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-dashed border-slate-200 p-10 text-center text-sm text-slate-400 shadow-none">
           No checkpoints match “{q}”.
-        </div>
+        </Card>
       )}
 
       {categories.map((cat) => {
         const open = needle ? true : openDiscipline === cat.category_code;
         return (
-          <div key={cat.category_code} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+          <Card key={cat.category_code} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
             <button
               type="button"
               onClick={() => setOpenDiscipline(open && !needle ? null : cat.category_code)}
@@ -199,9 +202,9 @@ export function LibraryEditor({ library }: { library: LibraryDetail }) {
               {open ? <ChevronDown size={16} className="text-slate-400" /> : <ChevronRight size={16} className="text-slate-400" />}
               <span className="size-2.5 rounded-full" style={{ backgroundColor: cat.category_color || "#94a3b8" }} />
               <span className="text-sm font-semibold text-slate-800">{cat.category_name}</span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
+              <Badge variant="neutral" className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                 {cat.checkpoints.length}
-              </span>
+              </Badge>
               <span className="font-mono text-[10px] text-slate-400">{cat.category_code}</span>
             </button>
 
@@ -256,7 +259,7 @@ export function LibraryEditor({ library }: { library: LibraryDetail }) {
                 )}
               </div>
             )}
-          </div>
+          </Card>
         );
       })}
 
@@ -310,10 +313,10 @@ function CheckpointRow({ cp, onEdit, onDelete }: {
             {cp.criticality}
           </span>
           {cp.requires_photo_on_fail && (
-            <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">photo on finding</span>
+            <Badge variant="neutral" className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500">photo on finding</Badge>
           )}
           {cp.auto_trigger_capa_on_fail && (
-            <span className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-800">auto-CAPA</span>
+            <Badge variant="warning" className="rounded-full bg-amber-50 px-1.5 py-0.5 text-[9px] font-medium text-amber-800">auto-CAPA</Badge>
           )}
           {cp.requirement_reference && (
             <span className="text-[10px] text-slate-400">📋 {cp.requirement_reference}</span>
@@ -394,27 +397,23 @@ function CheckpointForm({ initial, disciplines, currentDiscipline, busy, onCance
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1">
           <Label className="text-[11px]">Requirement type</Label>
-          <Select value={requirementType} onChange={(e) => setRequirementType(e.target.value)} className="h-8 text-xs">
-            <option value="">— not set —</option>
-            {REQ_TYPES.map((r) => (
-              <option key={r} value={r}>{REQUIREMENT_TYPE_META[r].label}</option>
-            ))}
-          </Select>
+          <SelectField value={requirementType} onChange={setRequirementType} className="h-8 text-xs"
+            placeholder="— not set —"
+            options={REQ_TYPES.map((r) => ({ value: r, label: REQUIREMENT_TYPE_META[r].label }))}
+          />
         </div>
         <div className="space-y-1">
           <Label className="text-[11px]">Criticality</Label>
-          <Select value={criticality} onChange={(e) => setCriticality(e.target.value)} className="h-8 text-xs capitalize">
-            {CRITICALITIES.map((c) => <option key={c} value={c}>{c}</option>)}
-          </Select>
+          <SelectField value={criticality} onChange={setCriticality} className="h-8 text-xs capitalize"
+            options={CRITICALITIES.map((c) => ({ value: c, label: c }))}
+          />
         </div>
         {initial && (
           <div className="space-y-1">
             <Label className="text-[11px]">Discipline</Label>
-            <Select value={category} onChange={(e) => setCategory(e.target.value)} className="h-8 text-xs">
-              {disciplines.map((d) => (
-                <option key={d.category_code} value={d.category_code}>{d.category_name}</option>
-              ))}
-            </Select>
+            <SelectField value={category} onChange={setCategory} className="h-8 text-xs"
+              options={disciplines.map((d) => ({ value: d.category_code, label: d.category_name }))}
+            />
           </div>
         )}
       </div>
@@ -431,14 +430,14 @@ function CheckpointForm({ initial, disciplines, currentDiscipline, busy, onCance
       </div>
 
       <div className="flex flex-wrap gap-4">
-        <label className="flex items-center gap-2 text-[12px] text-slate-600">
+        <Label className="flex items-center gap-2 text-[12px] text-slate-600">
           <Checkbox checked={photo} onChange={(e) => setPhoto(e.target.checked)} />
           Require an evidence photo on a finding
-        </label>
-        <label className="flex items-center gap-2 text-[12px] text-slate-600">
+        </Label>
+        <Label className="flex items-center gap-2 text-[12px] text-slate-600">
           <Checkbox checked={autoCapa} onChange={(e) => setAutoCapa(e.target.checked)} />
           Auto-raise a CAPA on a finding
-        </label>
+        </Label>
       </div>
 
       <div className="flex justify-end gap-2">

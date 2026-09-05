@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField, type SelectOption } from "@/components/ui/select-field";
 import { Can } from "@/components/auth/can";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -135,6 +135,13 @@ function toCellValue(value: unknown): string | number | boolean {
   if (Array.isArray(value)) return value.map((v) => toCellValue(v)).join(", ");
   return String(value);
 }
+
+// The row-count choices the footer offers. One array rather than a literal
+// rebuilt on every render of every table in the app.
+const PAGE_SIZES: SelectOption[] = [10, 15, 25, 50, 100].map((n) => ({
+  value: String(n),
+  label: String(n)
+}));
 
 export function DataTable<TData, TValue>({
   columns,
@@ -511,17 +518,13 @@ export function DataTable<TData, TValue>({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="whitespace-nowrap">Rows per page</span>
-            <Select
-              value={currentPageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
+            <SelectField
+              value={String(currentPageSize)}
+              onChange={(value) => table.setPageSize(Number(value))}
+              ariaLabel="Rows per page"
               className="h-7 w-[68px] px-2 py-0 text-xs"
-            >
-              {[10, 15, 25, 50, 100].map((size) => (
-                <option key={size} value={size}>
-                  {size}
-                </option>
-              ))}
-            </Select>
+              options={PAGE_SIZES}
+            />
           </div>
 
           <div className="whitespace-nowrap">

@@ -3,6 +3,7 @@ import { backendFetch, BackendError } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { EntryCreateForm } from "./entry-create-form";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -71,10 +72,10 @@ export default async function NewHiraEntryPage(
     return (
       <div>
         <PageHeader title="Add Entry" description={`${study.number} — ${study.title}`} />
-        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
+        <Alert variant="warning" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
           This study is in status <strong>{opts.studyStatus}</strong>. New entries can only be added to studies in DRAFT or IN_PROGRESS.
           To revise an approved study, initiate a review cycle.
-        </div>
+        </Alert>
       </div>
     );
   }

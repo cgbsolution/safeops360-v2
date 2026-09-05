@@ -5,6 +5,9 @@ import { PlantSwitcher } from "@/components/plant-switcher";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { cn } from "@/lib/utils";
 import { fmtDate, type CorrelationResponse } from "@/lib/training-engine";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +25,9 @@ export default async function TrainingImpactPage(props: {
           description="Does training actually reduce re-incidents? This measures it."
           breadcrumbs={[{ label: "People & Competency" }, { label: "Training Impact" }]}
         />
-        <div className="rounded-xl border bg-white p-10 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-10 text-center text-slate-500 shadow-none">
           Select a plant to view its training impact.
-        </div>
+        </Card>
       </div>
     );
   }
@@ -51,58 +54,58 @@ export default async function TrainingImpactPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       ) : (
         <>
-          <div className="mb-4 rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 text-sm text-primary-900">
+          <Card className="mb-4 rounded-xl border border-primary-200 bg-primary-50/50 px-4 py-3 text-sm text-primary-900 shadow-none">
             Compares re-incident rate in the N days before vs after training completion, per skill
             node. A positive improvement means fewer re-incidents after training.
-          </div>
+          </Card>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-4 py-2.5 font-semibold">Competency</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Cohort</th>
-                  <th className="px-4 py-2.5 text-center font-semibold">Pre → Post</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Improvement</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Pending</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-slate-100 bg-slate-50 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-4 py-2.5 font-semibold">Competency</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right font-semibold">Cohort</TableHead>
+                  <TableHead className="px-4 py-2.5 text-center font-semibold">Pre → Post</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right font-semibold">Improvement</TableHead>
+                  <TableHead className="px-4 py-2.5 text-right font-semibold">Pending</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
                 {rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={5} className="px-4 py-10 text-center text-sm text-slate-400">
                       No completed training with enough follow-up window to correlate yet.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   rows.map((r) => {
                     const positive = r.improvementPct > 0;
                     const negative = r.improvementPct < 0;
                     return (
-                      <tr key={r.competencyId} className="hover:bg-slate-50/70">
-                        <td className="px-4 py-3 align-top">
+                      <TableRow key={r.competencyId} className="hover:bg-slate-50/70">
+                        <TableCell className="px-4 py-3 align-top">
                           <div className="font-medium text-slate-900">{r.competencyName}</div>
                           <div className="text-[11px] text-slate-500">
                             {r.windowDays}-day window
                           </div>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right tabular-nums text-slate-600">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-right tabular-nums text-slate-600">
                           {r.computedCohortSize}
                           {r.cohortSize !== r.computedCohortSize ? (
                             <span className="text-slate-400"> / {r.cohortSize}</span>
                           ) : null}
-                        </td>
-                        <td className="px-4 py-3 align-top text-center tabular-nums text-slate-700">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-center tabular-nums text-slate-700">
                           <span className="font-semibold">{r.preTotal}</span>
                           <span className="mx-1.5 text-slate-400">→</span>
                           <span className="font-semibold">{r.postTotal}</span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-right">
                           <span
                             className={cn(
                               "inline-flex items-center justify-end gap-1 text-sm font-semibold tabular-nums",
@@ -118,17 +121,17 @@ export default async function TrainingImpactPage(props: {
                             {positive ? "+" : ""}
                             {r.improvementPct}%
                           </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right tabular-nums text-slate-500">
+                        </TableCell>
+                        <TableCell className="px-4 py-3 align-top text-right tabular-nums text-slate-500">
                           {r.pending}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
 
           <p className="mt-3 text-xs text-slate-400">
             Generated {fmtDate(data.generatedAt)}.

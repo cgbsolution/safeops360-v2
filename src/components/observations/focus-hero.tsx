@@ -28,6 +28,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Insight, InsightKind, InsightSeverity } from "@/lib/insights";
+import { Badge } from "@/components/ui/badge";
 
 type Lens = "plant" | "ehs";
 
@@ -130,16 +131,16 @@ export function ObservationFocusHero({
           {/* ── main ── */}
           <div className="flex flex-col gap-3 p-5 pl-7 sm:p-6 sm:pl-8">
             <div className="flex items-center justify-between gap-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white/90">
+              <Badge variant="neutral" className="inline-flex items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-wider text-white/90">
                 <span className="h-1.5 w-1.5 rounded-full" style={{ background: stripe }} />
                 {meta.tag}
-              </span>
+              </Badge>
 
               {/* static role badge — this is the viewer's role, not a control */}
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80">
+              <Badge variant="neutral" className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/80">
                 <meta.Icon size={13} />
                 <span className="hidden sm:inline">{meta.label} view</span>
-              </span>
+              </Badge>
             </div>
 
             <div className="flex items-center gap-4">
@@ -226,9 +227,9 @@ export function ObservationFocusHero({
                 <OIcon size={13} className="text-primary-500" />
                 <span>{KIND_LABEL[o.kind] ?? "Insight"}</span>
                 {o.recordRefs.length > 0 && (
-                  <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums text-slate-500 group-hover:bg-primary-100 group-hover:text-primary-700">
+                  <Badge variant="brand" className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums text-slate-500 group-hover:bg-primary-100 group-hover:text-primary-700">
                     {o.recordRefs.length}
-                  </span>
+                  </Badge>
                 )}
               </Link>
             );

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { SelectField } from "@/components/ui/select-field";
 
 // Department / Business-Unit select + free-text search for the Risk Register.
 // Mirrors the URL-driven filter mechanism used by the band chips: every change
@@ -46,23 +48,17 @@ export function RegisterFilters({ businessUnits }: { businessUnits: string[] }) 
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Department</span>
-      <select
+      <SelectField
         value={currentBu}
-        onChange={(e) => onDepartmentChange(e.target.value)}
+        onChange={onDepartmentChange}
         className="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:border-slate-400"
-      >
-        <option value="">All departments</option>
-        {currentBu && !businessUnits.includes(currentBu) && <option value={currentBu}>{currentBu}</option>}
-        {businessUnits.map((bu) => (
-          <option key={bu} value={bu}>
-            {bu}
-          </option>
-        ))}
-      </select>
+        placeholder="All departments"
+        options={businessUnits.map((bu) => ({ value: bu, label: `${bu}` }))}
+      />
 
       <div className="relative">
         <Search size={13} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-        <input
+        <Input
           value={searchDraft}
           onChange={(e) => setSearchDraft(e.target.value)}
           onKeyDown={(e) => {
@@ -73,8 +69,7 @@ export function RegisterFilters({ businessUnits }: { businessUnits: string[] }) 
           }}
           onBlur={commitSearch}
           placeholder="Search code, title, description…"
-          className="w-56 rounded-lg border border-slate-300 bg-white py-1.5 pl-8 pr-2.5 text-xs text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500"
-        />
+          className="w-56 rounded-lg border border-slate-300 bg-white py-1.5 pl-8 pr-2.5 text-xs text-slate-700 hover:border-slate-400 focus:outline-none focus:ring-1 focus:ring-primary-500" />
       </div>
     </div>
   );

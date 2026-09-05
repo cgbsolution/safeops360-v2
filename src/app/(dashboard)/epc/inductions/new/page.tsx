@@ -7,9 +7,11 @@ import { ArrowLeft, GraduationCap, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Site = { id: string; siteName: string; siteCode: string };
 type Worker = { id: string; fullName: string; workerCode: string; primaryTrade: string };
@@ -181,7 +183,7 @@ export default function NewInductionPage() {
 
       <form onSubmit={handleSubmit} className="rounded-xl border bg-white shadow-sm p-6 space-y-6">
         {error && (
-          <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">{error}</div>
+          <Alert variant="destructive" className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">{error}</Alert>
         )}
 
         {/* ── Site + Worker ── */}
@@ -190,50 +192,41 @@ export default function NewInductionPage() {
 
           <div>
             <Label htmlFor="siteId">Construction Site *</Label>
-            <Select
+            <SelectField
               id="siteId"
               required
               value={form.siteId}
-              onChange={e => setForm(f => ({ ...f, siteId: e.target.value }))}
+              onChange={(value) => setForm(f => ({ ...f, siteId: value }))}
               className="mt-1"
-            >
-              <option value="">Select a site...</option>
-              {sites.map(s => (
-                <option key={s.id} value={s.id}>{s.siteName} ({s.siteCode})</option>
-              ))}
-            </Select>
+              placeholder="Select a site..."
+              options={sites.map((s) => ({ value: String(s.id), label: `${s.siteName} (${s.siteCode})` }))}
+            />
           </div>
 
           <div>
             <Label htmlFor="contractorWorkerId">Contractor Worker *</Label>
-            <Select
+            <SelectField
               id="contractorWorkerId"
               required
               value={form.contractorWorkerId}
-              onChange={e => setForm(f => ({ ...f, contractorWorkerId: e.target.value }))}
+              onChange={(value) => setForm(f => ({ ...f, contractorWorkerId: value }))}
               className="mt-1"
-            >
-              <option value="">Select a worker...</option>
-              {workers.map(w => (
-                <option key={w.id} value={w.id}>{w.fullName} — {w.primaryTrade} ({w.workerCode})</option>
-              ))}
-            </Select>
+              placeholder="Select a worker..."
+              options={workers.map((w) => ({ value: String(w.id), label: `${w.fullName} — ${w.primaryTrade} (${w.workerCode})` }))}
+            />
           </div>
 
           {mobilizations.length > 0 && (
             <div>
               <Label htmlFor="mobilizationId">Mobilization Record</Label>
-              <Select
+              <SelectField
                 id="mobilizationId"
                 value={form.mobilizationId}
-                onChange={e => setForm(f => ({ ...f, mobilizationId: e.target.value }))}
+                onChange={(value) => setForm(f => ({ ...f, mobilizationId: value }))}
                 className="mt-1"
-              >
-                <option value="">None / Not linked</option>
-                {mobilizations.map(m => (
-                  <option key={m.id} value={m.id}>{m.mobilizationNumber} — {m.workerName} ({m.status})</option>
-                ))}
-              </Select>
+                placeholder="None / Not linked"
+                options={mobilizations.map((m) => ({ value: String(m.id), label: `${m.mobilizationNumber} — ${m.workerName} (${m.status})` }))}
+              />
             </div>
           )}
         </div>
@@ -245,32 +238,26 @@ export default function NewInductionPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="inductionType">Induction Type *</Label>
-              <Select
+              <SelectField
                 id="inductionType"
                 required
                 value={form.inductionType}
-                onChange={e => setForm(f => ({ ...f, inductionType: e.target.value }))}
+                onChange={(value) => setForm(f => ({ ...f, inductionType: value }))}
                 className="mt-1"
-              >
-                {INDUCTION_TYPES.map(t => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </Select>
+                options={INDUCTION_TYPES.map((t) => ({ value: String(t.value), label: t.label }))}
+              />
             </div>
 
             <div>
               <Label htmlFor="language">Language *</Label>
-              <Select
+              <SelectField
                 id="language"
                 required
                 value={form.language}
-                onChange={e => setForm(f => ({ ...f, language: e.target.value }))}
+                onChange={(value) => setForm(f => ({ ...f, language: value }))}
                 className="mt-1"
-              >
-                {LANGUAGES.map(l => (
-                  <option key={l.value} value={l.value}>{l.label}</option>
-                ))}
-              </Select>
+                options={LANGUAGES.map((l) => ({ value: String(l.value), label: l.label }))}
+              />
             </div>
 
             <div>
@@ -315,21 +302,20 @@ export default function NewInductionPage() {
         {/* ── Checklist ── */}
         <div className="space-y-3 pt-2 border-t">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pt-2">Topics Checklist</h2>
-          <div className="rounded-lg border divide-y">
+          <Card className="rounded-lg border divide-y shadow-none">
             {CHECKLIST_ITEMS.map(item => (
-              <label
+              <Label
                 key={item.key}
-                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50"
-              >
+                className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50">
                 <Checkbox
                   checked={form[item.key as keyof typeof form] as boolean}
                   onChange={e => setCheck(item.key, e.target.checked)}
                   className="text-cyan-600 focus:ring-cyan-500"
                 />
                 <span className="text-sm text-slate-700">{item.label}</span>
-              </label>
+              </Label>
             ))}
-          </div>
+          </Card>
         </div>
 
         {/* ── Topics Covered (free text) ── */}
@@ -349,14 +335,14 @@ export default function NewInductionPage() {
         {/* ── Assessment ── */}
         <div className="space-y-3 pt-2 border-t">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pt-2">Assessment</h2>
-          <label className="flex items-center gap-3 cursor-pointer">
+          <Label className="flex items-center gap-3 cursor-pointer">
             <Checkbox
               checked={form.assessmentConducted}
               onChange={e => setForm(f => ({ ...f, assessmentConducted: e.target.checked }))}
               className="text-cyan-600 focus:ring-cyan-500"
             />
             <span className="text-sm text-slate-700 font-medium">Assessment Conducted</span>
-          </label>
+          </Label>
 
           {form.assessmentConducted && (
             <div className="grid grid-cols-2 gap-4 pl-7">
@@ -392,29 +378,26 @@ export default function NewInductionPage() {
         {/* ── Acknowledgement ── */}
         <div className="space-y-3 pt-2 border-t">
           <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider pt-2">Worker Acknowledgement</h2>
-          <label className="flex items-center gap-3 cursor-pointer">
+          <Label className="flex items-center gap-3 cursor-pointer">
             <Checkbox
               checked={form.workerAcknowledged}
               onChange={e => setForm(f => ({ ...f, workerAcknowledged: e.target.checked }))}
               className="text-cyan-600 focus:ring-cyan-500"
             />
             <span className="text-sm text-slate-700 font-medium">Worker Acknowledged</span>
-          </label>
+          </Label>
 
           {form.workerAcknowledged && (
             <div className="pl-7">
               <Label htmlFor="acknowledgementMethod">Acknowledgement Method *</Label>
-              <Select
+              <SelectField
                 id="acknowledgementMethod"
                 required={form.workerAcknowledged}
                 value={form.acknowledgementMethod}
-                onChange={e => setForm(f => ({ ...f, acknowledgementMethod: e.target.value }))}
+                onChange={(value) => setForm(f => ({ ...f, acknowledgementMethod: value }))}
                 className="mt-1"
-              >
-                {ACK_METHODS.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </Select>
+                options={ACK_METHODS.map((m) => ({ value: String(m.value), label: m.label }))}
+              />
             </div>
           )}
         </div>

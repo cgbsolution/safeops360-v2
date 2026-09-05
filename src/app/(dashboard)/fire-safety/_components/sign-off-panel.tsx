@@ -30,6 +30,7 @@ import * as React from "react";
 import { CheckCircle2, Circle, Loader2, Lock, PenTool, Type as TypeIcon } from "lucide-react";
 import { SignatureModal } from "@/components/ui/signature-pad";
 import { MX, STAGE_ORDER, SignOff, Stage, fmtDateTime } from "../lib";
+import { Card } from "@/components/ui/card";
 
 const DEFAULT_ROLES = [
   "Prepared by: Person In-charge",
@@ -129,7 +130,7 @@ export function SignOffPanel({
   }
 
   return (
-    <div className="mt-4 overflow-hidden rounded-xl border bg-white" style={{ borderColor: MX.iceLine }}>
+    <Card className="mt-4 overflow-hidden rounded-xl shadow-none" style={{ borderColor: MX.iceLine }}>
       <div
         className="flex flex-wrap items-center gap-2 px-4 py-2"
         style={{ background: MX.ice, borderBottom: `1px solid ${MX.iceLine}` }}
@@ -327,7 +328,7 @@ export function SignOffPanel({
           onClose={() => setDrawingFor(null)}
         />
       )}
-    </div>
+    </Card>
   );
 }
 

@@ -3,17 +3,16 @@
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { Printer } from "lucide-react";
 import { inrCompact, type EsgPortfolio } from "@/app/(dashboard)/erm/lib-t3";
+import { Button } from "@/components/ui/button";
 
 const ESG_ORDER = ["LEADING", "ADEQUATE", "DEVELOPING", "LAGGING"] as const;
 
 export function ExportButton() {
   return (
-    <button
-      onClick={() => window.print()}
-      className="inline-flex items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50"
-    >
+    <Button variant="outline"
+      onClick={() => window.print()} className="gap-2 rounded-md px-4 py-2 text-sm shadow-sm transition-colors">
       <Printer size={16} /> Export
-    </button>
+    </Button>
   );
 }
 

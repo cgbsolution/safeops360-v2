@@ -7,9 +7,12 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 import {
   CONTROL_TYPES,
   CONTROL_NATURES,
@@ -111,7 +114,7 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Control</h2>
           <Button
@@ -128,7 +131,7 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Control name</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Control name</Label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -137,7 +140,7 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Description</Label>
             <Textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -148,49 +151,49 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-              <Select value={controlType} onChange={(e) => setControlType(e.target.value)}>
-                {CONTROL_TYPES.map((t) => <option key={t} value={t}>{CONTROL_TYPE_LABEL[t] ?? t}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Type</Label>
+              <SelectField value={controlType} onChange={setControlType}
+                options={CONTROL_TYPES.map((t) => ({ value: t, label: CONTROL_TYPE_LABEL[t] ?? t }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Nature</label>
-              <Select value={nature} onChange={(e) => setNature(e.target.value)}>
-                {CONTROL_NATURES.map((t) => <option key={t} value={t}>{NATURE_LABEL[t] ?? t}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Nature</Label>
+              <SelectField value={nature} onChange={setNature}
+                options={CONTROL_NATURES.map((t) => ({ value: t, label: NATURE_LABEL[t] ?? t }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Frequency</label>
-              <Select value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-                {CONTROL_FREQUENCIES.map((t) => <option key={t} value={t}>{freqLabel(t)}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Frequency</Label>
+              <SelectField value={frequency} onChange={setFrequency}
+                options={CONTROL_FREQUENCIES.map((t) => ({ value: t, label: freqLabel(t) }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Category</label>
-              <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-                {CONTROL_CATEGORIES.map((t) => <option key={t} value={t}>{CONTROL_CATEGORY_LABEL[t] ?? t}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Category</Label>
+              <SelectField value={category} onChange={setCategory}
+                options={CONTROL_CATEGORIES.map((t) => ({ value: t, label: CONTROL_CATEGORY_LABEL[t] ?? t }))}
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Control owner</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Control owner</Label>
               <UserPicker value={controlOwnerId} onChange={(id) => setControlOwnerId(id)} placeholder="Select owner" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Process (optional)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Process (optional)</Label>
               <Input value={processName} onChange={(e) => setProcessName(e.target.value)} placeholder="e.g. Order-to-Cash" />
             </div>
           </div>
 
-          <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+          <Label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
             <Checkbox checked={isKeyControl} onChange={(e) => setIsKeyControl(e.target.checked)} />
             Key control (in scope for assurance / SOX)
-          </label>
+          </Label>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Financial assertions (optional)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Financial assertions (optional)</Label>
             <div className="flex flex-wrap gap-1.5">
               {ASSERTION_OPTIONS.map((a) => {
                 const on = assertions.includes(a);
@@ -215,7 +218,7 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Control design notes</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Control design notes</Label>
             <Textarea
               value={controlDesignNotes}
               onChange={(e) => setControlDesignNotes(e.target.value)}
@@ -224,7 +227,7 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
             />
           </div>
 
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
@@ -235,7 +238,7 @@ function NewControlModal({ onClose }: { onClose: () => void }) {
             {busy ? "Creating…" : "Create control"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

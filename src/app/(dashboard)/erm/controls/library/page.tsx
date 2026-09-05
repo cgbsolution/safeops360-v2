@@ -11,6 +11,9 @@ import {
   type ControlListResponse,
 } from "@/app/(dashboard)/erm/lib-t3";
 import { NewControlButton } from "./new-control-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -94,9 +97,9 @@ export default async function ControlLibraryPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Tier 3 seed has been run and you are logged in with a controls role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -122,61 +125,61 @@ export default async function ControlLibraryPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.items.length} of {data.total} shown</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1200px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Name</th>
-                  <th className="px-3 py-2.5">Type</th>
-                  <th className="px-3 py-2.5">Nature</th>
-                  <th className="px-3 py-2.5">Frequency</th>
-                  <th className="px-3 py-2.5">Category</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                  <th className="px-3 py-2.5">Key</th>
-                  <th className="px-3 py-2.5">Design</th>
-                  <th className="px-3 py-2.5">Operating</th>
-                  <th className="px-3 py-2.5">Last test</th>
-                  <th className="px-3 py-2.5">Next test</th>
-                  <th className="px-3 py-2.5">Open def.</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1200px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Name</TableHead>
+                  <TableHead className="px-3 py-2.5">Type</TableHead>
+                  <TableHead className="px-3 py-2.5">Nature</TableHead>
+                  <TableHead className="px-3 py-2.5">Frequency</TableHead>
+                  <TableHead className="px-3 py-2.5">Category</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                  <TableHead className="px-3 py-2.5">Key</TableHead>
+                  <TableHead className="px-3 py-2.5">Design</TableHead>
+                  <TableHead className="px-3 py-2.5">Operating</TableHead>
+                  <TableHead className="px-3 py-2.5">Last test</TableHead>
+                  <TableHead className="px-3 py-2.5">Next test</TableHead>
+                  <TableHead className="px-3 py-2.5">Open def.</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={13} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={13} className="px-3 py-10 text-center text-sm text-slate-400">
                       No controls match the current filter. Use “New Control” to add one.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((c) => (
-                    <tr key={c.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={c.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/controls/${c.id}`} className="font-mono text-xs font-medium text-primary-700 hover:underline">
                           {c.controlCode}
                         </Link>
-                      </td>
-                      <td className="max-w-[260px] px-3 py-2.5 text-slate-700">{c.name}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[260px] px-3 py-2.5 text-slate-700">{c.name}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className="inline-flex items-center rounded bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
                           {CONTROL_TYPE_LABEL[c.controlType] ?? c.controlType}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{NATURE_LABEL[c.nature] ?? c.nature}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{freqLabel(c.frequency)}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{CONTROL_CATEGORY_LABEL[c.category] ?? c.category}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{c.controlOwnerName ?? "—"}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{NATURE_LABEL[c.nature] ?? c.nature}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{freqLabel(c.frequency)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{CONTROL_CATEGORY_LABEL[c.category] ?? c.category}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{c.controlOwnerName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         {c.isKeyControl ? (
                           <span className="rounded border border-primary-200 bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-800">KEY</span>
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5"><RatingChip rating={c.currentDesignRating} /></td>
-                      <td className="px-3 py-2.5"><RatingChip rating={c.currentOperatingRating} /></td>
-                      <td className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(c.lastTestDate)}</td>
-                      <td className="px-3 py-2.5 text-xs">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5"><RatingChip rating={c.currentDesignRating} /></TableCell>
+                      <TableCell className="px-3 py-2.5"><RatingChip rating={c.currentOperatingRating} /></TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-500">{fmtDate(c.lastTestDate)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs">
                         {c.testOverdue ? (
                           <span className="rounded border border-rose-200 bg-rose-50 px-2 py-0.5 font-medium text-rose-700">
                             {fmtDate(c.nextTestDueDate)} · overdue
@@ -184,8 +187,8 @@ export default async function ControlLibraryPage(props: {
                         ) : (
                           <span className="text-slate-500">{fmtDate(c.nextTestDueDate)}</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5">
                         {c.openDeficiencyCount > 0 ? (
                           <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-semibold text-amber-800">
                             {c.openDeficiencyCount}
@@ -193,13 +196,13 @@ export default async function ControlLibraryPage(props: {
                         ) : (
                           <span className="text-slate-300">0</span>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

@@ -31,13 +31,15 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { UserPicker } from "@/components/ui/user-picker";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { readApiError } from "@/lib/client-errors";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export type WizardSite = { id: string; code: string; name: string };
 export type WizardDiscipline = { code: string; name: string; checkpointCount: number };
@@ -393,14 +395,16 @@ export function ProgrammeWizard({
 
               <div>
                 <Label htmlFor="pw-pp" className="text-xs">Coverage measured over</Label>
-                <Select id="pw-pp" value={String(periodsPerCycle)}
-                  onChange={(e) => setPeriodsPerCycle(Number(e.target.value))}
-                  className="mt-1 w-auto">
-                  <option value="1">1 period — the whole cycle</option>
-                  <option value="2">2 half-years</option>
-                  <option value="4">4 quarters</option>
-                  <option value="12">12 months</option>
-                </Select>
+                <SelectField id="pw-pp" value={String(periodsPerCycle)}
+                  onChange={(value) => setPeriodsPerCycle(Number(value))}
+                  className="mt-1 w-auto"
+                  options={[
+                  { value: "1", label: "1 period — the whole cycle" },
+                  { value: "2", label: "2 half-years" },
+                  { value: "4", label: "4 quarters" },
+                  { value: "12", label: "12 months" }
+                ]}
+                />
                 <p className="mt-1 text-[11px] text-slate-500">
                   These become the columns of the coverage matrix, and the denominator of the
                   required-frequency arithmetic.
@@ -478,12 +482,10 @@ export function ProgrammeWizard({
               {libraries.length > 1 && !libraries.some((l) => l.categoryCode) && (
                 <div>
                   <Label htmlFor="pw-lib" className="text-xs">{axisWords(library).Title.slice(0, -1)} taxonomy</Label>
-                  <Select id="pw-lib" value={industryCode} className="mt-1"
-                    onChange={(e) => { setIndustryCode(e.target.value); setDisciplineCodes([]); }}>
-                    {libraries.map((l) => (
-                      <option key={l.industryCode} value={l.industryCode}>{l.industryName}</option>
-                    ))}
-                  </Select>
+                  <SelectField id="pw-lib" value={industryCode} className="mt-1"
+                    onChange={(value) => { setIndustryCode(value); setDisciplineCodes([]); }}
+                    options={libraries.map((l) => ({ value: String(l.industryCode), label: l.industryName }))}
+                  />
                 </div>
               )}
 
@@ -537,11 +539,11 @@ export function ProgrammeWizard({
                     {disciplineCodes.length === (library?.categories.length ?? 0) ? "None" : "All"}
                   </Button>
                 </div>
-                <div className="mt-1 max-h-44 overflow-y-auto rounded-md border border-slate-200">
+                <Card className="mt-1 max-h-44 overflow-y-auto rounded-md border border-slate-200 shadow-none">
                   {(library?.categories ?? []).map((d) => {
                     const on = disciplineCodes.includes(d.code);
                     return (
-                      <button key={d.code} type="button"
+                      <Button variant="ghost" key={d.code} type="button"
                         onClick={() => setDisciplineCodes((p) => toggle(p, d.code))}
                         className={cn(
                           "flex w-full items-center gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50",
@@ -555,7 +557,7 @@ export function ProgrammeWizard({
                         <span className="ml-auto text-[10px] text-slate-400">
                           {d.checkpointCount} cp
                         </span>
-                      </button>
+                      </Button>
                     );
                   })}
                   {!library?.categories.length && (
@@ -563,7 +565,7 @@ export function ProgrammeWizard({
                       No checkpoint library is available to draw {axisWords(library).many} from.
                     </p>
                   )}
-                </div>
+                </Card>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -578,29 +580,27 @@ export function ProgrammeWizard({
                 </div>
                 <div>
                   <Label htmlFor="pw-rw" className="text-xs">Risk weight</Label>
-                  <Select id="pw-rw" value={riskWeight} onChange={(e) => setRiskWeight(e.target.value)}
-                    className="mt-1">
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <option key={n} value={n}>{n}{n === 5 ? " — highest" : n === 1 ? " — lowest" : ""}</option>
-                    ))}
-                  </Select>
+                  <SelectField id="pw-rw" value={riskWeight} onChange={setRiskWeight}
+                    className="mt-1"
+                    options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: `${n}${n === 5 ? " — highest" : n === 1 ? " — lowest" : ""}` }))}
+                  />
                   <p className="mt-1 text-[11px] text-slate-500">
                     Ranks the gap list: an uncovered weight-5 unit outranks three weight-1s.
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-violet-200 bg-violet-50/60 px-3 py-2 text-xs text-violet-900">
+              <Alert variant="brand" className="rounded-lg border border-violet-200 bg-violet-50/60 px-3 py-2 text-xs text-violet-900">
                 This creates <strong>{unitCount}</strong> scope unit{unitCount === 1 ? "" : "s"}
                 {siteIds.length > 0 && <> — {siteIds.length} site{siteIds.length === 1 ? "" : "s"} × {disciplineCodes.length} discipline{disciplineCodes.length === 1 ? "" : "s"}</>}.
-              </div>
+              </Alert>
             </>
           )}
 
           {err && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+            <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
               {err}
-            </div>
+            </Alert>
           )}
         </div>
 

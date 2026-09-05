@@ -28,6 +28,7 @@ import {
   severityLabel
 } from "@/components/observations/severity-suggestion";
 import { Loader2 } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // At-risk types only, matching the create form. The two SAFE types are still
 // listed for a record that ALREADY is one — dropping them from the options of a
@@ -189,7 +190,9 @@ export function ObservationEditForm({
       <Card>
         <CardContent className="space-y-4 pt-6">
           {error && (
-            <div className="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div>
+            <Alert variant="destructive" size="lg">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

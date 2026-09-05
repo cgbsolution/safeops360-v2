@@ -10,6 +10,9 @@ import {
   type EngagementListResponse, type AuditType, type Template,
 } from "../lib-cams";
 import { ScheduleEngagementButton } from "./schedule-engagement";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +83,7 @@ export default async function EngagementsPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <>
           <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -90,57 +93,57 @@ export default async function EngagementsPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.total} inspection(s)</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1100px] text-sm">
-              <thead className="sticky top-0 z-10 bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Title</th>
-                  <th className="px-3 py-2.5">Type</th>
-                  <th className="px-3 py-2.5">Site</th>
-                  <th className="px-3 py-2.5">Lead</th>
-                  <th className="px-3 py-2.5">Planned</th>
-                  <th className="px-3 py-2.5">Status</th>
-                  <th className="px-3 py-2.5">Result</th>
-                  <th className="px-3 py-2.5 text-center">Findings</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1100px] text-sm">
+              <TableHeader className="sticky top-0 z-10 bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Title</TableHead>
+                  <TableHead className="px-3 py-2.5">Type</TableHead>
+                  <TableHead className="px-3 py-2.5">Site</TableHead>
+                  <TableHead className="px-3 py-2.5">Lead</TableHead>
+                  <TableHead className="px-3 py-2.5">Planned</TableHead>
+                  <TableHead className="px-3 py-2.5">Status</TableHead>
+                  <TableHead className="px-3 py-2.5">Result</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Findings</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr><td colSpan={9} className="px-3 py-10 text-center text-sm text-slate-400">No inspections match the current filter.</td></tr>
+                  <TableRow><TableCell colSpan={9} className="px-3 py-10 text-center text-sm text-slate-400">No inspections match the current filter.</TableCell></TableRow>
                 ) : (
                   data.items.map((e) => (
-                    <tr key={e.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={e.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/cams/engagements/${e.id}`} className="font-medium text-primary-700 hover:underline">{e.engagementCode}</Link>
-                      </td>
-                      <td className="max-w-[260px] px-3 py-2.5 text-slate-700">
+                      </TableCell>
+                      <TableCell className="max-w-[260px] px-3 py-2.5 text-slate-700">
                         {e.title}
                         {e.sourceModule && <span className="ml-1 rounded bg-slate-100 px-1 text-[10px] text-slate-500">via {e.sourceModule}</span>}
-                      </td>
-                      <td className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (ENGAGEMENT_TYPE_CHIP[e.engagementType] ?? "")}>{engagementTypeLabel(e.engagementType)}</span></td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{e.siteName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{e.leadAuditorName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-xs tabular-nums text-slate-500">{fmtDate(e.plannedDate)}</td>
-                      <td className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (ENGAGEMENT_STATUS_CHIP[e.status] ?? "")}>{labelize(e.status)}</span></td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (ENGAGEMENT_TYPE_CHIP[e.engagementType] ?? "")}>{engagementTypeLabel(e.engagementType)}</span></TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{e.siteName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{e.leadAuditorName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs tabular-nums text-slate-500">{fmtDate(e.plannedDate)}</TableCell>
+                      <TableCell className="px-3 py-2.5"><span className={"rounded border px-2 py-0.5 text-[11px] " + (ENGAGEMENT_STATUS_CHIP[e.status] ?? "")}>{labelize(e.status)}</span></TableCell>
+                      <TableCell className="px-3 py-2.5">
                         {e.overallResult ? (
                           <span className={"rounded border px-2 py-0.5 text-[11px] " + (RESULT_CHIP[e.overallResult] ?? "")}>
                             {labelize(e.overallResult)}{e.scorePercent != null ? ` · ${e.scorePercent}%` : ""}
                           </span>
                         ) : <span className="text-xs text-slate-300">—</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-center text-xs tabular-nums">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-center text-xs tabular-nums">
                         {e.findingCount > 0 ? (
                           <span className="text-slate-600">{e.openFindingCount}/{e.findingCount}<span className="text-slate-400"> open</span></span>
                         ) : <span className="text-slate-300">0</span>}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

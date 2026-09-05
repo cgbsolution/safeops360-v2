@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,10 @@ import { EvidenceAttachment } from "@/components/evidence/EvidenceAttachment";
 import { TriggerAuditButton } from "./trigger-audit-button";
 import { FloorMapping } from "./floor-mapping";
 import { ProfileEditPanel } from "./profile-edit-panel";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   BUILDING_TYPES,
   BUILDING_TYPE_LABEL,
@@ -119,15 +123,15 @@ async function mutate(url: string, init?: RequestInit): Promise<void> {
 
 function ErrorNote({ err }: { err: string | null }) {
   if (!err) return null;
-  return <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>;
+  return <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>;
 }
 
 function Tile({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2">
+    <Card className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-none">
       <div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div>
       <div className="text-sm font-semibold text-slate-800">{value}</div>
-    </div>
+    </Card>
   );
 }
 
@@ -162,7 +166,7 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
   return (
     <div>
       {/* Header band */}
-      <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <span className={"rounded border px-2 py-0.5 text-[11px] font-medium " + (STATUS_CHIP[profile.status] ?? "")}>
           {titleCase(profile.status)}
         </span>
@@ -184,20 +188,18 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
                 message that names the requirement but not where to satisfy it
                 just moves the hunt one step along. */}
             {!(profile.totalEmployees > 0) && (
-              <button
+              <Button variant="link"
                 type="button"
-                onClick={() => setTab("Workforce")}
-                className="font-medium underline underline-offset-2 hover:text-amber-900"
-              >
+                onClick={() => setTab("Workforce")} className="underline underline-offset-2">
                 Add workforce
-              </button>
+              </Button>
             )}
           </span>
         )}
         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
           <MapPin size={12} /> {[profile.city, profile.state].filter(Boolean).join(", ") || "—"}
         </span>
-        <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">{profile.primaryIndustry}</span>
+        <Badge variant="brand" className="rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-medium text-primary-700">{profile.primaryIndustry}</Badge>
         {/* Never the raw `siteId` — a cuid says nothing, and the 1:1 Plant link
             is exactly what would be broken if the name failed to resolve. */}
         <span className="text-xs text-slate-400">Site: {profile.siteName ?? "Unknown site"}</span>
@@ -206,7 +208,7 @@ export function ProfileDetail({ profile, initialTab }: { profile: FactoryProfile
           <Tile label="Employees" value={fmtNum(profile.totalEmployees)} />
           <Tile label="Ownership" value={OWNERSHIP_LABEL[profile.ownershipType] ?? profile.ownershipType} />
         </div>
-      </div>
+      </Card>
 
       {/* Edit the profile itself + the approval trail governing that edit */}
       <ProfileEditPanel profile={profile} />
@@ -251,7 +253,7 @@ function OverviewTab({ profile }: { profile: FactoryProfileDetail }) {
   const canEdit = usePermission("FACILITY.UPDATE");
   return (
     <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Identity & Statutory</h3>
         <dl className="space-y-2 text-sm">
           <Row label="Factory licence">{profile.factoryLicenseNo ?? "—"}</Row>
@@ -286,9 +288,9 @@ function OverviewTab({ profile }: { profile: FactoryProfileDetail }) {
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <h3 className="mb-3 text-sm font-semibold text-slate-700">Summary</h3>
         <div className="grid grid-cols-2 gap-3">
           <Tile label="Buildings" value={fmtNum(profile.buildingCount)} />
@@ -303,7 +305,7 @@ function OverviewTab({ profile }: { profile: FactoryProfileDetail }) {
           <Row label="Geo">{profile.latitude != null && profile.longitude != null ? `${profile.latitude}, ${profile.longitude}` : "—"}</Row>
           <Row label="Next review">{fmtDate(profile.nextReviewDate)}</Row>
         </dl>
-      </div>
+      </Card>
 
       {/* Documents belonging to the factory as a whole, rather than to one
           licence — the plot plan, the occupancy certificate, land records.
@@ -445,7 +447,7 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
 
   const editField = (k: string, label: string, opts?: { type?: string; w?: string; ph?: string }) => (
     <div>
-      <label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{label}</label>
+      <Label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{label}</Label>
       <Input
         type={opts?.type ?? "text"}
         className={opts?.w}
@@ -462,14 +464,14 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
       {/* breakdown */}
       <div className="flex flex-wrap items-center gap-2">
         {Object.entries(breakdown).map(([t, n]) => (
-          <span key={t} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600">
+          <Badge variant="neutral" key={t} className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[11px] text-slate-600">
             {BUILDING_TYPE_LABEL[t] ?? t} <span className="font-semibold tabular-nums">{n}</span>
-          </span>
+          </Badge>
         ))}
         <span className="ml-auto text-xs text-slate-400">buildingCount: {profile.buildingCount}</span>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="min-w-[700px]">
           <TableHeader>
             <TableRow>
@@ -497,10 +499,10 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
                       <div className="flex flex-wrap items-end gap-2">
                         {editField("buildingName", "Building name", { ph: "Block A — Stitching" })}
                         <div>
-                          <label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">Type</label>
-                          <Select value={ef.buildingType} onChange={(e) => setEf({ ...ef, buildingType: e.target.value })}>
-                            {BUILDING_TYPES.map((t) => <option key={t} value={t}>{BUILDING_TYPE_LABEL[t]}</option>)}
-                          </Select>
+                          <Label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">Type</Label>
+                          <SelectField value={ef.buildingType} onChange={(value) => setEf({ ...ef, buildingType: value })}
+                            options={BUILDING_TYPES.map((t) => ({ value: String(t), label: BUILDING_TYPE_LABEL[t] }))}
+                          />
                         </div>
                         {editField("floors", "Floors", { type: "number", w: "w-16" })}
                         {editField("areaSqm", withUnit("Area", "area"), { type: "number", w: "w-24" })}
@@ -546,13 +548,13 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       <Can permission="FACILITY.UPDATE">
         {adding ? (
-          <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
+          <Card className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Building name</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Building name</Label>
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -560,15 +562,13 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Type</label>
-              <Select value={type} onChange={(e) => setType(e.target.value as BuildingType)}>
-                {BUILDING_TYPES.map((t) => (
-                  <option key={t} value={t}>{BUILDING_TYPE_LABEL[t]}</option>
-                ))}
-              </Select>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Type</Label>
+              <SelectField value={type} onChange={(value) => setType(value as BuildingType)}
+                options={BUILDING_TYPES.map((t) => ({ value: String(t), label: BUILDING_TYPE_LABEL[t] }))}
+              />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Floors</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Floors</Label>
               <Input className="w-20" value={floors} onChange={(e) => setFloors(e.target.value)} />
             </div>
             <Button type="button" onClick={addBuilding} disabled={busy || !name.trim()}>
@@ -577,7 +577,7 @@ function BuildingsTab({ profile }: { profile: FactoryProfileDetail }) {
             <Button type="button" variant="outline" onClick={() => setAdding(false)} disabled={busy}>
               Cancel
             </Button>
-          </div>
+          </Card>
         ) : (
           <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={16} /> Add building
@@ -665,7 +665,7 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
 
   const numField = (k: keyof typeof f, label: string) => (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      <Label className="block text-xs font-medium text-slate-600 mb-1">{label}</Label>
       <Input
         type="number"
         min={0}
@@ -678,15 +678,15 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
   return (
     <div className="space-y-4">
       {!w && !editing && (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400 shadow-none">
           No workforce composition recorded yet. {canEdit && "Use “Update composition” to add one."}
-        </div>
+        </Card>
       )}
 
       {w && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {/* Employment type */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className="mb-2 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">Employment type</h3>
               <span className="text-xs text-slate-400">as of {fmtDate(w.asOfDate)}</span>
@@ -708,10 +708,10 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
             <div className="mt-3 text-right text-sm text-slate-500">
               Total workforce <span className="font-bold text-slate-900">{fmtNum(w.totalCount)}</span>
             </div>
-          </div>
+          </Card>
 
           {/* Gender split */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <h3 className="mb-2 text-sm font-semibold text-slate-700">Gender split (SA8000)</h3>
             <Bar
               segments={[
@@ -728,14 +728,14 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
               ]}
             />
             {w.genderMismatch && (
-              <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-700">
+              <Alert variant="warning" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] text-amber-700">
                 Gender split ({fmtNum(w.genderTotal)}) doesn’t reconcile to total headcount ({fmtNum(w.totalCount)}) — soft warning only.
-              </div>
+              </Alert>
             )}
-          </div>
+          </Card>
 
           {/* Welfare lens */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2">
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2 shadow-none">
             <h3 className="mb-3 text-sm font-semibold text-slate-700">SA8000 welfare lens</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <Tile label="Contract %" value={`${pct(w.contractCount, w.totalCount)}%`} />
@@ -751,18 +751,18 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
               <Tile label="Min hiring-age policy" value={w.minHiringAgePolicy != null ? String(w.minHiringAgePolicy) : "—"} />
             </div>
             {w.childLabourFlag && (
-              <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-700">
+              <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-700">
                 <strong>Child-labour attention flag</strong> — under-18 workers present and the youngest ({w.youngestWorkerAge ?? "?"}) is below the
                 hiring-age policy ({w.minHiringAgePolicy ?? "?"}). This is the most-scrutinised SA8000 item and surfaces on the group register & export.
-              </div>
+              </Alert>
             )}
-          </div>
+          </Card>
         </div>
       )}
 
       {/* Headcount trend */}
       {profile.workforceHistory.length > 1 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <h3 className="mb-2 text-sm font-semibold text-slate-700">Headcount trend</h3>
           <div className="flex flex-wrap gap-3 text-xs">
             {[...profile.workforceHistory].reverse().map((h) => (
@@ -772,7 +772,7 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Social-compliance profile (SA8000 policy/standing) */}
@@ -781,7 +781,7 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
       {/* Update form */}
       <Can permission="FACILITY.WORKFORCE_UPDATE">
         {editing ? (
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <h3 className="mb-3 text-sm font-semibold text-slate-700">Update composition (creates a new dated record)</h3>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               {numField("permanentCount", "Permanent")}
@@ -815,7 +815,7 @@ function WorkforceTab({ profile }: { profile: FactoryProfileDetail }) {
                 Cancel
               </Button>
             </div>
-          </div>
+          </Card>
         ) : (
           <Button
             type="button"
@@ -924,21 +924,18 @@ function SocialComplianceCard({ profile }: { profile: FactoryProfileDetail }) {
 
   const flagSelect = (key: keyof typeof f, label: string) => (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
-      <Select
+      <Label className="block text-xs font-medium text-slate-600 mb-1">{label}</Label>
+      <SelectField
         value={String(f[key])}
-        onChange={(e) => setF({ ...f, [key]: e.target.value as ComplianceFlag })}
-      >
-        {COMPLIANCE_FLAGS.map((c) => (
-          <option key={c} value={c}>{SOCIAL_FLAG_LABEL[c]}</option>
-        ))}
-      </Select>
+        onChange={(value) => setF({ ...f, [key]: value as ComplianceFlag })}
+        options={COMPLIANCE_FLAGS.map((c) => ({ value: String(c), label: SOCIAL_FLAG_LABEL[c] }))}
+      />
     </div>
   );
 
   const numField = (key: keyof typeof f, label: string) => (
     <div>
-      <label className="block text-xs font-medium text-slate-600 mb-1">{label}</label>
+      <Label className="block text-xs font-medium text-slate-600 mb-1">{label}</Label>
       <Input
         type="number"
         min={0}
@@ -951,16 +948,16 @@ function SocialComplianceCard({ profile }: { profile: FactoryProfileDetail }) {
   const otBreach = s?.maxWeeklyOvertimeHours != null && s.maxWeeklyOvertimeHours > 12;
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-700">Social-compliance profile (SA8000)</h3>
         {s && <SocialFlagChip flag={s.overallSocialComplianceFlag} />}
       </div>
 
       {!s && !editing && (
-        <div className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">
+        <Card className="rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-400 shadow-none">
           No social-compliance profile recorded yet. {canEdit && "Use “Edit social-compliance” to add one."}
-        </div>
+        </Card>
       )}
 
       {s && !editing && (
@@ -984,9 +981,9 @@ function SocialComplianceCard({ profile }: { profile: FactoryProfileDetail }) {
             <Tile label="Next review" value={fmtDate(s.nextReviewDate)} />
           </div>
           {otBreach && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-700">
+            <Alert variant="warning" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[12px] text-amber-700">
               Max weekly overtime ({s.maxWeeklyOvertimeHours}h) exceeds the SA8000 cap of 12h — Working Hours flagged for attention.
-            </div>
+            </Alert>
           )}
         </div>
       )}
@@ -1003,13 +1000,13 @@ function SocialComplianceCard({ profile }: { profile: FactoryProfileDetail }) {
             {numField("maxWeeklyOvertimeHours", "Max weekly overtime")}
             {numField("sa8000AwarenessTrainingPct", "SA8000 training %")}
             <div className="flex items-end pb-2">
-              <label className="inline-flex items-center gap-2 text-sm text-slate-600">
+              <Label className="inline-flex items-center gap-2 text-sm text-slate-600">
                 <Checkbox
                   checked={f.collectiveBargainingAgreement}
                   onChange={(e) => setF({ ...f, collectiveBargainingAgreement: e.target.checked })}
                 />
                 Collective bargaining
-              </label>
+              </Label>
             </div>
           </div>
           {f.maxWeeklyOvertimeHours > 12 && (
@@ -1034,7 +1031,7 @@ function SocialComplianceCard({ profile }: { profile: FactoryProfileDetail }) {
           </Button>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -1137,7 +1134,7 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
 
   const efField = (k: keyof typeof ef, label: string, ph = "") => (
     <div>
-      <label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{label}</label>
+      <Label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{label}</Label>
       <Input placeholder={ph} value={ef[k]} onChange={(e) => setEf({ ...ef, [k]: e.target.value })} />
     </div>
   );
@@ -1146,15 +1143,15 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
     <div className="space-y-4">
       <ErrorNote err={err} />
       {profile.processes.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400 shadow-none">
           No production processes recorded yet.
-        </div>
+        </Card>
       ) : (
         <div className="flex flex-wrap items-stretch gap-2">
           {profile.processes.map((p, i) => (
             <div key={p.id} className="flex items-center gap-2">
               {editId === p.id ? (
-                <div className="w-72 space-y-2 rounded-xl border border-primary-200 bg-primary-50/40 p-3">
+                <Card className="w-72 space-y-2 rounded-xl border border-primary-200 bg-primary-50/40 p-3 shadow-none">
                   {efField("processName", "Process name", "Stitching")}
                   <div className="flex gap-2">
                     <div className="flex-1">{efField("installedCapacity", withUnit("Installed capacity", "production"), "12000")}</div>
@@ -1165,9 +1162,9 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
                     <Button type="button" size="sm" onClick={saveEdit} disabled={busy || !ef.processName.trim()}>Save</Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => setEditId(null)} disabled={busy}>Cancel</Button>
                   </div>
-                </div>
+                </Card>
               ) : (
-                <div className="group relative w-56 rounded-xl border border-slate-200 bg-white p-3">
+                <Card className="group relative w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-[11px] font-semibold text-primary-700">
@@ -1197,7 +1194,7 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
                       ))}
                     </div>
                   )}
-                </div>
+                </Card>
               )}
               {i < profile.processes.length - 1 && <span className="text-slate-300">→</span>}
             </div>
@@ -1207,21 +1204,21 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
 
       <Can permission="FACILITY.UPDATE">
         {adding ? (
-          <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
+          <Card className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Process name</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Process name</Label>
               <Input value={f.processName} onChange={(e) => setF({ ...f, processName: e.target.value })} placeholder="Stitching" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">{withUnit("Installed capacity", "production")}</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">{withUnit("Installed capacity", "production")}</Label>
               <Input value={f.installedCapacity} onChange={(e) => setF({ ...f, installedCapacity: e.target.value })} placeholder="12000" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Shifts</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Shifts</Label>
               <Input value={f.shiftPattern} onChange={(e) => setF({ ...f, shiftPattern: e.target.value })} placeholder="2 shifts" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Key hazards (comma)</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Key hazards (comma)</Label>
               <Input value={f.keyHazards} onChange={(e) => setF({ ...f, keyHazards: e.target.value })} placeholder="Needle injury, Noise" />
             </div>
             <Button type="button" onClick={add} disabled={busy || !f.processName.trim()}>
@@ -1230,7 +1227,7 @@ function ProcessesTab({ profile }: { profile: FactoryProfileDetail }) {
             <Button type="button" variant="outline" onClick={() => setAdding(false)} disabled={busy}>
               Cancel
             </Button>
-          </div>
+          </Card>
         ) : (
           <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={16} /> Add process
@@ -1348,7 +1345,7 @@ function CertificationsTab({ profile }: { profile: FactoryProfileDetail }) {
   return (
     <div className="space-y-4">
       <ErrorNote err={err} />
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="min-w-[760px]">
           <TableHeader>
             <TableRow>
@@ -1437,54 +1434,50 @@ function CertificationsTab({ profile }: { profile: FactoryProfileDetail }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       <Can permission="FACILITY.CERT_MANAGE">
         {adding ? (
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-3">
+          <Card className="space-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
             <div className="text-sm font-semibold text-slate-700">
               {editingId ? `Edit ${CERT_TYPE_LABEL[f.certificationType] ?? f.certificationType}` : "Add certification"}
             </div>
             <div className="flex flex-wrap items-end gap-2">
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Certification</label>
-                <Select value={f.certificationType} onChange={(e) => setF({ ...f, certificationType: e.target.value as CertificationType })}>
-                  {CERTIFICATION_TYPES.map((t) => (
-                    <option key={t} value={t}>{CERT_TYPE_LABEL[t]}</option>
-                  ))}
-                </Select>
+                <Label className="block text-xs font-medium text-slate-600 mb-1">Certification</Label>
+                <SelectField value={f.certificationType} onChange={(value) => setF({ ...f, certificationType: value as CertificationType })}
+                  options={CERTIFICATION_TYPES.map((t) => ({ value: String(t), label: CERT_TYPE_LABEL[t] }))}
+                />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Certificate No.</label>
+                <Label className="block text-xs font-medium text-slate-600 mb-1">Certificate No.</Label>
                 <Input value={f.certificateNo} onChange={(e) => setF({ ...f, certificateNo: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Issuing body</label>
+                <Label className="block text-xs font-medium text-slate-600 mb-1">Issuing body</Label>
                 <Input value={f.issuingBody} onChange={(e) => setF({ ...f, issuingBody: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Expiry date</label>
+                <Label className="block text-xs font-medium text-slate-600 mb-1">Expiry date</Label>
                 <Input type="date" value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Renewal lead (days)</label>
+                <Label className="block text-xs font-medium text-slate-600 mb-1">Renewal lead (days)</Label>
                 <Input type="number" className="w-24" value={f.renewalLeadDays} onChange={(e) => setF({ ...f, renewalLeadDays: Number(e.target.value) || 60 })} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-600 mb-1">Override status</label>
-                <Select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value as "" | CertStatus })}>
-                  <option value="">Auto (from dates)</option>
-                  {CERT_MANUAL_STATUSES.map((s) => (
-                    <option key={s} value={s}>{titleCase(s)}</option>
-                  ))}
-                </Select>
+                <Label className="block text-xs font-medium text-slate-600 mb-1">Override status</Label>
+                <SelectField value={f.status} onChange={(value) => setF({ ...f, status: value as "" | CertStatus })}
+                  placeholder="Auto (from dates)"
+                  options={CERT_MANUAL_STATUSES.map((s) => ({ value: String(s), label: titleCase(s) }))}
+                />
               </div>
               <Button type="button" onClick={save} disabled={busy}>
                 {editingId ? "Save changes" : "Save"}
               </Button>
               <Button type="button" variant="outline" onClick={closeForm} disabled={busy}>Cancel</Button>
             </div>
-          </div>
+          </Card>
         ) : (
           <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={16} /> Add certification
@@ -1547,13 +1540,13 @@ function ContactsTab({ profile }: { profile: FactoryProfileDetail }) {
     <div className="space-y-4">
       <ErrorNote err={err} />
       {profile.contacts.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-400 shadow-none">
           No contacts recorded yet.
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {profile.contacts.map((c) => (
-            <div key={c.id} className="rounded-xl border border-slate-200 bg-white p-3">
+            <Card key={c.id} className="rounded-xl border border-slate-200 bg-white p-3 shadow-none">
               <div className="flex items-start justify-between">
                 <div>
                   <div className="flex items-center gap-1.5 font-semibold text-slate-800">
@@ -1572,40 +1565,38 @@ function ContactsTab({ profile }: { profile: FactoryProfileDetail }) {
                 {c.phone && <div>{c.phone}</div>}
                 {c.email && <div className="truncate">{c.email}</div>}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
       <Can permission="FACILITY.CONTACT_MANAGE">
         {adding ? (
-          <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
+          <Card className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Role</label>
-              <Select value={f.role} onChange={(e) => setF({ ...f, role: e.target.value as ContactRole })}>
-                {CONTACT_ROLES.map((r) => (
-                  <option key={r} value={r}>{CONTACT_ROLE_LABEL[r]}</option>
-                ))}
-              </Select>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Role</Label>
+              <SelectField value={f.role} onChange={(value) => setF({ ...f, role: value as ContactRole })}
+                options={CONTACT_ROLES.map((r) => ({ value: String(r), label: CONTACT_ROLE_LABEL[r] }))}
+              />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Name</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Name</Label>
               <Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Phone</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Phone</Label>
               <Input value={f.phone} onChange={(e) => setF({ ...f, phone: e.target.value })} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">Email</label>
+              <Label className="block text-xs font-medium text-slate-600 mb-1">Email</Label>
               <Input value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
             </div>
-            <label className="flex items-center gap-1.5 pb-2 text-xs text-slate-600">
+            <Label className="flex items-center gap-1.5 pb-2 text-xs text-slate-600">
               <Checkbox checked={f.isPrimary} onChange={(e) => setF({ ...f, isPrimary: e.target.checked })} /> Primary
-            </label>
+            </Label>
             <Button type="button" onClick={add} disabled={busy || !f.name.trim()}>Save</Button>
             <Button type="button" variant="outline" onClick={() => setAdding(false)} disabled={busy}>Cancel</Button>
-          </div>
+          </Card>
         ) : (
           <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={16} /> Add contact
@@ -1620,11 +1611,11 @@ function ContactsTab({ profile }: { profile: FactoryProfileDetail }) {
 function MetricTile({ label, value, tone, delta }: { label: string; value: string; tone?: "rose" | "amber" | "emerald"; delta?: KpiDelta | null }) {
   const color = tone === "rose" ? "text-rose-600" : tone === "amber" ? "text-amber-600" : tone === "emerald" ? "text-emerald-600" : "text-slate-900";
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-center">
+    <Card className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-center shadow-none">
       <div className={"text-lg font-bold " + color}>{value}</div>
       <div className="text-[10px] uppercase tracking-wide text-slate-400">{label}</div>
       <DeltaBadge delta={delta} />
-    </div>
+    </Card>
   );
 }
 
@@ -1658,14 +1649,14 @@ function SubTile({ tile }: { tile: FacilityTile }) {
   const color = tile.state === "breach" ? "text-rose-600" : tile.state === "watch" ? "text-amber-600" : tile.state === "neutral" ? "text-slate-400" : "text-slate-900";
   const val = tile.value == null ? "—" : typeof tile.value === "number" ? fmtNum(tile.value) : tile.value;
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-center">
+    <Card className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-center shadow-none">
       <div className={"text-base font-bold " + color}>
         {val}
         {tile.unit ? <span className="text-xs font-normal text-slate-400"> {tile.unit}</span> : null}
       </div>
       <div className="text-[10px] uppercase tracking-wide text-slate-400">{tile.label}</div>
       <DeltaBadge delta={tile.delta} />
-    </div>
+    </Card>
   );
 }
 
@@ -1695,14 +1686,14 @@ function RollupBlock({ block, periodRef }: { block?: FacilityMetricBlock | null;
   if (!block) return null;
   if (!block.enabled) {
     return (
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+      <Card className="rounded-xl border border-slate-200 bg-slate-50 p-4 shadow-none">
         <h3 className="text-sm font-semibold text-slate-600">{block.title}</h3>
         <p className="mt-1 text-xs text-slate-400">{block.notEnabledText ?? "Module not enabled."}</p>
-      </div>
+      </Card>
     );
   }
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-semibold text-slate-700">{block.title}</h3>
         {block.degraded && (
@@ -1733,7 +1724,7 @@ function RollupBlock({ block, periodRef }: { block?: FacilityMetricBlock | null;
       ) : (
         block.emptyText && <p className="text-xs text-slate-400">{block.emptyText}</p>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -1774,8 +1765,8 @@ function ComplianceAuditTab({ profile }: { profile: FactoryProfileDetail }) {
     };
   }, [load]);
 
-  if (loading) return <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400">Loading live compliance data…</div>;
-  if (err || !data) return <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{err ?? "No data"}</div>;
+  if (loading) return <Card className="rounded-xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-400 shadow-none">Loading live compliance data…</Card>;
+  if (err || !data) return <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{err ?? "No data"}</Alert>;
   const m = data.metrics;
   const pm = data.priorMetrics ?? null;
 
@@ -1865,7 +1856,7 @@ function ComplianceAuditTab({ profile }: { profile: FactoryProfileDetail }) {
 
 function ComplianceList({ title, items, empty, render }: { title: string; items: Record<string, any>[]; empty: string; render: (x: any) => React.ReactNode }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <h3 className="mb-2 text-sm font-semibold text-slate-700">{title} <span className="text-xs font-normal text-slate-400">({items.length})</span></h3>
       {items.length === 0 ? (
         <p className="text-xs text-slate-400">{empty || "None."}</p>
@@ -1876,13 +1867,13 @@ function ComplianceList({ title, items, empty, render }: { title: string; items:
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }
 
 function AuditTrailTab({ profile }: { profile: FactoryProfileDetail }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-none">
       <dl className="space-y-2">
         <Row label="Profile ID">{profile.id}</Row>
         <Row label="Factory code">{profile.factoryCode}</Row>
@@ -1892,7 +1883,7 @@ function AuditTrailTab({ profile }: { profile: FactoryProfileDetail }) {
       <p className="mt-3 text-xs text-slate-400">
         The standard platform audit-trail component (full edit history) attaches here in a later phase.
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -1937,7 +1928,7 @@ function LifecycleStepper({ profile }: { profile: FactoryProfileDetail }) {
   }
 
   return (
-    <div className="mb-4 rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="mb-4 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-700">Lifecycle workflow</h3>
         <span className="text-xs text-slate-400">
@@ -2013,7 +2004,7 @@ function LifecycleStepper({ profile }: { profile: FactoryProfileDetail }) {
           </div>
         )}
         {panel === "advance" && nextStage && (
-          <div className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <Card className="mt-3 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-none">
             <div className="text-xs font-medium text-slate-600">Advance to {LIFECYCLE_STAGE_LABEL[nextStage]}</div>
             <Textarea
               rows={2}
@@ -2040,10 +2031,10 @@ function LifecycleStepper({ profile }: { profile: FactoryProfileDetail }) {
                 Cancel
               </Button>
             </div>
-          </div>
+          </Card>
         )}
         {panel === "revisions" && (
-          <div className="mt-3 space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <Alert variant="warning" className="mt-3 space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
             <div className="text-xs font-medium text-amber-800">Send back to Execution for fixes</div>
             <Textarea
               rows={2}
@@ -2052,14 +2043,15 @@ function LifecycleStepper({ profile }: { profile: FactoryProfileDetail }) {
               onChange={(e) => setComment(e.target.value)}
             />
             <div className="flex items-center gap-2">
-              <Select
+              <SelectField
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as "HIGH" | "MEDIUM" | "LOW")}
-              >
-                <option value="HIGH">High</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="LOW">Low</option>
-              </Select>
+                onChange={(value) => setPriority(value as "HIGH" | "MEDIUM" | "LOW")}
+                options={[
+                { value: "HIGH", label: "High" },
+                { value: "MEDIUM", label: "Medium" },
+                { value: "LOW", label: "Low" }
+              ]}
+              />
               <Button
                 type="button"
                 size="sm"
@@ -2079,7 +2071,7 @@ function LifecycleStepper({ profile }: { profile: FactoryProfileDetail }) {
                 Cancel
               </Button>
             </div>
-          </div>
+          </Alert>
         )}
       </Can>
 
@@ -2098,7 +2090,7 @@ function LifecycleStepper({ profile }: { profile: FactoryProfileDetail }) {
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -2268,23 +2260,23 @@ function EquipmentTab({ profile }: { profile: FactoryProfileDetail }) {
 
   const text = (k: string, label: string, ph = "") => (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       <Input placeholder={ph} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
     </div>
   );
 
   const regime = (reqKey: string, dateKey: string, label: string, dateLabel: string) => (
-    <div className="rounded-lg border border-slate-200 p-2">
-      <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+    <Card className="rounded-lg border border-slate-200 p-2 shadow-none">
+      <Label className="flex items-center gap-2 text-xs font-medium text-slate-600">
         <Checkbox checked={f[reqKey]} onChange={(e) => setF({ ...f, [reqKey]: e.target.checked })} /> {label}
-      </label>
+      </Label>
       {f[reqKey] && (
         <div className="mt-1.5">
-          <label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{dateLabel}</label>
+          <Label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">{dateLabel}</Label>
           <Input type="date" value={f[dateKey]} onChange={(e) => setF({ ...f, [dateKey]: e.target.value })} />
         </div>
       )}
-    </div>
+    </Card>
   );
 
   return (
@@ -2298,7 +2290,7 @@ function EquipmentTab({ profile }: { profile: FactoryProfileDetail }) {
         {opGaps > 0 && <Chip className="bg-rose-100 text-rose-800 border-rose-200">{opGaps} operator-cert gap{opGaps > 1 ? "s" : ""}</Chip>}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="min-w-[860px]">
           <TableHeader>
             <TableRow>
@@ -2346,7 +2338,7 @@ function EquipmentTab({ profile }: { profile: FactoryProfileDetail }) {
                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(e.id)} disabled={busy} className="h-auto w-auto text-slate-400 hover:text-rose-600 disabled:opacity-40"><Trash2 size={16} /></Button>
                       </div>
                       {maintFor === e.id && (
-                        <div className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-left">
+                        <Card className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-left shadow-none">
                           <Input placeholder="Maintenance type (e.g. Preventive)" value={maint.maintenanceType} onChange={(ev) => setMaint({ ...maint, maintenanceType: ev.target.value })} />
                           <div className="flex gap-2">
                             <Input type="number" min={0} className="w-24" placeholder="Downtime h" value={maint.downtimeHours} onChange={(ev) => setMaint({ ...maint, downtimeHours: ev.target.value })} />
@@ -2356,34 +2348,36 @@ function EquipmentTab({ profile }: { profile: FactoryProfileDetail }) {
                             <Button type="button" size="sm" onClick={() => saveMaintenance(e.id)} disabled={busy || !maint.maintenanceType.trim()}>Save</Button>
                             <Button type="button" variant="outline" size="sm" onClick={() => setMaintFor(null)}>Cancel</Button>
                           </div>
-                        </div>
+                        </Card>
                       )}
                       {inspectFor === e.id && (
-                        <div className="mt-2 w-72 space-y-2 rounded-lg border border-primary-200 bg-primary-50/50 p-2.5 text-left">
+                        <Card className="mt-2 w-72 space-y-2 rounded-lg border border-primary-200 bg-primary-50/50 p-2.5 text-left shadow-none">
                           {/* Read-only equipment context */}
-                          <div className="rounded-md border border-slate-200 bg-white px-2.5 py-2 text-[11px] text-slate-500">
+                          <Card className="rounded-md border border-slate-200 bg-white px-2.5 py-2 text-[11px] text-slate-500 shadow-none">
                             <div className="mb-0.5 font-semibold text-slate-700">{e.equipmentName}</div>
                             <div className="flex justify-between"><span>Status</span><span className="font-medium text-slate-700">{titleCase(e.status)}</span></div>
                             <div className="flex justify-between"><span>Last maintenance</span><span className="font-medium text-slate-700">{fmtDate(e.lastMaintenanceDate)}</span></div>
                             <div className="flex justify-between"><span>Next due</span><span className="font-medium text-slate-700">{fmtDate(e.nextComplianceDue)}</span></div>
-                          </div>
+                          </Card>
                           {/* Inspection input */}
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="mb-0.5 block text-[10px] uppercase tracking-wide text-slate-400">Inspection date</label>
+                              <Label className="mb-0.5 block text-[10px] uppercase tracking-wide text-slate-400">Inspection date</Label>
                               <Input type="date" value={insp.inspectionDate} onChange={(ev) => setInsp({ ...insp, inspectionDate: ev.target.value })} />
                             </div>
                             <div>
-                              <label className="mb-0.5 block text-[10px] uppercase tracking-wide text-slate-400">Result</label>
-                              <Select value={insp.result} onChange={(ev) => setInsp({ ...insp, result: ev.target.value })}>
-                                <option value="PASS">Pass</option>
-                                <option value="CONDITIONAL_PASS">Conditional Pass</option>
-                                <option value="FAIL">Fail</option>
-                              </Select>
+                              <Label className="mb-0.5 block text-[10px] uppercase tracking-wide text-slate-400">Result</Label>
+                              <SelectField value={insp.result} onChange={(value) => setInsp({ ...insp, result: value })}
+                                options={[
+                                { value: "PASS", label: "Pass" },
+                                { value: "CONDITIONAL_PASS", label: "Conditional Pass" },
+                                { value: "FAIL", label: "Fail" }
+                              ]}
+                              />
                             </div>
                           </div>
                           <div>
-                            <label className="mb-0.5 block text-[10px] uppercase tracking-wide text-slate-400">Inspector name</label>
+                            <Label className="mb-0.5 block text-[10px] uppercase tracking-wide text-slate-400">Inspector name</Label>
                             <Input placeholder="Inspector" value={insp.inspectorName} onChange={(ev) => setInsp({ ...insp, inspectorName: ev.target.value })} />
                           </div>
                           <Textarea rows={2} placeholder="Findings / remarks (optional)" value={insp.findings} onChange={(ev) => setInsp({ ...insp, findings: ev.target.value })} />
@@ -2391,7 +2385,7 @@ function EquipmentTab({ profile }: { profile: FactoryProfileDetail }) {
                             <Button type="button" size="sm" onClick={() => saveInspection(e.id)} disabled={busy || !insp.inspectorName.trim()}>Record inspection</Button>
                             <Button type="button" variant="outline" size="sm" onClick={() => setInspectFor(null)}>Cancel</Button>
                           </div>
-                        </div>
+                        </Card>
                       )}
                     </TableCell>
                   </Can>
@@ -2400,26 +2394,26 @@ function EquipmentTab({ profile }: { profile: FactoryProfileDetail }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       <Can permission="FACILITY.UPDATE">
         {adding ? (
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               {text("equipmentName", "Equipment name", "Boiler #2")}
               {text("category", "Category", "Utility")}
               {text("manufacturer", "Manufacturer")}
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Status</label>
-                <Select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })}>
-                  {EQUIPMENT_STATUSES.map((s) => <option key={s} value={s}>{titleCase(s)}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Status</Label>
+                <SelectField value={f.status} onChange={(value) => setF({ ...f, status: value })}
+                  options={EQUIPMENT_STATUSES.map((s) => ({ value: String(s), label: titleCase(s) }))}
+                />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Hazard level</label>
-                <Select value={f.hazardLevel} onChange={(e) => setF({ ...f, hazardLevel: e.target.value })}>
-                  {HAZARD_LEVELS.map((h) => <option key={h} value={h}>{titleCase(h)}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Hazard level</Label>
+                <SelectField value={f.hazardLevel} onChange={(value) => setF({ ...f, hazardLevel: value })}
+                  options={HAZARD_LEVELS.map((h) => ({ value: String(h), label: titleCase(h) }))}
+                />
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">{text("capacity", "Capacity")}</div>
@@ -2439,7 +2433,7 @@ function EquipmentTab({ profile }: { profile: FactoryProfileDetail }) {
               <Button type="button" onClick={add} disabled={busy || !f.equipmentName.trim()}>Save equipment</Button>
               <Button type="button" variant="outline" onClick={reset} disabled={busy}>Cancel</Button>
             </div>
-          </div>
+          </Card>
         ) : (
           <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={16} /> Add equipment
@@ -2547,7 +2541,7 @@ function HazmatTab({ profile }: { profile: FactoryProfileDetail }) {
 
   const text = (k: string, label: string, ph = "") => (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       <Input placeholder={ph} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
     </div>
   );
@@ -2564,7 +2558,7 @@ function HazmatTab({ profile }: { profile: FactoryProfileDetail }) {
         {sdsGaps > 0 && <Chip className="bg-rose-100 text-rose-800 border-rose-200">{sdsGaps} SDS missing</Chip>}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="min-w-[920px]">
           <TableHeader>
             <TableRow>
@@ -2624,25 +2618,25 @@ function HazmatTab({ profile }: { profile: FactoryProfileDetail }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       <Can permission="FACILITY.UPDATE">
         {adding ? (
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               {text("chemicalName", "Chemical name", "Sodium hydroxide")}
               {text("casNumber", "CAS number", "1310-73-2")}
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Hazmat class</label>
-                <Select value={f.hazmatClassification} onChange={(e) => setF({ ...f, hazmatClassification: e.target.value })}>
-                  {HAZMAT_CLASSES.map((c) => <option key={c} value={c}>{titleCase(c)}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Hazmat class</Label>
+                <SelectField value={f.hazmatClassification} onChange={(value) => setF({ ...f, hazmatClassification: value })}
+                  options={HAZMAT_CLASSES.map((c) => ({ value: String(c), label: titleCase(c) }))}
+                />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">GHS signal</label>
-                <Select value={f.ghsSignalWord} onChange={(e) => setF({ ...f, ghsSignalWord: e.target.value })}>
-                  {GHS_SIGNAL_WORDS.map((g) => <option key={g} value={g}>{titleCase(g)}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">GHS signal</Label>
+                <SelectField value={f.ghsSignalWord} onChange={(value) => setF({ ...f, ghsSignalWord: value })}
+                  options={GHS_SIGNAL_WORDS.map((g) => ({ value: String(g), label: titleCase(g) }))}
+                />
               </div>
               <div className="flex gap-2">
                 <div className="flex-1">{text("quantityStored", "Quantity")}</div>
@@ -2653,11 +2647,11 @@ function HazmatTab({ profile }: { profile: FactoryProfileDetail }) {
               {text("storageRoom", "Storage room")}
               {text("sdsDocId", "SDS document ref")}
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Issue date</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Issue date</Label>
                 <Input type="date" value={f.issueDate} onChange={(e) => setF({ ...f, issueDate: e.target.value })} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Expiry date</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Expiry date</Label>
                 <Input type="date" value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} />
               </div>
               <div className="flex gap-2">
@@ -2665,23 +2659,23 @@ function HazmatTab({ profile }: { profile: FactoryProfileDetail }) {
                 <div className="flex-1">{text("handlersTotalCount", "Handlers total")}</div>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">PCB registration</label>
-                <Select value={f.pcbRegistrationStatus} onChange={(e) => setF({ ...f, pcbRegistrationStatus: e.target.value })}>
-                  {PCB_STATUSES.map((p) => <option key={p} value={p}>{titleCase(p.replace("_", " "))}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">PCB registration</Label>
+                <SelectField value={f.pcbRegistrationStatus} onChange={(value) => setF({ ...f, pcbRegistrationStatus: value })}
+                  options={PCB_STATUSES.map((p) => ({ value: String(p), label: titleCase(p.replace("_", " ")) }))}
+                />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+            <Label className="flex items-center gap-2 text-xs font-medium text-slate-600">
               <Checkbox checked={f.secondaryContainmentPresent} onChange={(e) => setF({ ...f, secondaryContainmentPresent: e.target.checked })} /> Secondary containment present
               {f.secondaryContainmentPresent && (
                 <Input className="ml-2 w-32" placeholder="Volume (≥110%)" value={f.secondaryContainmentVolume} onChange={(e) => setF({ ...f, secondaryContainmentVolume: e.target.value })} />
               )}
-            </label>
+            </Label>
             <div className="flex gap-2">
               <Button type="button" onClick={add} disabled={busy || !f.chemicalName.trim()}>Save chemical</Button>
               <Button type="button" variant="outline" onClick={reset} disabled={busy}>Cancel</Button>
             </div>
-          </div>
+          </Card>
         ) : (
           <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={16} /> Add hazardous material
@@ -2806,7 +2800,7 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
 
   const text = (k: string, label: string, ph = "") => (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       <Input placeholder={ph} value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
     </div>
   );
@@ -2822,7 +2816,7 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
         {pending > 0 && <Chip className={REG_STATUS_CHIP.PENDING_RENEWAL}>{pending} renewal in progress</Chip>}
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="min-w-[880px]">
           <TableHeader>
             <TableRow>
@@ -2861,9 +2855,9 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(r.id)} disabled={busy} className="h-auto w-auto text-slate-400 hover:text-rose-600 disabled:opacity-40"><Trash2 size={16} /></Button>
                       </div>
                       {renewFor === r.id && (
-                        <div className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-left">
+                        <Card className="mt-2 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-2 text-left shadow-none">
                           <div>
-                            <label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">New expiry</label>
+                            <Label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">New expiry</Label>
                             <Input type="date" value={renew.newExpiryDate} onChange={(ev) => setRenew({ ...renew, newExpiryDate: ev.target.value })} />
                           </div>
                           <Input placeholder="Renewal cost (optional)" value={renew.renewalCost} onChange={(ev) => setRenew({ ...renew, renewalCost: ev.target.value })} />
@@ -2871,7 +2865,7 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
                             <Button type="button" size="sm" onClick={() => markRenewed(r.id)} disabled={busy || !renew.newExpiryDate}>Save</Button>
                             <Button type="button" variant="outline" size="sm" onClick={() => setRenewFor(null)}>Cancel</Button>
                           </div>
-                        </div>
+                        </Card>
                       )}
                     </TableCell>
                   </Can>
@@ -2910,54 +2904,54 @@ function RegulatoryTab({ profile }: { profile: FactoryProfileDetail }) {
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
 
       <Can permission="FACILITY.UPDATE">
         {adding ? (
-          <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-                <Select value={f.registrationType} onChange={(e) => setF({ ...f, registrationType: e.target.value })}>
-                  {REGISTRATION_TYPES.map((t) => <option key={t} value={t}>{REGISTRATION_TYPE_LABEL[t]}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Type</Label>
+                <SelectField value={f.registrationType} onChange={(value) => setF({ ...f, registrationType: value })}
+                  options={REGISTRATION_TYPES.map((t) => ({ value: String(t), label: REGISTRATION_TYPE_LABEL[t] }))}
+                />
               </div>
               {text("registrationName", "Name / description", "Structural Stability Certificate — Block A")}
               {text("registrationNumber", "Number")}
               {text("issuingAuthority", "Issuing authority")}
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Issue date</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Issue date</Label>
                 <Input type="date" value={f.issueDate} onChange={(e) => setF({ ...f, issueDate: e.target.value })} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Expiry date</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Expiry date</Label>
                 <Input type="date" value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Renewal frequency</label>
-                <Select value={f.renewalFrequency} onChange={(e) => setF({ ...f, renewalFrequency: e.target.value })}>
-                  {RENEWAL_FREQUENCIES.map((r) => <option key={r} value={r}>{RENEWAL_FREQUENCY_LABEL[r]}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Renewal frequency</Label>
+                <SelectField value={f.renewalFrequency} onChange={(value) => setF({ ...f, renewalFrequency: value })}
+                  options={RENEWAL_FREQUENCIES.map((r) => ({ value: String(r), label: RENEWAL_FREQUENCY_LABEL[r] }))}
+                />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Alert threshold (days)</label>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Alert threshold (days)</Label>
                 <Input type="number" min={0} value={f.alertThresholdDays} onChange={(e) => setF({ ...f, alertThresholdDays: e.target.value })} />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-600">Impact if expired</label>
-                <Select value={f.complianceImpactIfExpired} onChange={(e) => setF({ ...f, complianceImpactIfExpired: e.target.value })}>
-                  {COMPLIANCE_IMPACTS.map((i) => <option key={i} value={i}>{titleCase(i)}</option>)}
-                </Select>
+                <Label className="mb-1 block text-xs font-medium text-slate-600">Impact if expired</Label>
+                <SelectField value={f.complianceImpactIfExpired} onChange={(value) => setF({ ...f, complianceImpactIfExpired: value })}
+                  options={COMPLIANCE_IMPACTS.map((i) => ({ value: String(i), label: titleCase(i) }))}
+                />
               </div>
             </div>
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-600">
+            <Label className="flex items-center gap-2 text-xs font-medium text-slate-600">
               <Checkbox checked={f.renewalInProgress} onChange={(e) => setF({ ...f, renewalInProgress: e.target.checked })} /> Renewal currently in progress
-            </label>
+            </Label>
             <div className="flex gap-2">
               <Button type="button" onClick={add} disabled={busy || !f.registrationName.trim()}>Save registration</Button>
               <Button type="button" variant="outline" onClick={reset} disabled={busy}>Cancel</Button>
             </div>
-          </div>
+          </Card>
         ) : (
           <Button type="button" variant="outline" onClick={() => setAdding(true)}>
             <Plus size={16} /> Add registration

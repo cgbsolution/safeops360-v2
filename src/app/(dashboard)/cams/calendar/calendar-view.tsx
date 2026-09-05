@@ -7,6 +7,8 @@ import { AnnualCalendar, type CalendarItem } from "@/components/programme/calend
 import { ENGAGEMENT_TYPES, engagementTypeLabel, type Engagement } from "../lib-cams";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 // Per-type accent (dot + chip background).
 const TYPE_DOT: Record<string, string> = {
@@ -149,7 +151,7 @@ export function CalendarView({ items }: { items: Engagement[] }) {
       </div>
 
       {/* Month grid */}
-      <div className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white sm:block">
+      <Card className="hidden overflow-hidden rounded-xl border border-slate-200 bg-white sm:block shadow-none">
         <div className="grid grid-cols-7 border-b border-slate-100 bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
           {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <div key={d} className="px-2 py-2 text-center">{d}</div>)}
         </div>
@@ -160,7 +162,7 @@ export function CalendarView({ items }: { items: Engagement[] }) {
             return (
               <div key={i} className="min-h-[80px] border-b border-r border-slate-100 p-1 align-top lg:min-h-[96px]">
                 <div className={"mb-1 text-right text-[11px] " + (isToday(cell.day) ? "font-bold text-primary-700" : "text-slate-400")}>
-                  {isToday(cell.day) ? <span className="rounded-full bg-primary-700 px-1.5 py-0.5 text-white">{cell.day}</span> : cell.day}
+                  {isToday(cell.day) ? <Badge variant="brand" className="rounded-full bg-primary-700 px-1.5 py-0.5 text-white">{cell.day}</Badge> : cell.day}
                 </div>
                 <div className="space-y-1">
                   {dayEngs.slice(0, 3).map((e) => (
@@ -175,10 +177,10 @@ export function CalendarView({ items }: { items: Engagement[] }) {
             );
           })}
         </div>
-      </div>
+      </Card>
 
       {/* This-month agenda */}
-      <div className="mt-4 rounded-xl border border-slate-200 bg-white">
+      <Card className="mt-4 rounded-xl border border-slate-200 bg-white shadow-none">
         <div className="border-b border-slate-100 px-4 py-2 text-sm font-semibold text-slate-800">Agenda — {MONTHS[cursor.month]} {cursor.year}</div>
         <div className="divide-y divide-slate-100">
           {monthEngagements.length === 0 ? (
@@ -197,7 +199,7 @@ export function CalendarView({ items }: { items: Engagement[] }) {
               ))
           )}
         </div>
-      </div>
+      </Card>
       </>
       )}
     </div>

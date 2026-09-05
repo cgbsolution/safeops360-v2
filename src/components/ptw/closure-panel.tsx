@@ -30,6 +30,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { readApiError } from "@/lib/client-errors";
 import { formatDateTime } from "@/lib/utils";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 import {
   EvidenceCapture,
   evidenceComplete,
@@ -270,20 +271,22 @@ function WorkCompletedSection({
             </div>
 
             {/* Restoration confirmations (carried over from the old Return step) */}
-            <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white text-xs">
-              <input type="checkbox" checked={iso} onChange={(e) => setIso(e.target.checked)} className="mt-0.5" />
-              <div>
-                <div className="font-medium">All isolations restored</div>
-                <div className="text-slate-600">LOTO removed, valves reopened, energy sources re-engaged.</div>
-              </div>
-            </label>
-            <label className="flex items-start gap-2 p-2 rounded-md border border-slate-200 bg-white text-xs">
-              <input type="checkbox" checked={clean} onChange={(e) => setClean(e.target.checked)} className="mt-0.5" />
-              <div>
-                <div className="font-medium">Work area is clean</div>
-                <div className="text-slate-600">No tools, scrap, debris or barricades left behind.</div>
-              </div>
-            </label>
+            <CheckboxField
+              variant="card"
+              className="text-xs"
+              checked={iso}
+              onChange={(e) => setIso(e.target.checked)}
+              label={<span className="font-medium">All isolations restored</span>}
+              description="LOTO removed, valves reopened, energy sources re-engaged."
+            />
+            <CheckboxField
+              variant="card"
+              className="text-xs"
+              checked={clean}
+              onChange={(e) => setClean(e.target.checked)}
+              label={<span className="font-medium">Work area is clean</span>}
+              description="No tools, scrap, debris or barricades left behind."
+            />
 
             <div>
               <Label className="text-[11px]">
@@ -525,9 +528,9 @@ function ClosureSummary({
           </div>
         )}
         {closingRemark && (
-          <div className="rounded-md border border-slate-200 bg-white p-2 text-sm whitespace-pre-wrap">
+          <Card className="whitespace-pre-wrap rounded-md border-slate-200 p-2 text-sm shadow-none">
             {closingRemark}
-          </div>
+          </Card>
         )}
         <Button asChild size="sm" variant="outline">
           <a href={`/api/ptw/${permitId}/report`} target="_blank" rel="noreferrer">

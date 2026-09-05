@@ -25,6 +25,8 @@ import { useToast } from "@/components/ui/toast";
 import { Can } from "@/components/auth/can";
 import { prettyLabel } from "@/lib/chemicals/types";
 import { apiSend, Field, FormError } from "../_client";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
 
 const HAZARD_CLASSES = [
   "FLAMMABLE", "CORROSIVE", "TOXIC", "OXIDIZER", "REACTIVE", "CARCINOGEN",
@@ -124,20 +126,20 @@ export function NewThresholdRuleDialog() {
             <FormError message={error} />
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Region">
-                <Select value={region} onChange={(e) => setRegion(e.target.value)}>
-                  <option value="IN">IN — India (MSIHC / PESO)</option>
-                  <option value="AE">AE — United Arab Emirates</option>
-                  <option value="SA">SA — Saudi Arabia</option>
-                  <option value="QA">QA — Qatar</option>
-                  <option value="OM">OM — Oman</option>
-                </Select>
+                <SelectField value={region} onChange={setRegion}
+                  options={[
+                  { value: "IN", label: "IN — India (MSIHC / PESO)" },
+                  { value: "AE", label: "AE — United Arab Emirates" },
+                  { value: "SA", label: "SA — Saudi Arabia" },
+                  { value: "QA", label: "QA — Qatar" },
+                  { value: "OM", label: "OM — Oman" }
+                ]}
+                />
               </Field>
               <Field label="Hazard class" required>
-                <Select value={hazardClass} onChange={(e) => setHazardClass(e.target.value)}>
-                  {HAZARD_CLASSES.map((h) => (
-                    <option key={h} value={h}>{prettyLabel(h)}</option>
-                  ))}
-                </Select>
+                <SelectField value={hazardClass} onChange={setHazardClass}
+                  options={HAZARD_CLASSES.map((h) => ({ value: h, label: prettyLabel(h) }))}
+                />
               </Field>
               <Field label="Schedule / licence reference" required hint="Quoted in the auto-raised change request.">
                 <Input value={schedule} onChange={(e) => setSchedule(e.target.value)} placeholder="MSIHC Schedule 2 — Flammable" />
@@ -146,32 +148,38 @@ export function NewThresholdRuleDialog() {
                 <Input type="number" min="0" step="any" value={qty} onChange={(e) => setQty(e.target.value)} placeholder="10000" />
               </Field>
               <Field label="Unit" hint="Stock held in an incompatible unit family is excluded and reported, never converted.">
-                <Select value={unit} onChange={(e) => setUnit(e.target.value)}>
-                  <option value="KG">KG</option>
-                  <option value="T">T — tonnes</option>
-                  <option value="L">L — litres</option>
-                  <option value="KL">KL — kilolitres</option>
-                </Select>
+                <SelectField value={unit} onChange={setUnit}
+                  options={[
+                  { value: "KG", label: "KG" },
+                  { value: "T", label: "T — tonnes" },
+                  { value: "L", label: "L — litres" },
+                  { value: "KL", label: "KL — kilolitres" }
+                ]}
+                />
               </Field>
               <Field label="Approaching at" hint="Fraction of the limit that raises the preventive brief card.">
-                <Select value={approach} onChange={(e) => setApproach(e.target.value)}>
-                  <option value="0.7">70% of threshold</option>
-                  <option value="0.8">80% of threshold (default)</option>
-                  <option value="0.9">90% of threshold</option>
-                </Select>
+                <SelectField value={approach} onChange={setApproach}
+                  options={[
+                  { value: "0.7", label: "70% of threshold" },
+                  { value: "0.8", label: "80% of threshold (default)" },
+                  { value: "0.9", label: "90% of threshold" }
+                ]}
+                />
               </Field>
             </div>
 
             <Field label="Obligation engaged on breach" required>
-              <Select value={obligation} onChange={(e) => setObligation(e.target.value)}>
-                <option value="ON_SITE_EMERGENCY_PLAN">On-site emergency plan</option>
-                <option value="OFF_SITE_EMERGENCY_PLAN">Off-site emergency plan</option>
-                <option value="SAFETY_REPORT">Safety report</option>
-                <option value="LICENSE_UPGRADE">Licence upgrade</option>
-              </Select>
+              <SelectField value={obligation} onChange={setObligation}
+                options={[
+                { value: "ON_SITE_EMERGENCY_PLAN", label: "On-site emergency plan" },
+                { value: "OFF_SITE_EMERGENCY_PLAN", label: "Off-site emergency plan" },
+                { value: "SAFETY_REPORT", label: "Safety report" },
+                { value: "LICENSE_UPGRADE", label: "Licence upgrade" }
+              ]}
+              />
             </Field>
 
-            <label className="flex items-start gap-2 rounded-lg border border-slate-200 p-3 text-xs text-slate-700">
+            <Label className="flex items-start gap-2 rounded-lg border border-slate-200 p-3 text-xs text-slate-700">
               <Checkbox checked={autoMoc} onChange={(e) => setAutoMoc(e.target.checked)} className="mt-0.5" />
               <span>
                 <strong>Raise a change request automatically on breach.</strong>
@@ -181,7 +189,7 @@ export function NewThresholdRuleDialog() {
                   it never passes silently.
                 </span>
               </span>
-            </label>
+            </Label>
 
             <Field label="Notes">
               <Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} />

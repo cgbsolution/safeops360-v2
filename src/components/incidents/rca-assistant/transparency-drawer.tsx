@@ -38,6 +38,8 @@ import {
   Loader2
 } from "lucide-react";
 import { cn, formatDateTime } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 import type {
   AgentInvocationOut,
@@ -121,9 +123,9 @@ export function TransparencyDrawer({
             </div>
           )}
           {error && (
-            <div className="rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+            <Alert variant="warning" className="p-2">
               {error}
-            </div>
+            </Alert>
           )}
 
           {/* Metadata grid */}
@@ -310,7 +312,7 @@ function Section({
 function ToolCallRow({ call }: { call: AgentToolCallOut }) {
   const [open, setOpen] = useState(false);
   return (
-    <div className="rounded border border-slate-200 bg-slate-50">
+    <Card className="rounded border border-slate-200 bg-slate-50 shadow-none">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -353,7 +355,7 @@ function ToolCallRow({ call }: { call: AgentToolCallOut }) {
           )}
         </div>
       )}
-    </div>
+    </Card>
   );
 }
 

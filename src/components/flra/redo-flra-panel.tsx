@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCcw, Loader2, AlertCircle, Lock } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 // Re-do FLRA action panel.
 // Triggered when conditions change at site (weather, scope shift, equipment).
@@ -67,10 +68,10 @@ export function RedoFlraPanel({
       </CardHeader>
       <CardContent className="pt-4 space-y-3">
         {permitLocked && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 flex items-center gap-2">
+          <Alert variant="warning" className="p-3">
             <Lock size={14} />
-            Linked permit is already paused. Re-do is still possible — it will create a fresh FLRA you can sign once the permit is resumed.
-          </div>
+            <AlertDescription>Linked permit is already paused. Re-do is still possible — it will create a fresh FLRA you can sign once the permit is resumed.</AlertDescription>
+          </Alert>
         )}
         <Textarea
           rows={2}
@@ -79,10 +80,10 @@ export function RedoFlraPanel({
           placeholder="Why are you re-doing this FLRA? (e.g., 'Strong wind gusts started — height work paused', 'Scope expanded to second platform')"
         />
         {error && (
-          <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800 flex items-start gap-2">
-            <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-            <div>{error}</div>
-          </div>
+          <Alert variant="destructive" size="lg" className="p-3">
+            <AlertCircle className="mt-0.5" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
         <Button onClick={trigger} disabled={busy} variant="outline" className="border-amber-400 text-amber-900 hover:bg-amber-100">
           {busy ? <Loader2 size={14} className="animate-spin" /> : <RefreshCcw size={14} />}

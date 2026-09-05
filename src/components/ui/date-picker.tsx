@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
 
 /** "2026-09-04" (or "2026-09-04T07:30") → a Date at local midnight / local time. */
 function parseLocal(value: string | undefined | null): Date | undefined {
@@ -149,9 +150,9 @@ export function DatePicker({
           />
           {withTime && (
             <div className="flex items-center gap-2 border-t border-slate-200 p-3">
-              <label htmlFor={`${id ?? name ?? "dt"}-time`} className="text-xs font-medium text-slate-600">
+              <Label htmlFor={`${id ?? name ?? "dt"}-time`} className="text-xs text-slate-600">
                 Time
-              </label>
+              </Label>
               <Input
                 id={`${id ?? name ?? "dt"}-time`}
                 type="time"

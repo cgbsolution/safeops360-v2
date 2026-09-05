@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label";
 import { CheckCircle2, XCircle, UserMinus, Clock, AlertCircle } from "lucide-react";
 import { daysBetween, formatDateTime, cn } from "@/lib/utils";
 import { UserPicker } from "@/components/ui/user-picker";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 import {
   EvidenceCapture,
   evidenceComplete,
@@ -167,7 +169,7 @@ export function ApprovalPanel({
           />
         )}
 
-        {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
+        {error && <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</Alert>}
 
         <div className="flex flex-wrap gap-2">
           {mode === "idle" && (
@@ -295,38 +297,29 @@ function ReassignDialog({
   }
 
   return (
-    <div className="w-full bg-slate-50 border rounded p-3 space-y-2">
+    <Card className="w-full bg-slate-50 border rounded p-3 space-y-2 shadow-none">
       <Label>Reassign to</Label>
-      <select
+      <SelectField
         value={toUserId}
-        onChange={(e) => setToUserId(e.target.value)}
+        onChange={(value) => setToUserId(value)}
         className="w-full h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
         disabled={loading || users.length === 0}
-      >
-        <option value="">
-          {loading
+        placeholder={`${loading
             ? "Loading users…"
             : users.length === 0
               ? eligibleRoles && eligibleRoles.length > 0
                 ? `No eligible users (${eligibleRoles.join(" / ")}) at this plant`
                 : "No users available"
-              : "— Select user —"}
-        </option>
-        {users.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.name}
-            {u.designation ? ` — ${u.designation}` : ""}
-            {u.department ? ` (${u.department})` : ""}
-          </option>
-        ))}
-      </select>
+              : "— Select user —"}`}
+        options={users.map((u) => ({ value: String(u.id), label: `${u.name} ${u.designation ? ` — ${u.designation}` : ""} ${u.department ? ` (${u.department})` : ""}` }))}
+      />
       <Label>Reason</Label>
       <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Why reassigning?" />
       {error && (
-        <div className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5 flex items-start gap-1.5">
+        <Alert variant="destructive" className="text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5 flex items-start gap-1.5">
           <AlertCircle size={12} className="mt-0.5 flex-shrink-0" />
           <span>{error}</span>
-        </div>
+        </Alert>
       )}
       <div className="flex gap-2">
         <Button size="sm" onClick={go} disabled={busy || loading || !toUserId || !reason.trim()}>
@@ -334,7 +327,7 @@ function ReassignDialog({
         </Button>
         <Button size="sm" variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
       </div>
-    </div>
+    </Card>
   );
 }
 

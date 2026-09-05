@@ -7,6 +7,11 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { HAZARD_LABEL, PSSR_OUTCOMES, PSSR_OUTCOME_LABEL } from "../_meta";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 type Verdict = "pass" | "fail" | "partial" | "na";
 type PssrItem = { label: string; verdict: Verdict | ""; note?: string };
@@ -132,11 +137,9 @@ export function PssrPanel({
 
       {!completed && !readOnly && (
         <div className="flex flex-wrap items-center gap-3 pt-1">
-          <select value={outcome} onChange={(e) => setOutcome(e.target.value)} className="rounded-lg border border-slate-300 p-2 text-sm">
-            {PSSR_OUTCOMES.map((o) => (
-              <option key={o} value={o}>{PSSR_OUTCOME_LABEL[o]}</option>
-            ))}
-          </select>
+          <SelectField value={outcome} onChange={setOutcome} className="rounded-lg border border-slate-300 p-2 text-sm"
+            options={PSSR_OUTCOMES.map((o) => ({ value: o, label: PSSR_OUTCOME_LABEL[o] }))}
+          />
           <Button size="sm" disabled={busy || !allAnswered} onClick={submit}>
             {busy ? "Saving…" : "Record PSSR"}
           </Button>
@@ -192,36 +195,40 @@ export function EffectivenessPanel({
   return (
     <div className="space-y-3">
       {reviewed && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+        <Alert variant="success" className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
           Last reviewed {fmt(effectivenessReview?.reviewedAt ?? null)} — {effective ? "effective" : "not effective"}
           {newRisks ? ", new risks noted" : ""}.
-        </div>
+        </Alert>
       )}
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="text-sm text-slate-700">
+        <Label className="text-sm text-slate-700">
           <span className="mb-1 block text-xs font-medium text-slate-500">Was the change effective?</span>
-          <select value={effective ? "yes" : "no"} onChange={(e) => setEffective(e.target.value === "yes")} disabled={readOnly} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
-            <option value="yes">Yes — objectives met</option>
-            <option value="no">No — objectives not met</option>
-          </select>
-        </label>
-        <label className="text-sm text-slate-700">
+          <SelectField value={effective ? "yes" : "no"} onChange={(value) => setEffective(value === "yes")} disabled={readOnly} className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            options={[
+            { value: "yes", label: "Yes — objectives met" },
+            { value: "no", label: "No — objectives not met" }
+          ]}
+          />
+        </Label>
+        <Label className="text-sm text-slate-700">
           <span className="mb-1 block text-xs font-medium text-slate-500">Review cadence</span>
-          <select value={cadenceDays} onChange={(e) => setCadenceDays(e.target.value)} disabled={readOnly} className="w-full rounded-lg border border-slate-300 p-2 text-sm">
-            <option value="30">30 days</option>
-            <option value="60">60 days</option>
-            <option value="90">90 days</option>
-          </select>
-        </label>
+          <SelectField value={cadenceDays} onChange={setCadenceDays} disabled={readOnly} className="w-full rounded-lg border border-slate-300 p-2 text-sm"
+            options={[
+            { value: "30", label: "30 days" },
+            { value: "60", label: "60 days" },
+            { value: "90", label: "90 days" }
+          ]}
+          />
+        </Label>
       </div>
-      <label className="flex items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" checked={newRisks} onChange={(e) => setNewRisks(e.target.checked)} disabled={readOnly} className="h-4 w-4" />
+      <Label className="flex items-center gap-2 text-sm text-slate-700">
+        <Checkbox checked={newRisks} onChange={(e) => setNewRisks(e.target.checked)} disabled={readOnly} className="h-4 w-4" />
         New risks or side-effects observed since implementation
-      </label>
-      <label className="block text-sm">
+      </Label>
+      <Label className="block text-sm">
         <span className="mb-1 block text-xs font-medium text-slate-500">Notes</span>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={readOnly} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Observations, follow-ups, residual concerns…" />
-      </label>
+        <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} disabled={readOnly} rows={3} className="w-full rounded-lg border border-slate-300 p-2 text-sm" placeholder="Observations, follow-ups, residual concerns…" />
+      </Label>
       {!readOnly && (
         <Button size="sm" disabled={busy} onClick={submit}>
           {busy ? "Saving…" : reviewed ? "Update review" : "Record review"}

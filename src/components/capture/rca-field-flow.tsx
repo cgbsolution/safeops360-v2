@@ -17,6 +17,9 @@ import { getStoredLang, labelPair, speak, storeLang, t, tPair } from "@/lib/capt
 import type { TaxNode } from "@/lib/capture/types";
 import { taxonomyIcon } from "./icons";
 import { BigButton, BiText, MX, ProgressDots, ScreenHeading, Tile, TileGrid } from "./ui";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 type RequestDetail = {
   id: string;
@@ -143,7 +146,7 @@ export function RcaFieldFlow({ requestId }: { requestId: string }) {
   if (!detail) {
     return (
       <div className="flex min-h-dvh items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#E8EEF7] border-t-[#C9A961]" />
+        <Spinner size="lg" tone="gold" />
       </div>
     );
   }
@@ -165,7 +168,7 @@ export function RcaFieldFlow({ requestId }: { requestId: string }) {
   if (phase === "sending") {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-5 p-6">
-        <div className="h-14 w-14 animate-spin rounded-full border-4 border-[#E8EEF7] border-t-[#C9A961]" />
+        <Spinner size="xl" tone="gold" />
         <p className="text-xl font-semibold text-[#0B1F4D]">{t("sending", lang)}</p>
       </div>
     );
@@ -187,24 +190,20 @@ export function RcaFieldFlow({ requestId }: { requestId: string }) {
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col">
       <header className="flex items-center justify-between gap-2 px-4 pb-2 pt-4">
-        <button
+        <Button variant="ghost"
           type="button"
           aria-label={t("back", lang)}
           onClick={backOne}
-          disabled={step === 0}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95 disabled:opacity-30"
-        >
+          disabled={step === 0} className="flex h-14 w-14 rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95">
           <ChevronLeft className="h-7 w-7" />
-        </button>
+        </Button>
         <ProgressDots total={4} current={step} />
-        <button
+        <Button variant="ghost"
           type="button"
           aria-label={t("chooseLanguage", lang)}
-          onClick={() => pickLang(lang === "hi" ? "en" : "hi")}
-          className="flex h-14 w-14 items-center justify-center rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95"
-        >
+          onClick={() => pickLang(lang === "hi" ? "en" : "hi")} className="flex h-14 w-14 rounded-full bg-[#E8EEF7] text-[#0B1F4D] active:scale-95">
           <Globe className="h-6 w-6" />
-        </button>
+        </Button>
       </header>
 
       <main className="flex flex-1 flex-col gap-5 px-4 pb-8 pt-2">
@@ -215,7 +214,7 @@ export function RcaFieldFlow({ requestId }: { requestId: string }) {
               secondary={lang === "hi" ? "Help us understand" : null}
               lang={lang}
             />
-            <div className="rounded-2xl border-2 border-[#D9E1EF] bg-white p-5">
+            <Card className="rounded-2xl border-2 border-[#D9E1EF] p-5 shadow-none">
               <p className="text-xs font-semibold uppercase tracking-wide text-[#C9A961]">{detail.rcaCode}</p>
               <p className="mt-2 text-lg leading-relaxed text-[#0B1F4D]">{detail.contextSummary}</p>
               <button
@@ -225,7 +224,7 @@ export function RcaFieldFlow({ requestId }: { requestId: string }) {
               >
                 <Volume2 className="h-5 w-5" /> {t("listen", lang)}
               </button>
-            </div>
+            </Card>
             <BigButton primary={t("next", lang)} secondary={tPair("next", lang).secondary} variant="gold" onClick={() => setStep(1)} />
           </>
         )}
@@ -306,7 +305,7 @@ export function RcaFieldFlow({ requestId }: { requestId: string }) {
         {step === 3 && (
           <>
             <ScreenHeading {...tPair("q_review", lang)} lang={lang} />
-            <div className="rounded-2xl border-2 border-[#D9E1EF] bg-white p-4">
+            <Card className="rounded-2xl border-2 border-[#D9E1EF] p-4 shadow-none">
               <BiText primary={whyLabel} className="items-start text-left" primaryClassName="text-sm text-[#5A6273]" />
               <div className="mt-1 flex flex-wrap gap-1.5">
                 {path.map((n) => (
@@ -329,7 +328,7 @@ export function RcaFieldFlow({ requestId }: { requestId: string }) {
                   </div>
                 </>
               ) : null}
-            </div>
+            </Card>
             <div className="mt-auto">
               <BigButton
                 primary={t("submit", lang)}

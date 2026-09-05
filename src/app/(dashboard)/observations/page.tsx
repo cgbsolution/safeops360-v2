@@ -7,7 +7,9 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Can } from "@/components/auth/can";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Eye, Plus } from "lucide-react";
 import { statusColor, humanize, workflowChipColor } from "@/lib/utils";
 import { buildObservationListWhere, getReadScope } from "@/lib/auth/list-filters";
 import { ObservationsTable, type ObservationRow } from "./observations-table";
@@ -282,9 +284,10 @@ export default async function ObservationsPage(props: {
       />
 
       {scope && scope !== "ALL_PLANTS" && (
-        <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
-          {SCOPE_LABELS[scope] ?? "Filtered by your access scope"}
-        </div>
+        <Alert variant="info" className="mb-4">
+          <Eye />
+          <AlertDescription>{SCOPE_LABELS[scope] ?? "Filtered by your access scope"}</AlertDescription>
+        </Alert>
       )}
 
       <div className="mb-4">
@@ -308,12 +311,12 @@ export default async function ObservationsPage(props: {
 
       {(searchParams.cat || searchParams.area) && (
         <div className="mb-4 flex items-center gap-2 text-xs text-slate-600">
-          <span className="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 font-medium text-primary-700">
+          <Badge variant="brand">
             Filtered to {searchParams.cat ? humanize(searchParams.cat) : "area"}
             {searchParams.area ? " · one area" : ""}
             {" · "}
             {visibleRows.length} record{visibleRows.length === 1 ? "" : "s"}
-          </span>
+          </Badge>
           <Link href="/observations" className="text-primary-700 hover:underline">
             Clear
           </Link>

@@ -21,11 +21,14 @@ import { RcaLossPanel } from "@/components/erm/rca-loss-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { fmtDate, type Category, type RiskListItem } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   LOSS_STATUS_CHIP,
   LOSS_TYPES,
@@ -227,7 +230,7 @@ function RegisterTab({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="min-w-[1100px]">
           <TableHeader>
             <TableRow>
@@ -295,7 +298,7 @@ function RegisterTab({
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -414,9 +417,9 @@ function DetailDrawer({
             <Money label="Net loss" value={fmtInr(ev.netLossInr)} strong />
           </div>
           {ev.potentialLossInr != null && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <Alert variant="warning" className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
               Potential loss (near-miss exposure): <b>{fmtInr(ev.potentialLossInr)}</b>
-            </div>
+            </Alert>
           )}
 
           {ev.description && (
@@ -483,8 +486,8 @@ function DetailDrawer({
 
           {/* Close form */}
           {closing && (
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-              <label className="mb-1 block text-xs font-medium text-slate-600">Closure notes</label>
+            <Card className="rounded-lg border border-slate-200 bg-slate-50 p-3 shadow-none">
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Closure notes</Label>
               <Textarea
                 value={closureNotes}
                 onChange={(e) => setClosureNotes(e.target.value)}
@@ -507,7 +510,7 @@ function DetailDrawer({
                   Cancel
                 </Button>
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
@@ -565,12 +568,12 @@ function ActionBtn({
 
 function Money({ label, value, strong }: { label: string; value: string; strong?: boolean }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3">
+    <Card className="rounded-lg border border-slate-200 bg-white p-3 shadow-none">
       <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
       <div className={"mt-0.5 tabular-nums " + (strong ? "text-base font-bold text-slate-900" : "text-sm text-slate-700")}>
         {value}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -717,42 +720,32 @@ function LossFormModal({
 
           <div className="grid grid-cols-2 gap-4">
             <Field label="Category (required)">
-              <Select
+              <SelectField
                 value={categoryId}
-                onChange={(e) => {
-                  setCategoryId(e.target.value);
+                onChange={(value) => {
+                  setCategoryId(value);
                   setSubCategoryId("");
                 }}
-              >
-                <option value="">Select category…</option>
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.code} — {c.name}
-                  </option>
-                ))}
-              </Select>
+                placeholder="Select category…"
+                options={categories.map((c) => ({ value: c.id, label: `${c.code} — ${c.name}` }))}
+              />
             </Field>
             <Field label="Sub-category (optional)">
-              <Select
+              <SelectField
                 value={subCategoryId}
-                onChange={(e) => setSubCategoryId(e.target.value)}
+                onChange={setSubCategoryId}
                 disabled={!subCategories.length}
                 className="disabled:bg-slate-50"
-              >
-                <option value="">{subCategories.length ? "None" : "—"}</option>
-                {subCategories.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.code} — {s.name}
-                  </option>
-                ))}
-              </Select>
+                placeholder={subCategories.length ? "None" : "—"}
+                options={subCategories.map((s) => ({ value: s.id, label: `${s.code} — ${s.name}` }))}
+              />
             </Field>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-slate-700">
+          <Label className="flex items-center gap-2 text-sm text-slate-700">
             <Checkbox checked={isNearMiss} onChange={(e) => setIsNearMiss(e.target.checked)} />
             This was a near miss (no / minimal realised loss, but real potential)
-          </label>
+          </Label>
 
           <div className="grid grid-cols-3 gap-4">
             <Field label="Gross loss (₹)">
@@ -809,22 +802,22 @@ function LossFormModal({
           </Field>
 
           <Field label="Linked risks (multi-select)">
-            <div className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 p-2">
+            <Card className="max-h-40 overflow-y-auto rounded-lg border border-slate-200 p-2 shadow-none">
               {risks.length === 0 ? (
                 <p className="px-1 py-2 text-xs text-slate-400">No risks available.</p>
               ) : (
                 risks.map((r) => (
-                  <label key={r.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-slate-50">
+                  <Label key={r.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1 text-sm hover:bg-slate-50">
                     <Checkbox
                       checked={linkedRiskIds.includes(r.id)}
                       onChange={() => toggleRisk(r.id)}
                     />
                     <span className="font-medium text-primary-700">{r.riskCode}</span>
                     <span className="truncate text-slate-600">{r.title}</span>
-                  </label>
+                  </Label>
                 ))
               )}
-            </div>
+            </Card>
           </Field>
 
           <Button
@@ -844,7 +837,7 @@ function LossFormModal({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <Label className="mb-1 block text-xs font-medium text-slate-600">{label}</Label>
       {children}
     </div>
   );
@@ -859,7 +852,7 @@ function AnalyticsTab({ analytics }: { analytics: LossAnalytics | null }) {
     <div className="space-y-5">
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         {/* Net loss by category */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Net loss by category</h2>
           {analytics.netLossByCategory.length === 0 ? (
             <p className="py-10 text-center text-xs text-slate-400">No quantified losses yet.</p>
@@ -881,10 +874,10 @@ function AnalyticsTab({ analytics }: { analytics: LossAnalytics | null }) {
               </BarChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </Card>
 
         {/* Loss trend by quarter */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Loss trend by quarter</h2>
           {analytics.lossTrendByQuarter.length === 0 ? (
             <p className="py-10 text-center text-xs text-slate-400">No trend data yet.</p>
@@ -902,12 +895,12 @@ function AnalyticsTab({ analytics }: { analytics: LossAnalytics | null }) {
               </LineChart>
             </ResponsiveContainer>
           )}
-        </div>
+        </Card>
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         {/* Top 10 losses */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Top 10 losses</h2>
           {analytics.topLosses.length === 0 ? (
             <p className="py-8 text-center text-xs text-slate-400">No losses recorded.</p>
@@ -935,10 +928,10 @@ function AnalyticsTab({ analytics }: { analytics: LossAnalytics | null }) {
               </TableBody>
             </Table>
           )}
-        </div>
+        </Card>
 
         {/* Near-miss potential lane */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">Near-miss potential</h2>
           <p className="mb-3 text-xs text-slate-500">What these near misses could have cost.</p>
           {analytics.nearMissPotential.length === 0 ? (
@@ -946,17 +939,17 @@ function AnalyticsTab({ analytics }: { analytics: LossAnalytics | null }) {
           ) : (
             <div className="space-y-2">
               {analytics.nearMissPotential.map((n) => (
-                <div key={n.eventCode} className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2">
+                <Alert variant="warning" key={n.eventCode} className="rounded-lg border border-amber-200 bg-amber-50/60 px-3 py-2">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono text-[11px] font-semibold text-amber-700">{n.eventCode}</span>
                     <span className="text-sm font-bold tabular-nums text-amber-800">{fmtInr(n.potentialLoss)}</span>
                   </div>
                   <p className="truncate text-xs text-slate-600">{n.title}</p>
-                </div>
+                </Alert>
               ))}
             </div>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Calibration View */}
@@ -971,7 +964,7 @@ function CalibrationView({ rows }: { rows: CalibrationRow[] }) {
   const sorted = [...rows].sort((a, b) => flagRank(a.flag) - flagRank(b.flag));
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-5">
+    <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
       <h2 className="text-sm font-semibold text-slate-900">Calibration — losses vs residual scoring</h2>
       <p className="mb-3 mt-1 text-xs text-slate-500">
         Underscored = real losses ≥ ₹1 Cr against a LOW/MEDIUM residual; Watch = CRITICAL residual with zero recorded
@@ -1040,6 +1033,6 @@ function CalibrationView({ rows }: { rows: CalibrationRow[] }) {
           </Table>
         </div>
       )}
-    </div>
+    </Card>
   );
 }

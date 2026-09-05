@@ -6,6 +6,9 @@ import { KpiTile } from "@/components/erm/shared";
 import { fmtDate } from "../lib";
 import { OBLIGATION_STATUS_CHIP, type ComplianceDashboard } from "../lib-p2";
 import { ComplianceCharts } from "./dashboard-charts";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -55,9 +58,9 @@ export default async function ComplianceDashboardPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 2 seed has been run and you are logged in with an ERM role.
-        </div>
+        </Alert>
       ) : (
         <div className="space-y-5">
           {/* KPI strip */}
@@ -71,7 +74,7 @@ export default async function ComplianceDashboardPage() {
 
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
             {/* Renewal calendar */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2 shadow-none">
               <div className="mb-3 flex items-center justify-between">
                 <div>
                   <h2 className="text-sm font-semibold text-slate-900">Renewal Calendar</h2>
@@ -104,24 +107,24 @@ export default async function ComplianceDashboardPage() {
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
 
             {/* Obligation-type donut */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-1 text-sm font-semibold text-slate-900">Obligations by Type</h2>
               <p className="mb-2 text-xs text-slate-500">Distribution across the register</p>
               <ComplianceCharts typeCounts={data.typeCounts} siteSplit={data.siteSplit} chart="donut" />
-            </div>
+            </Card>
           </div>
 
           {/* Site split */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Obligations by Site</h2>
             <ComplianceCharts typeCounts={data.typeCounts} siteSplit={data.siteSplit} chart="site" />
-          </div>
+          </Card>
 
           {/* Overdue table */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-900">Overdue Obligations</h2>
               <Link href="/erm/compliance/register?status=OVERDUE" className="text-xs font-medium text-primary-700 hover:underline">
@@ -129,38 +132,38 @@ export default async function ComplianceDashboardPage() {
               </Link>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
-                    <th className="px-2 py-2">Code</th>
-                    <th className="px-2 py-2">Title</th>
-                    <th className="px-2 py-2">Owner</th>
-                    <th className="px-2 py-2">Site</th>
-                    <th className="px-2 py-2">Valid Until</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table className="w-full text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-slate-200 text-left text-[11px] uppercase tracking-wider text-slate-500">
+                    <TableHead className="px-2 py-2">Code</TableHead>
+                    <TableHead className="px-2 py-2">Title</TableHead>
+                    <TableHead className="px-2 py-2">Owner</TableHead>
+                    <TableHead className="px-2 py-2">Site</TableHead>
+                    <TableHead className="px-2 py-2">Valid Until</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {data.overdueTable.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-2 py-8 text-center text-sm text-slate-400">
+                    <TableRow>
+                      <TableCell colSpan={5} className="px-2 py-8 text-center text-sm text-slate-400">
                         No overdue obligations — the register is current.
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ) : (
                     data.overdueTable.map((o) => (
-                      <tr key={o.obligationCode} className="border-b border-slate-100 hover:bg-slate-50/70">
-                        <td className="px-2 py-2 font-medium text-primary-700">{o.obligationCode}</td>
-                        <td className="max-w-[320px] truncate px-2 py-2 text-slate-700">{o.title}</td>
-                        <td className="px-2 py-2 text-xs text-slate-600">{o.owner ?? "—"}</td>
-                        <td className="px-2 py-2 text-xs text-slate-600">{o.siteName ?? "—"}</td>
-                        <td className="px-2 py-2 text-xs tabular-nums text-rose-600">{fmtDate(o.validUntil)}</td>
-                      </tr>
+                      <TableRow key={o.obligationCode} className="border-b border-slate-100 hover:bg-slate-50/70">
+                        <TableCell className="px-2 py-2 font-medium text-primary-700">{o.obligationCode}</TableCell>
+                        <TableCell className="max-w-[320px] truncate px-2 py-2 text-slate-700">{o.title}</TableCell>
+                        <TableCell className="px-2 py-2 text-xs text-slate-600">{o.owner ?? "—"}</TableCell>
+                        <TableCell className="px-2 py-2 text-xs text-slate-600">{o.siteName ?? "—"}</TableCell>
+                        <TableCell className="px-2 py-2 text-xs tabular-nums text-rose-600">{fmtDate(o.validUntil)}</TableCell>
+                      </TableRow>
                     ))
                   )}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
-          </div>
+          </Card>
         </div>
       )}
     </div>

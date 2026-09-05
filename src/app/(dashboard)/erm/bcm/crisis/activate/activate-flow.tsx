@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, Siren } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { cn } from "@/lib/utils";
 import { SEVERITY_LABEL } from "@/app/(dashboard)/erm/lib-p3";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export type ActivatablePlan = {
   id: string;
@@ -108,7 +111,7 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Crisis title</label>
+            <Label className="mb-1.5 block text-sm font-medium text-slate-700">Crisis title</Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -119,23 +122,20 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">Affected site</label>
-            <Select
+            <Label className="mb-1.5 block text-sm font-medium text-slate-700">Affected site</Label>
+            <SelectField
               value={siteId}
-              onChange={(e) => { setSiteId(e.target.value); setPlanIds([]); }}
+              onChange={(value) => { setSiteId(value); setPlanIds([]); }}
               className="min-h-12 rounded-xl px-3 text-base"
-            >
-              <option value="">Corporate (no single site)</option>
-              {sites.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </Select>
+              placeholder="Corporate (no single site)"
+              options={sites.map((s) => ({ value: s.id, label: s.name }))}
+            />
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+            <Label className="mb-1.5 block text-sm font-medium text-slate-700">
               Activate plan(s) <span className="font-normal text-slate-400">— approved continuity plans</span>
-            </label>
+            </Label>
             {visiblePlans.length === 0 ? (
               <p className="rounded-xl border border-dashed border-slate-200 p-4 text-center text-sm text-slate-400">
                 No approved plans for this site. You can still activate a crisis without a plan.
@@ -263,7 +263,7 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
             <p className="text-sm text-slate-500">Review and declare. This opens the live crisis workspace and notifies the team.</p>
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4">
+          <Card className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-none">
             <SummaryRow label="Crisis" value={title} />
             <SummaryRow label="Site" value={siteName} />
             <SummaryRow label="Severity" value={severity ? SEVERITY_LABEL[severity] : "—"} />
@@ -279,12 +279,12 @@ export function ActivateFlow({ plans, sites }: { plans: ActivatablePlan[]; sites
                 </ul>
               )}
             </div>
-          </div>
+          </Card>
 
           {err && (
-            <div className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            <Alert variant="destructive" className="flex items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
               <AlertTriangle size={16} className="mt-0.5 shrink-0" /> <span>{err}</span>
-            </div>
+            </Alert>
           )}
 
           <StickyBar>

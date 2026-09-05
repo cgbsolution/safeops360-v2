@@ -243,10 +243,10 @@ function SevTile({ label, value, tone }: { label: string; value: number; tone: "
     slate: "text-slate-600"
   };
   return (
-    <div className="text-center p-3 rounded border border-slate-200">
+    <Card className="text-center p-3 rounded border border-slate-200 shadow-none">
       <div className={["text-2xl font-bold", tones[tone]].join(" ")}>{value}</div>
       <div className="text-xs text-slate-500 mt-1">{label}</div>
-    </div>
+    </Card>
   );
 }
 

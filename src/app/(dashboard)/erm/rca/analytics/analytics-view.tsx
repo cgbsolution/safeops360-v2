@@ -7,6 +7,9 @@ import { DOMAIN_COLOR, DOMAIN_LABEL, ORIGIN_LABEL, type CauseAnalyticsResponse, 
 import { RISK_BAND_CHIP } from "@/app/(dashboard)/erm/lib-t3";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 type Metric = "riskReach" | "occurrences";
 
@@ -56,13 +59,13 @@ export function AnalyticsView({ data, domain }: { data: CauseAnalyticsResponse; 
               </div>
               <div className="flex items-center gap-2">
                 <DomainDots domains={c.domains} />
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{c.domainSpread} domain{c.domainSpread === 1 ? "" : "s"}</span>
+                <Badge variant="neutral" className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">{c.domainSpread} domain{c.domainSpread === 1 ? "" : "s"}</Badge>
               </div>
             </div>
           ))}
         </div>
         {crossDomain.length > 0 && (
-          <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <Alert variant="warning" className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
             <strong>Cross-domain insight:</strong>{" "}
             {crossDomain.slice(0, 1).map((c) => (
               <span key={c.enterpriseCategoryId}>
@@ -70,7 +73,7 @@ export function AnalyticsView({ data, domain }: { data: CauseAnalyticsResponse; 
                 {c.domains.map((d) => DOMAIN_LABEL[d] ?? d).join(", ")} — one enterprise cause spanning {c.domainSpread} risk domains.
               </span>
             ))}
-          </div>
+          </Alert>
         )}
       </section>
 
@@ -78,7 +81,7 @@ export function AnalyticsView({ data, domain }: { data: CauseAnalyticsResponse; 
       <section className="rounded-xl border border-slate-200 bg-white p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-semibold text-slate-800">Top root causes (Pareto)</h2>
-          <div className="flex rounded-lg border border-slate-200 p-0.5 text-xs">
+          <Card className="flex rounded-lg border border-slate-200 p-0.5 text-xs shadow-none">
             <Button
               type="button"
               variant="ghost"
@@ -97,7 +100,7 @@ export function AnalyticsView({ data, domain }: { data: CauseAnalyticsResponse; 
                 metric === "occurrences" ? "bg-slate-900 text-white" : "text-slate-600"
               )}
             >by frequency</Button>
-          </div>
+          </Card>
         </div>
         <div className="space-y-2">
           {causes.length === 0 && <p className="py-6 text-center text-sm text-slate-400">No approved RCAs yet.</p>}
@@ -113,9 +116,9 @@ export function AnalyticsView({ data, domain }: { data: CauseAnalyticsResponse; 
               <div className="flex items-center gap-1.5 truncate">
                 <span className="truncate text-xs font-medium text-slate-700" title={c.subCauseName}>{c.subCauseName}</span>
                 {c.isRecurringDriver && (
-                  <span title="Recurring systemic driver" className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                  <Badge variant="danger" title="Recurring systemic driver" className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
                     <Repeat size={10} /> recurring
-                  </span>
+                  </Badge>
                 )}
               </div>
               <div className="flex items-center gap-2">
@@ -150,10 +153,10 @@ export function AnalyticsView({ data, domain }: { data: CauseAnalyticsResponse; 
           </p>
           <div className="flex flex-wrap gap-2">
             {data.causes.filter((c) => c.isRecurringDriver).map((c) => (
-              <div key={c.subCauseId} className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs">
+              <Alert variant="destructive" key={c.subCauseId} className="rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs">
                 <div className="font-medium text-slate-800">{c.subCauseName}</div>
                 <div className="text-slate-500">reach {c.riskReach} · {c.occurrences} citation{c.occurrences === 1 ? "" : "s"} · {c.domainSpread} domain{c.domainSpread === 1 ? "" : "s"}</div>
-              </div>
+              </Alert>
             ))}
           </div>
         </section>
@@ -247,16 +250,16 @@ function CauseDrawer({
           </div>
           {detail && (
             <div className="mt-3 flex items-center gap-2">
-              <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+              <Badge variant="violet" className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
                 {detail.riskReach} risk{detail.riskReach === 1 ? "" : "s"}
-              </span>
-              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+              </Badge>
+              <Badge variant="neutral" className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                 {detail.occurrences} citation{detail.occurrences === 1 ? "" : "s"}
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+              </Badge>
+              <Badge variant="neutral" className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                 <DomainDots domains={detail.domains} />
                 {detail.domainSpread} domain{detail.domainSpread === 1 ? "" : "s"}
-              </span>
+              </Badge>
             </div>
           )}
         </div>
@@ -264,7 +267,7 @@ function CauseDrawer({
         <div className="flex-1 px-6 py-4">
           {loading && <p className="py-8 text-center text-sm text-slate-400">Loading…</p>}
           {error && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</div>
+            <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</Alert>
           )}
           {detail && !loading && (
             <div className="space-y-6">

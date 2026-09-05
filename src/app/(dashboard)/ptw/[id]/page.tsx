@@ -35,6 +35,7 @@ import { getPtwActivationGate } from "@/lib/ptw/activation-gate";
 import { formatDateTime, statusColor, humanize } from "@/lib/utils";
 import { CheckCircle2, XCircle, Clock, FileText, Hammer, AlertTriangle, PlayCircle, RefreshCcw } from "lucide-react";
 import { getWorkflowState } from "@/lib/workflow/state";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -531,24 +532,24 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                 )}
                 {p.gasTestRequired && (
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="rounded border bg-emerald-50 border-emerald-200 p-3">
+                    <Alert variant="success" className="rounded border bg-emerald-50 border-emerald-200 p-3">
                       <div className="text-xs text-emerald-600 uppercase">O₂ Level</div>
                       <div className="font-bold text-emerald-900">{p.o2Level ?? "—"}</div>
-                    </div>
-                    <div className="rounded border bg-emerald-50 border-emerald-200 p-3">
+                    </Alert>
+                    <Alert variant="success" className="rounded border bg-emerald-50 border-emerald-200 p-3">
                       <div className="text-xs text-emerald-600 uppercase">LEL</div>
                       <div className="font-bold text-emerald-900">{p.lelLevel ?? "—"}</div>
-                    </div>
-                    <div className="rounded border bg-emerald-50 border-emerald-200 p-3">
+                    </Alert>
+                    <Alert variant="success" className="rounded border bg-emerald-50 border-emerald-200 p-3">
                       <div className="text-xs text-emerald-600 uppercase">H₂S</div>
                       <div className="font-bold text-emerald-900">{p.h2sLevel ?? "—"}</div>
-                    </div>
+                    </Alert>
                   </div>
                 )}
                 {p.fireWatchRequired && (
-                  <div className="rounded border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
+                  <Alert variant="warning" className="rounded border border-amber-200 bg-amber-50 p-3 text-amber-800 text-sm">
                     🔥 <strong>Fire Watch Required</strong> — A dedicated fire watcher must be present throughout the work and 30 minutes after.
-                  </div>
+                  </Alert>
                 )}
                 {p.rescuePlan && (
                   <div>
@@ -613,9 +614,9 @@ export default async function PermitDetailPage(props: { params: Promise<{ id: st
                   <FileText size={16} className="text-slate-400" />
                 </Link>
               ) : (
-                <div className="rounded-lg border border-dashed border-slate-300 p-3 text-sm text-slate-500">
+                <Card className="border-dashed border-slate-300 p-3 text-sm text-slate-500 shadow-none">
                   No FLRA started yet for this permit.
-                </div>
+                </Card>
               )}
 
               <div className="flex flex-wrap gap-2">

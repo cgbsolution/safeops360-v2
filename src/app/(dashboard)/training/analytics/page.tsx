@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert } from "@/components/ui/alert";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -252,10 +253,9 @@ export default async function TrainingAnalyticsPage() {
                 const program = tp;
                 const gates = tp.gates;
                 return (
-                  <div
+                  <Card
                     key={program.id}
-                    className="flex items-center justify-between rounded-md border border-slate-200 bg-white p-2 text-xs"
-                  >
+                    className="flex items-center justify-between rounded-md border border-slate-200 bg-white p-2 text-xs shadow-none">
                     <div>
                       <div className="font-medium text-slate-800 flex items-center gap-1.5">
                         {program.isStatutory && (
@@ -283,7 +283,7 @@ export default async function TrainingAnalyticsPage() {
                       ))}
                       <span className="font-bold text-slate-900">{tp.count}</span>
                     </div>
-                  </div>
+                  </Card>
                 );
               })
             )}
@@ -296,7 +296,7 @@ export default async function TrainingAnalyticsPage() {
             <CardTitle className="text-base">Compliance Highlights</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="rounded-md border border-rose-200 bg-rose-50/40 p-3">
+            <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50/40 p-3">
               <div className="text-xs text-rose-700 uppercase tracking-wide font-medium">
                 Statutory training
               </div>
@@ -305,9 +305,9 @@ export default async function TrainingAnalyticsPage() {
                 ACTIVE statutory certificates across the platform.{" "}
                 Inspections key off this number.
               </div>
-            </div>
+            </Alert>
 
-            <div className="rounded-md border border-amber-200 bg-amber-50/40 p-3">
+            <Alert variant="warning" className="rounded-md border border-amber-200 bg-amber-50/40 p-3">
               <div className="text-xs text-amber-700 uppercase tracking-wide font-medium">
                 Effectiveness rating
               </div>
@@ -322,9 +322,9 @@ export default async function TrainingAnalyticsPage() {
                 {reviewedCerts.length === 1 ? "" : "s"}. Higher = training translates to
                 competency in the field.
               </div>
-            </div>
+            </Alert>
 
-            <div className="rounded-md border border-violet-200 bg-violet-50/40 p-3">
+            <Alert variant="brand" className="rounded-md border border-violet-200 bg-violet-50/40 p-3">
               <div className="text-xs text-violet-700 uppercase tracking-wide font-medium">
                 Triggered from incidents
               </div>
@@ -349,7 +349,7 @@ export default async function TrainingAnalyticsPage() {
                   ))}
                 </div>
               )}
-            </div>
+            </Alert>
           </CardContent>
         </Card>
       </div>

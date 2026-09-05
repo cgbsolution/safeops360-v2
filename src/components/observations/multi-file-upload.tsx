@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Camera, Upload, X, Image as ImageIcon, FileText, Film, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 export type UploadedAttachment = {
   id: string;
@@ -249,9 +251,9 @@ export function ObservationMultiFileUpload({
       </div>
 
       {error && (
-        <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 flex items-center gap-2">
+        <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 flex items-center gap-2">
           <AlertCircle size={14} /> {error}
-        </div>
+        </Alert>
       )}
 
       {files.length > 0 && (
@@ -279,7 +281,7 @@ function FileRow({
   const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
   return (
-    <div className="flex items-start gap-3 rounded-md border bg-white p-2.5">
+    <Card className="flex items-start gap-3 rounded-md p-2.5 shadow-none">
       <div className="w-14 h-14 rounded bg-slate-100 flex items-center justify-center overflow-hidden flex-shrink-0">
         {isImage && file.previewUrl ? (
           <img src={file.previewUrl} alt="" className="w-full h-full object-cover" />
@@ -327,14 +329,16 @@ function FileRow({
         )}
       </div>
 
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         onClick={onRemove}
-        className="text-slate-400 hover:text-rose-600 flex-shrink-0"
+        className="h-auto w-auto flex-shrink-0 p-0 text-slate-400 hover:bg-transparent hover:text-rose-600"
         aria-label="Remove"
       >
         <X size={14} />
-      </button>
-    </div>
+      </Button>
+    </Card>
   );
 }

@@ -10,6 +10,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Factory, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
 
 // `orgDisabled` = the Super Admin has switched this module off for the whole
 // organisation. It still appears here (so the per-factory setting is visible
@@ -135,18 +139,13 @@ export function FactoryModuleMatrix({ onSaved }: { onSaved?: () => void | Promis
         ) : (
           <>
             <div className="flex flex-wrap items-center gap-3">
-              <label className="text-sm text-slate-600">Factory</label>
-              <select
+              <Label className="text-sm text-slate-600">Factory</Label>
+              <SelectField
                 value={selected}
-                onChange={(e) => setSelected(e.target.value)}
+                onChange={(value) => setSelected(value)}
                 className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm"
-              >
-                {factories.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name} ({f.code})
-                  </option>
-                ))}
-              </select>
+                options={factories.map((f) => ({ value: String(f.id), label: `${f.name} (${f.code})` }))}
+              />
               <span className="text-xs text-slate-500">{enabledCount}/{modules.length} enabled</span>
             </div>
 
@@ -160,21 +159,19 @@ export function FactoryModuleMatrix({ onSaved }: { onSaved?: () => void | Promis
                     {mods.map((m) => {
                       const r = rows[m.code] ?? { enabled: true, from: "", until: "" };
                       return (
-                        <div
+                        <Card
                           key={m.code}
-                          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-slate-200 px-3 py-2 text-sm"
-                        >
-                          <label className="flex items-center gap-2 cursor-pointer min-w-[16rem]">
-                            <input
-                              type="checkbox"
+                          className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-slate-200 px-3 py-2 text-sm shadow-none">
+                          <Label className="flex items-center gap-2 cursor-pointer min-w-[16rem]">
+                            <Checkbox
+                             
                               checked={r.enabled}
                               onChange={(e) => setRow(m.code, { enabled: e.target.checked })}
-                              className="size-4 accent-primary-700"
-                            />
+                              className="size-4 accent-primary-700" />
                             <span className={r.enabled ? "text-slate-800" : "text-slate-400"}>
                               {m.name}
                             </span>
-                          </label>
+                          </Label>
                           {/* Already off for the whole organisation — this row's
                               setting is real but inert until the Super Admin
                               turns the module back on. Say so rather than let an
@@ -190,34 +187,30 @@ export function FactoryModuleMatrix({ onSaved }: { onSaved?: () => void | Promis
                           {r.enabled && !m.orgDisabled && (
                             <div className="flex items-center gap-2 text-xs text-slate-500 ml-auto">
                               <span>From</span>
-                              <input
+                              <Input
                                 type="date"
                                 value={r.from}
                                 onChange={(e) => setRow(m.code, { from: e.target.value })}
-                                className="rounded border border-slate-300 px-2 py-1"
-                              />
+                                className="rounded border border-slate-300 px-2 py-1" />
                               <span>Until</span>
-                              <input
+                              <Input
                                 type="date"
                                 value={r.until}
                                 onChange={(e) => setRow(m.code, { until: e.target.value })}
-                                className="rounded border border-slate-300 px-2 py-1"
-                              />
+                                className="rounded border border-slate-300 px-2 py-1" />
                               {r.until ? (
-                                <button
+                                <Button variant="link"
                                   type="button"
-                                  onClick={() => setRow(m.code, { until: "" })}
-                                  className="text-slate-400 hover:text-slate-600 underline"
-                                  title="Clear end date (never expires)"
-                                >
+                                  onClick={() => setRow(m.code, { until: "" })} className="underline"
+                                  title="Clear end date (never expires)">
                                   no expiry
-                                </button>
+                                </Button>
                               ) : (
                                 <span className="text-emerald-600">∞ no expiry</span>
                               )}
                             </div>
                           )}
-                        </div>
+                        </Card>
                       );
                     })}
                   </div>
@@ -229,26 +222,22 @@ export function FactoryModuleMatrix({ onSaved }: { onSaved?: () => void | Promis
               <Button onClick={save} disabled={saving}>
                 <Save size={16} className="mr-1" /> {saving ? "Saving…" : "Save factory access"}
               </Button>
-              <button
-                type="button"
-                className="text-xs text-slate-500 hover:text-slate-700 underline"
+              <Button variant="link"
+                type="button" className="text-xs underline"
                 onClick={() =>
                   setRows(Object.fromEntries(modules.map((m) => [m.code, { enabled: true, from: "", until: "" }])))
-                }
-              >
+                }>
                 Enable all (no expiry)
-              </button>
-              <button
-                type="button"
-                className="text-xs text-slate-500 hover:text-slate-700 underline"
+              </Button>
+              <Button variant="link"
+                type="button" className="text-xs underline"
                 onClick={() =>
                   setRows((p) =>
                     Object.fromEntries(modules.map((m) => [m.code, { ...p[m.code], enabled: false }]))
                   )
-                }
-              >
+                }>
                 Disable all
-              </button>
+              </Button>
               {msg && (
                 <span className={`text-sm ${msg.ok ? "text-emerald-700" : "text-rose-700"}`}>
                   {msg.text}

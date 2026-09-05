@@ -7,6 +7,7 @@
 import { useEffect, useState } from "react";
 import { FileText } from "lucide-react";
 import type { AttachmentOut } from "@/lib/capture/types";
+import { Card } from "@/components/ui/card";
 
 export function MediaGallery({
   submissionId,
@@ -48,7 +49,7 @@ export function MediaGallery({
       {attachments.map((att) => {
         const url = urls[att.id];
         return (
-          <div key={att.id} className="overflow-hidden rounded-md border bg-muted/30">
+          <Card key={att.id} className="overflow-hidden rounded-md border bg-muted/30 shadow-none">
             {att.kind === "PHOTO" && url ? (
               <a href={url} target="_blank" rel="noreferrer">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,7 +76,7 @@ export function MediaGallery({
             <p className="truncate border-t bg-card px-2 py-1.5 text-xs text-muted-foreground">
               {att.kind.toLowerCase()} · {(att.fileSize / 1024).toFixed(0)} KB
             </p>
-          </div>
+          </Card>
         );
       })}
     </div>

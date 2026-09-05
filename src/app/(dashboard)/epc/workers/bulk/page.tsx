@@ -13,8 +13,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableHeader,
@@ -217,14 +220,14 @@ export default function BulkImportPage() {
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
+        <Alert variant="destructive" className="mb-4 rounded-lg bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
           {error}
-        </div>
+        </Alert>
       )}
 
       {/* Stage 1: Upload */}
       {stage === "upload" && (
-        <div className="rounded-xl border bg-white shadow-sm p-6 space-y-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-6 space-y-5">
           <div>
             <div className="flex items-center justify-between mb-2">
               <Label>CSV Template</Label>
@@ -246,25 +249,19 @@ export default function BulkImportPage() {
 
           <div>
             <Label htmlFor="company">Contractor Company *</Label>
-            <Select
+            <SelectField
               id="company"
               value={contractorCompanyId}
-              onChange={(e) => setContractorCompanyId(e.target.value)}
+              onChange={setContractorCompanyId}
               className="mt-1"
-            >
-              <option value="">Select company...</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.companyName}
-                  {c.companyCode ? ` (${c.companyCode})` : ""}
-                </option>
-              ))}
-            </Select>
+              placeholder="Select company..."
+              options={companies.map((c) => ({ value: String(c.id), label: `${c.companyName} ${c.companyCode ? ` (${c.companyCode})` : ""}` }))}
+            />
           </div>
 
           <div>
             <Label>Upload CSV File</Label>
-            <div
+            <Alert variant="info"
               className="mt-1 border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:border-cyan-400 transition-colors"
               onClick={() => fileRef.current?.click()}
               onDragOver={(e) => e.preventDefault()}
@@ -275,19 +272,17 @@ export default function BulkImportPage() {
                 const reader = new FileReader();
                 reader.onload = (ev) => setCsvText((ev.target?.result as string) ?? "");
                 reader.readAsText(file);
-              }}
-            >
+              }}>
               <Upload size={28} className="mx-auto mb-2 text-slate-400" />
               <p className="text-sm text-slate-600">Click to browse or drag CSV file here</p>
               <p className="text-xs text-slate-400 mt-1">Supports .csv files, up to 1000 rows</p>
-            </div>
-            <input
+            </Alert>
+            <Input
               ref={fileRef}
               type="file"
               accept=".csv"
               onChange={handleFile}
-              className="hidden"
-            />
+              className="hidden" />
           </div>
 
           <div>
@@ -305,13 +300,13 @@ export default function BulkImportPage() {
           <Button onClick={handlePreview} disabled={!csvText.trim()} className="w-full">
             Preview Import &rarr;
           </Button>
-        </div>
+        </Card>
       )}
 
       {/* Stage 2: Preview */}
       {stage === "preview" && (
         <div className="space-y-4">
-          <div className="rounded-xl border bg-white shadow-sm p-5">
+          <Card className="rounded-xl border bg-white shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold text-slate-700">
@@ -368,7 +363,7 @@ export default function BulkImportPage() {
                 )}
               </TableBody>
             </Table>
-          </div>
+          </Card>
           <Button onClick={handleImport} disabled={submitting} className="w-full">
             {submitting ? (
               <>
@@ -386,18 +381,18 @@ export default function BulkImportPage() {
       {stage === "result" && result && (
         <div className="space-y-4">
           <div className="grid grid-cols-3 gap-4">
-            <div className="rounded-xl border bg-emerald-50 border-emerald-200 p-4 text-center">
+            <Alert variant="success" className="rounded-xl border bg-emerald-50 border-emerald-200 p-4 text-center">
               <CheckCircle2 size={24} className="mx-auto mb-1 text-emerald-600" />
               <p className="text-3xl font-bold text-emerald-700 tabular-nums">
                 {result.created}
               </p>
               <p className="text-xs text-emerald-600 mt-1">Workers Created</p>
-            </div>
-            <div className="rounded-xl border bg-blue-50 border-blue-200 p-4 text-center">
+            </Alert>
+            <Alert variant="info" className="rounded-xl border bg-blue-50 border-blue-200 p-4 text-center">
               <Users size={24} className="mx-auto mb-1 text-blue-600" />
               <p className="text-3xl font-bold text-blue-700 tabular-nums">{result.updated}</p>
               <p className="text-xs text-blue-600 mt-1">Workers Updated</p>
-            </div>
+            </Alert>
             <div
               className={`rounded-xl border p-4 text-center ${
                 result.errors.length > 0
@@ -429,7 +424,7 @@ export default function BulkImportPage() {
           </div>
 
           {result.errors.length > 0 && (
-            <div className="rounded-xl border border-rose-200 bg-white shadow-sm overflow-hidden">
+            <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-white shadow-sm overflow-hidden">
               <div className="px-4 py-3 border-b bg-rose-50">
                 <h3 className="text-sm font-semibold text-rose-700">
                   Import Errors — Fix and Re-upload
@@ -453,7 +448,7 @@ export default function BulkImportPage() {
                   ))}
                 </TableBody>
               </Table>
-            </div>
+            </Alert>
           )}
 
           <div className="flex items-center gap-3">

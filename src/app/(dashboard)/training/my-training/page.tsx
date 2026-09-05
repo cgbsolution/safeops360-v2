@@ -12,6 +12,9 @@ import {
   type Tone
 } from "@/lib/training-engine";
 import { AssignmentActions } from "../assignment-actions";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -74,31 +77,31 @@ export default async function MyTrainingPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {KPIS.map((k) => (
-              <div key={k.label} className="rounded-xl border border-slate-200 bg-white p-4">
+              <Card key={k.label} className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
                 <div className={cn("text-2xl font-bold tabular-nums", KPI_TONE[k.tone])}>
                   {k.value}
                 </div>
                 <div className="mt-1 text-[11px] uppercase tracking-wider text-slate-500">
                   {k.label}
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
 
           {items.length === 0 ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center">
+            <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-none">
               <GraduationCap size={32} className="mx-auto text-slate-300" />
               <p className="mt-3 text-sm text-slate-500">
                 You have no training assignments. You&apos;re all caught up.
               </p>
-            </div>
+            </Card>
           ) : (
             <div className="space-y-3">
               {items.map((a) => {
@@ -106,7 +109,7 @@ export default async function MyTrainingPage() {
                 const srcMeta = SOURCE_META[a.source] ?? SOURCE_META.manual;
                 const srcHref = sourceRecordHref(a.sourceModule, a.sourceRecordId);
                 return (
-                  <div key={a.id} className="rounded-xl border border-slate-200 bg-white p-4">
+                  <Card key={a.id} className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="min-w-0 space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -150,10 +153,10 @@ export default async function MyTrainingPage() {
                         </div>
 
                         {a.isMandatory && (
-                          <span className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                          <Badge variant="danger" className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
                             <ShieldAlert size={12} />
                             Mandatory — cannot be declined
-                          </span>
+                          </Badge>
                         )}
                       </div>
 
@@ -167,7 +170,7 @@ export default async function MyTrainingPage() {
                         />
                       </div>
                     </div>
-                  </div>
+                  </Card>
                 );
               })}
             </div>

@@ -15,6 +15,8 @@ import {
   EmptyState, ErrorState, HazardChips, Kpi, StatusChip, SubNav, TableNote,
 } from "../_components";
 import { NewBatchDialog, RowActions } from "./inventory-actions";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
 
 export const dynamic = "force-dynamic";
 
@@ -96,23 +98,23 @@ export default async function InventoryLedgerPage({
           <form className="mb-4 flex flex-wrap items-end gap-2" action="/chemicals/inventory" method="get">
             <input type="hidden" name="plantId" value={ctx.plantId} />
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-700">Storage location</label>
-              <Select name="storageLocationId" defaultValue={sp.storageLocationId ?? ""} className="w-56">
-                <option value="">All locations</option>
-                {locations.map((l) => (
-                  <option key={l.id} value={l.id}>{l.name} ({l.code})</option>
-                ))}
-              </Select>
+              <Label className="block text-xs font-medium text-slate-700">Storage location</Label>
+              <SelectField name="storageLocationId" defaultValue={sp.storageLocationId ?? ""} className="w-56"
+                placeholder="All locations"
+                options={locations.map((l) => ({ value: l.id, label: "{l.name} ({l.code})" }))}
+              />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-700">Status</label>
-              <Select name="status" defaultValue={sp.status ?? ""} className="w-40">
-                <option value="">All</option>
-                <option value="IN_STOCK">In stock</option>
-                <option value="LOW">Low</option>
-                <option value="EXPIRED">Expired</option>
-                <option value="DISPOSED">Disposed</option>
-              </Select>
+              <Label className="block text-xs font-medium text-slate-700">Status</Label>
+              <SelectField name="status" defaultValue={sp.status ?? ""} className="w-40"
+                placeholder="All"
+                options={[
+                { value: "IN_STOCK", label: "In stock" },
+                { value: "LOW", label: "Low" },
+                { value: "EXPIRED", label: "Expired" },
+                { value: "DISPOSED", label: "Disposed" }
+              ]}
+              />
             </div>
             <Button type="submit" className="mb-0.5">Apply</Button>
             {filtered && (

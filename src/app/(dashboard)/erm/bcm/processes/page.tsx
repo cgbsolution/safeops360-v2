@@ -10,6 +10,9 @@ import {
 } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
 import { NewProcessButton } from "./new-process-form";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -74,9 +77,9 @@ export default async function ProcessesPage(props: {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM Phase 3 (BCM) seed has been run and you are logged in with a BCM role.
-        </div>
+        </Alert>
       ) : (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -92,58 +95,58 @@ export default async function ProcessesPage(props: {
             <span className="ml-auto text-xs text-slate-500">{data.items.length} shown</span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[1000px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="px-3 py-2.5">Code</th>
-                  <th className="px-3 py-2.5">Process</th>
-                  <th className="px-3 py-2.5">Site</th>
-                  <th className="px-3 py-2.5">Owner</th>
-                  <th className="px-3 py-2.5">Criticality</th>
-                  <th className="px-3 py-2.5 text-right">RTO</th>
-                  <th className="px-3 py-2.5 text-right">MTPD</th>
-                  <th className="px-3 py-2.5">BIA</th>
-                  <th className="px-3 py-2.5 text-center">SPOF</th>
-                  <th className="px-3 py-2.5 text-center">Covered</th>
-                  <th className="px-3 py-2.5">Next review</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[1000px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="px-3 py-2.5">Code</TableHead>
+                  <TableHead className="px-3 py-2.5">Process</TableHead>
+                  <TableHead className="px-3 py-2.5">Site</TableHead>
+                  <TableHead className="px-3 py-2.5">Owner</TableHead>
+                  <TableHead className="px-3 py-2.5">Criticality</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">RTO</TableHead>
+                  <TableHead className="px-3 py-2.5 text-right">MTPD</TableHead>
+                  <TableHead className="px-3 py-2.5">BIA</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">SPOF</TableHead>
+                  <TableHead className="px-3 py-2.5 text-center">Covered</TableHead>
+                  <TableHead className="px-3 py-2.5">Next review</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {data.items.length === 0 ? (
-                  <tr>
-                    <td colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
+                  <TableRow>
+                    <TableCell colSpan={11} className="px-3 py-10 text-center text-sm text-slate-400">
                       No processes match the current filter. Use “New Process” to add one.
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ) : (
                   data.items.map((p) => (
-                    <tr key={p.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
-                      <td className="px-3 py-2.5">
+                    <TableRow key={p.id} className="border-t border-slate-100 align-top hover:bg-slate-50/70">
+                      <TableCell className="px-3 py-2.5">
                         <Link href={`/erm/bcm/processes/${p.id}`} className="font-medium text-primary-700 hover:underline">
                           {p.processCode}
                         </Link>
-                      </td>
-                      <td className="max-w-[260px] px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="max-w-[260px] px-3 py-2.5">
                         <span className="text-slate-800">{p.name}</span>
                         <span className="block text-[11px] text-slate-400">{p.departmentName}</span>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{p.siteName ?? "—"}</td>
-                      <td className="px-3 py-2.5 text-xs text-slate-600">{p.ownerName ?? "—"}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{p.siteName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-600">{p.ownerName ?? "—"}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"rounded border px-2 py-0.5 text-[11px] " + (CRITICALITY_CHIP[p.criticality] ?? "")}>
                           {p.criticality}
                         </span>
-                      </td>
-                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-700">{fmtRto(p.rtoHours)}</td>
-                      <td className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-500">{fmtRto(p.mtpdHours)}</td>
-                      <td className="px-3 py-2.5">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-700">{fmtRto(p.rtoHours)}</TableCell>
+                      <TableCell className="px-3 py-2.5 text-right text-xs tabular-nums text-slate-500">{fmtRto(p.mtpdHours)}</TableCell>
+                      <TableCell className="px-3 py-2.5">
                         <span className={"rounded border px-2 py-0.5 text-[11px] " + (BIA_STATUS_CHIP[p.biaStatus] ?? "bg-slate-100 text-slate-600 border-slate-200")}>
                           {p.biaStatus}
                         </span>
                         {p.reviewOverdue && <span className="ml-1 text-[10px] font-semibold text-rose-600">overdue</span>}
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-center">
                         {p.unmitigatedSpofCount > 0 ? (
                           <span className="inline-flex items-center gap-1 rounded bg-rose-100 px-1.5 py-0.5 text-[11px] font-semibold text-rose-800">
                             <AlertTriangle size={11} /> {p.unmitigatedSpofCount}
@@ -151,8 +154,8 @@ export default async function ProcessesPage(props: {
                         ) : (
                           <span className="text-slate-300">—</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5 text-center">
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-center">
                         {p.isCovered ? (
                           <span className="inline-flex items-center gap-1 text-emerald-600" title={`${p.planCoverageCount} plan(s)`}>
                             <CheckCircle2 size={15} />
@@ -162,14 +165,14 @@ export default async function ProcessesPage(props: {
                             <XCircle size={15} />
                           </span>
                         )}
-                      </td>
-                      <td className="px-3 py-2.5 text-xs text-slate-500">{p.nextBiaReviewDate ? fmtDate(p.nextBiaReviewDate) : "—"}</td>
-                    </tr>
+                      </TableCell>
+                      <TableCell className="px-3 py-2.5 text-xs text-slate-500">{p.nextBiaReviewDate ? fmtDate(p.nextBiaReviewDate) : "—"}</TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
         </>
       )}
     </div>

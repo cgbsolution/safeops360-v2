@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Label } from "@/components/ui/label";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Can } from "@/components/auth/can";
 import { CheckCircle2, Clock, Copy, AlertCircle, ShieldCheck } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 const ROOT_CAUSE_CATEGORIES = ["MAN", "MACHINE", "METHOD", "MATERIAL", "MEASUREMENT", "ENVIRONMENT"] as const;
 
@@ -60,7 +61,7 @@ export function FindingActions({
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
-          <div className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</div>
+          <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</Alert>
         )}
 
         {/* Take ownership */}
@@ -80,10 +81,10 @@ export function FindingActions({
               <div className="mt-2 space-y-2">
                 <div>
                   <Label>Category (5M)</Label>
-                  <Select value={rootCauseCategory} onChange={(e) => setRootCauseCategory(e.target.value)}>
-                    <option value="">— Select —</option>
-                    {ROOT_CAUSE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </Select>
+                  <SelectField value={rootCauseCategory} onChange={setRootCauseCategory}
+                    placeholder="— Select —"
+                    options={ROOT_CAUSE_CATEGORIES.map((c) => ({ value: String(c), label: c }))}
+                  />
                 </div>
                 <div>
                   <Label>Note</Label>
@@ -172,13 +173,15 @@ export function FindingActions({
               <div className="mt-2 space-y-2">
                 <div>
                   <Label>Rating</Label>
-                  <Select value={effectivenessRating} onChange={(e) => setEffectivenessRating(e.target.value)}>
-                    <option value="">— Select —</option>
-                    <option value="EFFECTIVE">Effective — issue did not recur</option>
-                    <option value="PARTIAL">Partial — issue partially addressed</option>
-                    <option value="NOT_EFFECTIVE">Not effective — additional action needed</option>
-                    <option value="RECURRENCE">Recurrence — issue happened again</option>
-                  </Select>
+                  <SelectField value={effectivenessRating} onChange={setEffectivenessRating}
+                    placeholder="— Select —"
+                    options={[
+                    { value: "EFFECTIVE", label: "Effective — issue did not recur" },
+                    { value: "PARTIAL", label: "Partial — issue partially addressed" },
+                    { value: "NOT_EFFECTIVE", label: "Not effective — additional action needed" },
+                    { value: "RECURRENCE", label: "Recurrence — issue happened again" }
+                  ]}
+                  />
                 </div>
                 <div>
                   <Label>Note</Label>

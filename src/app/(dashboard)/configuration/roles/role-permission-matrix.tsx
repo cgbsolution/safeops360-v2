@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Save, Loader2 } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const SCOPES = ["ALL_PLANTS", "OWN_PLANT", "OWN_DEPARTMENT", "OWN_RECORDS"] as const;
 type Scope = typeof SCOPES[number];
@@ -98,7 +101,7 @@ export function RolePermissionMatrix({
       </div>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800 mb-3">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800 mb-3">{error}</Alert>
       )}
 
       <div className="space-y-4">
@@ -107,36 +110,36 @@ export function RolePermissionMatrix({
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-600 mb-2">
               {mod.module.replace(/_/g, " ")}
             </h3>
-            <div className="border border-slate-200 rounded-md overflow-hidden">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                  <tr>
-                    <th className="text-left p-2 w-32">Action</th>
-                    <th className="text-left p-2">Description</th>
-                    <th className="text-right p-2 w-72">Scope</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <Card className="border border-slate-200 rounded-md overflow-hidden shadow-none">
+              <Table className="w-full text-sm">
+                <TableHeader className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                  <TableRow>
+                    <TableHead className="text-left p-2 w-32">Action</TableHead>
+                    <TableHead className="text-left p-2">Description</TableHead>
+                    <TableHead className="text-right p-2 w-72">Scope</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {mod.permissions.map((p) => {
                     const current = grants.get(p.id);
                     return (
-                      <tr key={p.id} className="border-t border-slate-100">
-                        <td className="p-2 font-mono text-xs">{p.action}</td>
-                        <td className="p-2 text-xs text-slate-600">{p.description ?? "—"}</td>
-                        <td className="p-2">
+                      <TableRow key={p.id} className="border-t border-slate-100">
+                        <TableCell className="p-2 font-mono text-xs">{p.action}</TableCell>
+                        <TableCell className="p-2 text-xs text-slate-600">{p.description ?? "—"}</TableCell>
+                        <TableCell className="p-2">
                           <div className="flex justify-end gap-1">
                             <ScopeButton scope={null} active={!current} onClick={() => setScope(p.id, null)} />
                             {SCOPES.map((s) => (
                               <ScopeButton key={s} scope={s} active={current === s} onClick={() => setScope(p.id, s)} />
                             ))}
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </TableBody>
+              </Table>
+            </Card>
           </div>
         ))}
       </div>
@@ -147,16 +150,15 @@ export function RolePermissionMatrix({
 function ScopeButton({ scope, active, onClick }: { scope: Scope | null; active: boolean; onClick: () => void }) {
   if (scope === null) {
     return (
-      <button
+      <Button variant="ghost"
         type="button"
         onClick={onClick}
         className={[
           "px-2 py-1 rounded text-[10px] border",
           active ? "bg-slate-700 text-white border-slate-700" : "bg-white text-slate-400 border-slate-200 hover:border-slate-400"
-        ].join(" ")}
-      >
+        ].join(" ")}>
         OFF
-      </button>
+      </Button>
     );
   }
   return (

@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Badge } from "@/components/ui/badge";
 import { Plus, X, Star, ShieldAlert } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Assignment = {
   id: string;
@@ -114,25 +116,21 @@ export function UserRoleManager({
                 </div>
                 <div className="flex items-center gap-1">
                   {!isPrimary && (
-                    <button
+                    <Button variant="ghost"
                       type="button"
                       onClick={() => setAsPrimary(a.roleCode)}
-                      disabled={busy}
-                      className="text-xs text-primary-700 hover:text-primary-900 px-2 py-1 rounded"
-                      title="Make primary"
-                    >
+                      disabled={busy} className="text-xs px-2 py-1 rounded"
+                      title="Make primary">
                       Set primary
-                    </button>
+                    </Button>
                   )}
-                  <button
+                  <Button variant="ghost"
                     type="button"
                     onClick={() => removeAssignment(a.id)}
-                    disabled={busy || isPrimary}
-                    className="text-slate-400 hover:text-rose-600 p-1 disabled:opacity-30"
-                    title={isPrimary ? "Cannot remove primary role" : "Remove assignment"}
-                  >
+                    disabled={busy || isPrimary} className="p-1"
+                    title={isPrimary ? "Cannot remove primary role" : "Remove assignment"}>
                     <X size={14} />
-                  </button>
+                  </Button>
                 </div>
               </div>
             );
@@ -145,25 +143,20 @@ export function UserRoleManager({
           <Plus size={14} /> Add role
         </Button>
       ) : (
-        <div className="flex gap-2 items-end border border-primary-200 rounded-md p-2 bg-primary-50/30">
+        <Card className="flex gap-2 items-end border border-primary-200 rounded-md p-2 bg-primary-50/30 shadow-none">
           <div className="flex-1">
-            <Select value={newRoleId} onChange={(e) => setNewRoleId(e.target.value)}>
-              {allRoles
-                .filter((r) => !assignedRoleCodes.has(r.code))
-                .map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name} ({r.code})
-                  </option>
-                ))}
-            </Select>
+            <SelectField value={newRoleId} onChange={(value) => setNewRoleId(value)}
+              options={allRoles
+                .filter((r) => !assignedRoleCodes.has(r.code)).map((r) => ({ value: String(r.id), label: `${r.name} (${r.code})` }))}
+            />
           </div>
           <Button onClick={addAssignment} disabled={busy}>Add</Button>
           <Button variant="ghost" onClick={() => setAdding(false)}><X size={14} /></Button>
-        </div>
+        </Card>
       )}
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">{error}</Alert>
       )}
     </div>
   );

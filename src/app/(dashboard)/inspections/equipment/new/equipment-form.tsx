@@ -3,6 +3,10 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
 
 type Plant = { id: string; code: string; name: string };
 
@@ -88,29 +92,26 @@ export function EquipmentForm({
       <Section title="Identity">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Code" required>
-            <input
+            <Input
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="e.g., EQ-LMS-0007"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
           <Field label="Name" required>
-            <input
+            <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Crusher Secondary"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
           <Field label="Category" required>
-            <input
+            <Input
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               list="equipment-categories"
               placeholder="e.g., Process Critical"
-              className="form-input"
-            />
+              className="form-input" />
             <datalist id="equipment-categories">
               {categories.map((c) => (
                 <option key={c} value={c} />
@@ -118,11 +119,10 @@ export function EquipmentForm({
             </datalist>
           </Field>
           <Field label="Sub-category">
-            <input
+            <Input
               value={subCategory}
               onChange={(e) => setSubCategory(e.target.value)}
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
       </Section>
@@ -130,48 +130,34 @@ export function EquipmentForm({
       <Section title="Location & criticality">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Plant" required>
-            <select value={plantId} onChange={(e) => setPlantId(e.target.value)} className="form-input">
-              <option value="">Select plant…</option>
-              {plants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.code} — {p.name}
-                </option>
-              ))}
-            </select>
+            <SelectField value={plantId} onChange={setPlantId} className="form-input"
+              placeholder="Select plant…"
+              options={plants.map((p) => ({ value: String(p.id), label: `${p.code} — ${p.name}` }))}
+            />
           </Field>
           <Field label="Location" required>
-            <input
+            <Input
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="e.g., Packing Plant"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
           <Field label="Criticality">
-            <select value={criticality} onChange={(e) => setCriticality(e.target.value)} className="form-input">
-              {CRITICALITY.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
+            <SelectField value={criticality} onChange={setCriticality} className="form-input"
+              options={CRITICALITY.map((c) => ({ value: String(c.code), label: `${c.label}` }))}
+            />
           </Field>
           <Field label="Inspection frequency" required>
-            <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="form-input">
-              {FREQUENCY.map((f) => (
-                <option key={f} value={f}>
-                  {f.replace(/_/g, " ")}
-                </option>
-              ))}
-            </select>
+            <SelectField value={frequency} onChange={setFrequency} className="form-input"
+              options={FREQUENCY.map((f) => ({ value: String(f), label: `${f.replace(/_/g, " ")}` }))}
+            />
           </Field>
           <Field label="Commissioning date">
-            <input
+            <Input
               type="date"
               value={commissioningDate}
               onChange={(e) => setCommissioningDate(e.target.value)}
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
       </Section>
@@ -179,32 +165,31 @@ export function EquipmentForm({
       <Section title="Make & identification">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Make">
-            <input value={make} onChange={(e) => setMake(e.target.value)} className="form-input" />
+            <Input value={make} onChange={(e) => setMake(e.target.value)} className="form-input" />
           </Field>
           <Field label="Model number">
-            <input value={modelNumber} onChange={(e) => setModelNumber(e.target.value)} className="form-input" />
+            <Input value={modelNumber} onChange={(e) => setModelNumber(e.target.value)} className="form-input" />
           </Field>
           <Field label="Serial number">
-            <input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} className="form-input" />
+            <Input value={serialNumber} onChange={(e) => setSerialNumber(e.target.value)} className="form-input" />
           </Field>
           <Field label="Manufacturer">
-            <input value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} className="form-input" />
+            <Input value={manufacturer} onChange={(e) => setManufacturer(e.target.value)} className="form-input" />
           </Field>
           <Field label="Statutory registration no.">
-            <input
+            <Input
               value={statutoryRegistrationNumber}
               onChange={(e) => setStatutoryRegistrationNumber(e.target.value)}
               placeholder="For lifting gear, pressure vessels, etc."
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
       </Section>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="flex justify-end gap-2 pt-4 border-t">
@@ -241,9 +226,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="form-label">
+      <Label className="form-label">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );

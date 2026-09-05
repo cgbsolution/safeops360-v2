@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { ArrowLeft, Loader2, Building2 } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const PROJECT_TYPES = [
   "Power Plant",
@@ -125,13 +127,13 @@ export default function NewSitePage() {
 
       <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
         {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             {error}
-          </div>
+          </Alert>
         )}
 
         {/* Section: Site Identity */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Site Identity</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -158,18 +160,15 @@ export default function NewSitePage() {
             </div>
             <div>
               <Label htmlFor="projectType">Project Type *</Label>
-              <Select
+              <SelectField
                 id="projectType"
                 value={form.projectType}
-                onChange={(e) => set("projectType", e.target.value)}
+                onChange={(value) => set("projectType", value)}
                 required
                 className="mt-1"
-              >
-                <option value="">Select project type...</option>
-                {PROJECT_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </Select>
+                placeholder="Select project type..."
+                options={PROJECT_TYPES.map((t) => ({ value: String(t), label: t }))}
+              />
             </div>
             <div>
               <Label htmlFor="contractValue">Contract Value (INR)</Label>
@@ -205,10 +204,10 @@ export default function NewSitePage() {
               className="mt-1"
             />
           </div>
-        </div>
+        </Card>
 
         {/* Section: Location */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Location</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -224,18 +223,15 @@ export default function NewSitePage() {
             </div>
             <div>
               <Label htmlFor="state">State *</Label>
-              <Select
+              <SelectField
                 id="state"
                 value={form.state}
-                onChange={(e) => set("state", e.target.value)}
+                onChange={(value) => set("state", value)}
                 required
                 className="mt-1"
-              >
-                <option value="">Select state...</option>
-                {INDIAN_STATES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </Select>
+                placeholder="Select state..."
+                options={INDIAN_STATES.map((s) => ({ value: String(s), label: s }))}
+              />
             </div>
             <div>
               <Label htmlFor="district">District</Label>
@@ -248,10 +244,10 @@ export default function NewSitePage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Section: Client */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Client Details</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -287,10 +283,10 @@ export default function NewSitePage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Section: Schedule */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Project Schedule</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -316,7 +312,7 @@ export default function NewSitePage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         <div className="flex gap-3">
           <Button type="submit" disabled={submitting} className="min-w-32">

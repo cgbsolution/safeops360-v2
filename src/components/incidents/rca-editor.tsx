@@ -4,12 +4,13 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, ChevronRight, AlertTriangle, ShieldCheck, ShieldAlert, ShieldOff, X, ChevronDown, GitBranch } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CheckboxField } from "@/components/ui/checkbox-field";
 import {
   type RcaMethod,
   type FiveWhyData,
@@ -263,9 +264,17 @@ function FishboneEditor({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs uppercase tracking-wider font-bold text-slate-700">{FISHBONE_LABELS[k]}</span>
                   {!readOnly && (
-                    <button type="button" onClick={() => addCause(k)} className="text-primary-700 hover:text-primary-900">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => addCause(k)}
+                      aria-label="Add a cause"
+                      title="Add a cause"
+                      className="h-auto w-auto p-0 hover:bg-transparent text-primary-700 hover:text-primary-900"
+                    >
                       <Plus size={14} />
-                    </button>
+                    </Button>
                   )}
                 </div>
                 {causes.length === 0 && (
@@ -282,9 +291,17 @@ function FishboneEditor({
                         disabled={readOnly}
                       />
                       {!readOnly && (
-                        <button type="button" onClick={() => removeCause(k, i)} className="text-slate-400 hover:text-rose-600 mt-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeCause(k, i)}
+                          aria-label="Remove cause"
+                          title="Remove cause"
+                          className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-1"
+                        >
                           <X size={12} />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   ))}
@@ -316,9 +333,17 @@ function FishboneEditor({
                   disabled={readOnly}
                 />
                 {!readOnly && (
-                  <button type="button" onClick={() => removeRootCause(i)} className="text-slate-400 hover:text-rose-600 mt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeRootCause(i)}
+                    aria-label="Remove root cause"
+                    title="Remove root cause"
+                    className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-2"
+                  >
                     <X size={14} />
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
@@ -388,7 +413,7 @@ function FaultTreeEditor({
           />
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-3">
+        <Card className="p-3 shadow-none">
           <FtaNodeEditor
             node={data.rootNode}
             depth={0}
@@ -398,7 +423,7 @@ function FaultTreeEditor({
             isRoot
             readOnly={readOnly}
           />
-        </div>
+        </Card>
       </CardContent>
     </Card>
   );
@@ -424,17 +449,18 @@ function FtaNodeEditor({
   return (
     <div className="space-y-2" style={{ marginLeft: depth * 16 }}>
       <div className="flex flex-wrap items-start gap-2">
-        <Select
+        <SelectField
           value={node.nodeType}
-          onChange={(e) => onUpdateNode(node.id, (n) => ({ ...n, nodeType: e.target.value as FtaNodeType }))}
+          onChange={(value) => onUpdateNode(node.id, (n) => ({ ...n, nodeType: value as FtaNodeType }))}
           className="w-32 h-8 text-xs"
           disabled={readOnly}
-        >
-          <option value="EVENT">Event</option>
-          <option value="AND_GATE">AND Gate</option>
-          <option value="OR_GATE">OR Gate</option>
-          <option value="BASIC_EVENT">Basic Event</option>
-        </Select>
+          options={[
+          { value: "EVENT", label: "Event" },
+          { value: "AND_GATE", label: "AND Gate" },
+          { value: "OR_GATE", label: "OR Gate" },
+          { value: "BASIC_EVENT", label: "Basic Event" }
+        ]}
+        />
         <Badge
           className={cn(
             "text-[10px]",
@@ -455,30 +481,47 @@ function FtaNodeEditor({
         />
         {!readOnly && (
           <>
-            <button type="button" onClick={() => onAddChild(node.id)} className="text-primary-700 hover:text-primary-900 h-8 px-2" title="Add child">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => onAddChild(node.id)}
+              aria-label="Add child"
+              title="Add child"
+              className="h-auto w-auto p-0 hover:bg-transparent text-primary-700 hover:text-primary-900 h-8 px-2"
+            >
               <Plus size={14} />
-            </button>
+            </Button>
             {!isRoot && (
-              <button type="button" onClick={() => onRemove(node.id)} className="text-slate-400 hover:text-rose-600 h-8 px-1" title="Remove">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => onRemove(node.id)}
+                aria-label="Remove"
+                title="Remove"
+                className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 h-8 px-1"
+              >
                 <Trash2 size={13} />
-              </button>
+              </Button>
             )}
           </>
         )}
       </div>
       {node.nodeType === "BASIC_EVENT" && (
         <div className="ml-4 grid sm:grid-cols-3 gap-2">
-          <Select
+          <SelectField
             value={node.probability ?? ""}
-            onChange={(e) => onUpdateNode(node.id, (n) => ({ ...n, probability: (e.target.value || undefined) as any }))}
+            onChange={(value) => onUpdateNode(node.id, (n) => ({ ...n, probability: (value || undefined) as any }))}
             className="h-7 text-xs"
             disabled={readOnly}
-          >
-            <option value="">Probability —</option>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-          </Select>
+            placeholder="Probability —"
+            options={[
+            { value: "LOW", label: "Low" },
+            { value: "MEDIUM", label: "Medium" },
+            { value: "HIGH", label: "High" }
+          ]}
+          />
           <Input
             value={node.existingControls ?? ""}
             onChange={(e) => onUpdateNode(node.id, (n) => ({ ...n, existingControls: e.target.value }))}
@@ -486,16 +529,13 @@ function FtaNodeEditor({
             className="h-7 text-xs sm:col-span-2"
             disabled={readOnly}
           />
-          <label className="flex items-center gap-1.5 text-[11px] text-slate-700 sm:col-span-3">
-            <input
-              type="checkbox"
-              checked={!!node.controlActiveAtIncident}
-              onChange={(e) => onUpdateNode(node.id, (n) => ({ ...n, controlActiveAtIncident: e.target.checked }))}
-              disabled={readOnly}
-              className="rounded border-slate-300"
-            />
-            Control was active at incident
-          </label>
+          <CheckboxField
+            className="items-center gap-1.5 text-[11px] text-slate-700 sm:col-span-3"
+            checked={!!node.controlActiveAtIncident}
+            onChange={(e) => onUpdateNode(node.id, (n) => ({ ...n, controlActiveAtIncident: e.target.checked }))}
+            disabled={readOnly}
+            label="Control was active at incident"
+          />
         </div>
       )}
       {(node.children?.length ?? 0) > 0 && (
@@ -599,9 +639,17 @@ function BowtieEditor({
                     disabled={readOnly}
                   />
                   {!readOnly && (
-                    <button type="button" onClick={() => removeThreat(i)} className="text-slate-400 hover:text-rose-600 mt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeThreat(i)}
+                      aria-label="Remove threat"
+                      title="Remove threat"
+                      className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-1"
+                    >
                       <X size={13} />
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <BarrierList
@@ -616,10 +664,10 @@ function BowtieEditor({
 
           {/* TOP EVENT */}
           <div className="flex items-center justify-center">
-            <div className="w-full rounded-lg border-2 border-rose-300 bg-rose-100 text-rose-900 p-4 text-center">
+            <Card className="w-full border-2 border-rose-300 bg-rose-100 p-4 text-center text-rose-900">
               <div className="text-[10px] uppercase tracking-wider font-bold text-rose-700">Top Event</div>
               <div className="text-sm font-semibold mt-1 leading-snug">{data.topEvent || "—"}</div>
-            </div>
+            </Card>
           </div>
 
           {/* CONSEQUENCES */}
@@ -646,9 +694,17 @@ function BowtieEditor({
                     disabled={readOnly}
                   />
                   {!readOnly && (
-                    <button type="button" onClick={() => removeConsequence(i)} className="text-slate-400 hover:text-rose-600 mt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeConsequence(i)}
+                      aria-label="Remove consequence"
+                      title="Remove consequence"
+                      className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-1"
+                    >
                       <X size={13} />
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <BarrierList
@@ -700,9 +756,17 @@ function BarrierList({
       <div className="flex items-center justify-between">
         <span className="text-[11px] uppercase tracking-wider font-medium text-slate-600">{label}</span>
         {!readOnly && (
-          <button type="button" onClick={add} className="text-primary-700 hover:text-primary-900 text-[11px]">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={add}
+            aria-label="Add barrier"
+            title="Add barrier"
+            className="h-auto w-auto p-0 hover:bg-transparent text-primary-700 hover:text-primary-900"
+          >
             <Plus size={12} className="inline" /> Add
-          </button>
+          </Button>
         )}
       </div>
       {barriers.map((b, i) => {
@@ -717,20 +781,29 @@ function BarrierList({
               className="h-7 text-xs flex-1 bg-transparent"
               disabled={readOnly}
             />
-            <Select
+            <SelectField
               value={b.status}
-              onChange={(e) => set(i, { status: e.target.value as BarrierStatus })}
+              onChange={(value) => set(i, { status: value as BarrierStatus })}
               className="h-7 text-[10px] w-24 bg-transparent"
               disabled={readOnly}
-            >
-              <option value="WORKED">Worked</option>
-              <option value="FAILED">Failed</option>
-              <option value="ABSENT">Absent</option>
-            </Select>
+              options={[
+              { value: "WORKED", label: "Worked" },
+              { value: "FAILED", label: "Failed" },
+              { value: "ABSENT", label: "Absent" }
+            ]}
+            />
             {!readOnly && (
-              <button type="button" onClick={() => remove(i)} className="text-slate-400 hover:text-rose-600 mt-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => remove(i)}
+                aria-label="Remove barrier"
+                title="Remove barrier"
+                className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-1"
+              >
                 <X size={11} />
-              </button>
+              </Button>
             )}
           </div>
         );
@@ -833,7 +906,7 @@ function TapRootEditor({
               </Button>
             )}
           </div>
-          <div className="rounded-lg border bg-white p-3 space-y-2">
+          <Card className="space-y-2 p-3 shadow-none">
             {data.snapChart.length === 0 && <div className="text-xs text-slate-400 italic">No sequence steps captured.</div>}
             {data.snapChart.map((s, i) => (
               <div key={i} className="grid grid-cols-12 gap-2 items-start">
@@ -858,24 +931,31 @@ function TapRootEditor({
                   className="h-8 text-xs col-span-4"
                   disabled={readOnly}
                 />
-                <label className="col-span-2 flex items-center gap-1 text-[11px] text-slate-600">
-                  <input
-                    type="checkbox"
+                <div className="col-span-2 flex items-center gap-1">
+                  <CheckboxField
+                    className="items-center gap-1 text-[11px] text-slate-600"
                     checked={s.isIncident}
                     onChange={(e) => setSnap(i, { isIncident: e.target.checked })}
                     disabled={readOnly}
-                    className="rounded border-slate-300"
+                    label="Incident"
                   />
-                  Incident
                   {!readOnly && (
-                    <button type="button" onClick={() => removeSnap(i)} className="text-slate-400 hover:text-rose-600 ml-auto">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeSnap(i)}
+                      aria-label="Remove snapshot"
+                      title="Remove snapshot"
+                      className="ml-auto h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-rose-600"
+                    >
                       <X size={11} />
-                    </button>
+                    </Button>
                   )}
-                </label>
+                </div>
               </div>
             ))}
-          </div>
+          </Card>
         </div>
 
         {/* Causal Factors */}
@@ -902,23 +982,30 @@ function TapRootEditor({
                     disabled={readOnly}
                   />
                   {!readOnly && (
-                    <button type="button" onClick={() => removeCf(ci)} className="text-slate-400 hover:text-rose-600 mt-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeCf(ci)}
+                      aria-label="Remove causal factor"
+                      title="Remove causal factor"
+                      className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-1"
+                    >
                       <X size={13} />
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="ml-3 space-y-1.5">
                   {cf.rootCauseTree.map((rc, ri) => (
                     <div key={ri} className="grid grid-cols-12 gap-1.5 items-start">
-                      <Select
+                      <SelectField
                         value={rc.category}
-                        onChange={(e) => setRcEntry(ci, ri, { category: e.target.value })}
+                        onChange={(value) => setRcEntry(ci, ri, { category: value })}
                         className="h-7 text-[11px] col-span-3"
                         disabled={readOnly}
-                      >
-                        <option value="">Category —</option>
-                        {TAPROOT_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-                      </Select>
+                        placeholder="Category —"
+                        options={TAPROOT_CATEGORIES.map((c) => ({ value: c, label: c }))}
+                      />
                       <Input
                         value={rc.subcategory}
                         onChange={(e) => setRcEntry(ci, ri, { subcategory: e.target.value })}
@@ -941,16 +1028,32 @@ function TapRootEditor({
                         disabled={readOnly}
                       />
                       {!readOnly && (
-                        <button type="button" onClick={() => removeRcEntry(ci, ri)} className="text-slate-400 hover:text-rose-600 mt-1 col-span-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeRcEntry(ci, ri)}
+                          aria-label="Remove root-cause entry"
+                          title="Remove root-cause entry"
+                          className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-1 col-span-1"
+                        >
                           <X size={11} />
-                        </button>
+                        </Button>
                       )}
                     </div>
                   ))}
                   {!readOnly && (
-                    <button type="button" onClick={() => addRcEntry(ci)} className="text-[11px] text-primary-700 hover:text-primary-900">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => addRcEntry(ci)}
+                      aria-label="Add root-cause entry"
+                      title="Add root-cause entry"
+                      className="h-auto w-auto p-0 hover:bg-transparent text-primary-700 hover:text-primary-900"
+                    >
                       <Plus size={11} className="inline" /> Add tree entry
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
@@ -990,9 +1093,17 @@ function TapRootEditor({
                   disabled={readOnly}
                 />
                 {!readOnly && (
-                  <button type="button" onClick={() => update({ correctiveActions: data.correctiveActions.filter((_, idx) => idx !== i) })} className="text-slate-400 hover:text-rose-600 mt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => update({ correctiveActions: data.correctiveActions.filter((_, idx) => idx !== i) })}
+                    aria-label="Remove corrective action"
+                    title="Remove corrective action"
+                    className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-2"
+                  >
                     <X size={13} />
-                  </button>
+                  </Button>
                 )}
               </div>
             ))}
@@ -1035,9 +1146,17 @@ function SimpleStringList({
           <div key={i} className="flex items-start gap-1">
             <Input value={v} onChange={(e) => set(i, e.target.value)} placeholder={placeholder ?? "Item..."} disabled={readOnly} />
             {!readOnly && (
-              <button type="button" onClick={() => remove(i)} className="text-slate-400 hover:text-rose-600 mt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => remove(i)}
+                aria-label="Remove entry"
+                title="Remove entry"
+                className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-2"
+              >
                 <X size={13} />
-              </button>
+              </Button>
             )}
           </div>
         ))}
@@ -1207,12 +1326,28 @@ function CauseNodeRow({
         />
         {!readOnly && (
           <>
-            <button type="button" onClick={() => addNode(node.id)} className="text-primary-700 hover:text-primary-900 mt-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => addNode(node.id)}
+              aria-label="Add child node"
+              title="Add child node"
+              className="h-auto w-auto p-0 hover:bg-transparent text-primary-700 hover:text-primary-900 mt-1"
+            >
               <Plus size={13} />
-            </button>
-            <button type="button" onClick={() => removeNode(node.id)} className="text-slate-400 hover:text-rose-600 mt-1">
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={() => removeNode(node.id)}
+              aria-label="Remove node"
+              title="Remove node"
+              className="h-auto w-auto p-0 hover:bg-transparent text-slate-400 hover:text-rose-600 mt-1"
+            >
               <Trash2 size={12} />
-            </button>
+            </Button>
           </>
         )}
       </div>

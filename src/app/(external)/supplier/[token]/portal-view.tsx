@@ -24,6 +24,10 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type Finding = {
   id: string;
@@ -150,7 +154,7 @@ export function SupplierPortalView({ token }: { token: string }) {
           {audit.closedAt ? ` · completed ${audit.closedAt.slice(0, 10)}` : ""}
         </p>
 
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <p className="text-sm leading-relaxed text-slate-700">
             {findings.length === 0 ? (
               <>No issues were raised that need action from you.</>
@@ -173,7 +177,7 @@ export function SupplierPortalView({ token }: { token: string }) {
               This link works until {data.expiresAt.slice(0, 10)}.
             </p>
           )}
-        </div>
+        </Card>
       </header>
 
       <div className="space-y-3">
@@ -295,11 +299,9 @@ function FindingCard({
 
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <button
+      <Button variant="ghost"
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-start gap-3 p-4 text-left"
-      >
+        onClick={() => setOpen((v) => !v)} className="flex w-full items-start gap-3 p-4 text-left">
         <span className={cn("mt-0.5 shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", sev.cls)}>
           {sev.label}
         </span>
@@ -319,7 +321,7 @@ function FindingCard({
             className={cn("text-slate-400 transition-transform", open && "rotate-180")}
           />
         </span>
-      </button>
+      </Button>
 
       {open && (
         <div className="space-y-3 border-t border-slate-100 px-4 pb-4 pt-3">
@@ -345,7 +347,7 @@ function FindingCard({
                 What you have sent
               </div>
               {submissions.map((s) => (
-                <div key={s.id} className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-[12px]">
+                <Alert variant="success" key={s.id} className="rounded-lg border border-emerald-200 bg-emerald-50/60 p-2 text-[12px]">
                   <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
                     {s.kind === "EVIDENCE" ? <Paperclip size={11} /> : <MessageSquare size={11} />}
                     {s.submittedAt?.slice(0, 10)}
@@ -355,15 +357,15 @@ function FindingCard({
                   </div>
                   {s.fileName && <div className="mt-0.5 font-medium text-slate-700">{s.fileName}</div>}
                   {s.body && <div className="mt-0.5 whitespace-pre-wrap text-slate-600">{s.body}</div>}
-                </div>
+                </Alert>
               ))}
             </div>
           )}
 
           <div>
-            <label className="text-[12px] font-medium text-slate-700" htmlFor={`c-${finding.id}`}>
+            <Label className="text-[12px] font-medium text-slate-700" htmlFor={`c-${finding.id}`}>
               What have you done to fix this?
-            </label>
+            </Label>
             <Textarea
               id={`c-${finding.id}`}
               value={comment}
@@ -392,7 +394,7 @@ function FindingCard({
             >
               <Upload size={15} /> Attach proof
             </Button>
-            <input
+            <Input
               ref={fileRef}
               type="file"
               accept={ALLOWED.join(",")}
@@ -401,8 +403,7 @@ function FindingCard({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) void upload(file);
-              }}
-            />
+              }} />
           </div>
           <p className="text-[11px] text-slate-400">
             Photos or PDF, up to 10 MB. Anything typed above is sent with the file.

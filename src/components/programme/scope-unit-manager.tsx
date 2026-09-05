@@ -23,9 +23,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { readApiError } from "@/lib/client-errors";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
 import {
   siteText,
   type ApprovalBlocker, type ProgrammeCycleRow, type ScopeUnitRow,
@@ -84,23 +87,23 @@ export function ScopeUnitManager({
         <>
           {/* Desktop */}
           <Card className="hidden overflow-x-auto rounded-xl border border-slate-200 lg:block">
-            <table className="w-full text-sm">
-              <thead className="bg-slate-50 text-left text-xs text-slate-500">
-                <tr>
-                  <th className="px-3 py-2 font-medium">Scope unit</th>
-                  <th className="px-3 py-2 font-medium">Site</th>
-                  <th className="px-3 py-2 font-medium">Required / cycle</th>
-                  <th className="px-3 py-2 font-medium">Slots</th>
-                  <th className="px-3 py-2 font-medium">Risk</th>
-                  <th className="px-3 py-2 font-medium" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+            <Table className="w-full text-sm">
+              <TableHeader className="bg-slate-50 text-left text-xs text-slate-500">
+                <TableRow>
+                  <TableHead className="px-3 py-2 font-medium">Scope unit</TableHead>
+                  <TableHead className="px-3 py-2 font-medium">Site</TableHead>
+                  <TableHead className="px-3 py-2 font-medium">Required / cycle</TableHead>
+                  <TableHead className="px-3 py-2 font-medium">Slots</TableHead>
+                  <TableHead className="px-3 py-2 font-medium">Risk</TableHead>
+                  <TableHead className="px-3 py-2 font-medium" />
+                </TableRow>
+              </TableHeader>
+              <TableBody className="divide-y divide-slate-100">
                 {rows.map((u) => {
                   const bs = byUnit.get(u.id) ?? [];
                   return (
-                    <tr key={u.id} className={cn("hover:bg-slate-50/60", bs.length && "bg-amber-50/40")}>
-                      <td className="px-3 py-2">
+                    <TableRow key={u.id} className={cn("hover:bg-slate-50/60", bs.length && "bg-amber-50/40")}>
+                      <TableCell className="px-3 py-2">
                         <div className="font-medium text-slate-800">{u.dimensionLabel}</div>
                         <div className="text-[10px] text-slate-400">{u.dimensionKey}</div>
                         {bs.map((b) => (
@@ -108,9 +111,9 @@ export function ScopeUnitManager({
                             <AlertTriangle size={10} /> {stripLabel(b.message, u.dimensionLabel)}
                           </div>
                         ))}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-slate-600">{siteText(u, { short: true })}</td>
-                      <td className="px-3 py-2 text-xs">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-xs text-slate-600">{siteText(u, { short: true })}</TableCell>
+                      <TableCell className="px-3 py-2 text-xs">
                         {u.isWaived ? (
                           <span className="inline-flex items-center gap-1 rounded border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[11px] text-violet-700">
                             <ShieldOff size={10} /> waived
@@ -120,24 +123,24 @@ export function ScopeUnitManager({
                         ) : (
                           <span className="text-amber-700">not set</span>
                         )}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-slate-600">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-xs text-slate-600">
                         {slotCountByUnit[u.id] ?? 0}
-                      </td>
-                      <td className="px-3 py-2 text-xs text-slate-600">{u.riskWeight}</td>
-                      <td className="px-3 py-2 text-right">
+                      </TableCell>
+                      <TableCell className="px-3 py-2 text-xs text-slate-600">{u.riskWeight}</TableCell>
+                      <TableCell className="px-3 py-2 text-right">
                         {editable && (
                           <Button type="button" size="sm" variant="outline" className="h-7 text-[11px]"
                             onClick={() => setEditing(u)}>
                             <Pencil size={11} /> Edit
                           </Button>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </Card>
 
           {/* 390px card list */}
@@ -269,9 +272,9 @@ function EditScopeUnitDialog({
             </div>
             <div>
               <Label htmlFor="su-risk" className="text-xs">Risk weight</Label>
-              <Select id="su-risk" value={risk} onChange={(e) => setRisk(e.target.value)} className="mt-1">
-                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
-              </Select>
+              <SelectField id="su-risk" value={risk} onChange={setRisk} className="mt-1"
+                options={[1, 2, 3, 4, 5].map((n) => ({ value: String(n), label: n }))}
+              />
             </div>
           </div>
 
@@ -282,9 +285,9 @@ function EditScopeUnitDialog({
               className="mt-1 text-xs" />
           </div>
 
-          <div className="rounded-lg border border-slate-200 p-3">
-            <label className="flex items-start gap-2 text-xs">
-              <input type="checkbox" checked={waiving} onChange={(e) => setWaiving(e.target.checked)}
+          <Card className="rounded-lg border border-slate-200 p-3 shadow-none">
+            <Label className="flex items-start gap-2 text-xs">
+              <Checkbox checked={waiving} onChange={(e) => setWaiving(e.target.checked)}
                 className="mt-0.5" />
               <span>
                 <span className="font-medium text-slate-800">Waive this scope unit</span>
@@ -294,7 +297,7 @@ function EditScopeUnitDialog({
                   asks why this scope was never audited.
                 </span>
               </span>
-            </label>
+            </Label>
             {waiving && (
               <>
                 <Textarea rows={2} value={waiverReason} onChange={(e) => setWaiverReason(e.target.value)}
@@ -305,7 +308,7 @@ function EditScopeUnitDialog({
                 </p>
               </>
             )}
-          </div>
+          </Card>
 
           {nothingSet && (
             <p className="text-[11px] text-amber-700">
@@ -315,9 +318,9 @@ function EditScopeUnitDialog({
         </div>
 
         {err && (
-          <div className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+          <Alert variant="destructive" className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
             {err}
-          </div>
+          </Alert>
         )}
 
         <div className="mt-5 flex items-center justify-between gap-2">

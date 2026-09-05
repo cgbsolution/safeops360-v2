@@ -313,7 +313,7 @@ export function AssessmentTake({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+        <Card className="rounded-md border border-slate-200 bg-slate-50 p-3 shadow-none">
           <div className="flex items-start gap-2">
             <span className="bg-primary-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0">
               {q.sequence}
@@ -328,7 +328,7 @@ export function AssessmentTake({
           <div className="text-[11px] text-slate-500 mt-2 ml-8">
             Worth {q.marks} mark{q.marks === 1 ? "" : "s"}
           </div>
-        </div>
+        </Card>
 
         {(q.questionType === "MCQ_SINGLE" || q.questionType === "MCQ_MULTI") && (
           <div className="space-y-1.5">

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
 import {
   Leaf,
   ArrowLeft,
@@ -64,7 +66,7 @@ export default async function EaiDocsPage(
       />
 
       {/* Intro */}
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 mb-6 flex gap-4">
+      <Alert variant="success" className="rounded-xl border border-emerald-200 bg-emerald-50 p-5 mb-6 flex gap-4">
         <div className="shrink-0 inline-flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100">
           <Leaf className="text-emerald-600" size={22} />
         </div>
@@ -76,7 +78,7 @@ export default async function EaiDocsPage(
           scored on an impact matrix so the most <strong>significant</strong> aspects rise to
           the top and drive controls, compliance obligations, and periodic review.
         </div>
-      </div>
+      </Alert>
 
       {/* Step-by-step */}
       <h2 className="text-lg font-semibold text-slate-900 mb-3">The workflow</h2>
@@ -145,34 +147,34 @@ export default async function EaiDocsPage(
       </p>
       <Card className="mb-8">
         <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-600">
-              <tr>
-                <th className="text-left px-5 py-2.5">Band</th>
-                <th className="text-left px-5 py-2.5">Score range</th>
-                <th className="text-left px-5 py-2.5">Significant?</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-xs uppercase tracking-wider text-slate-600">
+              <TableRow>
+                <TableHead className="text-left px-5 py-2.5">Band</TableHead>
+                <TableHead className="text-left px-5 py-2.5">Score range</TableHead>
+                <TableHead className="text-left px-5 py-2.5">Significant?</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {BANDS.map((b) => (
-                <tr key={b.level}>
-                  <td className="px-5 py-2.5">
+                <TableRow key={b.level}>
+                  <TableCell className="px-5 py-2.5">
                     <span className={`inline-block px-2 py-0.5 text-xs rounded border ${b.color}`}>
                       {b.level}
                     </span>
-                  </td>
-                  <td className="px-5 py-2.5 text-slate-700">{b.range}</td>
-                  <td className="px-5 py-2.5 text-slate-700">
+                  </TableCell>
+                  <TableCell className="px-5 py-2.5 text-slate-700">{b.range}</TableCell>
+                  <TableCell className="px-5 py-2.5 text-slate-700">
                     {b.sig === "Significant" ? (
                       <span className="font-medium text-rose-700">{b.sig}</span>
                     ) : (
                       <span className="text-slate-400">{b.sig}</span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 
@@ -206,7 +208,7 @@ export default async function EaiDocsPage(
       </div>
 
       {/* CTA */}
-      <div className="rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 p-6 text-center">
+      <Alert variant="success" className="rounded-xl border-2 border-dashed border-emerald-200 bg-emerald-50/50 p-6 text-center">
         <div className="text-base font-semibold text-slate-800">Ready to start?</div>
         <p className="text-sm text-slate-500 mt-1 mb-4">
           Head back to the register and create your first EAI study for this plant.
@@ -216,7 +218,7 @@ export default async function EaiDocsPage(
             Go to EAI register <ArrowRight size={16} />
           </Link>
         </Button>
-      </div>
+      </Alert>
     </div>
   );
 }
@@ -233,7 +235,7 @@ function StepCard({
   body: string;
 }) {
   return (
-    <div className="flex gap-4 rounded-xl border bg-white p-4">
+    <Card className="flex gap-4 rounded-xl border bg-white p-4 shadow-none">
       <div className="shrink-0 flex flex-col items-center gap-1">
         <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-sm font-bold text-emerald-700">
           {n}
@@ -245,6 +247,6 @@ function StepCard({
         </div>
         <p className="text-sm text-slate-600 mt-1">{body}</p>
       </div>
-    </div>
+    </Card>
   );
 }

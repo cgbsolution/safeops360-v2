@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { ReportsView } from "./reports-view";
+import { Alert } from "@/components/ui/alert";
 import type {
   BuildingRegisterResponse,
   CertificationRegisterResponse,
@@ -52,7 +53,7 @@ export default async function FacilitiesReportsPage() {
         description="Canned exports of the factory estate — download as CSV (opens in Excel)."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <ReportsView factories={profiles!.items} social={social} buildings={buildings} certs={certs} />
       )}

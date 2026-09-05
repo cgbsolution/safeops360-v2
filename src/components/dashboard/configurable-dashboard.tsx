@@ -12,6 +12,14 @@ import {
 } from "@/lib/dashboard/widget-catalog";
 import { DASHBOARD_PRESETS, PRESET_KEYS, presetLayout } from "@/lib/dashboard/presets";
 import { DashboardWidget } from "./widgets/dashboard-widget";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 // ─────────────────────────────────────────────────────────────────────
 // ConfigurableDashboard (UI Depth sprint, Deliverable 3).
@@ -231,69 +239,67 @@ export function ConfigurableDashboard(props: ConfigurableDashboardProps) {
 
         <div className="flex flex-wrap items-center gap-2">
           {/* LIVE indicator */}
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
+          <Badge variant="success" className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
             LIVE
-          </span>
+          </Badge>
 
           {props.canPickPlant && props.plants.length > 0 && (
-            <select value={plant} onChange={(e) => setPlant(e.target.value)} className="form-select h-9 w-auto py-0 text-sm" aria-label="Plant filter">
-              <option value="">All Plants</option>
-              {props.plants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            <SelectField value={plant} onChange={(value) => setPlant(value)} className="form-select h-9 w-auto py-0 text-sm" aria-label="Plant filter"
+              placeholder="All Plants"
+              options={props.plants.map((p) => ({ value: String(p.id), label: `${p.name}` }))}
+            />
           )}
-          <button type="button" onClick={() => setRefreshKey((k) => k + 1)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 transition hover:bg-slate-50" title="Refresh all widgets">
+          <Button variant="outline" type="button" onClick={() => setRefreshKey((k) => k + 1)} className="h-9 gap-1.5 rounded-md px-3 text-sm" title="Refresh all widgets">
             <RefreshCw size={14} /> Refresh
-          </button>
+          </Button>
 
           {!editing ? (
             <>
               <div className="relative">
-                <button type="button" onClick={() => setPresetsOpen((v) => !v)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50">
+                <Button variant="outline" type="button" onClick={() => setPresetsOpen((v) => !v)} className="h-9 gap-1.5 rounded-md px-3 text-sm">
                   Presets <ChevronDown size={14} />
-                </button>
+                </Button>
                 {presetsOpen && (
-                  <div className="absolute right-0 z-30 mt-1 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
+                  <Card className="absolute right-0 z-30 mt-1 w-56 rounded-lg border border-slate-200 bg-white p-1 shadow-lg">
                     <div className="px-2 py-1 text-overline text-slate-400">Apply preset</div>
                     {PRESET_KEYS.map((k) => (
-                      <button key={k} type="button" onClick={() => applyPreset(k)} className="flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm text-slate-700 hover:bg-slate-50">
+                      <Button key={k} type="button" variant="ghost" onClick={() => applyPreset(k)}
+                        aria-pressed={basedOnPreset === k}
+                        className="h-auto w-full justify-between rounded px-2 py-1.5 text-left text-sm font-normal text-slate-700">
                         {DASHBOARD_PRESETS[k].label}
                         {basedOnPreset === k && <Check size={14} className="text-primary-600" />}
-                      </button>
+                      </Button>
                     ))}
-                  </div>
+                  </Card>
                 )}
               </div>
-              <button type="button" onClick={() => !props.editingLocked && setEditing(true)} disabled={props.editingLocked} className={cn("inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition", props.editingLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : "bg-primary-600 text-white hover:bg-primary-700")} title={props.editingLocked ? "Editing locked by administrator" : undefined}>
+              <Button variant="ghost" type="button" onClick={() => !props.editingLocked && setEditing(true)} disabled={props.editingLocked} className={cn("inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm font-medium transition", props.editingLocked ? "cursor-not-allowed bg-slate-100 text-slate-400" : "bg-primary-600 text-white hover:bg-primary-700")} title={props.editingLocked ? "Editing locked by administrator" : undefined}>
                 {props.editingLocked ? <Lock size={14} /> : <Pencil size={14} />} Edit Layout
-              </button>
+              </Button>
             </>
           ) : (
             <>
-              <button type="button" onClick={() => setGalleryOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50">
+              <Button variant="outline" type="button" onClick={() => setGalleryOpen(true)} className="h-9 gap-1.5 rounded-md px-3 text-sm">
                 <Plus size={14} /> Add Widget
-              </button>
+              </Button>
               {props.isAdmin && (
-                <button type="button" onClick={() => setAdminOpen(true)} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-700 transition hover:bg-slate-50">
+                <Button variant="outline" type="button" onClick={() => setAdminOpen(true)} className="h-9 gap-1.5 rounded-md px-3 text-sm">
                   <ShieldCheck size={14} /> Admin
-                </button>
+                </Button>
               )}
-              <button type="button" onClick={resetDefault} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 transition hover:bg-slate-50">
+              <Button variant="outline" type="button" onClick={resetDefault} className="h-9 gap-1.5 rounded-md px-3 text-sm">
                 <RotateCcw size={14} /> Reset
-              </button>
-              <button type="button" onClick={cancel} className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-3 text-sm text-slate-600 transition hover:bg-slate-50">
+              </Button>
+              <Button variant="outline" type="button" onClick={cancel} className="h-9 gap-1.5 rounded-md px-3 text-sm">
                 Cancel
-              </button>
-              <button type="button" onClick={save} disabled={saving} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary-600 px-3 text-sm font-medium text-white transition hover:bg-primary-700 disabled:opacity-60">
+              </Button>
+              <Button type="button" onClick={save} disabled={saving} className="h-9 gap-1.5 rounded-md px-3 text-sm">
                 <Save size={14} /> {saving ? "Saving…" : "Save Layout"}
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -301,7 +307,7 @@ export function ConfigurableDashboard(props: ConfigurableDashboardProps) {
 
       {/* ── Date range filter bar ──────────────────────────────── */}
       <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
+        <Card className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white p-1 shadow-sm">
           <Calendar size={13} className="ml-1.5 text-slate-400 flex-shrink-0" />
           {DATE_PRESETS.map((p) => (
             <button
@@ -318,26 +324,24 @@ export function ConfigurableDashboard(props: ConfigurableDashboardProps) {
               {p.label}
             </button>
           ))}
-        </div>
+        </Card>
 
         {datePreset === "custom" && (
-          <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
+          <Card className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
             <span className="text-xs text-slate-500">From</span>
-            <input
+            <Input
               type="date"
               value={customFrom}
               onChange={(e) => setCustomFrom(e.target.value)}
-              className="h-7 rounded border border-slate-200 px-2 text-xs text-slate-700 focus:border-primary-400 focus:outline-none"
-            />
+              className="h-7 rounded border border-slate-200 px-2 text-xs text-slate-700 focus:border-primary-400 focus:outline-none" />
             <span className="text-xs text-slate-400">–</span>
             <span className="text-xs text-slate-500">To</span>
-            <input
+            <Input
               type="date"
               value={customTo}
               onChange={(e) => setCustomTo(e.target.value)}
-              className="h-7 rounded border border-slate-200 px-2 text-xs text-slate-700 focus:border-primary-400 focus:outline-none"
-            />
-          </div>
+              className="h-7 rounded border border-slate-200 px-2 text-xs text-slate-700 focus:border-primary-400 focus:outline-none" />
+          </Card>
         )}
 
         {datePreset !== "custom" && (
@@ -347,23 +351,23 @@ export function ConfigurableDashboard(props: ConfigurableDashboardProps) {
         )}
       </div>
 
-      {status && <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{status}</div>}
+      {status && <Alert variant="success" className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{status}</Alert>}
       {editing && (
-        <div className="rounded-md border border-primary-200 bg-primary-50/60 px-3 py-2 text-xs text-primary-800">
+        <Card className="rounded-md border border-primary-200 bg-primary-50/60 px-3 py-2 text-xs text-primary-800 shadow-none">
           Edit mode — drag widgets to reorder, use the icons to resize or remove, and “Add Widget” to insert more. Changes are saved only when you click <strong>Save Layout</strong>.
-        </div>
+        </Card>
       )}
 
       {/* ── Grid ───────────────────────────────────────────────── */}
       {items.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center">
+        <Card className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center shadow-none">
           <p className="text-slate-600">Your dashboard is empty.</p>
           {editing && (
-            <button type="button" onClick={() => setGalleryOpen(true)} className="mt-3 inline-flex items-center gap-1.5 rounded-md bg-primary-600 px-3 py-2 text-sm text-white">
+            <Button variant="default" type="button" onClick={() => setGalleryOpen(true)} className="mt-3 gap-1.5 rounded-md px-3 py-2 text-sm text-white">
               <Plus size={14} /> Add a widget
-            </button>
+            </Button>
           )}
-        </div>
+        </Card>
       ) : (
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {items.map((it, i) => (
@@ -442,21 +446,21 @@ function WidgetGallery({ activeIds, onAdd, onClose }: { activeIds: Set<string>; 
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
-      <button type="button" aria-label="Close gallery" className="flex-1 bg-slate-900/20" onClick={onClose} />
+      <Button type="button" variant="ghost" aria-label="Close gallery" className="h-auto flex-1 rounded-none bg-slate-900/20 hover:bg-slate-900/30" onClick={onClose} />
       <div className="flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <div>
             <h2 className="text-heading-3 text-slate-800">Add a widget</h2>
             <p className="text-caption text-slate-500">{WIDGET_CATALOG.length} widgets available</p>
           </div>
-          <button type="button" onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
+          <Button variant="ghost" type="button" onClick={onClose} className="rounded p-1" aria-label="Close">
             <X size={18} />
-          </button>
+          </Button>
         </div>
         <div className="border-b border-slate-100 p-3">
           <div className="relative">
             <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search widgets…" className="form-input h-9 pl-8" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search widgets…" className="form-input h-9 pl-8" />
           </div>
         </div>
         <div className="flex-1 overflow-y-auto p-3">
@@ -520,30 +524,30 @@ function AdminPanel({ locked, editingLocked, onToggleLock, onClose }: { locked: 
   }
   return (
     <div className="fixed inset-0 z-40 flex justify-end">
-      <button type="button" aria-label="Close admin" className="flex-1 bg-slate-900/20" onClick={onClose} />
+      <Button type="button" variant="ghost" aria-label="Close admin" className="h-auto flex-1 rounded-none bg-slate-900/20 hover:bg-slate-900/30" onClick={onClose} />
       <div className="flex h-full w-full max-w-md flex-col border-l border-slate-200 bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <h2 className="text-heading-3 text-slate-800">Dashboard admin</h2>
-          <button type="button" onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100" aria-label="Close">
+          <Button variant="ghost" type="button" onClick={onClose} className="rounded p-1" aria-label="Close">
             <X size={18} />
-          </button>
+          </Button>
         </div>
         <div className="flex-1 overflow-y-auto p-4">
-          <label className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 p-3">
+          <Label className="mb-4 flex items-center justify-between rounded-lg border border-slate-200 p-3">
             <span>
               <span className="block text-sm font-medium text-slate-800">Lock editing</span>
               <span className="block text-caption text-slate-500">Prevent users from changing their layout.</span>
             </span>
-            <input type="checkbox" checked={editLock} onChange={toggleEditLock} className="h-4 w-4" />
-          </label>
+            <Checkbox checked={editLock} onChange={toggleEditLock} className="h-4 w-4" />
+          </Label>
           <div className="mb-1.5 text-overline text-slate-400">Mandatory widgets</div>
           <p className="mb-2 text-caption text-slate-500">Locked widgets are always shown and can’t be removed by users.</p>
           <div className="space-y-1">
             {WIDGET_CATALOG.map((w) => (
-              <label key={w.id} className="flex items-center justify-between rounded px-2 py-1.5 hover:bg-slate-50">
+              <Label key={w.id} className="flex items-center justify-between rounded px-2 py-1.5 hover:bg-slate-50">
                 <span className="truncate text-sm text-slate-700">{w.title}</span>
-                <input type="checkbox" checked={locked.includes(w.id)} onChange={() => onToggleLock(w.id)} className="h-4 w-4" />
-              </label>
+                <Checkbox checked={locked.includes(w.id)} onChange={() => onToggleLock(w.id)} className="h-4 w-4" />
+              </Label>
             ))}
           </div>
         </div>

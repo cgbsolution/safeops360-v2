@@ -7,9 +7,12 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { POLICY_TYPES, POLICY_TYPE_LABEL } from "@/app/(dashboard)/erm/lib-t3";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type PlantOption = { id: string; name: string };
 type RiskOption = { id: string; riskCode: string; title: string };
@@ -130,7 +133,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">New Policy</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} aria-label="Close" className="h-8 w-8 text-slate-400 hover:text-slate-700">
@@ -140,7 +143,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Policy name</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Policy name</Label>
             <Input
               value={policyName}
               onChange={(e) => setPolicyName(e.target.value)}
@@ -150,18 +153,15 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Policy type</label>
-              <Select
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Policy type</Label>
+              <SelectField
                 value={policyType}
-                onChange={(e) => setPolicyType(e.target.value)}
-              >
-                {POLICY_TYPES.map((t) => (
-                  <option key={t} value={t}>{POLICY_TYPE_LABEL[t] ?? t.replace(/_/g, " ")}</option>
-                ))}
-              </Select>
+                onChange={setPolicyType}
+                options={POLICY_TYPES.map((t) => ({ value: t, label: POLICY_TYPE_LABEL[t] ?? t.replace(/_/g, " ") }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Policy number</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Policy number</Label>
               <Input
                 value={policyNumber}
                 onChange={(e) => setPolicyNumber(e.target.value)}
@@ -172,7 +172,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Insurer</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Insurer</Label>
               <Input
                 value={insurerName}
                 onChange={(e) => setInsurerName(e.target.value)}
@@ -180,7 +180,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Broker (optional)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Broker (optional)</Label>
               <Input
                 value={brokerName}
                 onChange={(e) => setBrokerName(e.target.value)}
@@ -191,7 +191,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Sum insured (₹)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Sum insured (₹)</Label>
               <Input
                 type="number"
                 min={0}
@@ -200,7 +200,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Annual premium (₹)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Annual premium (₹)</Label>
               <Input
                 type="number"
                 min={0}
@@ -209,7 +209,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Deductible (₹, optional)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Deductible (₹, optional)</Label>
               <Input
                 type="number"
                 min={0}
@@ -221,7 +221,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Coverage start</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Coverage start</Label>
               <Input
                 type="date"
                 value={coverageStartDate}
@@ -229,7 +229,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Coverage end</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Coverage end</Label>
               <Input
                 type="date"
                 value={coverageEndDate}
@@ -237,7 +237,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Renewal lead (days)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Renewal lead (days)</Label>
               <Input
                 type="number"
                 min={0}
@@ -249,62 +249,62 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
           <p className="-mt-2 text-[11px] text-slate-400">Coverage end must be after the start date.</p>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Owner</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Owner</Label>
             <UserPicker value={ownerId} onChange={(id) => setOwnerId(id)} placeholder="Select policy owner" />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Site scope</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Site scope</Label>
             {plants.length === 0 ? (
               <p className="text-xs text-slate-400">No sites available.</p>
             ) : (
-              <div className="max-h-32 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+              <Card className="max-h-32 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2 shadow-none">
                 {plants.map((p) => (
-                  <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
+                  <Label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
                     <Checkbox checked={siteScope.includes(p.id)} onChange={() => toggleSite(p.id)} />
                     <span className="text-slate-700">{p.name}</span>
-                  </label>
+                  </Label>
                 ))}
-              </div>
+              </Card>
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Covered risks</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Covered risks</Label>
             {risks.length === 0 ? (
               <p className="text-xs text-slate-400">No risks available.</p>
             ) : (
-              <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+              <Card className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2 shadow-none">
                 {risks.map((r) => (
-                  <label key={r.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
+                  <Label key={r.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
                     <Checkbox checked={coveredRiskIds.includes(r.id)} onChange={() => toggleRisk(r.id)} />
                     <span className="font-medium text-primary-700">{r.riskCode}</span>
                     <span className="truncate text-slate-600">{r.title}</span>
-                  </label>
+                  </Label>
                 ))}
-              </div>
+              </Card>
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Covered processes</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Covered processes</Label>
             {procs.length === 0 ? (
               <p className="text-xs text-slate-400">No processes available.</p>
             ) : (
-              <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+              <Card className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2 shadow-none">
                 {procs.map((p) => (
-                  <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
+                  <Label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
                     <Checkbox checked={coveredProcessIds.includes(p.id)} onChange={() => toggleProc(p.id)} />
                     <span className="font-medium text-primary-700">{p.processCode}</span>
                     <span className="truncate text-slate-600">{p.name}</span>
-                  </label>
+                  </Label>
                 ))}
-              </div>
+              </Card>
             )}
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Key exclusions (one per line)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Key exclusions (one per line)</Label>
             <Textarea
               value={exclusionsText}
               onChange={(e) => setExclusionsText(e.target.value)}
@@ -313,7 +313,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
             />
           </div>
 
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
@@ -324,7 +324,7 @@ function NewPolicyModal({ onClose, onDone }: { onClose: () => void; onDone: (id:
             {busy ? "Creating…" : "Create policy"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

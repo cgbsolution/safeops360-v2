@@ -20,6 +20,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { moduleForPath } from "@/lib/licensing/route-map";
 import { useLicence, type LicenceStatusView } from "./licence-provider";
+import { Card } from "@/components/ui/card";
 
 export function ModuleRouteGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -51,7 +52,7 @@ export function ModuleRouteGuard({ children }: { children: React.ReactNode }) {
         title="Not included in your edition"
         description="This module isn’t part of your current licence"
       />
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 max-w-2xl">
+      <Card className="rounded-xl border border-slate-200 bg-white px-6 py-8 max-w-2xl shadow-none">
         <div className="flex items-center gap-2 font-semibold text-slate-800 mb-2">
           <Lock size={18} className="text-slate-500" />
           This module isn’t enabled on your licence
@@ -72,7 +73,7 @@ export function ModuleRouteGuard({ children }: { children: React.ReactNode }) {
             </Button>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -99,7 +100,7 @@ function SuperAdminBlocked({
         title={isScreen ? "Screen not enabled" : "Module not enabled"}
         description={`This ${what} is turned off for your organisation`}
       />
-      <div className="rounded-xl border border-slate-200 bg-white px-6 py-8 max-w-2xl">
+      <Card className="rounded-xl border border-slate-200 bg-white px-6 py-8 max-w-2xl shadow-none">
         <div className="flex items-center gap-2 font-semibold text-slate-800 mb-2">
           <ShieldOff size={18} className="text-amber-600" />
           Please contact your Super Admin to request access to this {what}.
@@ -120,7 +121,7 @@ function SuperAdminBlocked({
             </Button>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

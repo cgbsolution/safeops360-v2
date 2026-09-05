@@ -22,6 +22,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Can } from "@/components/auth/can";
+import { SelectField } from "@/components/ui/select-field";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 // Adding an asset to the fire register is FIRE.CREATE — not the INCIDENT.UPDATE
 // this borrowed before the dedicated grants existed. Same code the backend route
@@ -198,9 +204,9 @@ export function NewEquipmentDialog({
       }}
     >
       <DialogTrigger asChild>
-        <button className="rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700">
+        <Button size="sm" className="rounded-lg text-xs">
           + Add Equipment
-        </button>
+        </Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
@@ -214,32 +220,30 @@ export function NewEquipmentDialog({
 
         <form onSubmit={onSubmit} className="space-y-4">
           {error && (
-            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+            <Alert variant="destructive" size="lg" className="rounded-lg border-rose-300 text-rose-900">
               {error}
-            </div>
+            </Alert>
           )}
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className={LABEL}>Plant *</label>
-              <select className={FIELD} value={plantId} onChange={(e) => setPlantId(e.target.value)}>
-                {plants.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.code})
-                  </option>
-                ))}
-              </select>
+              <Label variant="eyebrow">Plant *</Label>
+              <SelectField
+                value={plantId}
+                onChange={setPlantId}
+                ariaLabel="Plant"
+                options={plants.map((p) => ({ value: p.id, label: `${p.name} (${p.code})` }))}
+              />
             </div>
             <div>
-              <label className={LABEL}>Zone</label>
-              <select className={FIELD} value={zoneId} onChange={(e) => setZoneId(e.target.value)}>
-                <option value="">— Unzoned —</option>
-                {zones.map((z) => (
-                  <option key={z.id} value={z.id}>
-                    {z.zoneCode} — {z.name}
-                  </option>
-                ))}
-              </select>
+              <Label variant="eyebrow">Zone</Label>
+              <SelectField
+                value={zoneId}
+                onChange={setZoneId}
+                ariaLabel="Zone"
+                placeholder="— Unzoned —"
+                options={zones.map((z) => ({ value: z.id, label: `${z.zoneCode} — ${z.name}` }))}
+              />
               {!zones.length && (
                 <p className="mt-1 text-[11px] text-slate-400">
                   No zones defined for this plant yet. Unzoned assets are excluded from the hot-work
@@ -249,19 +253,17 @@ export function NewEquipmentDialog({
             </div>
 
             <div>
-              <label className={LABEL}>Type *</label>
-              <select className={FIELD} value={type} onChange={(e) => setType(e.target.value)}>
-                {ASSET_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </select>
+              <Label variant="eyebrow">Type *</Label>
+              <SelectField
+                value={type}
+                onChange={setType}
+                ariaLabel="Asset type"
+                options={ASSET_TYPES.map((t) => ({ value: t, label: t.replace(/_/g, " ") }))}
+              />
             </div>
             <div>
-              <label className={LABEL}>Subtype</label>
-              <input
-                className={FIELD}
+              <Label variant="eyebrow">Subtype</Label>
+              <Input inputSize="compact"
                 value={assetSubtype}
                 onChange={(e) => setAssetSubtype(e.target.value)}
                 placeholder={SUBTYPE_HINTS[type] ?? "optional"}
@@ -269,9 +271,8 @@ export function NewEquipmentDialog({
             </div>
 
             <div className="sm:col-span-2">
-              <label className={LABEL}>Location *</label>
-              <input
-                className={FIELD}
+              <Label variant="eyebrow">Location *</Label>
+              <Input inputSize="compact"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
                 placeholder="Block-A — Stitching Floor, Col 4"
@@ -279,28 +280,27 @@ export function NewEquipmentDialog({
             </div>
 
             <div>
-              <label className={LABEL}>Make</label>
-              <input className={FIELD} value={make} onChange={(e) => setMake(e.target.value)} />
+              <Label variant="eyebrow">Make</Label>
+              <Input inputSize="compact" value={make} onChange={(e) => setMake(e.target.value)} />
             </div>
             <div>
-              <label className={LABEL}>Model</label>
-              <input className={FIELD} value={model} onChange={(e) => setModel(e.target.value)} />
+              <Label variant="eyebrow">Model</Label>
+              <Input inputSize="compact" value={model} onChange={(e) => setModel(e.target.value)} />
             </div>
             <div>
-              <label className={LABEL}>Serial no.</label>
-              <input className={FIELD} value={serialNo} onChange={(e) => setSerialNo(e.target.value)} />
+              <Label variant="eyebrow">Serial no.</Label>
+              <Input inputSize="compact" value={serialNo} onChange={(e) => setSerialNo(e.target.value)} />
             </div>
             <div>
-              <label className={LABEL}>Capacity / spec</label>
-              <input
-                className={FIELD}
+              <Label variant="eyebrow">Capacity / spec</Label>
+              <Input inputSize="compact"
                 value={capacitySpec}
                 onChange={(e) => setCapacitySpec(e.target.value)}
                 placeholder="6 kg ABC dry powder"
               />
             </div>
             <div>
-              <label className={LABEL}>Installed on</label>
+              <Label variant="eyebrow">Installed on</Label>
               <input
                 type="date"
                 className={FIELD}
@@ -309,9 +309,8 @@ export function NewEquipmentDialog({
               />
             </div>
             <div>
-              <label className={LABEL}>Maintenance contractor</label>
-              <input
-                className={FIELD}
+              <Label variant="eyebrow">Maintenance contractor</Label>
+              <Input inputSize="compact"
                 value={maintenanceContractor}
                 onChange={(e) => setMaintenanceContractor(e.target.value)}
               />

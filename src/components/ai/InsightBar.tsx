@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Insight, InsightKind, InsightSeverity } from "@/lib/insights";
+import { Button } from "@/components/ui/button";
 
 const KIND_ICON: Record<InsightKind, LucideIcon> = {
   trend: TrendingUp,
@@ -98,7 +99,7 @@ function InsightCard({
   const low = insight.confidence === "low";
 
   return (
-    <button
+    <Button variant="ghost"
       type="button"
       onClick={onToggle}
       title={insight.evidence}
@@ -109,8 +110,7 @@ function InsightCard({
         "hover:elevation-1",
         active && "ring-2 ring-primary-500 ring-offset-1",
         low && "opacity-70"
-      )}
-    >
+      )}>
       <span className={cn("mt-0.5 shrink-0", sev.icon)} aria-hidden>
         <Icon size={18} strokeWidth={2.25} />
       </span>
@@ -138,6 +138,6 @@ function InsightCard({
           <X size={14} />
         </span>
       )}
-    </button>
+    </Button>
   );
 }

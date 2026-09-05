@@ -10,10 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { PERSON_CLEAR, PersonSelect } from "@/components/ui/person-select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 import {
   AuditCategory, AuditCategoryCode, AuditLibrary, AuditTemplate, PlantUser,
   AUDIT_CATEGORY_FALLBACK, AUDIT_CATEGORY_ICON, SCOPE_PRESETS,
@@ -618,14 +620,11 @@ export function ScheduleModal({
               // the dialog that did not look like the others.
               <div className="mt-2">
                 <Field label="Owning site" required>
-                  <Select
+                  <SelectField
                     value={plantId ?? ""}
-                    onChange={(e) => setPlantId(e.target.value || null)}
-                  >
-                    {plants.map((x) => (
-                      <option key={x.id} value={x.id}>{x.code} — {x.name}</option>
-                    ))}
-                  </Select>
+                    onChange={(value) => setPlantId(value || null)}
+                    options={plants.map((x) => ({ value: x.id, label: `${x.code} — ${x.name}` }))}
+                  />
                   <p className="mt-1 text-[11px] text-slate-500">
                     The audit, its numbering and its checkpoints are created against this site.
                   </p>
@@ -717,7 +716,7 @@ export function ScheduleModal({
                   audit. Both are read from the payload, never from the
                   category code. */}
               {activeCategory?.library.segregation === "DEPARTMENT" && (
-                <div className="mt-1.5 space-y-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-600">
+                <Card className="mt-1.5 space-y-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-2 text-[11px] leading-relaxed text-slate-600 shadow-none">
                   <div>
                     Each <span className="font-medium text-slate-700">department</span> is audited
                     against both source sheets, and each checkpoint is answered{" "}
@@ -736,30 +735,21 @@ export function ScheduleModal({
                         .join(" and ")}.
                     </div>
                   )}
-                </div>
+                </Card>
               )}
             </Field>
           )}
 
           {subjectType === "VENDOR" && (
-            <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/50 p-3">
+            <Alert variant="warning" className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/50 p-3">
               <Field label="Supplier" required error={touched ? supplierError : null}>
-                <Select
+                <SelectField
                   value={vendorProfileId}
-                  onChange={(e) => setVendorProfileId(e.target.value)}
+                  onChange={setVendorProfileId}
                   aria-invalid={!!(touched && supplierError)}
-                >
-                  <option value="">
-                    {vendorsLoaded ? "— select a supplier —" : "Loading suppliers…"}
-                  </option>
-                  {vendors.map((v) => (
-                    <option key={v.vendorProfileId} value={v.vendorProfileId}>
-                      {v.legalName}
-                      {v.vendorCode ? ` (${v.vendorCode})` : ""}
-                      {v.criticality ? ` · ${v.criticality}` : ""}
-                    </option>
-                  ))}
-                </Select>
+                  placeholder={`${vendorsLoaded ? "— select a supplier —" : "Loading suppliers…"}`}
+                  options={vendors.map((v) => ({ value: v.vendorProfileId, label: `${v.legalName} ${v.vendorCode ? ` (${v.vendorCode})` : ""} ${v.criticality ? ` · ${v.criticality}` : ""}` }))}
+                />
                 {vendorsLoaded && vendors.length === 0 && (
                   <p className="mt-1 text-[11px] text-rose-600">
                     No suppliers are on record. Add one in Vendor Risk before scheduling
@@ -822,7 +812,7 @@ export function ScheduleModal({
                   in SafeOps360.
                 </p>
               </Field>
-            </div>
+            </Alert>
           )}
 
           {/* There is still NO checklist field. The audit CATEGORY above names
@@ -835,7 +825,7 @@ export function ScheduleModal({
               subject" is a content gap an admin has to fix and silently
               scheduling against nothing would be worse than saying so. */}
           {noLibraryForSubject && (
-            <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-3">
+            <Alert variant="warning" className="rounded-lg border border-dashed border-amber-300 bg-amber-50/60 p-3">
               <p className="text-[12px] font-medium text-amber-900">
                 {subjectType === "VENDOR"
                   ? "Supplier compliance checklist not yet configured — contact your admin."
@@ -869,7 +859,7 @@ export function ScheduleModal({
                   )}
                 </p>
               )}
-            </div>
+            </Alert>
           )}
 
           {/* Scope — selectable chips + preset shortcuts.
@@ -878,7 +868,7 @@ export function ScheduleModal({
               scheduler decides what the audit covers. */}
           {library && (
             <Field label={`${scopeAxisWords(library).Title} in scope — ${selectedDisc.length}/${library.categories.length} selected`} required error={touched ? disciplineError : null}>
-              <div className="rounded-xl border border-primary-200 bg-primary-50/60 p-3">
+              <Card className="rounded-xl border border-primary-200 bg-primary-50/60 p-3 shadow-none">
                 {/* Preset shortcuts */}
                 <div className="mb-2 flex flex-wrap items-center gap-1.5">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-primary-500">Presets</span>
@@ -919,19 +909,17 @@ export function ScheduleModal({
                     );
                   })}
                 </div>
-              </div>
+              </Card>
             </Field>
           )}
 
           {/* Optional template (sets audit type / standard) */}
           {industryTemplates.length > 0 && (
             <Field label="Template (optional)">
-              <Select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
-                <option value="">No template — full {scopeAxisWords(library).one} scope above</option>
-                {industryTemplates.map((t) => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
-              </Select>
+              <SelectField value={templateId} onChange={setTemplateId}
+                placeholder={`No template — full ${scopeAxisWords(library).one} scope above`}
+                options={industryTemplates.map((t) => ({ value: t.id, label: t.name }))}
+              />
               {template?.description && <p className="mt-1 text-[11px] text-slate-500">{template.description}</p>}
             </Field>
           )}
@@ -1030,7 +1018,7 @@ export function ScheduleModal({
               shown={coAuditorUsers.filter((u) => matchesQuery(u, coAuditorQuery)).length}
               total={coAuditorUsers.length}
             />
-            <div className="max-h-28 overflow-y-auto rounded-md border border-slate-200">
+            <Card className="max-h-28 overflow-y-auto rounded-md border border-slate-200 shadow-none">
               {coAuditorUsers.length === 0 && !assignableLoading && (
                 <div className="p-3 text-xs text-slate-400">No other authorised auditors at this plant.</div>
               )}
@@ -1061,9 +1049,9 @@ export function ScheduleModal({
                   </Button>
                 );
               })}
-            </div>
+            </Card>
             {coAuditorIds.length > 0 && library && (
-              <div className="mt-2 space-y-2 rounded-xl border border-primary-200 bg-primary-50/50 p-3">
+              <Card className="mt-2 space-y-2 rounded-xl border border-primary-200 bg-primary-50/50 p-3 shadow-none">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-semibold uppercase tracking-wide text-primary-500">Assign {scopeAxisWords(library).many} to each auditor</span>
                   <Button type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]" onClick={autoDistribute}>Distribute evenly</Button>
@@ -1101,7 +1089,7 @@ export function ScheduleModal({
                     </div>
                   );
                 })}
-              </div>
+              </Card>
             )}
           </Field>
           )}
@@ -1122,7 +1110,7 @@ export function ScheduleModal({
               shown={auditeeCandidates.filter((u) => matchesQuery(u, auditeeQuery)).length}
               total={auditeeCandidates.length}
             />
-            <div className="max-h-28 overflow-y-auto rounded-md border border-slate-200">
+            <Card className="max-h-28 overflow-y-auto rounded-md border border-slate-200 shadow-none">
               {auditeeCandidates.length === 0 && !assignableLoading && (
                 <div className="p-3 text-xs text-slate-400">No authorised auditees at this plant.</div>
               )}
@@ -1150,7 +1138,7 @@ export function ScheduleModal({
                   </Button>
                 );
               })}
-            </div>
+            </Card>
           </Field>
           )}
 
@@ -1372,7 +1360,7 @@ function EmailPartyField({
           // scheduler is still filling in is not an error yet.
           const bad = p.email.trim().length > 0 && !EMAIL_RE.test(p.email.trim());
           return (
-            <div key={i} className="rounded-lg border border-amber-200 bg-white p-2">
+            <Alert variant="warning" key={i} className="rounded-lg border border-amber-200 bg-white p-2">
               <div className="flex gap-2">
                 <Input
                   value={p.name}
@@ -1428,7 +1416,7 @@ function EmailPartyField({
                   )}
                 </div>
               )}
-            </div>
+            </Alert>
           );
         })}
       </div>

@@ -6,6 +6,8 @@ import { Wrench, AlertTriangle, Plus } from "lucide-react";
 import { requirePermission } from "@/lib/auth/server";
 import { Can } from "@/components/auth/can";
 import { EquipmentTable, type EquipmentRow } from "./equipment-table";
+import { Input } from "@/components/ui/input";
+import { SelectField } from "@/components/ui/select-field";
 
 export const dynamic = "force-dynamic";
 
@@ -105,27 +107,24 @@ export default async function EquipmentMasterPage(props: {
 
       <div className="mb-4 flex flex-wrap items-end gap-2">
         <form className="flex gap-2" action="/inspections/equipment">
-          <input
+          <Input
             name="q"
             defaultValue={sp.q ?? ""}
             placeholder="Search by name, code, serial…"
-            className="w-64 rounded-md border border-slate-200 px-3 py-2 text-sm"
+            className="w-64 rounded-md border border-slate-200 px-3 py-2 text-sm" />
+          <SelectField name="plant" defaultValue={sp.plant ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm"
+            placeholder="All plants"
+            options={plants.map((p) => ({ value: String(p.id), label: `${p.name}` }))}
           />
-          <select name="plant" defaultValue={sp.plant ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm">
-            <option value="">All plants</option>
-            {plants.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <select name="criticality" defaultValue={sp.criticality ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm">
-            <option value="">Any criticality</option>
-            <option value="A">A — Critical</option>
-            <option value="B">B — High</option>
-            <option value="C">C — Medium</option>
-            <option value="D">D — Low</option>
-          </select>
+          <SelectField name="criticality" defaultValue={sp.criticality ?? ""} className="rounded-md border border-slate-200 px-2 py-2 text-sm"
+            placeholder="Any criticality"
+            options={[
+            { value: "A", label: "A — Critical" },
+            { value: "B", label: "B — High" },
+            { value: "C", label: "C — Medium" },
+            { value: "D", label: "D — Low" }
+          ]}
+          />
           <Button type="submit" variant="ghost">Filter</Button>
         </form>
       </div>

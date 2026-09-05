@@ -14,6 +14,8 @@ import { InsightHero } from "@/components/observations/insight-hero";
 import { ObservationAnalyticsPanels } from "@/components/observations/analytics-panels";
 import { buildHeroFromRecords } from "@/lib/insight-hero-from-records";
 import { fetchInsights } from "@/lib/insights";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -197,19 +199,19 @@ export default async function HiraStudiesPage(
       {studies.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="overflow-x-auto rounded-xl border bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
-              <tr>
-                <th className="text-left px-4 py-3">Study</th>
-                <th className="text-left px-4 py-3">Scope</th>
-                <th className="text-left px-4 py-3">Status</th>
-                <th className="text-left px-4 py-3">Entries</th>
-                <th className="text-left px-4 py-3">Team Lead</th>
-                <th className="text-left px-4 py-3">Next Review</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
+        <Card className="overflow-x-auto rounded-xl border bg-white shadow-none">
+          <Table className="w-full text-sm">
+            <TableHeader className="bg-slate-50 text-slate-700 text-xs uppercase tracking-wider">
+              <TableRow>
+                <TableHead className="text-left px-4 py-3">Study</TableHead>
+                <TableHead className="text-left px-4 py-3">Scope</TableHead>
+                <TableHead className="text-left px-4 py-3">Status</TableHead>
+                <TableHead className="text-left px-4 py-3">Entries</TableHead>
+                <TableHead className="text-left px-4 py-3">Team Lead</TableHead>
+                <TableHead className="text-left px-4 py-3">Next Review</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody className="divide-y divide-slate-100">
               {visibleStudies.map((s) => {
                 const scopeBits = [
                   s.plant?.name,
@@ -217,8 +219,8 @@ export default async function HiraStudiesPage(
                   s.area?.name
                 ].filter(Boolean);
                 return (
-                  <tr key={s.id} className="hover:bg-slate-50">
-                    <td className="px-4 py-3">
+                  <TableRow key={s.id} className="hover:bg-slate-50">
+                    <TableCell className="px-4 py-3">
                       <Link
                         href={`/hira/${s.id}`}
                         className="font-medium text-primary-700 hover:underline"
@@ -228,8 +230,8 @@ export default async function HiraStudiesPage(
                       <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">
                         {s.title}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
                         {scopeBits.map((b) => (
                           <span
@@ -240,8 +242,8 @@ export default async function HiraStudiesPage(
                           </span>
                         ))}
                       </div>
-                    </td>
-                    <td className="px-4 py-3">
+                    </TableCell>
+                    <TableCell className="px-4 py-3">
                       <div className="flex flex-wrap items-center gap-1.5">
                         <span
                           className={`inline-block px-2 py-0.5 text-xs rounded border ${
@@ -254,20 +256,20 @@ export default async function HiraStudiesPage(
                           <SignalChip signal={insights.signalByRecord.get(s.id)!} href={`/hira/${s.id}`} />
                         )}
                       </div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">{s._count.entries}</td>
-                    <td className="px-4 py-3 text-slate-700">{s.teamLeader?.name ?? "—"}</td>
-                    <td className="px-4 py-3 text-slate-700">
+                    </TableCell>
+                    <TableCell className="px-4 py-3 text-slate-700">{s._count.entries}</TableCell>
+                    <TableCell className="px-4 py-3 text-slate-700">{s.teamLeader?.name ?? "—"}</TableCell>
+                    <TableCell className="px-4 py-3 text-slate-700">
                       {s.nextScheduledReviewDate
                         ? new Date(s.nextScheduledReviewDate).toLocaleDateString()
                         : "—"}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );
@@ -275,7 +277,7 @@ export default async function HiraStudiesPage(
 
 function EmptyState() {
   return (
-    <div className="rounded-xl border bg-white p-10 text-center">
+    <Card className="rounded-xl border bg-white p-10 text-center shadow-none">
       <div className="text-lg font-medium text-slate-700">No HIRA studies yet</div>
       <div className="text-sm text-slate-500 mt-2 max-w-xl mx-auto">
         A HIRA (Hazard Identification and Risk Assessment) study scopes a set of activities, identifies the hazards
@@ -291,6 +293,6 @@ function EmptyState() {
           </Button>
         </div>
       </Can>
-    </div>
+    </Card>
   );
 }

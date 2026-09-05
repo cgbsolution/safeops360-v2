@@ -2,6 +2,8 @@
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LabelList } from "recharts";
 import { SEVERITY_CHIP, labelize, engagementTypeLabel, type Analytics } from "../lib-cams";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 const SEV_HEX: Record<string, string> = {
   CRITICAL_NC: "#C0392B", MAJOR_NC: "#E67E22", MINOR_NC: "#E6A817",
@@ -12,23 +14,23 @@ function conformanceHex(pct: number) { return pct >= 90 ? "#2E8B57" : pct >= 75 
 function Kpi({ label, value, sub, tone = "slate" }: { label: string; value: string | number; sub?: string; tone?: string }) {
   const t: Record<string, string> = { slate: "text-slate-900", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", blue: "text-blue-700" };
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</div>
       <div className={"mt-1 text-2xl font-bold tabular-nums " + (t[tone] ?? t.slate)}>{value}</div>
       {sub && <div className="mt-0.5 text-xs text-slate-500">{sub}</div>}
-    </div>
+    </Card>
   );
 }
 
 function Panel({ title, children, hint }: { title: string; children: React.ReactNode; hint?: string }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-white">
+    <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
       <div className="border-b border-slate-100 px-4 py-2.5">
         <h2 className="text-sm font-semibold text-slate-800">{title}</h2>
         {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
       </div>
       <div className="p-4">{children}</div>
-    </div>
+    </Card>
   );
 }
 
@@ -71,25 +73,25 @@ export function AnalyticsView({ a }: { a: Analytics }) {
             </div>
           ) : <Empty />}
           <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead><tr className="text-left text-[10px] uppercase tracking-wider text-slate-400">
-                <th className="py-1 pr-2">Site</th><th className="py-1 pr-2 text-center">Conducted</th><th className="py-1 pr-2 text-center">Avg %</th>
-                <th className="py-1 pr-2 text-center">Findings</th><th className="py-1 pr-2 text-center">Density</th><th className="py-1 pr-2 text-center">Maj/Crit</th><th className="py-1 text-center">Repeat</th>
-              </tr></thead>
-              <tbody>
+            <Table className="w-full text-xs">
+              <TableHeader><TableRow className="text-left text-[10px] uppercase tracking-wider text-slate-400">
+                <TableHead className="py-1 pr-2">Site</TableHead><TableHead className="py-1 pr-2 text-center">Conducted</TableHead><TableHead className="py-1 pr-2 text-center">Avg %</TableHead>
+                <TableHead className="py-1 pr-2 text-center">Findings</TableHead><TableHead className="py-1 pr-2 text-center">Density</TableHead><TableHead className="py-1 pr-2 text-center">Maj/Crit</TableHead><TableHead className="py-1 text-center">Repeat</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
                 {a.benchmarkingBySite.map((b) => (
-                  <tr key={b.siteId ?? "corp"} className="border-t border-slate-100">
-                    <td className="py-1 pr-2 text-slate-700">{b.siteName}</td>
-                    <td className="py-1 pr-2 text-center tabular-nums">{b.auditsConducted}/{b.auditsPlanned}</td>
-                    <td className="py-1 pr-2 text-center font-semibold tabular-nums" style={{ color: b.avgScorePct != null ? conformanceHex(b.avgScorePct) : "#94a3b8" }}>{b.avgScorePct != null ? `${b.avgScorePct}%` : "—"}</td>
-                    <td className="py-1 pr-2 text-center tabular-nums">{b.findingCount}</td>
-                    <td className="py-1 pr-2 text-center tabular-nums">{b.findingDensity}</td>
-                    <td className="py-1 pr-2 text-center tabular-nums text-rose-700">{b.majorCriticalCount}</td>
-                    <td className="py-1 text-center tabular-nums text-rose-700">{b.repeatCount}</td>
-                  </tr>
+                  <TableRow key={b.siteId ?? "corp"} className="border-t border-slate-100">
+                    <TableCell className="py-1 pr-2 text-slate-700">{b.siteName}</TableCell>
+                    <TableCell className="py-1 pr-2 text-center tabular-nums">{b.auditsConducted}/{b.auditsPlanned}</TableCell>
+                    <TableCell className="py-1 pr-2 text-center font-semibold tabular-nums" style={{ color: b.avgScorePct != null ? conformanceHex(b.avgScorePct) : "#94a3b8" }}>{b.avgScorePct != null ? `${b.avgScorePct}%` : "—"}</TableCell>
+                    <TableCell className="py-1 pr-2 text-center tabular-nums">{b.findingCount}</TableCell>
+                    <TableCell className="py-1 pr-2 text-center tabular-nums">{b.findingDensity}</TableCell>
+                    <TableCell className="py-1 pr-2 text-center tabular-nums text-rose-700">{b.majorCriticalCount}</TableCell>
+                    <TableCell className="py-1 text-center tabular-nums text-rose-700">{b.repeatCount}</TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </Panel>
 

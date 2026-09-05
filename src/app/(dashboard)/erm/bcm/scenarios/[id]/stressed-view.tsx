@@ -16,6 +16,9 @@ import {
   type StressedHeatMap,
 } from "@/app/(dashboard)/erm/lib-p3";
 import { DIMENSION_LABEL } from "@/app/(dashboard)/erm/lib";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const CATEGORY_LABEL: Record<string, string> = {
   NATURAL_DISASTER: "Natural Disaster",
@@ -120,11 +123,11 @@ export function ScenarioDetailView({
   return (
     <div className="space-y-4">
       {banner && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{banner}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{banner}</Alert>
       )}
 
       {/* Header card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -184,10 +187,10 @@ export function ScenarioDetailView({
             )}
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 lg:col-span-2 shadow-none">
           <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Narrative</h3>
           <p className="whitespace-pre-wrap text-sm text-slate-700">{scenario.narrative || "—"}</p>
 
@@ -220,10 +223,10 @@ export function ScenarioDetailView({
               </TableBody>
             </Table>
           )}
-        </div>
+        </Card>
 
         <div className="space-y-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Affected risks</h3>
             {scenario.affectedRiskIds.length === 0 ? (
               <p className="text-xs text-slate-400">None linked.</p>
@@ -243,8 +246,8 @@ export function ScenarioDetailView({
                 })}
               </ul>
             )}
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          </Card>
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Affected processes</h3>
             {scenario.affectedProcessIds.length === 0 ? (
               <p className="text-xs text-slate-400">None linked.</p>
@@ -264,14 +267,14 @@ export function ScenarioDetailView({
                 })}
               </ul>
             )}
-          </div>
+          </Card>
           {scenario.whatIfAdjustments.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 What-if stressors
               </h3>
               <p className="text-xs text-slate-500">{scenario.whatIfAdjustments.length} risk adjustment(s) defined.</p>
-            </div>
+            </Card>
           )}
         </div>
       </div>
@@ -324,9 +327,9 @@ function OverlayGrid({
                   >
                     {/* Ghosted baseline dot */}
                     {baseCount > 0 && (
-                      <span className="absolute left-1 top-1 rounded-full bg-white/40 px-1 text-[9px] font-semibold text-white/90 ring-1 ring-white/50">
+                      <Badge variant="neutral" className="absolute left-1 top-1 rounded-full bg-white/40 px-1 text-[9px] font-semibold text-white/90 ring-1 ring-white/50">
                         {baseCount}
-                      </span>
+                      </Badge>
                     )}
                     {/* Solid stressed count */}
                     {stressCount > 0 && <span className="text-base">{stressCount}</span>}
@@ -419,7 +422,7 @@ function StressedOverlay({ heatmap, onClose }: { heatmap: StressedHeatMap; onClo
 
         <div className="mt-6 flex items-center gap-4 text-[11px] text-slate-400">
           <span className="inline-flex items-center gap-1.5">
-            <span className="rounded-full bg-white px-1 text-[9px] text-slate-600 ring-1 ring-slate-300">n</span>
+            <Badge variant="neutral" className="rounded-full bg-white px-1 text-[9px] text-slate-600 ring-1 ring-slate-300">n</Badge>
             baseline count (ghosted)
           </span>
           <span className="inline-flex items-center gap-1.5">

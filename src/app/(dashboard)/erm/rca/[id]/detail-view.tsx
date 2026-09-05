@@ -14,6 +14,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Card } from "@/components/ui/card";
 import {
   CONTRIB_LABEL, DOMAIN_COLOR, DOMAIN_LABEL, METHOD_LABEL, ORIGIN_LABEL, ROLE_LABEL, STATUS_CHIP,
   type CausalRole, type ContributionType, type RcaDetail, type SubCauseOut,
@@ -65,7 +68,7 @@ export function RcaWorkspace({ rca, subCauses, riskOptions }: {
   return (
     <div className="space-y-4">
       {/* Header card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="text-lg font-semibold text-slate-900">{rca.title}</h1>
@@ -87,8 +90,7 @@ export function RcaWorkspace({ rca, subCauses, riskOptions }: {
               </Button>
             )}
             {editable && rca.status !== "PEER_REVIEW" && (
-              <button onClick={() => run(() => call(`/api/erm/rca/${rca.id}/submit`, "POST"), "Submitted for peer review")} disabled={busy}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100"><Send size={15} /> Submit for review</button>
+              <Button variant="outline" onClick={() => run(() => call(`/api/erm/rca/${rca.id}/submit`, "POST"), "Submitted for peer review")} disabled={busy} className="gap-1.5 rounded-lg px-3 py-2 text-sm"><Send size={15} /> Submit for review</Button>
             )}
             {canApprove && rca.status !== "APPROVED" && (
               <Button type="button" variant="success" onClick={() => run(() => call(`/api/erm/rca/${rca.id}/approve`, "POST", { note: null }), "RCA approved")} disabled={busy} className="gap-1.5">
@@ -100,7 +102,7 @@ export function RcaWorkspace({ rca, subCauses, riskOptions }: {
         {rca.capaIds.length > 0 && (
           <p className="mt-2 text-xs text-slate-500">{rca.capaIds.length} corrective action(s) raised on the universal CAPA engine.</p>
         )}
-      </div>
+      </Card>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-slate-200">
@@ -129,7 +131,7 @@ export function RcaWorkspace({ rca, subCauses, riskOptions }: {
           ) : (
             <p className="text-sm text-slate-500">This methodology has no structured editor.</p>
           )}
-          {rca.narrative && <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600"><span className="font-medium">Executive summary:</span> {rca.narrative}</div>}
+          {rca.narrative && <Card className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600 shadow-none"><span className="font-medium">Executive summary:</span> {rca.narrative}</Card>}
           {editable && (
             <Button type="button" onClick={() => run(() => call(`/api/erm/rca/${rca.id}`, "PATCH", { analysisPayload: payload }), "Analysis saved")} disabled={busy}>
               Save analysis
@@ -150,16 +152,16 @@ function NarrativeEditor({ value, onChange, readOnly }: { value: Record<string, 
   const summary = (value.summary as string) ?? "";
   const factors = (value.factors as { description: string }[]) ?? [];
   return (
-    <div className="space-y-3 rounded-xl border border-slate-200 bg-white p-4">
+    <Card className="space-y-3 rounded-xl border border-slate-200 bg-white p-4 shadow-none">
       <div>
-        <label className="text-xs font-semibold text-slate-600">Causal narrative</label>
+        <Label className="text-xs font-semibold text-slate-600">Causal narrative</Label>
         <Textarea disabled={readOnly} value={summary} onChange={(e) => onChange({ ...value, summary: e.target.value })}
           className="mt-1 min-h-[90px] disabled:bg-slate-50"
           placeholder="The structured story of how the risk materialised / deteriorated…" />
       </div>
       <div>
         <div className="mb-1 flex items-center justify-between">
-          <label className="text-xs font-semibold text-slate-600">Contributing factors</label>
+          <Label className="text-xs font-semibold text-slate-600">Contributing factors</Label>
           {!readOnly && (
             <Button type="button" variant="ghost" onClick={() => onChange({ ...value, factors: [...factors, { description: "" }] })} className="h-auto gap-1 px-0 py-0 text-xs text-primary-700 hover:bg-transparent hover:text-primary-800">
               <Plus size={13} /> Add factor
@@ -182,7 +184,7 @@ function NarrativeEditor({ value, onChange, readOnly }: { value: Record<string, 
           {factors.length === 0 && <p className="text-xs text-slate-400">No factors yet.</p>}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -192,7 +194,7 @@ function CausesTab({ rca, subCauses, canTag, busy, run }: any) {
   const [confidence, setConfidence] = useState("CONFIRMED");
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
         <Table>
           <TableHeader>
             <TableRow>
@@ -223,27 +225,39 @@ function CausesTab({ rca, subCauses, canTag, busy, run }: any) {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       {canTag && (
-        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
+        <Card className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
           <div className="min-w-[220px] flex-1">
-            <label className="text-[11px] font-semibold text-slate-500">Sub-cause (scoped to {DOMAIN_LABEL[rca.primaryDomain]})</label>
-            <Select value={subCauseId} onChange={(e) => setSubCauseId(e.target.value)} className="mt-1">
-              <option value="">Select a sub-cause…</option>
-              {subCauses.map((s: SubCauseOut) => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </Select>
+            <Label className="text-[11px] font-semibold text-slate-500">Sub-cause (scoped to {DOMAIN_LABEL[rca.primaryDomain]})</Label>
+            <SelectField
+              value={subCauseId}
+              onChange={setSubCauseId}
+              ariaLabel="Sub-cause"
+              className="mt-1"
+              placeholder="Select a sub-cause…"
+              options={subCauses.map((s: SubCauseOut) => ({ value: s.id, label: s.name }))}
+            />
           </div>
           <div>
-            <label className="text-[11px] font-semibold text-slate-500">Role</label>
-            <Select value={role} onChange={(e) => setRole(e.target.value as CausalRole)} className="mt-1">
-              <option value="ROOT">Root cause</option><option value="CONTRIBUTING">Contributing</option><option value="DIRECT">Direct/immediate</option>
-            </Select>
+            <Label className="text-[11px] font-semibold text-slate-500">Role</Label>
+            <SelectField value={role} onChange={(value) => setRole(value as CausalRole)} className="mt-1"
+              options={[
+              { value: "ROOT", label: "Root cause" },
+              { value: "CONTRIBUTING", label: "Contributing" },
+              { value: "DIRECT", label: "Direct/immediate" }
+            ]}
+            />
           </div>
           <div>
-            <label className="text-[11px] font-semibold text-slate-500">Confidence</label>
-            <Select value={confidence} onChange={(e) => setConfidence(e.target.value)} className="mt-1">
-              <option value="CONFIRMED">Confirmed</option><option value="PROBABLE">Probable</option><option value="POSSIBLE">Possible</option>
-            </Select>
+            <Label className="text-[11px] font-semibold text-slate-500">Confidence</Label>
+            <SelectField value={confidence} onChange={setConfidence} className="mt-1"
+              options={[
+              { value: "CONFIRMED", label: "Confirmed" },
+              { value: "PROBABLE", label: "Probable" },
+              { value: "POSSIBLE", label: "Possible" }
+            ]}
+            />
           </div>
           <Button
             type="button"
@@ -253,7 +267,7 @@ function CausesTab({ rca, subCauses, canTag, busy, run }: any) {
           >
             <Plus size={15} /> Tag cause
           </Button>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -265,7 +279,7 @@ function RisksTab({ rca, riskOptions, canTag, busy, run }: any) {
   const [weight, setWeight] = useState("0.6");
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-none">
         <Table>
           <TableHeader>
             <TableRow>
@@ -297,24 +311,33 @@ function RisksTab({ rca, riskOptions, canTag, busy, run }: any) {
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       {canTag && (
-        <div className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
+        <Card className="flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-none">
           <div className="min-w-[240px] flex-1">
-            <label className="text-[11px] font-semibold text-slate-500">Risk this cause contributes to</label>
-            <Select value={riskId} onChange={(e) => setRiskId(e.target.value)} className="mt-1">
-              <option value="">Select a risk…</option>
-              {riskOptions.map((r: RiskOpt) => <option key={r.id} value={r.id}>{r.code} — {r.title}</option>)}
-            </Select>
+            <Label className="text-[11px] font-semibold text-slate-500">Risk this cause contributes to</Label>
+            <SelectField
+              value={riskId}
+              onChange={setRiskId}
+              ariaLabel="Risk"
+              className="mt-1"
+              placeholder="Select a risk…"
+              options={riskOptions.map((r: RiskOpt) => ({ value: r.id, label: `${r.code} — ${r.title}` }))}
+            />
           </div>
           <div>
-            <label className="text-[11px] font-semibold text-slate-500">Contribution</label>
-            <Select value={contribution} onChange={(e) => setContribution(e.target.value as ContributionType)} className="mt-1">
-              <option value="CAUSED">Caused</option><option value="ELEVATED">Elevated</option><option value="REVEALED">Revealed</option><option value="RECURRING_DRIVER">Recurring driver</option>
-            </Select>
+            <Label className="text-[11px] font-semibold text-slate-500">Contribution</Label>
+            <SelectField value={contribution} onChange={(value) => setContribution(value as ContributionType)} className="mt-1"
+              options={[
+              { value: "CAUSED", label: "Caused" },
+              { value: "ELEVATED", label: "Elevated" },
+              { value: "REVEALED", label: "Revealed" },
+              { value: "RECURRING_DRIVER", label: "Recurring driver" }
+            ]}
+            />
           </div>
           <div>
-            <label className="text-[11px] font-semibold text-slate-500">Weight (0–1)</label>
+            <Label className="text-[11px] font-semibold text-slate-500">Weight (0–1)</Label>
             <Input value={weight} onChange={(e) => setWeight(e.target.value)} className="mt-1 w-20" />
           </div>
           <Button
@@ -325,7 +348,7 @@ function RisksTab({ rca, riskOptions, canTag, busy, run }: any) {
           >
             <Plus size={15} /> Link risk
           </Button>
-        </div>
+        </Card>
       )}
     </div>
   );
@@ -357,12 +380,17 @@ function RaiseCapaModal({ rca, onClose, onDone }: { rca: RcaDetail; onClose: () 
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-slate-400 hover:text-slate-700">✕</Button>
         </div>
         <div className="space-y-3 p-4">
-          <div><label className="text-xs font-semibold text-slate-600">Title</label><Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Problem statement</label><Textarea value={problem} onChange={(e) => setProblem(e.target.value)} className="mt-1" /></div>
-          <div><label className="text-xs font-semibold text-slate-600">Severity</label>
-            <Select value={severity} onChange={(e) => setSeverity(e.target.value)} className="mt-1">
-              <option value="LOW">Low</option><option value="MODERATE">Moderate</option><option value="HIGH">High</option><option value="CRITICAL">Critical</option>
-            </Select>
+          <div><Label className="text-xs font-semibold text-slate-600">Title</Label><Input value={title} onChange={(e) => setTitle(e.target.value)} className="mt-1" /></div>
+          <div><Label className="text-xs font-semibold text-slate-600">Problem statement</Label><Textarea value={problem} onChange={(e) => setProblem(e.target.value)} className="mt-1" /></div>
+          <div><Label className="text-xs font-semibold text-slate-600">Severity</Label>
+            <SelectField value={severity} onChange={setSeverity} className="mt-1"
+              options={[
+              { value: "LOW", label: "Low" },
+              { value: "MODERATE", label: "Moderate" },
+              { value: "HIGH", label: "High" },
+              { value: "CRITICAL", label: "Critical" }
+            ]}
+            />
           </div>
           <p className="text-xs text-slate-400">Creates a CAPA (sourceType ENTERPRISE_RCA) on the one corrective-action engine — it appears in the CAPA register.</p>
           <Button type="button" onClick={submit} disabled={busy || !title || !problem} className="w-full">{busy ? "Raising…" : "Raise CAPA"}</Button>

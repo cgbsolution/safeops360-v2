@@ -6,9 +6,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { cn } from "@/lib/utils";
 import { ArrowLeft, Loader2, HardHat } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const TRADE_CATEGORIES = [
   "Civil",
@@ -127,13 +129,13 @@ export default function NewContractorPage() {
 
       <form onSubmit={handleSubmit} className="max-w-3xl space-y-6">
         {error && (
-          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+          <Alert variant="destructive" className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
             {error}
-          </div>
+          </Alert>
         )}
 
         {/* Company Identity */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Company Identity</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -191,23 +193,20 @@ export default function NewContractorPage() {
             </div>
             <div>
               <Label htmlFor="sizeCategory">Company Size</Label>
-              <Select
+              <SelectField
                 id="sizeCategory"
                 value={form.sizeCategory}
-                onChange={(e) => set("sizeCategory", e.target.value)}
+                onChange={(value) => set("sizeCategory", value)}
                 className="mt-1"
-              >
-                <option value="">Select size...</option>
-                {SIZE_CATEGORIES.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
-                ))}
-              </Select>
+                placeholder="Select size..."
+                options={SIZE_CATEGORIES.map((s) => ({ value: String(s.value), label: s.label }))}
+              />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Trade Categories */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-1">Trade Categories *</h2>
           <p className="text-xs text-slate-500 mb-4">Select all trades this company can perform.</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -236,10 +235,10 @@ export default function NewContractorPage() {
               Selected: {form.tradeCategories.join(", ")}
             </p>
           )}
-        </div>
+        </Card>
 
         {/* Contact Information */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Contact Information</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -277,10 +276,10 @@ export default function NewContractorPage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         {/* Safety Officer */}
-        <div className="rounded-xl border bg-white shadow-sm p-5">
+        <Card className="rounded-xl border bg-white shadow-sm p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">Safety Officer</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -305,7 +304,7 @@ export default function NewContractorPage() {
               />
             </div>
           </div>
-        </div>
+        </Card>
 
         <div className="flex gap-3">
           <Button type="submit" disabled={submitting} className="min-w-36">

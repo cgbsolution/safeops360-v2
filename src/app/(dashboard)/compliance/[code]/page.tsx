@@ -5,6 +5,8 @@ import { AccessRestricted } from "@/components/access-restricted";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { PrintButton } from "@/components/ui/print-button";
 import { ChevronLeft, FileDown, History } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -168,54 +170,54 @@ export default async function RegisterViewPage(props: {
       <div className="border-b-2 border-slate-900 pb-3 mb-4">
         <div className="text-[11px] uppercase tracking-widest text-slate-500">{reg.legalAct}{reg.sectionRule ? ` · ${reg.sectionRule}` : ""}</div>
         <h2 className="text-2xl font-bold text-slate-900 mt-0.5">{reg.registerName}</h2>
-        <table className="mt-2 text-sm">
-          <tbody>
-            <tr>
-              <td className="pr-4 text-slate-500">Factory / Plant</td>
-              <td className="font-medium text-slate-900">{plant ? `${plant.name} (${plant.code})` : plantId}</td>
-              <td className="pl-8 pr-4 text-slate-500">Factory Licence No.</td>
-              <td className="font-medium text-slate-900">____________________</td>
-            </tr>
-            <tr>
-              <td className="pr-4 text-slate-500">Total entries</td>
-              <td className="font-medium text-slate-900">{rows.length}</td>
-              <td className="pl-8 pr-4 text-slate-500">Generated</td>
-              <td className="font-medium text-slate-900">{new Date().toLocaleDateString()}</td>
-            </tr>
-          </tbody>
-        </table>
+        <Table className="mt-2 text-sm">
+          <TableBody>
+            <TableRow>
+              <TableCell className="pr-4 text-slate-500">Factory / Plant</TableCell>
+              <TableCell className="font-medium text-slate-900">{plant ? `${plant.name} (${plant.code})` : plantId}</TableCell>
+              <TableCell className="pl-8 pr-4 text-slate-500">Factory Licence No.</TableCell>
+              <TableCell className="font-medium text-slate-900">____________________</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell className="pr-4 text-slate-500">Total entries</TableCell>
+              <TableCell className="font-medium text-slate-900">{rows.length}</TableCell>
+              <TableCell className="pl-8 pr-4 text-slate-500">Generated</TableCell>
+              <TableCell className="font-medium text-slate-900">{new Date().toLocaleDateString()}</TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Prescribed-format register table */}
       {rows.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-slate-200 bg-white py-10 text-center text-sm text-slate-500">
+        <Card className="rounded-lg border-2 border-dashed border-slate-200 bg-white py-10 text-center text-sm text-slate-500 shadow-none">
           No entries. This register populates automatically from {reg.registerName.includes("Accident") ? "the Incident module" : "its source module"}.
-        </div>
+        </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-slate-300">
-          <table className="w-full text-xs border-collapse">
-            <thead className="bg-slate-100 text-slate-800">
-              <tr>
+        <Card className="overflow-x-auto rounded-lg border border-slate-300 shadow-none">
+          <Table className="w-full text-xs border-collapse">
+            <TableHeader className="bg-slate-100 text-slate-800">
+              <TableRow>
                 {cols.map((c) => (
-                  <th key={c.key} className="border border-slate-300 px-2 py-2 text-left font-semibold">
+                  <TableHead key={c.key} className="border border-slate-300 px-2 py-2 text-left font-semibold">
                     {c.label}
-                  </th>
+                  </TableHead>
                 ))}
-                <th className="border border-slate-300 px-2 py-2 text-left font-semibold print:hidden">Source</th>
-              </tr>
-            </thead>
-            <tbody>
+                <TableHead className="border border-slate-300 px-2 py-2 text-left font-semibold print:hidden">Source</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {rows.map((e) => (
-                <tr key={e.id} className="even:bg-slate-50/60">
+                <TableRow key={e.id} className="even:bg-slate-50/60">
                   {cols.map((c) => (
-                    <td key={c.key} className="border border-slate-200 px-2 py-1.5 align-top text-slate-700">
+                    <TableCell key={c.key} className="border border-slate-200 px-2 py-1.5 align-top text-slate-700">
                       {formatCell(e.fields[c.key])}
                       {c.key === "injuredPersonName" && e.isManualCorrection && (
                         <span title="Manually corrected" className="ml-1 text-amber-600">✎</span>
                       )}
-                    </td>
+                    </TableCell>
                   ))}
-                  <td className="border border-slate-200 px-2 py-1.5 print:hidden">
+                  <TableCell className="border border-slate-200 px-2 py-1.5 print:hidden">
                     {sourceHref(e.sourceModule, e.sourceTransactionId) ? (
                       <Link
                         href={sourceHref(e.sourceModule, e.sourceTransactionId)!}
@@ -226,12 +228,12 @@ export default async function RegisterViewPage(props: {
                     ) : (
                       <span className="font-mono text-slate-500">{e.sourceRef}</span>
                     )}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
 
       {/* Statutory footer — signatory block */}

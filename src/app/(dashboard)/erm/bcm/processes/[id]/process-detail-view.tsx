@@ -9,7 +9,7 @@ import { BandBadge } from "@/components/erm/shared";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
@@ -19,6 +19,9 @@ import {
   type ProcessDetail,
 } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const DIM_LABEL: Record<string, string> = {
   FINANCIAL: "Financial",
@@ -92,7 +95,7 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
       )}
 
       {/* Header card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className={"rounded border px-2 py-0.5 text-[11px] " + (CRITICALITY_CHIP[detail.criticality] ?? "")}>{detail.criticality}</span>
@@ -119,21 +122,21 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
             { label: "MTPD", value: fmtRto(detail.mtpdHours) },
             { label: "Next BIA review", value: detail.nextBiaReviewDate ? fmtDate(detail.nextBiaReviewDate) : "—" },
           ].map((m) => (
-            <div key={m.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <Card key={m.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{m.label}</p>
               <p className="text-sm font-semibold tabular-nums text-slate-800">{m.value}</p>
-            </div>
+            </Card>
           ))}
         </div>
         {detail.peakPeriods && <p className="mt-3 text-xs text-slate-500"><span className="font-medium text-slate-600">Peak periods:</span> {detail.peakPeriods}</p>}
         {detail.criticalityOverrideJustification && (
           <p className="mt-2 text-xs text-amber-700"><span className="font-medium">Criticality override:</span> {detail.criticalityOverrideJustification}</p>
         )}
-      </div>
+      </Card>
 
       {/* Impact profile */}
       {detail.impactProfile.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Impact over time</h2>
           <div className="overflow-x-auto">
             <Table className="w-full min-w-[480px] text-sm">
@@ -163,11 +166,11 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
               </TableBody>
             </Table>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Dependencies + SPOF */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-slate-900">
             Dependencies <span className="text-slate-400">({detail.dependencies.length})</span>
@@ -220,11 +223,11 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Covering plans */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Covering plans</h2>
           {detail.coveringPlans.length === 0 ? (
             <p className="py-3 text-sm text-rose-500">No continuity plan covers this process — coverage gap.</p>
@@ -238,10 +241,10 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
               ))}
             </ul>
           )}
-        </div>
+        </Card>
 
         {/* Linked risks */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 text-sm font-semibold text-slate-900">Linked enterprise risks</h2>
           {detail.linkedRisks.length === 0 ? (
             <p className="py-3 text-sm text-slate-400">No linked risks.</p>
@@ -255,7 +258,7 @@ export function ProcessDetailView({ detail }: { detail: ProcessDetail }) {
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       </div>
 
       {editOpen && <EditProcessModal detail={detail} onClose={() => setEditOpen(false)} onSaved={() => { setEditOpen(false); router.refresh(); }} />}
@@ -300,7 +303,7 @@ function AddDependencyModal({ processId, onClose, onSaved }: { processId: string
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Add dependency</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
@@ -308,37 +311,37 @@ function AddDependencyModal({ processId, onClose, onSaved }: { processId: string
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-              <Select value={dependencyType} onChange={(e) => setDependencyType(e.target.value)}>
-                {DEP_TYPES.map((t) => <option key={t} value={t}>{DEP_LABEL[t] ?? t}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Type</Label>
+              <SelectField value={dependencyType} onChange={setDependencyType}
+                options={DEP_TYPES.map((t) => ({ value: t, label: DEP_LABEL[t] ?? t }))}
+              />
             </div>
             <div className="flex items-end">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
+              <Label className="flex cursor-pointer items-center gap-2 text-sm text-slate-700">
                 <Checkbox checked={isSpof} onChange={(e) => setIsSpof(e.target.checked)} />
                 Single point of failure
-              </label>
+              </Label>
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Name</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 33 kV HT incomer" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Description (optional)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Description (optional)</Label>
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </div>
           <div className="grid grid-cols-[1fr_120px] gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Workaround (leave blank = unmitigated)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Workaround (leave blank = unmitigated)</Label>
               <Input value={workaround} onChange={(e) => setWorkaround(e.target.value)} placeholder="e.g. Standby unit, 12h swap" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Duration (h)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Duration (h)</Label>
               <Input type="number" min={0} value={workaroundHrs} onChange={(e) => setWorkaroundHrs(e.target.value)} />
             </div>
           </div>
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -346,7 +349,7 @@ function AddDependencyModal({ processId, onClose, onSaved }: { processId: string
             {busy ? "Adding…" : "Add dependency"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -394,47 +397,47 @@ function EditProcessModal({ detail, onClose, onSaved }: { detail: ProcessDetail;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Edit process</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Process name</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Process name</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Owner</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Owner</Label>
               <UserPicker value={ownerId} onChange={(id) => setOwnerId(id)} placeholder="Select owner" />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Department</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Department</Label>
               <Input value={departmentName} onChange={(e) => setDepartmentName(e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">RTO (h)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">RTO (h)</Label>
               <Input type="number" min={0} value={rtoHours} onChange={(e) => setRtoHours(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">RPO (h)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">RPO (h)</Label>
               <Input type="number" min={0} value={rpoHours} onChange={(e) => setRpoHours(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">MTPD (h)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">MTPD (h)</Label>
               <Input type="number" min={0} value={mtpdHours} onChange={(e) => setMtpdHours(e.target.value)} />
             </div>
           </div>
           {mtpdTooLow && <p className="text-xs font-medium text-rose-600">MTPD must be ≥ RTO.</p>}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Peak periods</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Peak periods</Label>
             <Input value={peakPeriods} onChange={(e) => setPeakPeriods(e.target.value)} />
           </div>
           <p className="text-[11px] text-slate-400">Criticality is recomputed from RTO on save. Editing an approved BIA keeps its status.</p>
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -442,7 +445,7 @@ function EditProcessModal({ detail, onClose, onSaved }: { detail: ProcessDetail;
             {busy ? "Saving…" : "Save changes"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, GripVertical, Save, AlertCircle, Camera, MessageSquare, Star, ChevronUp, ChevronDown } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert } from "@/components/ui/alert";
 
 const ITEM_TYPES = [
   { value: "PASS_FAIL", label: "Pass / Fail" },
@@ -215,14 +217,10 @@ export function ChecklistBuilder({ initial, inspectionTypes, preselectedTypeId }
           </div>
           <div>
             <Label>Inspection Type *</Label>
-            <Select value={inspectionTypeId} onChange={(e) => setInspectionTypeId(e.target.value)}>
-              {inspectionTypes.length === 0 && <option value="">— Create an inspection type first —</option>}
-              {inspectionTypes.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.isStatutory ? "★ " : ""}{t.name} ({t.code})
-                </option>
-              ))}
-            </Select>
+            <SelectField value={inspectionTypeId} onChange={setInspectionTypeId}
+              placeholder="— Create an inspection type first —"
+              options={inspectionTypes.map((t) => ({ value: String(t.id), label: `${t.isStatutory ? "★ " : ""}${t.name} (${t.code})` }))}
+            />
           </div>
           <div>
             <Label>Version</Label>
@@ -274,7 +272,7 @@ export function ChecklistBuilder({ initial, inspectionTypes, preselectedTypeId }
       </Card>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</Alert>
       )}
 
       <div className="flex gap-2 justify-end">
@@ -308,13 +306,17 @@ function ItemEditor({
     <div className={["border rounded-md p-3", isSection ? "bg-slate-50 border-slate-300" : "border-slate-200"].join(" ")}>
       <div className="flex items-start gap-2">
         <div className="flex flex-col gap-1 mt-1">
-          <button type="button" onClick={() => onMove(-1)} disabled={idx === 0} className="text-slate-400 hover:text-slate-700 disabled:opacity-30">
+          <Button type="button" variant="ghost" size="icon" onClick={() => onMove(-1)} disabled={idx === 0}
+            aria-label="Move item up" title="Move item up"
+            className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-700">
             <ChevronUp size={14} />
-          </button>
+          </Button>
           <span className="text-xs font-mono text-slate-400 text-center">{item.sequence}</span>
-          <button type="button" onClick={() => onMove(1)} disabled={idx === total - 1} className="text-slate-400 hover:text-slate-700 disabled:opacity-30">
+          <Button type="button" variant="ghost" size="icon" onClick={() => onMove(1)} disabled={idx === total - 1}
+            aria-label="Move item down" title="Move item down"
+            className="h-auto w-auto p-0 text-slate-400 hover:bg-transparent hover:text-slate-700">
             <ChevronDown size={14} />
-          </button>
+          </Button>
         </div>
         <div className="flex-1 space-y-2">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
@@ -328,9 +330,9 @@ function ItemEditor({
             </div>
             {!isSection && (
               <div>
-                <Select value={item.itemType} onChange={(e) => onChange({ itemType: e.target.value })}>
-                  {ITEM_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-                </Select>
+                <SelectField value={item.itemType} onChange={(value) => onChange({ itemType: value })}
+                  options={ITEM_TYPES.map((t) => ({ value: String(t.value), label: t.label }))}
+                />
               </div>
             )}
           </div>
@@ -369,19 +371,19 @@ function ItemEditor({
                 <Input value={item.expectedValue ?? ""} onChange={(e) => onChange({ expectedValue: e.target.value })} placeholder="Expected value (display hint, optional)" />
               </div>
               <div className="flex flex-wrap gap-3 text-xs">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" checked={item.isCritical} onChange={(e) => onChange({ isCritical: e.target.checked })} />
+                <Label className="flex items-center gap-1 cursor-pointer">
+                  <Checkbox checked={item.isCritical} onChange={(e) => onChange({ isCritical: e.target.checked })} />
                   <Star size={10} className={item.isCritical ? "text-rose-600 fill-rose-600" : "text-slate-300"} />
                   Critical
-                </label>
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" checked={item.requiresPhoto} onChange={(e) => onChange({ requiresPhoto: e.target.checked })} />
+                </Label>
+                <Label className="flex items-center gap-1 cursor-pointer">
+                  <Checkbox checked={item.requiresPhoto} onChange={(e) => onChange({ requiresPhoto: e.target.checked })} />
                   <Camera size={10} /> Photo required
-                </label>
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input type="checkbox" checked={item.requiresComment} onChange={(e) => onChange({ requiresComment: e.target.checked })} />
+                </Label>
+                <Label className="flex items-center gap-1 cursor-pointer">
+                  <Checkbox checked={item.requiresComment} onChange={(e) => onChange({ requiresComment: e.target.checked })} />
                   <MessageSquare size={10} /> Comment required
-                </label>
+                </Label>
               </div>
               <details className="text-xs">
                 <summary className="text-slate-500 cursor-pointer">Add guidance text</summary>
@@ -396,9 +398,9 @@ function ItemEditor({
             </>
           )}
         </div>
-        <button type="button" onClick={onRemove} className="text-slate-400 hover:text-rose-600 mt-1" title="Remove">
+        <Button variant="ghost" type="button" onClick={onRemove} className="mt-1" title="Remove">
           <Trash2 size={14} />
-        </button>
+        </Button>
       </div>
     </div>
   );

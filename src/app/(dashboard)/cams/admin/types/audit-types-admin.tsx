@@ -10,6 +10,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { ENGAGEMENT_TYPES, STANDARDS, ENGAGEMENT_TYPE_CHIP, engagementTypeLabel, labelize, type AuditType, type Template } from "../../lib-cams";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 // WP-49: the audit type is the configuration home. Everything below was either a
 // hard-coded module constant or an empty array before this screen could set it.
@@ -33,7 +37,7 @@ export function AuditTypesAdmin({
           </Button>
         </div>
       )}
-      <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+      <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
         <Table className="min-w-[900px]">
           <TableHeader>
             <TableRow>
@@ -68,7 +72,7 @@ export function AuditTypesAdmin({
             )}
           </TableBody>
         </Table>
-      </div>
+      </Card>
       {editing && <AuditTypeModal record={editing === "new" ? null : editing} templates={templates} competencies={competencies} regimes={regimes} onClose={() => setEditing(null)} />}
     </div>
   );
@@ -136,36 +140,36 @@ function AuditTypeModal({
           <h2 className="text-base font-semibold text-slate-900">{record ? "Edit Audit Type" : "New Audit Type"}</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="h-auto w-auto text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
-        {err && <div className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
+        {err && <Alert variant="destructive" className="mb-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
         <div className="space-y-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Name (required)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Name (required)</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Fire Equipment Inspection" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Engagement type</label>
-              <Select value={engagementType} onChange={(e) => setEngagementType(e.target.value)}>
-                {ENGAGEMENT_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Engagement type</Label>
+              <SelectField value={engagementType} onChange={setEngagementType}
+                options={ENGAGEMENT_TYPES.map((t) => ({ value: t.value, label: t.label }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Default recurrence</label>
-              <Select value={defaultRecurrence} onChange={(e) => setDefaultRecurrence(e.target.value)}>
-                <option value="">—</option>
-                {["WEEKLY", "MONTHLY", "QUARTERLY", "HALF_YEARLY", "ANNUAL"].map((f) => <option key={f} value={f}>{labelize(f)}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Default recurrence</Label>
+              <SelectField value={defaultRecurrence} onChange={setDefaultRecurrence}
+                placeholder="—"
+                options={["WEEKLY", "MONTHLY", "QUARTERLY", "HALF_YEARLY", "ANNUAL"].map((f) => ({ value: f, label: labelize(f) }))}
+              />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Default template</label>
-            <Select value={defaultTemplateId} onChange={(e) => setDefaultTemplateId(e.target.value)}>
-              <option value="">—</option>
-              {templates.map((t) => <option key={t.id} value={t.id}>{t.templateCode} · {t.name}</option>)}
-            </Select>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Default template</Label>
+            <SelectField value={defaultTemplateId} onChange={setDefaultTemplateId}
+              placeholder="—"
+              options={templates.map((t) => ({ value: t.id, label: `${t.templateCode} · ${t.name}` }))}
+            />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Standards</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Standards</Label>
             <div className="flex flex-wrap gap-2">
               {STANDARDS.map((s) => (
                 <Button key={s} type="button" variant="ghost" onClick={() => setStandardRefs((p) => p.includes(s) ? p.filter((x) => x !== s) : [...p, s])}
@@ -178,42 +182,44 @@ function AuditTypeModal({
           {/* WP-36: required auditor competencies. Until this control existed the
               competence check ran against an empty list and cleared everyone. */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <Label className="mb-1 block text-xs font-medium text-slate-600">
               Required auditor competencies
-            </label>
+            </Label>
             {competencies.length === 0 ? (
               <p className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-2 text-[11px] text-amber-800">
                 No competencies are defined in the Skill Matrix yet, so assignments cannot be
                 checked against competence until at least one exists.
               </p>
             ) : (
-              <div className="max-h-32 overflow-y-auto rounded-md border border-slate-200">
+              <Card className="max-h-32 overflow-y-auto rounded-md border border-slate-200 shadow-none">
                 {competencies.map((c) => {
                   const on = requiredCompetencies.includes(c.id);
                   return (
-                    <button key={c.id} type="button"
+                    <Button key={c.id} type="button" variant="ghost" aria-pressed={on}
                       onClick={() => setRequiredCompetencies((prev) => on ? prev.filter((x) => x !== c.id) : [...prev, c.id])}
-                      className={cn("flex w-full items-center gap-2 border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0 hover:bg-slate-50", on && "bg-primary-50/60")}>
+                      className={cn("h-auto w-full justify-start gap-2 rounded-none border-b border-slate-100 px-2.5 py-1.5 text-left text-xs last:border-0", on && "bg-primary-50/60")}>
                       <span className={cn("flex size-3.5 items-center justify-center rounded border text-[9px]",
                         on ? "border-primary-600 bg-primary-600 text-white" : "border-slate-300")} aria-hidden>
                         {on ? "\u2713" : ""}
                       </span>
                       <span className="text-slate-700">{c.name}</span>
                       <span className="ml-auto font-mono text-[10px] text-slate-400">{c.code}</span>
-                    </button>
+                    </Button>
                   );
                 })}
-              </div>
+              </Card>
             )}
             {requiredCompetencies.length > 0 && (
               <div className="mt-1.5">
-                <label className="mb-1 block text-xs font-medium text-slate-600">
+                <Label className="mb-1 block text-xs font-medium text-slate-600">
                   When an auditor lacks one
-                </label>
-                <Select value={competenceEnforcement} onChange={(e) => setCompetenceEnforcement(e.target.value)}>
-                  <option value="WARN">Warn - show the gap, allow the assignment</option>
-                  <option value="BLOCK">Block - refuse the assignment</option>
-                </Select>
+                </Label>
+                <SelectField value={competenceEnforcement} onChange={setCompetenceEnforcement}
+                  options={[
+                  { value: "WARN", label: "Warn - show the gap, allow the assignment" },
+                  { value: "BLOCK", label: "Block - refuse the assignment" }
+                ]}
+                />
                 <p className="mt-1 text-[11px] text-slate-400">
                   Warn is the safe default while the Skill Matrix is still being populated.
                 </p>
@@ -224,14 +230,14 @@ function AuditTypeModal({
           {/* F-22: the pass mark and critical gate were hard-coded platform-wide. */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Pass mark (%)</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Pass mark (%)</Label>
               <Input type="number" min={0} max={100} value={minimumPassScore}
                 onChange={(e) => setMinimumPassScore(e.target.value)} />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">
+              <Label className="mb-1 block text-xs font-medium text-slate-600">
                 Critical failures allowed
-              </label>
+              </Label>
               <Input type="number" min={0} value={criticalGate}
                 onChange={(e) => setCriticalGate(e.target.value)} />
             </div>
@@ -243,15 +249,13 @@ function AuditTypeModal({
 
           {/* WP-47: buyer-regime vocabulary. */}
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <Label className="mb-1 block text-xs font-medium text-slate-600">
               Buyer-regime vocabulary
-            </label>
-            <Select value={regimeCode} onChange={(e) => setRegimeCode(e.target.value)}>
-              <option value="">Native (critical / major / minor / observation)</option>
-              {regimes.map((r) => (
-                <option key={r.code} value={r.code}>{r.name} - {r.scoringStyle.toLowerCase()}</option>
-              ))}
-            </Select>
+            </Label>
+            <SelectField value={regimeCode} onChange={setRegimeCode}
+              placeholder="Native (critical / major / minor / observation)"
+              options={regimes.map((r) => ({ value: r.code, label: `${r.name} - ${r.scoringStyle.toLowerCase()}` }))}
+            />
             <p className="mt-1 text-[11px] text-slate-400">
               Changes the severity and result labels auditors see. Regime structures are
               SafeOps-authored shapes, not the regime owner&rsquo;s licensed criteria.
@@ -259,8 +263,8 @@ function AuditTypeModal({
           </div>
 
           <div className="flex items-center gap-4">
-            <label className="flex items-center gap-1.5 text-sm text-slate-600"><Checkbox checked={requiresAssetRef} onChange={(e) => setRequiresAssetRef(e.target.checked)} /> Requires asset / equipment ref</label>
-            <label className="flex items-center gap-1.5 text-sm text-slate-600"><Checkbox checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> Active</label>
+            <Label className="flex items-center gap-1.5 text-sm text-slate-600"><Checkbox checked={requiresAssetRef} onChange={(e) => setRequiresAssetRef(e.target.checked)} /> Requires asset / equipment ref</Label>
+            <Label className="flex items-center gap-1.5 text-sm text-slate-600"><Checkbox checked={isActive} onChange={(e) => setIsActive(e.target.checked)} /> Active</Label>
           </div>
           <Button disabled={busy || !name.trim()} onClick={submit} className="w-full">
             {busy ? "Saving…" : record ? "Save changes" : "Create audit type"}

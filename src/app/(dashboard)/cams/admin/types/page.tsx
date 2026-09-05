@@ -8,6 +8,7 @@ import { resolvePlantContext } from "@/lib/plant-context";
 import type { AuditType, Template } from "../../lib-cams";
 import type { DisciplineOwnerRow } from "../../lib-assurance";
 import { CamsConfigTabs } from "./config-tabs";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export default async function AuditTypesPage() {
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Admin" }, { label: "Audit Configuration" }]}
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <CamsConfigTabs
           auditTypes={auditTypes}

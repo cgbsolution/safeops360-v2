@@ -13,6 +13,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, AlertTriangle, BookOpen, Users } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 type ClosureTrigger = {
   ruleId: string;
@@ -65,23 +66,23 @@ export function AiInsightsPanel({ closureTriggers }: { closureTriggers: any }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {triage && (triage.suggestedSeverity || triage.firstResponse?.length) && (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+          <Alert variant="warning" className="p-3">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-semibold text-amber-800 mb-2">
               <AlertTriangle size={12} /> Triage Agent
             </div>
             <div className="flex flex-wrap gap-2 mb-2">
               {triage.suggestedSeverity && (
-                <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px]">
+                <Badge variant="warning" size="sm">
                   Severity: {triage.suggestedSeverity}
                 </Badge>
               )}
               {triage.suggestedCategory && (
-                <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px]">
+                <Badge variant="warning" size="sm">
                   Category: {triage.suggestedCategory}
                 </Badge>
               )}
               {triage.priority && (
-                <Badge className="bg-amber-100 text-amber-900 border-amber-300 text-[10px]">
+                <Badge variant="warning" size="sm">
                   Priority: {triage.priority}
                 </Badge>
               )}
@@ -96,15 +97,15 @@ export function AiInsightsPanel({ closureTriggers }: { closureTriggers: any }) {
                 ))}
               </ul>
             )}
-          </div>
+          </Alert>
         )}
 
         {lesson && lesson.lesson && (
-          <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3">
+          <Alert variant="success" className="p-3">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-semibold text-emerald-800 mb-2">
               <BookOpen size={12} /> Lessons Distribution
               {lesson.confidence && (
-                <Badge className="ml-auto bg-emerald-100 text-emerald-900 border-emerald-300 text-[10px]">
+                <Badge variant="success" size="sm" className="ml-auto">
                   {lesson.confidence}
                 </Badge>
               )}
@@ -132,16 +133,13 @@ export function AiInsightsPanel({ closureTriggers }: { closureTriggers: any }) {
             {lesson.tags && lesson.tags.length > 0 && (
               <div className="flex flex-wrap gap-1 mt-3">
                 {lesson.tags.map((t, i) => (
-                  <span
-                    key={i}
-                    className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 rounded px-1.5 py-0.5"
-                  >
+                  <Badge key={i} variant="success" size="sm" className="rounded px-1.5 py-0.5 font-normal tracking-normal">
                     {t}
-                  </span>
+                  </Badge>
                 ))}
               </div>
             )}
-          </div>
+          </Alert>
         )}
       </CardContent>
     </Card>

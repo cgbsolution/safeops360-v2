@@ -226,7 +226,7 @@ function Header({
   isReadOnly: boolean;
 }) {
   return (
-    <div className="rounded-lg border bg-white p-4">
+    <Card className="rounded-lg border bg-white p-4 shadow-none">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-xs uppercase tracking-wider text-slate-500">
@@ -268,7 +268,7 @@ function Header({
           hint="end of period"
         />
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -316,7 +316,7 @@ function Stepper({
   onJump: (n: StepNumber) => void;
 }) {
   return (
-    <div className="rounded-lg border bg-white p-3 overflow-x-auto">
+    <Card className="rounded-lg border bg-white p-3 overflow-x-auto shadow-none">
       <ol className="flex items-center gap-1 min-w-max">
         {STEPS.map((s, i) => {
           const isCurrent = s.n === currentStep;
@@ -352,7 +352,7 @@ function Stepper({
           );
         })}
       </ol>
-    </div>
+    </Card>
   );
 }
 
@@ -368,7 +368,7 @@ function NavFooter({
   pending: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-lg border bg-white p-3">
+    <Card className="flex items-center justify-between rounded-lg border bg-white p-3 shadow-none">
       <Button variant="outline" disabled={currentStep === 1 || pending} onClick={onBack}>
         <ChevronLeft size={16} /> Back
       </Button>
@@ -378,6 +378,6 @@ function NavFooter({
       <Button disabled={currentStep === STEPS.length || pending} onClick={onNext}>
         Next <ChevronRight size={16} />
       </Button>
-    </div>
+    </Card>
   );
 }

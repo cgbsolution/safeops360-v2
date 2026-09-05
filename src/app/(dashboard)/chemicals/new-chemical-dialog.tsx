@@ -23,12 +23,15 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/toast";
 import { hazardTone, prettyLabel } from "@/lib/chemicals/types";
 import { apiSend, Field, FormError } from "./_client";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export function NewChemicalDialog({ hazardClasses }: { hazardClasses: string[] }) {
   const router = useRouter();
@@ -151,14 +154,14 @@ export function NewChemicalDialog({ hazardClasses }: { hazardClasses: string[] }
               required
               hint="Multi-select. Threshold rules and the co-storage matrix both key off these."
             >
-              <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-slate-200 p-3 sm:grid-cols-3">
+              <Card className="grid grid-cols-2 gap-1.5 rounded-lg p-3 shadow-none sm:grid-cols-3">
                 {hazardClasses.map((c) => (
-                  <label key={c} className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
+                  <Label key={c} className="flex cursor-pointer items-center gap-2 text-xs text-slate-700">
                     <Checkbox checked={classes.includes(c)} onChange={() => toggle(c)} />
                     {prettyLabel(c)}
-                  </label>
+                  </Label>
                 ))}
-              </div>
+              </Card>
               {classes.length > 0 && (
                 <div className="flex flex-wrap gap-1 pt-1">
                   {classes.map((c) => (
@@ -170,11 +173,13 @@ export function NewChemicalDialog({ hazardClasses }: { hazardClasses: string[] }
 
             <div className="grid gap-4 sm:grid-cols-3">
               <Field label="Physical state">
-                <Select value={state} onChange={(e) => setState(e.target.value)}>
-                  <option value="SOLID">Solid</option>
-                  <option value="LIQUID">Liquid</option>
-                  <option value="GAS">Gas</option>
-                </Select>
+                <SelectField value={state} onChange={setState}
+                  options={[
+                  { value: "SOLID", label: "Solid" },
+                  { value: "LIQUID", label: "Liquid" },
+                  { value: "GAS", label: "Gas" }
+                ]}
+                />
               </Field>
               <Field label="Flash point (°C)">
                 <Input type="number" value={flash} onChange={(e) => setFlash(e.target.value)} placeholder="4" />
@@ -199,12 +204,12 @@ export function NewChemicalDialog({ hazardClasses }: { hazardClasses: string[] }
               <Input value={regRef} onChange={(e) => setRegRef(e.target.value)} placeholder="MSIHC Schedule 1 Part II" />
             </Field>
 
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-[11px] text-amber-800">
+            <Alert variant="warning" className="p-3 text-[11px]">
               This chemical will be created as <strong>PENDING_SDS</strong>. It cannot be
               activated — or received into stock — until a Safety Data Sheet is attached and an
               HSE Manager approves it. That rule is enforced by a database constraint, not by
               this form.
-            </div>
+            </Alert>
           </div>
 
           <DialogFooter>

@@ -166,14 +166,14 @@ export default async function CertificateDetailPage(props: {
                 />
               </div>
 
-              <div className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs space-y-1">
+              <Card className="rounded-md border border-slate-200 bg-slate-50 p-3 text-xs space-y-1 shadow-none">
                 <div className="text-[10px] uppercase text-slate-500">
                   Tamper-detection signature
                 </div>
                 <div className="font-mono break-all text-slate-700">
                   {cert.digitalSignature ?? "—"}
                 </div>
-              </div>
+              </Card>
             </CardContent>
           </Card>
 

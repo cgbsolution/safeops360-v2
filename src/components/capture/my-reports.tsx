@@ -15,6 +15,9 @@ import { captureDb, onOutboxChanged, type OutboxEntry } from "@/lib/capture/db";
 import { taxonomyIcon } from "./icons";
 import { SyncChip } from "./sync-chip";
 import { BigButton, MX } from "./ui";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 const STATUS_KEY: Record<SubmissionOut["status"], MsgKey> = {
   submitted: "status_submitted",
@@ -92,7 +95,7 @@ export function MyReports() {
 
       {items === null && !error ? (
         <div className="flex flex-1 items-center justify-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-[#E8EEF7] border-t-[#C9A961]" />
+          <Spinner size="lg" tone="gold" />
         </div>
       ) : null}
 
@@ -108,10 +111,9 @@ export function MyReports() {
           const Icon = taxonomyIcon(entry.summary.iconKey);
           const lp = entry.summary.categoryLabels ? labelPair(entry.summary.categoryLabels, lang) : null;
           return (
-            <div
+            <Card
               key={entry.clientSubmissionId}
-              className="flex min-h-[72px] items-center gap-3 rounded-2xl border-2 border-dashed border-[#B7791F]/50 bg-[#B7791F]/5 p-3"
-            >
+              className="flex min-h-[72px] items-center gap-3 rounded-2xl border-2 border-dashed border-[#B7791F]/50 bg-[#B7791F]/5 p-3 shadow-none">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#B7791F]/15">
                 <Icon className="h-6 w-6 text-[#B7791F]" />
               </span>
@@ -121,11 +123,11 @@ export function MyReports() {
                 </p>
                 <p className="text-xs text-[#5A6273]">{new Date(entry.createdAt).toLocaleString()}</p>
               </div>
-              <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-[#B7791F] px-3 py-1.5 text-sm font-semibold text-white">
+              <Badge className="shrink-0 border-transparent bg-[#B7791F] px-3 py-1.5 text-sm text-white">
                 <Clock className="h-4 w-4" />
                 {t("status_queued", lang)}
-              </span>
-            </div>
+              </Badge>
+            </Card>
           );
         })}
         {(items ?? []).map((sub) => {
@@ -134,7 +136,7 @@ export function MyReports() {
           const lp = l1 ? labelPair(l1.labels, lang) : null;
           const statusKey = STATUS_KEY[sub.status];
           return (
-            <div key={sub.id} className="flex min-h-[72px] items-center gap-3 rounded-2xl border border-[#D9E1EF] bg-white p-3">
+            <Card key={sub.id} className="flex min-h-[72px] items-center gap-3 rounded-2xl border border-[#D9E1EF] bg-white p-3 shadow-none">
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#E8EEF7]">
                 <Icon className="h-6 w-6 text-[#0B1F4D]" />
               </span>
@@ -155,7 +157,7 @@ export function MyReports() {
               >
                 {t(statusKey, lang)}
               </span>
-            </div>
+            </Card>
           );
         })}
       </div>

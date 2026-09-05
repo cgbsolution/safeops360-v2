@@ -3,6 +3,7 @@ import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { NewStatementForm } from "./new-form";
 import type { AppetiteDashRow } from "@/app/(dashboard)/erm/lib-p2";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -35,12 +36,12 @@ export default async function NewAppetiteStatementPage({
             { label: "Appetite", href: "/erm/appetite" },
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "No category selected for the new statement"}.{" "}
           <Link href="/erm/appetite" className="underline">
             Back to appetite dashboard
           </Link>
-        </div>
+        </Alert>
       </div>
     );
   }

@@ -12,6 +12,8 @@ import {
 import { cn } from "@/lib/utils";
 import { BandBadge } from "@/components/erm/shared";
 import { fmtInr, type RiskDetail } from "../../lib";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type Propagation = {
   sourceRiskCode: string;
@@ -73,20 +75,20 @@ export function AdvancedRiskPanel({ risk }: { risk: RiskDetail }) {
       {(risk.controlAlert || risk.kriAlert) && (
         <div className="flex flex-wrap gap-2">
           {risk.controlAlert && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+            <Alert variant="destructive" className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
               <AlertTriangle size={14} /> A mapped control is deficient — residual reassessment recommended.
-            </div>
+            </Alert>
           )}
           {risk.kriAlert && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
+            <Alert variant="destructive" className="flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700">
               <AlertTriangle size={14} /> A linked KRI is RED — early-warning reassessment recommended.
-            </div>
+            </Alert>
           )}
         </div>
       )}
 
       {/* Inherent → Residual → Target journey + ₹ exposure */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
           <TrendingDown size={15} className="text-slate-400" /> Risk Reduction Journey (quantified)
         </h2>
@@ -101,21 +103,21 @@ export function AdvancedRiskPanel({ risk }: { risk: RiskDetail }) {
         {risk.residualWorstLossInr != null && (
           <p className="mt-2 text-[11px] text-slate-500">Worst-case (tail) exposure: <span className="font-semibold text-slate-700">{fmtInr(risk.residualWorstLossInr)}</span></p>
         )}
-      </div>
+      </Card>
 
       {/* Control-derived residual */}
       {dr && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900">
             <ShieldCheck size={15} className="text-slate-400" /> Control-Derived Residual
             <span className="ml-auto text-[11px] font-normal text-slate-400">{dr.ratedControlCount}/{dr.mappedControlCount} controls rated</span>
           </h2>
 
           {override && (
-            <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            <Alert variant="warning" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
               <span className="font-semibold">Expert override:</span> asserted residual {dr.assertedResidualScore} vs control-derived {dr.derivedResidualScore}
               {" "}(variance {dr.overrideVariance! > 0 ? "+" : ""}{dr.overrideVariance}). Residual is derived from controls — the variance is documented, not hidden.
-            </div>
+            </Alert>
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -164,22 +166,22 @@ export function AdvancedRiskPanel({ risk }: { risk: RiskDetail }) {
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       )}
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {/* Three lines of defence */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Layers size={15} className="text-slate-400" /> Three Lines of Defence</h2>
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between"><dt className="text-slate-500">1st line — owns & manages</dt><dd className="font-medium text-slate-800">{risk.firstLineOwnerName ?? risk.riskOwnerName ?? "—"}</dd></div>
             <div className="flex justify-between"><dt className="text-slate-500">2nd line — risk oversight</dt><dd className="font-medium text-slate-800">{risk.secondLineOwnerName ?? "—"}</dd></div>
             <div className="flex justify-between"><dt className="text-slate-500">3rd line — assurance</dt><dd className="font-medium text-slate-800">{risk.thirdLineAssurance ?? "—"}</dd></div>
           </dl>
-        </div>
+        </Card>
 
         {/* Correlation propagation */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900"><Network size={15} className="text-slate-400" /> If This Risk Materialises</h2>
           {!prop || prop.affectedCount === 0 ? (
             <p className="text-xs text-slate-400">No weighted linkages — this risk has no modelled knock-on effect.</p>
@@ -196,45 +198,45 @@ export function AdvancedRiskPanel({ risk }: { risk: RiskDetail }) {
               </ul>
             </>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Bow-tie */}
       {risk.bowtie && (
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-3 flex items-center gap-1.5 text-sm font-semibold text-slate-900"><GitBranch size={15} className="text-slate-400" /> Bow-Tie — Causal Structure</h2>
           <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto_1fr] lg:items-center">
             <div className="space-y-2">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Threats → preventive barriers</div>
               {risk.bowtie.threats.map((t) => (
-                <div key={t.id} className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                <Card key={t.id} className="rounded-lg border border-slate-200 bg-slate-50 p-2 shadow-none">
                   <div className="text-xs font-medium text-slate-700">{t.description}</div>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {t.preventiveBarriers.map((b) => (
                       <span key={b.id} className={cn("rounded border px-1.5 py-0.5 text-[10px]", BARRIER_CHIP[b.status])} title={b.description}>{b.controlCode ? b.controlCode + " · " : ""}{b.status}</span>
                     ))}
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
             <div className="flex flex-col items-center justify-center">
-              <div className="rounded-full border-2 border-rose-300 bg-rose-50 px-4 py-3 text-center text-xs font-bold text-rose-700">TOP EVENT<div className="mt-0.5 max-w-[160px] truncate font-normal">{risk.bowtie.topEvent}</div></div>
+              <Alert variant="destructive" className="rounded-full border-2 border-rose-300 bg-rose-50 px-4 py-3 text-center text-xs font-bold text-rose-700">TOP EVENT<div className="mt-0.5 max-w-[160px] truncate font-normal">{risk.bowtie.topEvent}</div></Alert>
             </div>
             <div className="space-y-2">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Consequences → mitigating barriers</div>
               {risk.bowtie.consequences.map((c) => (
-                <div key={c.id} className="rounded-lg border border-slate-200 bg-slate-50 p-2">
+                <Card key={c.id} className="rounded-lg border border-slate-200 bg-slate-50 p-2 shadow-none">
                   <div className="text-xs font-medium text-slate-700">{c.description}</div>
                   <div className="mt-1 flex flex-wrap gap-1">
                     {c.mitigatingBarriers.map((b) => (
                       <span key={b.id} className={cn("rounded border px-1.5 py-0.5 text-[10px]", BARRIER_CHIP[b.status])} title={b.description}>{b.controlCode ? b.controlCode + " · " : ""}{b.status}</span>
                     ))}
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
-        </div>
+        </Card>
       )}
     </div>
   );

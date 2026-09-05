@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { WorkflowTracker } from "@/components/workflow/workflow-tracker";
 import { ActionRecordPanel } from "@/components/workflow/action-record";
@@ -115,11 +116,17 @@ export default async function NearMissDetail(
     CAPA_STEP_NAMES.includes(currentStep?.name ?? "") &&
     !!myTask &&
     myTask.stepId === currentStep?.id;
+  // Verification is the Safety Officer's on the v2 workflow — the same person
+  // who assigned the actions comes back to check the evidence for them. So the
+  // gate is "holds the open VERIFIER task", with the HSE-Manager-like roles
+  // kept as the path for v1 records, whose verifier step IS an HSE Manager.
+  // Mirrors the backend, which allows NEAR_MISS.VERIFY *or* being the
+  // workflow actor (see update_capa).
   const canVerifyCapa =
     !!instance &&
     instance.status === "IN_PROGRESS" &&
-    isHseManagerLike &&
-    currentStep?.stepType === "VERIFIER";
+    currentStep?.stepType === "VERIFIER" &&
+    (isHseManagerLike || (!!myTask && myTask.stepId === currentStep?.id));
 
   // Record-level target closure date. The backend gate is NEAR_MISS.UPDATE +
   // "not CLOSED"; mirror it here with the roles that actually hold UPDATE at
@@ -216,10 +223,10 @@ export default async function NearMissDetail(
 
       {/* Just-created success banner */}
       {justCreated && photoErrors === 0 && (
-        <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 flex items-start gap-2">
-          <CheckCircle2 size={16} className="mt-0.5 flex-shrink-0" />
-          <div><strong>Near miss reported.</strong> Reviewers have been notified.</div>
-        </div>
+        <Alert variant="success" size="lg" className="mb-4">
+          <CheckCircle2 className="mt-0.5" />
+          <AlertDescription><strong>Near miss reported.</strong> Reviewers have been notified.</AlertDescription>
+        </Alert>
       )}
 
       {/* Auto-promoted banner — both directions */}
@@ -477,11 +484,11 @@ export default async function NearMissDetail(
                   </Badge>
                 )}
                 {n.hazardCategory && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Hazard cat: {n.hazardCategoryLabel ?? n.hazardCategory}</Badge>}
-                {n.energySource && <Badge className="bg-slate-50 text-slate-700 border-slate-300">Energy: {n.energySourceLabel ?? n.energySource}</Badge>}
+                {n.energySource && <Badge variant="outline">Energy: {n.energySourceLabel ?? n.energySource}</Badge>}
               </div>
 
               {n.nearMissCategory && (
-                <div className="flex items-center gap-2.5 rounded-md border border-slate-200 bg-slate-50/60 p-2.5">
+                <Card className="flex items-center gap-2.5 rounded-md border-slate-200 bg-slate-50/60 p-2.5 shadow-none">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={
@@ -508,13 +515,13 @@ export default async function NearMissDetail(
                       </div>
                     )}
                   </div>
-                </div>
+                </Card>
               )}
 
               {/* The site's Risk Calculator. Separate from the 5x5 matrix
                   below it: different scales, both recorded. */}
               {n.riskRating != null && (
-                <div className="rounded-md border border-slate-200 p-2.5 space-y-1">
+                <Card className="space-y-1 rounded-md border-slate-200 p-2.5 shadow-none">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
                     <span className="font-medium text-slate-700">Risk Calculator</span>
                     {/* Never printed as an equation: the coordinator can set
@@ -541,13 +548,13 @@ export default async function NearMissDetail(
                   {n.riskSeverityDescription && (
                     <p className="text-xs text-slate-600">{n.riskSeverityDescription}</p>
                   )}
-                </div>
+                </Card>
               )}
               {Array.isArray(n.potentialConsequences) && n.potentialConsequences.length > 0 ? (
                 <ul className="text-sm text-slate-700 space-y-1">
                   {n.potentialConsequences.map((c: any, i: number) => (
                     <li key={i} className="flex flex-wrap gap-2">
-                      <Badge className="bg-amber-100 text-amber-800 border-amber-200">{c.type}</Badge>
+                      <Badge variant="warning">{c.type}</Badge>
                       {c.subRating && <span className="text-xs text-slate-600">Sub-rating: {c.subRating}</span>}
                       {c.costEstimate && <span className="text-xs text-slate-600">Cost: ₹{c.costEstimate}</span>}
                       {c.downtimeHours && <span className="text-xs text-slate-600">Downtime: {c.downtimeHours}h</span>}
@@ -613,7 +620,7 @@ export default async function NearMissDetail(
               <CardContent className="space-y-3">
                 <div className="grid sm:grid-cols-2 gap-3">
                   {jointReviewApprovals.map((h: any) => (
-                    <div key={h.id} className="flex items-start gap-2 text-sm bg-emerald-50 border border-emerald-200 rounded-md p-2.5">
+                    <Alert variant="success" key={h.id} className="flex items-start gap-2 text-sm bg-emerald-50 border border-emerald-200 rounded-md p-2.5">
                       <ShieldCheck size={14} className="text-emerald-700 mt-0.5 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-slate-900 truncate">{h.performedBy.name}</div>
@@ -623,7 +630,7 @@ export default async function NearMissDetail(
                           <div className="text-xs text-slate-700 mt-1 italic">"{h.comments}"</div>
                         )}
                       </div>
-                    </div>
+                    </Alert>
                   ))}
                 </div>
                 {n.refinedRootCauseCategory && (
@@ -708,12 +715,12 @@ export default async function NearMissDetail(
                   <div><Lab>Closing remark</Lab><p className="text-sm whitespace-pre-wrap">{n.closingRemark}</p></div>
                 )}
                 {n.lessonsLearned && (
-                  <div className="bg-violet-50 border border-violet-200 rounded-md p-3">
+                  <Alert variant="brand" className="bg-violet-50 border border-violet-200 rounded-md p-3">
                     <div className="flex items-center gap-1 text-xs uppercase tracking-wider font-semibold text-violet-800 mb-1">
                       <Sparkles size={12} /> Lessons learned
                     </div>
                     <p className="text-sm text-violet-900 whitespace-pre-wrap">{n.lessonsLearned}</p>
-                  </div>
+                  </Alert>
                 )}
                 <div className="grid sm:grid-cols-3 gap-2 text-xs text-slate-600 pt-2 border-t">
                   {slaPerformance && <div><Lab className="!mb-0.5">SLA performance</Lab>{slaPerformance}</div>}
@@ -755,7 +762,7 @@ export default async function NearMissDetail(
                   <RelLink href={`/incidents/${n.promotedIncident.id}`} icon={<AlertTriangle size={14} />} label="Promoted to incident" value={n.promotedIncident.number} />
                 )}
                 {n.isRepeat && (
-                  <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2 flex items-start gap-2">
+                  <Alert variant="warning" className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-md p-2 flex items-start gap-2">
                     <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
                     <div>
                       Repeat-pattern detected: similar near misses in this area in the last 30 days.
@@ -763,7 +770,7 @@ export default async function NearMissDetail(
                         <> ({n.similarNearMissIds.length} prior)</>
                       )}
                     </div>
-                  </div>
+                  </Alert>
                 )}
                 {n.triggeredInspectionId && (
                   <RelLink href={`/inspections/${n.triggeredInspectionId}`} icon={<ClipboardLikeIcon />} label="Spawned inspection" value="View" />

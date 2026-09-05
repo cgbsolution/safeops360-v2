@@ -8,6 +8,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { EditorStep, StepType } from "./types";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 type StepNodeData = {
   step: EditorStep;
@@ -139,40 +141,32 @@ function StepNodeImpl({ data }: NodeProps) {
       {/* Hover toolbar (top-right) */}
       <div className="absolute -top-3 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         {!isFirst && (
-          <button
+          <Button variant="outline"
             onClick={(e) => { e.stopPropagation(); onMoveUp(); }}
-            title="Move up"
-            className="w-6 h-6 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-slate-300"
-          >
+            title="Move up" className="w-6 h-6 rounded-md shadow-sm flex">
             <ArrowUp size={12} />
-          </button>
+          </Button>
         )}
         {!isLast && (
-          <button
+          <Button variant="outline"
             onClick={(e) => { e.stopPropagation(); onMoveDown(); }}
-            title="Move down"
-            className="w-6 h-6 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-slate-300"
-          >
+            title="Move down" className="w-6 h-6 rounded-md shadow-sm flex">
             <ArrowDown size={12} />
-          </button>
+          </Button>
         )}
         {step.stepType !== "MAKER" && (
-          <button
+          <Button variant="outline"
             onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-            title="Duplicate step"
-            className="w-6 h-6 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center text-slate-500 hover:text-slate-900 hover:border-slate-300"
-          >
+            title="Duplicate step" className="w-6 h-6 rounded-md shadow-sm flex">
             <Copy size={12} />
-          </button>
+          </Button>
         )}
         {step.stepType !== "MAKER" && (
-          <button
+          <Button variant="outline"
             onClick={(e) => { e.stopPropagation(); onDelete(); }}
-            title="Delete step"
-            className="w-6 h-6 rounded-md bg-white border border-slate-200 shadow-sm flex items-center justify-center text-rose-500 hover:text-rose-700 hover:border-rose-300"
-          >
+            title="Delete step" className="w-6 h-6 rounded-md shadow-sm flex">
             <Trash2 size={12} />
-          </button>
+          </Button>
         )}
       </div>
 
@@ -256,13 +250,11 @@ function InserterNodeImpl({ data }: NodeProps) {
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
       <Handle type="target" position={Position.Top} className="!bg-transparent !border-0 !w-1 !h-1" />
-      <button
-        onClick={onClick}
-        className="w-7 h-7 rounded-full bg-white border-2 border-dashed border-slate-300 hover:border-primary-500 hover:bg-primary-50 hover:scale-110 transition-all flex items-center justify-center text-slate-400 hover:text-primary-600 shadow-sm"
-        title="Insert step here"
-      >
+      <Button variant="default"
+        onClick={onClick} className="w-7 h-7 rounded-full border-2 border-dashed hover:scale-110 transition-all flex shadow-sm"
+        title="Insert step here">
         <span className="text-base font-semibold leading-none">+</span>
-      </button>
+      </Button>
       <Handle type="source" position={Position.Bottom} className="!bg-transparent !border-0 !w-1 !h-1" />
     </div>
   );
@@ -278,7 +270,7 @@ function TriggerNodeImpl({ data }: NodeProps) {
   const { module, recordType } = data as unknown as TriggerData;
   return (
     <div className="relative">
-      <div className="w-72 rounded-xl bg-white border border-slate-200 shadow-sm">
+      <Card className="w-72 rounded-xl bg-white border border-slate-200 shadow-sm">
         <div className="px-4 py-3 flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0">
             <Zap size={18} />
@@ -293,7 +285,7 @@ function TriggerNodeImpl({ data }: NodeProps) {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
       <Handle type="source" position={Position.Bottom} className="!bg-slate-300 !w-2 !h-2 !border-0" />
     </div>
   );

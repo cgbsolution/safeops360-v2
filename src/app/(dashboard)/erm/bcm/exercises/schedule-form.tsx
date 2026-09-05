@@ -7,9 +7,12 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { EXERCISE_TYPES } from "@/app/(dashboard)/erm/lib-p3";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 type PlanOption = { id: string; planCode: string; title: string };
 
@@ -111,7 +114,7 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Schedule Exercise</h2>
           <Button
@@ -128,7 +131,7 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Title</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Title</Label>
             <Input
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -138,23 +141,19 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Exercise type</label>
-              <Select value={exerciseType} onChange={(e) => setExerciseType(e.target.value)}>
-                {EXERCISE_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {TYPE_LABEL[t] ?? t.replace(/_/g, " ")}
-                  </option>
-                ))}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Exercise type</Label>
+              <SelectField value={exerciseType} onChange={setExerciseType}
+                options={EXERCISE_TYPES.map((t) => ({ value: t, label: `${TYPE_LABEL[t] ?? t.replace(/_/g, " ")}` }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Scheduled date</Label>
               <Input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
             </div>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Facilitator</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Facilitator</Label>
             <UserPicker
               value={facilitatorId}
               onChange={(id) => setFacilitatorId(id)}
@@ -163,7 +162,7 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Participants</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Participants</Label>
             <UserPicker
               multiple
               value={participants}
@@ -173,21 +172,21 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Plans under test</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Plans under test</Label>
             {plansError ? (
               <p className="text-xs text-rose-600">Failed to load plans: {plansError}</p>
             ) : plans.length === 0 ? (
               <p className="text-xs text-slate-400">No plans available.</p>
             ) : (
-              <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+              <Card className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2 shadow-none">
                 {plans.map((p) => (
-                  <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
+                  <Label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
                     <Checkbox checked={testedPlanIds.includes(p.id)} onChange={() => togglePlan(p.id)} />
                     <span className="font-medium text-primary-700">{p.planCode}</span>
                     <span className="truncate text-slate-600">{p.title}</span>
-                  </label>
+                  </Label>
                 ))}
-              </div>
+              </Card>
             )}
             {testedPlanIds.length > 0 && (
               <p className="mt-1 text-[11px] text-slate-400">{testedPlanIds.length} plan(s) selected</p>
@@ -195,7 +194,7 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Objectives (one per line)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Objectives (one per line)</Label>
             <Textarea
               value={objectivesText}
               onChange={(e) => setObjectivesText(e.target.value)}
@@ -205,7 +204,7 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
           </div>
 
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>
+            <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>
           )}
         </div>
 
@@ -217,7 +216,7 @@ function ScheduleModal({ onClose, onDone }: { onClose: () => void; onDone: () =>
             {busy ? "Scheduling…" : "Schedule"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

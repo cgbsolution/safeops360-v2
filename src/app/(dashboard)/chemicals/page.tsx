@@ -18,6 +18,8 @@ import {
   EmptyState, ErrorState, HazardChips, Kpi, StatusChip, SubNav, TableNote,
 } from "./_components";
 import { NewChemicalDialog } from "./new-chemical-dialog";
+import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/ui/select-field";
 
 export const dynamic = "force-dynamic";
 
@@ -89,32 +91,32 @@ export default async function ChemicalRegisterPage({
               keeps the URL shareable, which is what the brief cards link into. */}
           <form className="mb-4 flex flex-wrap items-end gap-2" action="/chemicals" method="get">
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-700">Search</label>
+              <Label className="block text-xs font-medium text-slate-700">Search</Label>
               <Input name="q" defaultValue={sp.q ?? ""} placeholder="Name, CAS or UN number" className="w-64" />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-700">Hazard class</label>
-              <Select name="hazardClass" defaultValue={sp.hazardClass ?? ""} className="w-48">
-                <option value="">All</option>
-                {hazardOptions.map((h) => (
-                  <option key={h} value={h}>{h.replace(/_/g, " ")}</option>
-                ))}
-              </Select>
+              <Label className="block text-xs font-medium text-slate-700">Hazard class</Label>
+              <SelectField name="hazardClass" defaultValue={sp.hazardClass ?? ""} className="w-48"
+                placeholder="All"
+                options={hazardOptions.map((h) => ({ value: h, label: h.replace(/_/g, " ") }))}
+              />
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-slate-700">Status</label>
-              <Select name="status" defaultValue={sp.status ?? ""} className="w-40">
-                <option value="">All</option>
-                <option value="ACTIVE">Active</option>
-                <option value="PENDING_SDS">Pending SDS</option>
-                <option value="RESTRICTED">Restricted</option>
-                <option value="INACTIVE">Inactive</option>
-              </Select>
+              <Label className="block text-xs font-medium text-slate-700">Status</Label>
+              <SelectField name="status" defaultValue={sp.status ?? ""} className="w-40"
+                placeholder="All"
+                options={[
+                { value: "ACTIVE", label: "Active" },
+                { value: "PENDING_SDS", label: "Pending SDS" },
+                { value: "RESTRICTED", label: "Restricted" },
+                { value: "INACTIVE", label: "Inactive" }
+              ]}
+              />
             </div>
-            <label className="flex items-center gap-1.5 pb-2.5 text-xs text-slate-600">
+            <Label className="flex items-center gap-1.5 pb-2.5 text-xs text-slate-600">
               <Checkbox name="sdsOverdue" value="1" defaultChecked={!!sp.sdsOverdue} />
               SDS review overdue only
-            </label>
+            </Label>
             <Button type="submit" className="mb-0.5">Apply</Button>
             {filtered && (
               <Button asChild variant="ghost" className="mb-0.5">

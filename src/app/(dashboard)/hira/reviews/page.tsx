@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { FilterTab, FilterTabsList } from "@/components/ui/filter-tabs";
 import { BulkReviewPanel } from "./bulk-review-panel";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -116,9 +117,9 @@ export default async function HiraReviewsPage(
       </div>
 
       {cycles.length === 0 ? (
-        <div className="rounded-xl border bg-white p-8 text-center text-slate-500">
+        <Card className="rounded-xl border bg-white p-8 text-center text-slate-500 shadow-none">
           No review cycles match the current filter.
-        </div>
+        </Card>
       ) : (
         <BulkReviewPanel cycles={cycles} />
       )}

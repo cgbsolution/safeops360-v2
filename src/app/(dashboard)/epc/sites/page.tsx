@@ -2,6 +2,8 @@ import Link from "next/link";
 import { backendFetch } from "@/lib/backend/fetch";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card } from "@/components/ui/card";
 import {
   Building2,
   Users,
@@ -68,73 +70,73 @@ export default async function SitesPage() {
       />
 
       {sites.length === 0 ? (
-        <div className="rounded-xl border bg-white p-12 text-center">
+        <Card className="rounded-xl border bg-white p-12 text-center shadow-none">
           <Building2 size={40} className="mx-auto mb-3 text-slate-300" />
           <p className="text-sm font-medium text-slate-600 mb-1">No sites registered</p>
           <p className="text-xs text-slate-400 mb-4">Register your first construction site to begin managing operations.</p>
           <Button asChild size="sm">
             <Link href="/epc/sites/new"><Plus size={14} className="mr-1" /> Register Site</Link>
           </Button>
-        </div>
+        </Card>
       ) : (
-        <div className="rounded-xl border bg-white overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                <th className="px-4 py-3">Site Code</th>
-                <th className="px-4 py-3">Site Name</th>
-                <th className="px-4 py-3">Client</th>
-                <th className="px-4 py-3">State</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Workers</th>
-                <th className="px-4 py-3 text-right">Contractors</th>
-                <th className="px-4 py-3 text-center">Health</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody>
+        <Card className="rounded-xl border bg-white overflow-hidden shadow-sm">
+          <Table className="w-full text-sm">
+            <TableHeader>
+              <TableRow className="border-b bg-slate-50 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                <TableHead className="px-4 py-3">Site Code</TableHead>
+                <TableHead className="px-4 py-3">Site Name</TableHead>
+                <TableHead className="px-4 py-3">Client</TableHead>
+                <TableHead className="px-4 py-3">State</TableHead>
+                <TableHead className="px-4 py-3">Status</TableHead>
+                <TableHead className="px-4 py-3 text-right">Workers</TableHead>
+                <TableHead className="px-4 py-3 text-right">Contractors</TableHead>
+                <TableHead className="px-4 py-3 text-center">Health</TableHead>
+                <TableHead className="px-4 py-3"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {sites.map((site, i) => (
-                <tr
+                <TableRow
                   key={site.id}
                   className={`border-b last:border-0 hover:bg-slate-50 transition-colors ${i % 2 === 0 ? "" : "bg-slate-50/40"}`}
                 >
-                  <td className="px-4 py-3 font-mono text-xs text-slate-600">{site.siteCode}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-900">{site.siteName}</td>
-                  <td className="px-4 py-3 text-slate-600">{site.clientName}</td>
-                  <td className="px-4 py-3 text-slate-600">{site.state}</td>
-                  <td className="px-4 py-3">
+                  <TableCell className="px-4 py-3 font-mono text-xs text-slate-600">{site.siteCode}</TableCell>
+                  <TableCell className="px-4 py-3 font-semibold text-slate-900">{site.siteName}</TableCell>
+                  <TableCell className="px-4 py-3 text-slate-600">{site.clientName}</TableCell>
+                  <TableCell className="px-4 py-3 text-slate-600">{site.state}</TableCell>
+                  <TableCell className="px-4 py-3">
                     <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold ${statusBadgeClass(site.status)}`}>
                       {humanizeStatus(site.status)}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right tabular-nums">
                     <span className="flex items-center justify-end gap-1 text-slate-700">
                       <Users size={12} /> {site.currentWorkforceCount}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-right tabular-nums">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right tabular-nums">
                     <span className="flex items-center justify-end gap-1 text-slate-700">
                       <HardHat size={12} /> {site.activeContractorCompanies}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-center">
                     <span className="inline-flex items-center justify-center">
                       <HealthBadge health={site.healthIndicator} />
                     </span>
-                  </td>
-                  <td className="px-4 py-3">
+                  </TableCell>
+                  <TableCell className="px-4 py-3">
                     <Link
                       href={`/epc/sites/${site.id}`}
                       className="text-xs font-medium text-cyan-700 hover:underline"
                     >
                       View &rarr;
                     </Link>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
-        </div>
+            </TableBody>
+          </Table>
+        </Card>
       )}
     </div>
   );

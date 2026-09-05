@@ -20,6 +20,8 @@ import { MocActions } from "./moc-actions";
 import { DependentRecords } from "./dependent-records";
 import { MocAttachments } from "./moc-attachments";
 import { PssrPanel, EffectivenessPanel } from "./moc-lifecycle";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -127,10 +129,10 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-xl border bg-white p-5">
+    <Card className="rounded-xl border bg-white p-5 shadow-none">
       <h2 className="text-sm font-semibold text-slate-900 mb-3">{title}</h2>
       {children}
-    </div>
+    </Card>
   );
 }
 
@@ -275,11 +277,11 @@ export default async function MocDetailPage(props: { params: Promise<{ id: strin
               </div>
             )}
             {cr.psmApplicable && (
-              <div className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+              <Alert variant="warning" className="mb-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
                 <div className="font-semibold">Process Safety Management applies</div>
                 {cr.psmDetails?.coveredProcess && <div>Covered process: {cr.psmDetails.coveredProcess}</div>}
                 {cr.psmDetails?.affectedSafeguards && <div>Affected safeguards: {cr.psmDetails.affectedSafeguards}</div>}
-              </div>
+              </Alert>
             )}
             {cr.mitigations && <Field label="Mitigations / controls">{cr.mitigations}</Field>}
           </Section>

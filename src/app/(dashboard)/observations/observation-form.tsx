@@ -35,6 +35,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { DEPARTMENTS } from "@/lib/observation-masters";
 import { Camera, Upload, X, Image as ImageIcon, Film, FileText, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 type Plant = { id: string; name: string; areas: { id: string; name: string }[] };
 
@@ -627,26 +628,24 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
           </div>
 
           {error && (
-            <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md p-3 flex items-start gap-2">
-              <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
+            <Alert variant="destructive" size="lg">
+              <AlertCircle className="mt-0.5" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
 
           {uploadFailures.length > 0 && (
-            <div className="rounded-md border border-amber-300 bg-amber-50 p-4 space-y-2">
-              <div className="flex items-start gap-2">
-                <AlertCircle size={16} className="text-amber-700 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <div className="font-semibold text-amber-900">
-                    Observation saved, but {uploadFailures.length} photo{uploadFailures.length === 1 ? "" : "s"} failed to upload
-                  </div>
-                  <div className="text-xs text-amber-800 mt-0.5">
-                    The observation itself is recorded and the workflow has started. You can attach photos
-                    later from the record's detail page.
-                  </div>
-                </div>
-              </div>
+            <Alert variant="warning" size="lg" className="space-y-2 border-amber-300 p-4">
+              <AlertCircle className="mt-0.5" />
+              <AlertDescription>
+                <AlertTitle className="text-amber-900">
+                  Observation saved, but {uploadFailures.length} photo{uploadFailures.length === 1 ? "" : "s"} failed to upload
+                </AlertTitle>
+                <p className="mt-0.5 text-xs text-amber-800">
+                  The observation itself is recorded and the workflow has started. You can attach photos
+                  later from the record&apos;s detail page.
+                </p>
+              </AlertDescription>
               <ul className="text-xs space-y-1 pl-6">
                 {uploadFailures.map((f) => (
                   <li key={f.id} className="text-amber-900">
@@ -655,7 +654,7 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                 ))}
               </ul>
               {uploadFailures.some((f) => f.error.toLowerCase().includes("storage")) && (
-                <div className="text-[11px] text-amber-700 bg-amber-100 border border-amber-200 rounded px-2 py-1.5 ml-6">
+                <Alert variant="warning" className="ml-6 border-amber-200 bg-amber-100 px-2 py-1.5 text-[11px] text-amber-700">
                   <strong>Admin note:</strong> Supabase Storage isn't configured on the server. Set
                   <code className="font-mono mx-1 bg-white/70 px-1 rounded">SUPABASE_URL</code> and the
                   <code className="font-mono mx-1 bg-white/70 px-1 rounded">SUPABASE_SERVICE_ROLE_KEY</code>
@@ -663,14 +662,14 @@ export function ObservationForm({ plants }: { plants: Plant[] }) {
                   in <code className="font-mono bg-white/70 px-1 rounded">.env</code>, create a private bucket named
                   <code className="font-mono mx-1 bg-white/70 px-1 rounded">incident-attachments</code>
                   (or whatever <code className="font-mono bg-white/70 px-1 rounded">SUPABASE_INCIDENT_BUCKET</code> is set to), then restart the backend.
-                </div>
+                </Alert>
               )}
               <div className="flex gap-2 pt-1">
                 <Button type="button" size="sm" onClick={viewCreatedRecord}>
                   View record →
                 </Button>
               </div>
-            </div>
+            </Alert>
           )}
 
           <div className="flex gap-3 pt-2">
@@ -696,7 +695,7 @@ function PhotoTile({ photo, onRemove }: { photo: LocalPhoto; onRemove: () => voi
   const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
   return (
-    <div className="group relative aspect-square rounded-md border bg-slate-100 overflow-hidden">
+    <Card className="group relative aspect-square overflow-hidden rounded-md bg-slate-100 shadow-none">
       {isImage && photo.previewUrl ? (
         <img src={photo.previewUrl} alt="" className="w-full h-full object-cover" />
       ) : (
@@ -722,7 +721,7 @@ function PhotoTile({ photo, onRemove }: { photo: LocalPhoto; onRemove: () => voi
           {photo.error ? <span className="text-rose-300">{photo.error}</span> : sizeLabel}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 

@@ -5,6 +5,9 @@ import { PageHeader } from "@/components/page-header";
 import { RATING_CHIP, STRENGTH_CHIP, RISK_BAND_CHIP, type RiskControlMatrix, type MatrixCell } from "@/app/(dashboard)/erm/lib-t3";
 import { resolvePlantContext } from "@/lib/plant-context";
 import { MatrixFilters } from "./matrix-view";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -70,9 +73,9 @@ export default async function RiskControlMatrixPage(props: {
       />
 
       {error || !m ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "No matrix data."}. Ensure the ERM Tier 3 seed has been run and you are logged in with a controls role.
-        </div>
+        </Alert>
       ) : (
         <>
           <MatrixFilters plants={plants} />
@@ -86,27 +89,27 @@ export default async function RiskControlMatrixPage(props: {
             <span className="inline-flex items-center gap-1"><span className={"rounded border px-1.5 text-[10px] " + RATING_CHIP.DEFICIENT}>Deficient</span></span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <table className="w-full min-w-[900px] text-sm">
-              <thead className="bg-slate-50/95">
-                <tr className="text-left text-[11px] uppercase tracking-wider text-slate-500">
-                  <th className="w-[36%] px-4 py-2.5">Risk</th>
-                  <th className="px-4 py-2.5">Coverage</th>
-                  <th className="px-4 py-2.5">Mitigating controls</th>
-                </tr>
-              </thead>
-              <tbody>
+          <Card className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-none">
+            <Table className="w-full min-w-[900px] text-sm">
+              <TableHeader className="bg-slate-50/95">
+                <TableRow className="text-left text-[11px] uppercase tracking-wider text-slate-500">
+                  <TableHead className="w-[36%] px-4 py-2.5">Risk</TableHead>
+                  <TableHead className="px-4 py-2.5">Coverage</TableHead>
+                  <TableHead className="px-4 py-2.5">Mitigating controls</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {m.rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} className="px-4 py-10 text-center text-sm text-slate-400">No risks in scope for the current filter.</td>
-                  </tr>
+                  <TableRow>
+                    <TableCell colSpan={3} className="px-4 py-10 text-center text-sm text-slate-400">No risks in scope for the current filter.</TableCell>
+                  </TableRow>
                 ) : (
                   m.rows.map((row) => (
-                    <tr
+                    <TableRow
                       key={row.riskId}
                       className={"border-t border-slate-100 align-top " + (!row.hasPrimaryControl ? "bg-rose-50/60" : "hover:bg-slate-50/70")}
                     >
-                      <td className="px-4 py-3">
+                      <TableCell className="px-4 py-3">
                         <Link href={`/erm/register/${row.riskId}`} className="font-mono text-xs font-semibold text-primary-700 hover:underline">
                           {row.riskCode}
                         </Link>
@@ -116,8 +119,8 @@ export default async function RiskControlMatrixPage(props: {
                             {row.residualBand}
                           </span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
                         {!row.hasPrimaryControl ? (
                           <span className="inline-flex items-center gap-1 rounded border border-rose-300 bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-800">
                             <AlertTriangle size={11} /> No primary control
@@ -129,8 +132,8 @@ export default async function RiskControlMatrixPage(props: {
                         ) : (
                           <span className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">Covered</span>
                         )}
-                      </td>
-                      <td className="px-4 py-3">
+                      </TableCell>
+                      <TableCell className="px-4 py-3">
                         {row.controls.length === 0 ? (
                           <span className="text-xs text-slate-400">No controls mapped</span>
                         ) : (
@@ -140,16 +143,16 @@ export default async function RiskControlMatrixPage(props: {
                             ))}
                           </div>
                         )}
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))
                 )}
-              </tbody>
-            </table>
-          </div>
+              </TableBody>
+            </Table>
+          </Card>
 
           {/* Orphan controls */}
-          <div className="mt-5 rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">
               Orphan controls <span className="text-slate-400">({m.orphanControls.length})</span>
               <span className="ml-2 text-xs font-normal text-slate-400">— mitigating nothing</span>
@@ -171,7 +174,7 @@ export default async function RiskControlMatrixPage(props: {
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
         </>
       )}
     </div>

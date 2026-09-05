@@ -27,6 +27,7 @@ import {
   STATUS_CHIP, STATUS_LABEL, Chip, fmtDate, complianceColor, complianceBg,
 } from "./lib";
 import { ScheduleModal } from "./schedule-modal";
+import { SelectField } from "@/components/ui/select-field";
 
 export function AuditRegisterView({
   plantId, plant, plants, audits, dashboard, templates, libraries, users, auditCategories,
@@ -98,7 +99,7 @@ export function AuditRegisterView({
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Compliance chart */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 lg:col-span-2 shadow-none">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-sm font-semibold text-slate-800">Compliance score by audit</h3>
             <span className="text-xs text-slate-400">scored audits</span>
@@ -120,11 +121,11 @@ export function AuditRegisterView({
           ) : (
             <div className="flex h-[210px] items-center justify-center text-sm text-slate-400">No scored audits yet.</div>
           )}
-        </div>
+        </Card>
 
         {/* Next scheduled + status breakdown */}
         <div className="space-y-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className="mb-2 flex items-center gap-2 text-sm font-semibold text-slate-800">
               <CalendarClock size={15} className="text-violet-700" /> Next scheduled
             </div>
@@ -137,8 +138,8 @@ export function AuditRegisterView({
             ) : (
               <div className="text-sm text-slate-400">Nothing scheduled.</div>
             )}
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          </Card>
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <div className="mb-3 text-sm font-semibold text-slate-800">By status</div>
             <div className="space-y-2">
               {Object.entries(dashboard?.byStatus ?? {}).map(([k, v]) => (
@@ -151,32 +152,31 @@ export function AuditRegisterView({
                 <div className="text-sm text-slate-400">No audits.</div>
               ) : null}
             </div>
-          </div>
+          </Card>
         </div>
       </div>
 
       {/* Audit register */}
-      <div className="rounded-xl border border-slate-200 bg-white">
+      <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
         <div className="flex flex-wrap items-center gap-2 border-b p-3">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search number / title / supplier…" className="h-9 w-64" />
-          <Select value={status} onChange={(e) => setStatus(e.target.value)} className="h-9 w-auto">
-            <option value="">All status</option>
-            {Object.keys(STATUS_LABEL).map((s) => (
-              <option key={s} value={s}>{STATUS_LABEL[s]}</option>
-            ))}
-          </Select>
+          <SelectField value={status} onChange={setStatus} className="h-9 w-auto"
+            placeholder="All status"
+            options={Object.keys(STATUS_LABEL).map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+          />
           {/* Shown only once a supplier audit exists — an empty filter on a
               register with nothing to filter is noise. */}
           {supplierCount > 0 && (
-            <Select
+            <SelectField
               value={subject}
-              onChange={(e) => setSubject(e.target.value as "" | "OWN_SITE" | "VENDOR")}
+              onChange={(value) => setSubject(value as "" | "OWN_SITE" | "VENDOR")}
               className="h-9 w-auto"
-            >
-              <option value="">All subjects</option>
-              <option value="OWN_SITE">Own facilities</option>
-              <option value="VENDOR">Suppliers ({supplierCount})</option>
-            </Select>
+              placeholder="All subjects"
+              options={[
+              { value: "OWN_SITE", label: "Own facilities" },
+              { value: "VENDOR", label: `Suppliers (${supplierCount})` }
+            ]}
+            />
           )}
           <span className="ml-auto text-xs text-slate-500">{rows.length} audits</span>
           <Button asChild type="button" variant="outline" size="sm">
@@ -260,7 +260,7 @@ export function AuditRegisterView({
             </TableBody>
           </Table>
         </div>
-      </div>
+      </Card>
 
       {showSchedule && (
         <ScheduleModal plantId={plantId} plant={plant ?? null} plants={plants ?? []} templates={templates} libraries={libraries} users={users} auditCategories={auditCategories} onClose={() => setShowSchedule(false)} />

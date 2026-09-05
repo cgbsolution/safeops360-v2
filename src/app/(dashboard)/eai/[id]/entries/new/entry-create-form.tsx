@@ -4,6 +4,12 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { SelectField } from "@/components/ui/select-field";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 type MatrixLevel = { id: string; score: number; label: string; description: string };
 type Matrix = {
@@ -208,66 +214,57 @@ export function EaiEntryCreateForm({
       {/* Activity */}
       <Section title="Activity">
         <Field label="Activity description" required>
-          <textarea
+          <Textarea
             value={activityDescription}
             onChange={(e) => setActivityDescription(e.target.value)}
             rows={2}
             placeholder="e.g., Clinker production in the rotary kiln — continuous stack emission of particulate matter."
-            className="form-input"
-          />
+            className="form-input" />
         </Field>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Field label="Occurrence" required>
-            <select value={occurrence} onChange={(e) => setOccurrence(e.target.value)} className="form-input">
-              {OCCURRENCE.map((o) => (
-                <option key={o} value={o}>{o}</option>
-              ))}
-            </select>
+            <SelectField value={occurrence} onChange={setOccurrence} className="form-input"
+              options={OCCURRENCE.map((o) => ({ value: o, label: o }))}
+            />
           </Field>
           <Field label="Frequency" required>
-            <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="form-input">
-              {FREQUENCY.map((f) => (
-                <option key={f} value={f}>{f}</option>
-              ))}
-            </select>
+            <SelectField value={frequency} onChange={setFrequency} className="form-input"
+              options={FREQUENCY.map((f) => ({ value: f, label: f }))}
+            />
           </Field>
           <Field label="Typical duration (min)">
-            <input
+            <Input
               type="number"
               min={0}
               value={typicalDurationMin}
               onChange={(e) => setTypicalDurationMin(e.target.value)}
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
         <Field label="Sub-location">
-          <input
+          <Input
             type="text"
             value={subLocation}
             onChange={(e) => setSubLocation(e.target.value)}
             placeholder="e.g., Kiln line 2 stack"
-            className="form-input"
-          />
+            className="form-input" />
         </Field>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Equipment used (comma-separated)">
-            <input
+            <Input
               type="text"
               value={equipmentUsed}
               onChange={(e) => setEquipmentUsed(e.target.value)}
               placeholder="Rotary kiln, Bag filter"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
           <Field label="Materials used (comma-separated)">
-            <input
+            <Input
               type="text"
               value={materialsUsed}
               onChange={(e) => setMaterialsUsed(e.target.value)}
               placeholder="Coal, Limestone"
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
       </Section>
@@ -281,33 +278,28 @@ export function EaiEntryCreateForm({
             {aspectRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="flex gap-2 items-start">
-                  <select
+                  <SelectField
                     value={row.aspectId}
-                    onChange={(e) =>
-                      setAspectRows((rows) =>
-                        rows.map((r, idx) => (idx === i ? { ...r, aspectId: e.target.value } : r))
+                    onChange={(value) => setAspectRows((rows) =>
+                        rows.map((r, idx) => (idx === i ? { ...r, aspectId: value } : r))
                       )
                     }
                     className="form-input flex-1"
-                  >
-                    <option value="">Select aspect…</option>
-                    {aspectsByCategory.map((g) => (
-                      <optgroup key={g.label} label={g.label}>
-                        {g.items.map((a) => (
-                          <option key={a.id} value={a.id}>
-                            {a.name}
-                            {a.typicallySignificant ? " ⚠" : ""}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                    placeholder="Select aspect…"
+                    groups={aspectsByCategory.map((g) => ({
+                      label: g.label,
+                      options: g.items.map((a) => ({
+                        value: a.id,
+                        label: `${a.name}${a.typicallySignificant ? " ⚠" : ""}`
+                      }))
+                    }))}
+                  />
                   <RemoveBtn
                     onClick={() => setAspectRows((rows) => rows.filter((_, idx) => idx !== i))}
                     label="Remove aspect"
                   />
                 </div>
-                <input
+                <Input
                   type="text"
                   value={row.contextualDescription}
                   onChange={(e) =>
@@ -318,8 +310,7 @@ export function EaiEntryCreateForm({
                     )
                   }
                   placeholder="Context for this activity (optional)"
-                  className="form-input text-sm"
-                />
+                  className="form-input text-sm" />
               </li>
             ))}
           </ul>
@@ -330,36 +321,26 @@ export function EaiEntryCreateForm({
       <Section title="Initial assessment">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Likelihood" required>
-            <select
+            <SelectField
               value={initialLikelihoodId}
-              onChange={(e) => setInitialLikelihoodId(e.target.value)}
+              onChange={setInitialLikelihoodId}
               className="form-input"
-            >
-              <option value="">Select likelihood…</option>
-              {likelihoods.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.score} — {l.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Select likelihood…"
+              options={likelihoods.map((l) => ({ value: l.id, label: `${l.score} — ${l.label}` }))}
+            />
           </Field>
           <Field label="Magnitude" required>
-            <select
+            <SelectField
               value={initialMagnitudeId}
-              onChange={(e) => setInitialMagnitudeId(e.target.value)}
+              onChange={setInitialMagnitudeId}
               className="form-input"
-            >
-              <option value="">Select magnitude…</option>
-              {magnitudes.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.score} — {m.label}
-                </option>
-              ))}
-            </select>
+              placeholder="Select magnitude…"
+              options={magnitudes.map((m) => ({ value: m.id, label: `${m.score} — ${m.label}` }))}
+            />
           </Field>
         </div>
 
-        <div className="rounded-lg border bg-slate-50 p-3 flex items-center gap-3 text-sm">
+        <Card className="rounded-lg border bg-slate-50 p-3 flex items-center gap-3 text-sm shadow-none">
           <span className="text-slate-600">Initial impact:</span>
           {preview ? (
             <>
@@ -376,24 +357,22 @@ export function EaiEntryCreateForm({
           ) : (
             <span className="text-xs text-slate-400">Select likelihood and magnitude to preview.</span>
           )}
-        </div>
+        </Card>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field label="Likelihood rationale">
-            <textarea
+            <Textarea
               value={initialLikelihoodRationale}
               onChange={(e) => setInitialLikelihoodRationale(e.target.value)}
               rows={2}
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
           <Field label="Magnitude rationale">
-            <textarea
+            <Textarea
               value={initialMagnitudeRationale}
               onChange={(e) => setInitialMagnitudeRationale(e.target.value)}
               rows={2}
-              className="form-input"
-            />
+              className="form-input" />
           </Field>
         </div>
         <p className="text-xs text-slate-400">
@@ -410,7 +389,7 @@ export function EaiEntryCreateForm({
             {impactRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="flex gap-2 items-start">
-                  <input
+                  <Input
                     type="text"
                     value={row.description}
                     onChange={(e) =>
@@ -419,8 +398,7 @@ export function EaiEntryCreateForm({
                       )
                     }
                     placeholder="Impact description"
-                    className="form-input flex-1"
-                  />
+                    className="form-input flex-1" />
                   <RemoveBtn
                     onClick={() => setImpactRows((rows) => rows.filter((_, idx) => idx !== i))}
                     label="Remove impact"
@@ -477,37 +455,28 @@ export function EaiEntryCreateForm({
           <ul className="space-y-3">
             {controlRows.map((row, i) => (
               <li key={i} className="rounded-lg border border-slate-200 p-3 flex gap-2 items-start">
-                <select
+                <SelectField
                   value={row.hierarchy}
-                  onChange={(e) =>
-                    setControlRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, hierarchy: e.target.value } : r)))
+                  onChange={(value) => setControlRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, hierarchy: value } : r)))
                   }
                   className="form-input w-44"
-                >
-                  {HIERARCHY.map((h) => (
-                    <option key={h} value={h}>{h}</option>
-                  ))}
-                </select>
-                <input
+                  options={HIERARCHY.map((h) => ({ value: h, label: h }))}
+                />
+                <Input
                   type="text"
                   value={row.description}
                   onChange={(e) =>
                     setControlRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, description: e.target.value } : r)))
                   }
                   placeholder="Control description"
-                  className="form-input flex-1"
-                />
-                <select
+                  className="form-input flex-1" />
+                <SelectField
                   value={row.effectiveness}
-                  onChange={(e) =>
-                    setControlRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, effectiveness: e.target.value } : r)))
+                  onChange={(value) => setControlRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, effectiveness: value } : r)))
                   }
                   className="form-input w-44"
-                >
-                  {EFFECTIVENESS.map((x) => (
-                    <option key={x} value={x}>{x.replace(/_/g, " ")}</option>
-                  ))}
-                </select>
+                  options={EFFECTIVENESS.map((x) => ({ value: x, label: x.replace(/_/g, " ") }))}
+                />
                 <RemoveBtn
                   onClick={() => setControlRows((rows) => rows.filter((_, idx) => idx !== i))}
                   label="Remove control"
@@ -519,9 +488,9 @@ export function EaiEntryCreateForm({
       </Section>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           {error}
-        </div>
+        </Alert>
       )}
 
       <div className="flex justify-end gap-2 pt-4 border-t">
@@ -573,9 +542,9 @@ function Field({
 }) {
   return (
     <div>
-      <label className="form-label">
+      <Label className="form-label">
         {label} {required && <span className="text-rose-600">*</span>}
-      </label>
+      </Label>
       {children}
     </div>
   );
@@ -591,24 +560,20 @@ function MiniSelect({
   options: { value: string; label: string }[];
 }) {
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)} className="form-input text-xs">
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
+    <SelectField value={value} onChange={onChange} className="form-input text-xs"
+      options={options.map((o) => ({ value: o.value, label: o.label }))}
+    />
   );
 }
 
 function RemoveBtn({ onClick, label }: { onClick: () => void; label: string }) {
   return (
-    <button
+    <Button variant="ghost"
       type="button"
-      onClick={onClick}
-      className="p-2 text-slate-400 hover:text-rose-600 shrink-0"
-      aria-label={label}
-    >
+      onClick={onClick} className="p-2 shrink-0"
+      aria-label={label}>
       <Trash2 size={14} />
-    </button>
+    </Button>
   );
 }
 

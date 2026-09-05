@@ -41,6 +41,10 @@ import {
 import { ExportButtons } from "../_components/export-buttons";
 import { RegisterDialog } from "./register-dialog";
 import { QrStickerDialog, QrTarget } from "../_components/qr-sticker-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert } from "@/components/ui/alert";
+import { TableCell } from "@/components/ui/table";
 import {
   ConfigRegisterTable,
   RegisterRow as SharedRegisterRow,
@@ -58,14 +62,14 @@ function DueCell({ badge, iso }: { badge: Badge; iso: string | null }) {
           ? `${Math.abs(days)} day(s) overdue`
           : `${days} day(s) remaining`;
   return (
-    <td className="whitespace-nowrap border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }} title={hint}>
+    <TableCell className="whitespace-nowrap border-b px-2 py-1.5" style={{ borderColor: MX.iceLine }} title={hint}>
       <span
         className="inline-block rounded px-1.5 py-0.5 text-[11px] font-semibold tabular-nums"
         style={{ background: st.bg, color: st.fg }}
       >
         {badge.status === "NOT_RECORDED" ? "not recorded" : fmtDate(iso)}
       </span>
-    </td>
+    </TableCell>
   );
 }
 
@@ -253,7 +257,7 @@ export function RegisterTable({
         </div>
       </div>
 
-      {/* RETROFIT: this register used to hand-render seventeen <td>s in sheet
+      {/* RETROFIT: this register used to hand-render seventeen <TableCell>s in sheet
           order, which is why adding the alarm-panel and hydrant registers meant
           forking the component. Columns, labels and order now come from
           `payload.document.columns` — the seeded `FireRegisterViewConfig` row —
@@ -276,19 +280,19 @@ export function RegisterTable({
           if (key === "dueForRefilling") return <DueCell badge={r.badges.refill} iso={r.dueForRefilling} />;
           if (key === "allottedSerialNo")
             return (
-              <td className="border-b px-2 py-1.5 font-semibold" style={{ borderColor: MX.iceLine, color: MX.navy }}>
+              <TableCell className="border-b px-2 py-1.5 font-semibold" style={{ borderColor: MX.iceLine, color: MX.navy }}>
                 {r.allottedSerialNo ?? "—"}
-              </td>
+              </TableCell>
             );
           if (key === "remarks")
             return (
-              <td
+              <TableCell
                 className="max-w-[180px] truncate border-b px-2 py-1.5"
                 style={{ borderColor: MX.iceLine, color: MX.muted }}
                 title={r.remarks ?? ""}
               >
                 {r.remarks ?? "—"}
-              </td>
+              </TableCell>
             );
           return undefined; // everything else takes the shared default
         }}
@@ -369,16 +373,17 @@ export function RegisterTable({
             </DialogDescription>
           </DialogHeader>
           {delError && (
-            <div className="rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">
+            <Alert variant="destructive" size="lg" className="rounded-lg border-rose-300 text-rose-900">
               {delError}
-            </div>
+            </Alert>
           )}
           <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-slate-500">
+            <Label variant="eyebrow" htmlFor="fe-delete-reason">
               Reason * (min 10 characters)
-            </label>
-            <textarea
-              className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-sm text-slate-900 focus:border-slate-400 focus:outline-none"
+            </Label>
+            <Textarea
+              id="fe-delete-reason"
+              className="mt-1 rounded-lg"
               rows={3}
               value={reason}
               onChange={(e) => setReason(e.target.value)}

@@ -6,10 +6,12 @@ import { useRouter } from "next/navigation";
 import { ShieldPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { EvidenceAttachment } from "@/components/evidence/EvidenceAttachment";
 import { SEVERITY_CHIP, FINDING_STATUS_CHIP, fmtDate, labelize, type Finding } from "../../lib-cams";
 import { capaRcaMethodLabel, normaliseRcaMethod } from "@/lib/rca/types";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 // Canonical codes, the same ones the incident RCA editors and the CAPA form
 // write. This picker used to post 5_WHY / FAULT_TREE / TAP_ROOT, a third
@@ -58,7 +60,7 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <div className="flex flex-wrap items-center gap-2">
             <span className={"rounded border px-2 py-0.5 text-xs " + (SEVERITY_CHIP[finding.severity] ?? "")}>{labelize(finding.severity)}</span>
             <span className={"rounded border px-2 py-0.5 text-xs " + (FINDING_STATUS_CHIP[finding.status] ?? "")}>{labelize(finding.status)}</span>
@@ -70,16 +72,16 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
           {finding.capaRequired && !finding.capaId && (
             <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700">This is a {labelize(finding.severity)} finding — a CAPA must be raised before it (and the engagement) can be closed.</p>
           )}
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <h3 className="mb-2 text-sm font-semibold text-slate-800">Root cause</h3>
-          {err && <div className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</div>}
+          {err && <Alert variant="destructive" className="mb-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{err}</Alert>}
           <div className="space-y-2">
-            <Select disabled={!canManage} value={rcaMethod} onChange={(e) => setRcaMethod(e.target.value)}>
-              <option value="">— RCA method —</option>
-              {RCA_METHODS.map((m) => <option key={m} value={m}>{capaRcaMethodLabel(m)}</option>)}
-            </Select>
+            <SelectField disabled={!canManage} value={rcaMethod} onChange={setRcaMethod}
+              placeholder="— RCA method —"
+              options={RCA_METHODS.map((m) => ({ value: m, label: capaRcaMethodLabel(m) }))}
+            />
             <Textarea disabled={!canManage} value={rcaSummary} onChange={(e) => setRcaSummary(e.target.value)} rows={3} placeholder="Root cause summary" />
             {canManage && (
               <Button disabled={busy === "rca"} onClick={() => patch({ rootCauseMethod: rcaMethod || null, rootCauseSummary: rcaSummary }, "rca")} variant="outline">
@@ -87,9 +89,9 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
               </Button>
             )}
           </div>
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
           <h3 className="mb-2 text-sm font-semibold text-slate-800">Verification & closure</h3>
           <Textarea disabled={!canManage} value={verificationNote} onChange={(e) => setVerificationNote(e.target.value)} rows={2} className="mb-2" placeholder="Verification evidence / note" />
           {canManage && (
@@ -99,7 +101,7 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
               <Button disabled={busy === "accept"} onClick={() => patch({ status: "ACCEPTED_RISK" }, "accept")} variant="outline" className="text-slate-600">Accept as risk</Button>
             </div>
           )}
-        </div>
+        </Card>
 
         <EvidenceAttachment
           entityType="cams_finding"
@@ -112,7 +114,7 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
       </div>
 
       <div className="space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-none">
           <h3 className="mb-2 text-sm font-semibold text-slate-800">CAPA (AUDIT source)</h3>
           {finding.capaNumber ? (
             <Link href="/capa" className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-3 py-2 text-sm text-blue-700 hover:bg-blue-100">
@@ -123,9 +125,9 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
               {busy === "capa" ? <Loader2 size={14} className="animate-spin" /> : <ShieldPlus size={14} />} Raise CAPA
             </Button>
           ) : <p className="text-slate-500">No CAPA raised.</p>}
-        </div>
+        </Card>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+        <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-none">
           <h3 className="mb-2 text-sm font-semibold text-slate-800">Details</h3>
           <dl className="space-y-1.5">
             <Row label="Engagement" value={<Link href={`/cams/engagements/${finding.engagementId}`} className="text-primary-700 hover:underline">{finding.engagementCode}</Link>} />
@@ -136,15 +138,15 @@ export function FindingDetailView({ finding, canManage }: { finding: Finding; ca
             <Row label="Age" value={`${finding.ageDays} days`} />
             <Row label="Raised" value={fmtDate(finding.createdAt)} />
           </dl>
-        </div>
+        </Card>
 
         {canManage && finding.status !== "CLOSED" && (
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm">
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-none">
             <h3 className="mb-2 text-sm font-semibold text-slate-800">Status</h3>
-            <Select value={finding.status} onChange={(e) => patch({ status: e.target.value }, "status")}>
-              {STATUSES.map((s) => <option key={s} value={s}>{labelize(s)}</option>)}
-            </Select>
-          </div>
+            <SelectField value={finding.status} onChange={(value) => patch({ status: value }, "status")}
+              options={STATUSES.map((s) => ({ value: s, label: labelize(s) }))}
+            />
+          </Card>
         )}
       </div>
     </div>

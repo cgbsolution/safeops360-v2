@@ -7,6 +7,7 @@ import type { DashboardSummary, EnterpriseExposure } from "./lib";
 import { fmtInr } from "./lib";
 import type { BcmDashboard } from "./lib-p3";
 import type { Tier3Summary } from "./lib-t3";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -73,10 +74,10 @@ export default async function ErmHomePage() {
         description="Board-grade view of the enterprise risk register — fed live from the shop floor. Toggle inherent ↔ residual to see control effectiveness."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error}. Ensure the ERM seed has been run and you are logged in as a user with an ERM role
           (e.g. <code>anand.krishnan@safeops360.in</code>).
-        </div>
+        </Alert>
       ) : (
         <>
           {/* ADVANCED — enterprise ₹ exposure headline banner */}

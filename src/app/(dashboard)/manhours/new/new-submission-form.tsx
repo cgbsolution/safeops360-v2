@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
@@ -61,13 +62,9 @@ export function NewSubmissionForm({
         <form onSubmit={onSubmit} className="space-y-5">
           <div className="space-y-2">
             <Label>Plant</Label>
-            <Select value={plantId} onChange={(e) => setPlantId(e.target.value)} required>
-              {plants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.code})
-                </option>
-              ))}
-            </Select>
+            <SelectField value={plantId} onChange={(value) => setPlantId(value)} required
+              options={plants.map((p) => ({ value: String(p.id), label: `${p.name} (${p.code})` }))}
+            />
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
@@ -84,13 +81,9 @@ export function NewSubmissionForm({
             </div>
             <div className="space-y-2">
               <Label>Reporting month</Label>
-              <Select value={month} onChange={(e) => setMonth(Number(e.target.value))} required>
-                {MONTHS.map((m, i) => (
-                  <option key={m} value={i + 1}>
-                    {m}
-                  </option>
-                ))}
-              </Select>
+              <SelectField value={String(month)} onChange={(value) => setMonth(Number(value))} required
+                options={MONTHS.map((m, i) => ({ value: String(i + 1), label: `${m}` }))}
+              />
             </div>
           </div>
 
@@ -100,7 +93,7 @@ export function NewSubmissionForm({
           </p>
 
           {error && (
-            <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</div>
+            <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700">{error}</Alert>
           )}
 
           <div className="flex gap-3">

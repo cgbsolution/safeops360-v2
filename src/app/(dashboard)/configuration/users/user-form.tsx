@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Button } from "@/components/ui/button";
 import { Save, Eye, EyeOff } from "lucide-react";
+import { Alert } from "@/components/ui/alert";
 
 type Plant = { id: string; name: string; code: string };
 type Role = { id: string; code: string; name: string };
@@ -106,16 +107,16 @@ export function UserForm({
         <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label>Primary role *</Label>
-            <Select value={role} onChange={(e) => setRole(e.target.value)}>
-              {roles.map((r) => <option key={r.code} value={r.code}>{r.name}</option>)}
-            </Select>
+            <SelectField value={role} onChange={(value) => setRole(value)}
+              options={roles.map((r) => ({ value: String(r.code), label: r.name }))}
+            />
           </div>
           <div>
             <Label>Plant</Label>
-            <Select value={plantId} onChange={(e) => setPlantId(e.target.value)}>
-              <option value="">— No plant assignment —</option>
-              {plants.map((p) => <option key={p.id} value={p.id}>{p.name} ({p.code})</option>)}
-            </Select>
+            <SelectField value={plantId} onChange={(value) => setPlantId(value)}
+              placeholder="— No plant assignment —"
+              options={plants.map((p) => ({ value: String(p.id), label: `${p.name} (${p.code})` }))}
+            />
           </div>
         </CardContent>
       </Card>
@@ -148,7 +149,7 @@ export function UserForm({
       </Card>
 
       {error && (
-        <div className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded border border-rose-200 bg-rose-50 px-4 py-2 text-sm text-rose-800">{error}</Alert>
       )}
 
       <div className="flex gap-2 justify-end">

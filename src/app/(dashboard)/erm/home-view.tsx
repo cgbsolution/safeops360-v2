@@ -20,6 +20,8 @@ import { Button } from "@/components/ui/button";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { BAND_HEX, type DashboardSummary } from "./lib";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const BAND_ORDER = [
   { key: "critical", label: "Critical", hex: BAND_HEX.CRITICAL },
@@ -111,7 +113,7 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         {/* Heat map */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 xl:col-span-2 shadow-none">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-sm font-semibold text-slate-900">Enterprise Heat Map</h2>
@@ -119,7 +121,7 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
                 {mode === "RESIDUAL" ? "Residual exposure — after current controls" : "Inherent exposure — before controls"}
               </p>
             </div>
-            <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium">
+            <Card className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 text-xs font-medium shadow-none">
               {(["INHERENT", "RESIDUAL"] as const).map((m) => (
                 <Button
                   key={m}
@@ -134,7 +136,7 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
                   {m === "INHERENT" ? "Inherent" : "Residual"}
                 </Button>
               ))}
-            </div>
+            </Card>
           </div>
           <div className="flex items-center justify-center py-2">
             <HeatMap cells={cells} onCellClick={onCell} />
@@ -142,10 +144,10 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
           <p className="mt-3 text-center text-[11px] text-slate-400">
             Click any cell to filter the register. The dot migration between inherent and residual is the value of your risk programme.
           </p>
-        </div>
+        </Card>
 
         {/* Movement panel */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">Band Movement</h2>
           <p className="mb-3 text-xs text-slate-500">Risks that changed band this quarter</p>
           {summary.movement.length === 0 ? (
@@ -168,11 +170,11 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Category bar */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Risks by Category &amp; Band</h2>
         <ResponsiveContainer width="100%" height={Math.max(220, summary.categoryBars.length * 34)}>
           <BarChart data={summary.categoryBars} layout="vertical" margin={{ left: 20, right: 20 }}>
@@ -186,10 +188,10 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
             <Bar dataKey="critical" stackId="a" fill={BAND_HEX.CRITICAL} name="Critical" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
-      </div>
+      </Card>
 
       {/* Risk by Department / Business Unit — stacked horizontal bars */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-1 text-sm font-semibold text-slate-900">Risk by Department / Business Unit</h2>
         <p className="mb-4 text-xs text-slate-500">Residual band spread per business unit</p>
         {summary.departmentBars.length === 0 ? (
@@ -226,12 +228,12 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Mitigation progress + Top root causes */}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
         {/* Mitigation progress */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">Mitigation Progress</h2>
           <p className="mb-4 text-xs text-slate-500">Treatment completion across open risk treatments</p>
           <div className="mb-1 flex items-end justify-between">
@@ -244,7 +246,7 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
               style={{ width: `${Math.min(Math.max(summary.mitigationProgressPct, 0), 100)}%` }}
             />
           </div>
-          <div className="mt-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2">
+          <Card className="mt-4 flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-3 py-2 shadow-none">
             <span className="text-xs font-medium text-slate-600">Overdue actions</span>
             <Link
               href="/erm/treatments?overdueOnly=1"
@@ -255,11 +257,11 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
             >
               {summary.overdueTreatments}
             </Link>
-          </div>
-        </div>
+          </Card>
+        </Card>
 
         {/* Top root causes */}
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
           <h2 className="mb-1 text-sm font-semibold text-slate-900">Top Root Causes</h2>
           <p className="mb-4 text-xs text-slate-500">Most frequent drivers from approved RCA</p>
           {summary.topRootCauses.length === 0 ? (
@@ -277,9 +279,9 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
                         {rc.label}
                       </span>
                       {rc.isRecurringDriver && (
-                        <span className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
+                        <Badge variant="danger" className="shrink-0 rounded-full bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700">
                           recurring driver
-                        </span>
+                        </Badge>
                       )}
                     </div>
                     {rc.categoryName && <span className="block truncate text-[11px] text-slate-400">{rc.categoryName}</span>}
@@ -291,11 +293,11 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
               ))}
             </ul>
           )}
-        </div>
+        </Card>
       </div>
 
       {/* Pending approvals — items awaiting a governance decision (§7.5) */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="mb-3 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">Pending Approvals</h2>
@@ -337,10 +339,10 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
             ))}
           </ul>
         )}
-      </div>
+      </Card>
 
       {/* Top 10 */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <h2 className="mb-3 text-sm font-semibold text-slate-900">Top 10 Risks (by residual score)</h2>
         <Table>
           <TableHeader>
@@ -366,12 +368,11 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
                 </TableCell>
                 <TableCell className="max-w-[280px] truncate">{r.title}</TableCell>
                 <TableCell>
-                  <span
+                  <Badge variant="neutral"
                     className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium text-white"
-                    style={{ backgroundColor: r.categoryColor ?? "#64748b" }}
-                  >
+                    style={{ backgroundColor: r.categoryColor ?? "#64748b" }}>
                     {r.categoryCode}
-                  </span>
+                  </Badge>
                 </TableCell>
                 <TableCell>
                   <BandBadge band={r.residualBand} score={r.residualScore} />
@@ -387,7 +388,7 @@ export function ErmHomeView({ summary, phase2 }: { summary: DashboardSummary; ph
             ))}
           </TableBody>
         </Table>
-      </div>
+      </Card>
     </div>
   );
 }

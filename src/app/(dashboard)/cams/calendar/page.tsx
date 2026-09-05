@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import type { EngagementListResponse } from "../lib-cams";
 import { CalendarView } from "./calendar-view";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function UnifiedCalendarPage() {
         breadcrumbs={[{ label: "CAMS", href: "/cams" }, { label: "Calendar" }]}
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <CalendarView items={data.items} />
       )}

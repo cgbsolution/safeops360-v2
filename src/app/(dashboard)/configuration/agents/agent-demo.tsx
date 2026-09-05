@@ -3,6 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Sparkles,
   PlayCircle,
@@ -315,7 +319,7 @@ function AppFrame({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
+    <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-md">
       {/* window chrome */}
       <div className="flex items-center gap-1.5 border-b border-slate-100 bg-slate-100 px-3 py-1.5">
         <span className="h-2 w-2 rounded-full bg-rose-300" />
@@ -370,7 +374,7 @@ function AppFrame({
         {/* content */}
         <div className="flex-1 bg-slate-50/70 p-2.5">{children}</div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -406,7 +410,7 @@ function ListMock({ meta }: { meta: Meta }) {
           </span>
         ))}
       </div>
-      <div className="mt-1.5 overflow-hidden rounded-md border border-slate-200 bg-white">
+      <Card className="mt-1.5 overflow-hidden rounded-md border border-slate-200 bg-white shadow-none">
         <div className="grid grid-cols-[1.4fr_1fr_2fr_1.6fr] bg-slate-50 px-2 py-1 text-[7px] font-semibold uppercase tracking-wider text-slate-400">
           <span>Number</span>
           <span>{l.typeCol}</span>
@@ -434,7 +438,7 @@ function ListMock({ meta }: { meta: Meta }) {
             {r.target && <Cursor label="Open" />}
           </div>
         ))}
-      </div>
+      </Card>
     </AppFrame>
   );
 }
@@ -458,42 +462,42 @@ function DetailMock({ meta }: { meta: Meta }) {
           </span>
         ))}
       </div>
-      <div className="mt-2 rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-2.5 shadow-sm">
+      <Alert variant="brand" className="mt-2 rounded-lg border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-2.5 shadow-sm">
         <div className="flex items-center gap-1.5">
           <div className="flex h-5 w-5 items-center justify-center rounded bg-violet-100">
             <Sparkles size={10} className="text-violet-600" />
           </div>
           <span className="text-[10px] font-semibold text-violet-900">{d.cardTitle}</span>
-          <span className="rounded-full bg-violet-100 px-1.5 py-px text-[7px] font-medium text-violet-700">AI · advisory</span>
+          <Badge variant="violet" className="rounded-full bg-violet-100 px-1.5 py-px text-[7px] font-medium text-violet-700">AI · advisory</Badge>
         </div>
         <p className="mt-1 text-[8px] leading-snug text-slate-500">{d.cardDesc}</p>
         <div className="relative mt-2 inline-flex">
-          <span className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2.5 py-1 text-[9px] font-semibold text-white ring-2 ring-violet-300">
+          <Badge variant="violet" className="inline-flex items-center gap-1 rounded-md bg-violet-600 px-2.5 py-1 text-[9px] font-semibold text-white ring-2 ring-violet-300">
             <Sparkles size={9} /> {d.button}
-          </span>
+          </Badge>
           <Cursor label="Click" />
         </div>
-      </div>
+      </Alert>
     </AppFrame>
   );
 }
 
 function OutputMock({ meta }: { meta: Meta }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-violet-200 bg-white shadow-md">
+    <Alert variant="brand" className="overflow-hidden rounded-xl border border-violet-200 bg-white shadow-md">
       <div className="flex items-center justify-between bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-1.5 text-white">
         <span className="flex items-center gap-1.5 text-[10px] font-semibold">
           <Sparkles size={11} /> {meta.detail.cardTitle} · suggestion
         </span>
-        <span className="rounded-full bg-white/20 px-2 py-0.5 text-[8px] font-medium ring-1 ring-white/30">PENDING REVIEW</span>
+        <Badge variant="neutral" className="rounded-full bg-white/20 px-2 py-0.5 text-[8px] font-medium ring-1 ring-white/30">PENDING REVIEW</Badge>
       </div>
       <div className="space-y-2 p-3">
-        <div className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] text-slate-600">
+        <Card className="rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[10px] text-slate-600 shadow-none">
           <span className="font-semibold text-slate-500">Input · </span>
           {meta.output.scenario}
-        </div>
+        </Card>
         {meta.output.blocks.map((b) => (
-          <div key={b.title} className="rounded-lg border border-violet-100 bg-violet-50/30 p-2.5">
+          <Alert variant="brand" key={b.title} className="rounded-lg border border-violet-100 bg-violet-50/30 p-2.5">
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-semibold text-slate-800">{b.title}</span>
               {b.badge && (
@@ -505,7 +509,7 @@ function OutputMock({ meta }: { meta: Meta }) {
                 <li key={i} className="text-[11px] text-slate-600">• {line}</li>
               ))}
             </ul>
-          </div>
+          </Alert>
         ))}
         <div className="flex items-center gap-1.5 border-t border-slate-100 pt-2">
           <span className="text-[10px] text-slate-400">You decide:</span>
@@ -514,7 +518,7 @@ function OutputMock({ meta }: { meta: Meta }) {
           <span className="inline-flex items-center gap-1 rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-600"><XIcon size={10} /> Reject</span>
         </div>
       </div>
-    </div>
+    </Alert>
   );
 }
 
@@ -546,12 +550,10 @@ export function AgentDemo({ code, name }: { code: string; name: string }) {
   return (
     <Dialog onOpenChange={(open) => open && setStep(0)}>
       <DialogTrigger asChild>
-        <button
-          type="button"
-          className="inline-flex items-center gap-1.5 rounded-md border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-700 transition hover:bg-violet-100 hover:border-violet-300"
-        >
+        <Button variant="outline"
+          type="button" className="gap-1.5 rounded-md px-3 py-1.5 text-xs">
           <PlayCircle size={14} /> See how it works
-        </button>
+        </Button>
       </DialogTrigger>
 
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
@@ -565,8 +567,8 @@ export function AgentDemo({ code, name }: { code: string; name: string }) {
             <div className="min-w-0">
               <div className="text-base font-semibold leading-tight">{name}</div>
               <div className="mt-0.5 flex flex-wrap gap-1.5 text-[10px]">
-                <span className="rounded-full bg-white/15 px-2 py-0.5 ring-1 ring-white/20">{meta.authority}</span>
-                <span className="rounded-full bg-white/15 px-2 py-0.5 ring-1 ring-white/20">{meta.model}</span>
+                <Badge variant="neutral" className="rounded-full bg-white/15 px-2 py-0.5 ring-1 ring-white/20">{meta.authority}</Badge>
+                <Badge variant="neutral" className="rounded-full bg-white/15 px-2 py-0.5 ring-1 ring-white/20">{meta.model}</Badge>
               </div>
             </div>
           </div>
@@ -589,23 +591,19 @@ export function AgentDemo({ code, name }: { code: string; name: string }) {
         </div>
 
         <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-          <button
+          <Button variant="ghost"
             type="button"
             onClick={() => setStep((s) => Math.max(0, s - 1))}
-            disabled={step === 0}
-            className="inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-slate-600 transition hover:bg-slate-100 disabled:opacity-40"
-          >
+            disabled={step === 0} className="gap-1.5 rounded-md px-3 py-1.5 text-sm">
             <ArrowLeft size={14} /> Back
-          </button>
+          </Button>
           <span className="text-[10px] text-slate-400">Step {step + 1} of 4</span>
           {step < last ? (
-            <button
+            <Button variant="ghost"
               type="button"
-              onClick={() => setStep((s) => Math.min(last, s + 1))}
-              className="inline-flex items-center gap-1.5 rounded-md bg-violet-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-violet-700"
-            >
+              onClick={() => setStep((s) => Math.min(last, s + 1))} className="gap-1.5 rounded-md px-4 py-1.5 text-sm text-white">
               Next <ArrowRight size={14} />
-            </button>
+            </Button>
           ) : (
             <Link
               href={meta.primaryHref}

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { Line, LineChart, ResponsiveContainer } from "recharts";
 import { Link2, X } from "lucide-react";
 import { KpiTile } from "@/components/erm/shared";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   KRI_STATUS_CHIP,
   KRI_STATUS_HEX,
@@ -108,7 +110,7 @@ export function KriDashboardView({ data, filters }: { data: KriListResponse; fil
       </div>
 
       {/* Filters */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
+      <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           <FilterRow label="Status">
             {["GREEN", "AMBER", "RED", "NO_DATA"].map((s) => (
@@ -125,25 +127,23 @@ export function KriDashboardView({ data, filters }: { data: KriListResponse; fil
             ))}
           </FilterRow>
           {activeFilters.length > 0 && (
-            <button
-              onClick={() => router.push("/erm/kris")}
-              className="ml-auto inline-flex items-center gap-1 rounded border border-slate-200 px-2 py-1 text-[11px] text-slate-500 hover:border-rose-300 hover:text-rose-600"
-            >
+            <Button variant="outline"
+              onClick={() => router.push("/erm/kris")} className="ml-auto gap-1 rounded px-2 py-1 text-[11px]">
               <X size={12} /> Clear ({activeFilters.length})
-            </button>
+            </Button>
           )}
         </div>
-      </div>
+      </Card>
 
       {/* Status wall grouped by category */}
       {data.items.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400">
+        <Card className="rounded-xl border border-slate-200 bg-white p-10 text-center text-sm text-slate-400 shadow-none">
           No KRIs match the current filters.
-        </div>
+        </Card>
       ) : (
         <div className="space-y-5">
           {groups.map((g) => (
-            <div key={g.name} className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card key={g.name} className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <div className="mb-3 flex items-center gap-2">
                 <span
                   className="inline-block h-2.5 w-2.5 rounded-full"
@@ -203,7 +203,7 @@ export function KriDashboardView({ data, filters }: { data: KriListResponse; fil
                   </Link>
                 ))}
               </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}

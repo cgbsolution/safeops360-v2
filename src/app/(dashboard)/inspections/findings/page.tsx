@@ -4,6 +4,7 @@ import { AlertTriangle } from "lucide-react";
 import { requirePermission } from "@/lib/auth/server";
 import { FindingsTable, type FindingRow } from "./findings-table";
 import { FilterTab, FilterTabsList } from "@/components/ui/filter-tabs";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -77,10 +78,10 @@ export default async function FindingsPage(props: {
       </FilterTabsList>
 
       {overdue.length > 0 && (
-        <div className="mb-3 flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 p-3 text-sm">
+        <Alert variant="destructive" className="mb-3 flex items-center gap-2 rounded-md border border-rose-300 bg-rose-50 p-3 text-sm">
           <AlertTriangle size={16} className="text-rose-600" />
           <strong>{overdue.length}</strong> finding{overdue.length === 1 ? "" : "s"} overdue. Action owners should respond today.
-        </div>
+        </Alert>
       )}
 
       <FindingsTable data={rows} />

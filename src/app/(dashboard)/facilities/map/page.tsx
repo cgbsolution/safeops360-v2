@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/page-header";
 import { requirePermission } from "@/lib/auth/server";
 import { IndiaMap } from "../india-map";
 import type { FactoryProfileListResponse } from "../lib";
+import { Alert } from "@/components/ui/alert";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +25,7 @@ export default async function FacilitiesMapPage() {
         description="Every factory pinned across India, colour-coded by live compliance score. Click a pin to open the profile."
       />
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">{error}</Alert>
       ) : (
         <IndiaMap factories={data!.items} height={620} />
       )}

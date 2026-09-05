@@ -5,6 +5,7 @@
 // unauthenticated viewer doesn't trigger a login redirect.
 
 import { notFound } from "next/navigation";
+import { Alert } from "@/components/ui/alert";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -66,7 +67,7 @@ export default async function VerifyTrainingCertificatePage(props: {
   if (!data) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-rose-200 p-8 text-center">
+        <Alert variant="destructive" className="max-w-md w-full bg-white rounded-xl shadow-sm border border-rose-200 p-8 text-center">
           <XCircle size={56} className="mx-auto mb-4 text-rose-600" />
           <h1 className="text-xl font-bold text-rose-900 mb-2">
             Certificate not found
@@ -76,7 +77,7 @@ export default async function VerifyTrainingCertificatePage(props: {
             <span className="font-mono">{params.number}</span>. Verify you've
             entered the correct number, or contact the issuing plant.
           </p>
-        </div>
+        </Alert>
       </div>
     );
   }
@@ -133,13 +134,13 @@ export default async function VerifyTrainingCertificatePage(props: {
 
           <div className="p-6 space-y-4">
             {data.revoked && (
-              <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+              <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
                 <strong>This certificate has been revoked.</strong>
                 {data.revocationReason && (
                   <> Reason category: {data.revocationReason.replace(/_/g, " ").toLowerCase()}.</>
                 )}{" "}
                 Revoked certificates are not valid for any operational purpose.
-              </div>
+              </Alert>
             )}
 
             <div className="grid sm:grid-cols-2 gap-4 text-sm">
@@ -164,7 +165,7 @@ export default async function VerifyTrainingCertificatePage(props: {
             </div>
 
             {data.isStatutory && (
-              <div className="rounded-md border border-rose-200 bg-rose-50/60 p-3 flex items-start gap-2 text-xs text-rose-800">
+              <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50/60 p-3 flex items-start gap-2 text-xs text-rose-800">
                 <ShieldAlert size={14} className="mt-0.5 shrink-0" />
                 <div>
                   This is a <strong>statutory training</strong> certificate.
@@ -173,7 +174,7 @@ export default async function VerifyTrainingCertificatePage(props: {
                   )}{" "}
                   Statutory records are subject to regulatory inspection.
                 </div>
-              </div>
+              </Alert>
             )}
           </div>
 

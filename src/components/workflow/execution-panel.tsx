@@ -12,6 +12,7 @@ import { formatDateTime, cn } from "@/lib/utils";
 import { uploadObservationAttachment } from "@/components/observations/upload-helper";
 import { uploadNearMissAttachment } from "@/components/near-miss/upload-helper";
 import { uploadIncidentAttachment } from "@/components/incidents/upload-helper";
+import { Alert } from "@/components/ui/alert";
 
 type Task = {
   id: string;
@@ -240,7 +241,7 @@ export function ExecutionPanel({
       </CardHeader>
       <CardContent className="pt-4">
         {reworkContext && (
-          <div className="mb-4 rounded-md border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm">
+          <Alert variant="destructive" className="mb-4 rounded-md border border-rose-300 bg-rose-50 px-3 py-2.5 text-sm">
             <div className="flex items-center gap-2 text-rose-900 font-semibold mb-1">
               <AlertCircle size={14} /> Rework requested by verifier
             </div>
@@ -252,7 +253,7 @@ export function ExecutionPanel({
               {reworkContext.rejectedBy && reworkContext.rejectedAt ? " · " : ""}
               {reworkContext.rejectedAt ? formatDateTime(reworkContext.rejectedAt) : null}
             </div>
-          </div>
+          </Alert>
         )}
         <p className="text-sm text-slate-700 mb-3">{instruction}</p>
         <form onSubmit={submit} className="space-y-4">
@@ -347,23 +348,21 @@ export function ExecutionPanel({
                   <Camera size={13} /> Take Photo
                 </Button>
               </div>
-              <input
+              <Input
                 ref={fileInputRef}
                 type="file"
                 multiple
                 accept="image/*,video/*,application/pdf"
                 className="hidden"
-                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
-              />
-              <input
+                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
+              <Input
                 ref={cameraInputRef}
                 type="file"
                 accept="image/*"
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 {...({ capture: "environment" } as any)}
                 className="hidden"
-                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
-              />
+                onChange={(e) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }} />
             </div>
 
             {photos.length > 0 && (
@@ -376,10 +375,10 @@ export function ExecutionPanel({
           </div>
 
           {error && (
-            <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 flex items-start gap-2">
+            <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2 flex items-start gap-2">
               <AlertCircle size={14} className="mt-0.5 flex-shrink-0" />
               <span>{error}</span>
-            </div>
+            </Alert>
           )}
 
           <div className="flex gap-2 pt-2">
@@ -402,7 +401,7 @@ function PhotoTile({ photo, onRemove }: { photo: LocalPhoto; onRemove: () => voi
   const sizeLabel = sizeKb > 1024 ? `${(sizeKb / 1024).toFixed(1)} MB` : `${sizeKb} KB`;
 
   return (
-    <div className="group relative aspect-square rounded-md border bg-slate-100 overflow-hidden">
+    <Card className="group relative aspect-square rounded-md border bg-slate-100 overflow-hidden shadow-none">
       {isImage && photo.previewUrl ? (
         <img src={photo.previewUrl} alt="" className="w-full h-full object-cover" />
       ) : (
@@ -410,21 +409,19 @@ function PhotoTile({ photo, onRemove }: { photo: LocalPhoto; onRemove: () => voi
           {isVideo ? <Film size={26} className="text-slate-400" /> : <ImageIcon size={26} className="text-slate-400" />}
         </div>
       )}
-      <button
+      <Button variant="ghost"
         type="button"
-        onClick={onRemove}
-        className="absolute top-1 right-1 bg-white/90 hover:bg-white rounded-full p-1 shadow opacity-0 group-hover:opacity-100 transition"
-        aria-label="Remove"
-      >
+        onClick={onRemove} className="absolute top-1 right-1 rounded-full p-1 shadow opacity-0 group-hover:opacity-100"
+        aria-label="Remove">
         <X size={12} />
-      </button>
+      </Button>
       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-1">
         <div className="text-[10px] text-white truncate">{photo.file.name}</div>
         <div className="text-[10px] text-white/80">
           {photo.error ? <span className="text-rose-300">{photo.error}</span> : sizeLabel}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -465,7 +462,7 @@ export function VerificationPanel({ task }: { task: Task }) {
           <Label>Verification Comments</Label>
           <Textarea rows={3} value={comments} onChange={(e) => setComments(e.target.value)} placeholder="Findings, effectiveness check, anything to note..." />
         </div>
-        {error && <div className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</div>}
+        {error && <Alert variant="destructive" className="text-sm text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">{error}</Alert>}
         <div className="flex gap-2">
           <Button onClick={() => decide(true)} disabled={busy} variant="success">Accept & Advance</Button>
           <Button onClick={() => decide(false)} disabled={busy} variant="destructive">Send Back for Rework</Button>

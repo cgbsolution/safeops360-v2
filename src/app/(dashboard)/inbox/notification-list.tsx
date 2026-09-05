@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { Bell, Inbox as InboxIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn, formatDateTime, humanize } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 export type InboxNotification = {
   id: string;
@@ -74,15 +75,14 @@ export function NotificationList({ items }: { items: InboxNotification[] }) {
       {items.map((n) => {
         const unread = !n.isRead && !read.has(n.id);
         return (
-          <button
+          <Button variant="ghost"
             key={n.id}
             type="button"
             onClick={() => open(n)}
             className={cn(
               "block w-full border-l-[3px] px-5 py-4 text-left transition hover:bg-slate-50",
               unread ? "border-l-primary-600 bg-primary-50/40" : "border-l-transparent"
-            )}
-          >
+            )}>
             <div className="mb-1 flex flex-wrap items-center gap-2">
               {unread && (
                 <span
@@ -124,7 +124,7 @@ export function NotificationList({ items }: { items: InboxNotification[] }) {
                 <Bell size={12} /> Open
               </div>
             )}
-          </button>
+          </Button>
         );
       })}
     </div>

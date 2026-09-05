@@ -11,6 +11,8 @@ import {
   type BcmDashboard,
 } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -35,9 +37,9 @@ export default async function BcmDashboardPage() {
       />
 
       {error || !d ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "No dashboard data."}. Ensure the ERM Phase 3 (BCM) seed has been run and you are logged in with a BCM role.
-        </div>
+        </Alert>
       ) : (
         <div className="space-y-5">
           {/* Active-crisis red banner */}
@@ -98,7 +100,7 @@ export default async function BcmDashboardPage() {
 
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             {/* Coverage gaps */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-900">Coverage gaps</h2>
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-rose-600">
@@ -125,10 +127,10 @@ export default async function BcmDashboardPage() {
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
 
             {/* Recent crises */}
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <div className="mb-3 flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-slate-900">Recent crises</h2>
                 <Link href="/erm/bcm/crisis" className="text-[11px] font-medium text-primary-700 hover:underline">
@@ -154,11 +156,11 @@ export default async function BcmDashboardPage() {
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
           </div>
 
           {/* Exercise programme */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-900">Exercise programme</h2>
               <Link href="/erm/bcm/exercises" className="text-[11px] font-medium text-primary-700 hover:underline">
@@ -170,7 +172,7 @@ export default async function BcmDashboardPage() {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {d.exerciseProgramme.map((e) => (
-                  <div key={e.exerciseCode} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+                  <Card key={e.exerciseCode} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-semibold text-primary-700">{e.exerciseCode}</span>
                       <span className={"rounded border px-1.5 py-0.5 text-[10px] " + (EXERCISE_STATUS_CHIP[e.status] ?? "")}>
@@ -179,11 +181,11 @@ export default async function BcmDashboardPage() {
                     </div>
                     <p className="mt-0.5 max-w-[200px] truncate text-xs text-slate-600">{e.title}</p>
                     <p className="text-[10px] text-slate-400">{fmtDate(e.scheduledDate)}</p>
-                  </div>
+                  </Card>
                 ))}
               </div>
             )}
-          </div>
+          </Card>
         </div>
       )}
     </div>

@@ -15,6 +15,9 @@ import {
   type Exercise,
 } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
 
 const TYPE_LABEL: Record<string, string> = {
   DESK_CHECK: "Desk Check",
@@ -72,11 +75,11 @@ export function ExerciseWorkspace({
   return (
     <div className="space-y-4">
       {banner && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{banner}</div>
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">{banner}</Alert>
       )}
 
       {/* Header / meta card */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -125,12 +128,12 @@ export function ExerciseWorkspace({
             {exercise.openCapaCount} open CAPA(s) from this exercise
           </div>
         )}
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         {/* Left: scope */}
         <div className="space-y-4 lg:col-span-1">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Objectives</h3>
             {exercise.objectives.length === 0 ? (
               <p className="text-xs text-slate-400">No objectives recorded.</p>
@@ -141,9 +144,9 @@ export function ExerciseWorkspace({
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Plans under test</h3>
             {exercise.testedPlanIds.length === 0 ? (
               <p className="text-xs text-slate-400">No plans linked.</p>
@@ -166,19 +169,19 @@ export function ExerciseWorkspace({
                 </Link>
               </p>
             )}
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Participants</h3>
             {exercise.participants.length === 0 ? (
               <p className="text-xs text-slate-400">No participants recorded.</p>
             ) : (
               <p className="text-sm text-slate-700">{exercise.participants.length} participant(s)</p>
             )}
-          </div>
+          </Card>
 
           {stats && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
                 Call-tree results
               </h3>
@@ -196,13 +199,13 @@ export function ExerciseWorkspace({
                   <div className="text-[10px] uppercase tracking-wider text-slate-400">Median min</div>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
         {/* Right: findings + report */}
         <div className="space-y-4 lg:col-span-2">
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-900">Findings</h3>
               <Button
@@ -261,10 +264,10 @@ export function ExerciseWorkspace({
             <p className="mt-3 text-[11px] text-slate-400">
               A MAJOR GAP finding must have a linked CAPA before the exercise can be completed.
             </p>
-          </div>
+          </Card>
 
           {exercise.reportRichText && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Exercise report</h3>
               <p className="whitespace-pre-wrap text-sm text-slate-700">{exercise.reportRichText}</p>
               {exercise.rtoAchievedHours != null && (
@@ -272,7 +275,7 @@ export function ExerciseWorkspace({
                   RTO achieved: <b>{fmtRto(exercise.rtoAchievedHours)}</b>
                 </p>
               )}
-            </div>
+            </Card>
           )}
         </div>
       </div>
@@ -339,7 +342,7 @@ function FindingModal({
     <Modal title="Add finding" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Severity</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Severity</Label>
           <div className="grid grid-cols-3 gap-1.5">
             {FINDING_SEVERITIES.map((s) => (
               <Button
@@ -358,7 +361,7 @@ function FindingModal({
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Description</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Description</Label>
           <Textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -398,7 +401,7 @@ function CompleteModal({
     <Modal title="Complete exercise" onClose={onClose}>
       <div className="space-y-4">
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Outcome</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Outcome</Label>
           <div className="grid grid-cols-3 gap-1.5">
             {OUTCOMES.map((o) => (
               <Button
@@ -418,11 +421,11 @@ function CompleteModal({
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Conducted date</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Conducted date</Label>
             <Input type="date" value={conductedDate} onChange={(e) => setConductedDate(e.target.value)} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">RTO achieved (hours)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">RTO achieved (hours)</Label>
             <Input
               type="number"
               min={0}
@@ -432,7 +435,7 @@ function CompleteModal({
           </div>
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-slate-600">Report</label>
+          <Label className="mb-1 block text-xs font-medium text-slate-600">Report</Label>
           <Textarea
             value={reportRichText}
             onChange={(e) => setReportRichText(e.target.value)}

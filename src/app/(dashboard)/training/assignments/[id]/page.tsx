@@ -21,6 +21,9 @@ import {
   type AssignmentDetail
 } from "@/lib/training-engine";
 import { AssignmentActions } from "../../assignment-actions";
+import { Alert } from "@/components/ui/alert";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export const dynamic = "force-dynamic";
 
@@ -58,9 +61,9 @@ export default async function AssignmentDetailPage(props: {
             { label: "Assignment" }
           ]}
         />
-        <div className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
+        <Alert variant="destructive" className="rounded-xl border border-rose-200 bg-rose-50 p-6 text-sm text-rose-800">
           {error ?? "Assignment not found."}
-        </div>
+        </Alert>
       </div>
     );
   }
@@ -95,19 +98,19 @@ export default async function AssignmentDetailPage(props: {
       />
 
       {nonDismissible && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-800">
+        <Alert variant="destructive" className="mb-4 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm text-rose-800">
           <ShieldAlert size={16} className="shrink-0" />
           <span className="font-semibold">Mandatory — cannot be dismissed.</span>
           <span className="text-rose-700">
             This assignment must be completed; there is no decline option.
           </span>
-        </div>
+        </Alert>
       )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
           {/* Worker + key facts */}
-          <div className="rounded-xl border border-slate-200 bg-white">
+          <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
             <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
               <User size={16} className="text-slate-500" />
               <h2 className="text-sm font-semibold text-slate-800">Worker & assignment</h2>
@@ -151,19 +154,19 @@ export default async function AssignmentDetailPage(props: {
                 <dt className="text-[11px] uppercase tracking-wider text-slate-500">Mandatory</dt>
                 <dd className="mt-0.5">
                   {a.isMandatory ? (
-                    <span className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
+                    <Badge variant="danger" className="inline-flex rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-700">
                       Yes
-                    </span>
+                    </Badge>
                   ) : (
                     <span className="text-slate-500">No</span>
                   )}
                 </dd>
               </div>
             </dl>
-          </div>
+          </Card>
 
           {/* Provenance — "why this was assigned" */}
-          <div className="rounded-xl border border-primary-200 bg-primary-50/40">
+          <Card className="rounded-xl border border-primary-200 bg-primary-50/40 shadow-none">
             <div className="flex items-center gap-2 border-b border-primary-100 px-4 py-3">
               <Info size={16} className="text-primary-700" />
               <h2 className="text-sm font-semibold text-primary-900">Why this was assigned</h2>
@@ -179,14 +182,14 @@ export default async function AssignmentDetailPage(props: {
                   {srcMeta.label}
                 </span>
                 {a.ruleType && (
-                  <span className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600">
+                  <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600">
                     {labelize(a.ruleType)}
-                  </span>
+                  </Badge>
                 )}
                 {a.sourceModule && (
-                  <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600">
+                  <Badge variant="neutral" className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600">
                     <Link2 size={11} /> {labelize(a.sourceModule)}
-                  </span>
+                  </Badge>
                 )}
               </div>
 
@@ -228,12 +231,12 @@ export default async function AssignmentDetailPage(props: {
                 </p>
               )}
             </div>
-          </div>
+          </Card>
         </div>
 
         {/* Right column: content + actions */}
         <div className="space-y-5">
-          <div className="rounded-xl border border-slate-200 bg-white">
+          <Card className="rounded-xl border border-slate-200 bg-white shadow-none">
             <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
               <BookOpen size={16} className="text-slate-500" />
               <h2 className="text-sm font-semibold text-slate-800">Assigned content</h2>
@@ -243,16 +246,16 @@ export default async function AssignmentDetailPage(props: {
                 <>
                   <div className="font-medium text-slate-900">{content.title}</div>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+                    <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
                       {labelize(content.contentType)}
-                    </span>
-                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+                    </Badge>
+                    <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
                       {labelize(content.deliveryMode)}
-                    </span>
+                    </Badge>
                     {content.durationMinutes ? (
-                      <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
+                      <Badge variant="neutral" className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600">
                         {content.durationMinutes} min
-                      </span>
+                      </Badge>
                     ) : null}
                   </div>
                   <div className="mt-3">
@@ -262,9 +265,9 @@ export default async function AssignmentDetailPage(props: {
                         Vendor: <span className="font-medium">{content.vendorName ?? "—"}</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                      <Badge variant="warning" className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700">
                         Demo / placeholder content
-                      </span>
+                      </Badge>
                     )}
                   </div>
                   {content.contentRef && (
@@ -291,9 +294,9 @@ export default async function AssignmentDetailPage(props: {
                 </p>
               )}
             </div>
-          </div>
+          </Card>
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <Card className="rounded-xl border border-slate-200 bg-white p-4 shadow-none">
             <h2 className="mb-3 text-sm font-semibold text-slate-800">Actions</h2>
             <AssignmentActions
               assignmentId={a.id}
@@ -301,7 +304,7 @@ export default async function AssignmentDetailPage(props: {
               isMandatory={a.isMandatory}
               dismissible={a.dismissible}
             />
-          </div>
+          </Card>
         </div>
       </div>
     </div>

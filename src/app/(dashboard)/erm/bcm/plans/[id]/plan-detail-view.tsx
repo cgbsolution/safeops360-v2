@@ -8,7 +8,7 @@ import { UserPicker } from "@/components/ui/user-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
+import { SelectField } from "@/components/ui/select-field";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import {
@@ -20,6 +20,9 @@ import {
   type PlanDetail,
 } from "@/app/(dashboard)/erm/lib-p3";
 import { fmtDate } from "@/app/(dashboard)/erm/lib";
+import { Label } from "@/components/ui/label";
+import { Card } from "@/components/ui/card";
+import { Alert } from "@/components/ui/alert";
 
 const PLAN_TYPE_LABEL: Record<string, string> = {
   BUSINESS_CONTINUITY: "Business Continuity",
@@ -57,7 +60,7 @@ export function PlanDetailView({ detail }: { detail: PlanDetail }) {
       )}
 
       {/* Header */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5">
+      <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className={"rounded border px-2 py-0.5 text-[11px] " + (PLAN_STATUS_CHIP[detail.status] ?? "")}>{detail.status.replace(/_/g, " ")}</span>
@@ -96,29 +99,29 @@ export function PlanDetailView({ detail }: { detail: PlanDetail }) {
             { label: "Next review", value: detail.nextReviewDate ? fmtDate(detail.nextReviewDate) : "—" },
             { label: "Last exercised", value: detail.lastExercisedAt ? fmtDate(detail.lastExercisedAt) : "never" },
           ].map((m) => (
-            <div key={m.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
+            <Card key={m.label} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 shadow-none">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{m.label}</p>
               <p className="text-sm font-semibold text-slate-800">{m.value}</p>
-            </div>
+            </Card>
           ))}
         </div>
         {detail.approvedBy && (
           <p className="mt-3 text-xs text-slate-500">Approved {detail.approvedAt ? fmtDate(detail.approvedAt) : ""}{detail.fserPlanRef ? ` · FSER ref: ${detail.fserPlanRef}` : ""}</p>
         )}
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-2">
           {/* Scope + strategy */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-2 text-sm font-semibold text-slate-900">Scope &amp; strategy</h2>
             <p className="text-sm text-slate-600">{detail.scopeStatement || "—"}</p>
             {detail.strategySummary && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-600"><span className="font-medium text-slate-700">Strategy: </span>{detail.strategySummary}</p>}
-          </div>
+          </Card>
 
           {/* Sections */}
           {detail.sections.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <h2 className="mb-3 text-sm font-semibold text-slate-900">Plan sections</h2>
               <div className="space-y-3">
                 {[...detail.sections].sort((a: any, b: any) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0)).map((s: any, i: number) => (
@@ -128,11 +131,11 @@ export function PlanDetailView({ detail }: { detail: PlanDetail }) {
                   </div>
                 ))}
               </div>
-            </div>
+            </Card>
           )}
 
           {/* Recovery tasks */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-3 text-sm font-semibold text-slate-900">Recovery tasks <span className="text-slate-400">({detail.recoveryTasks.length})</span></h2>
             {detail.recoveryTasks.length === 0 ? (
               <p className="py-3 text-center text-sm text-slate-400">No recovery tasks defined.</p>
@@ -160,12 +163,12 @@ export function PlanDetailView({ detail }: { detail: PlanDetail }) {
                 </Table>
               </div>
             )}
-          </div>
+          </Card>
         </div>
 
         <div className="space-y-5">
           {/* Activation criteria */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-2 text-sm font-semibold text-slate-900">Activation criteria</h2>
             {detail.activationCriteria.length === 0 ? (
               <p className="text-sm text-slate-400">—</p>
@@ -178,10 +181,10 @@ export function PlanDetailView({ detail }: { detail: PlanDetail }) {
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
 
           {/* Covered processes */}
-          <div className="rounded-xl border border-slate-200 bg-white p-5">
+          <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
             <h2 className="mb-2 text-sm font-semibold text-slate-900">Covered processes</h2>
             {detail.coveredProcesses.length === 0 ? (
               <p className="text-sm text-slate-400">None linked.</p>
@@ -195,11 +198,11 @@ export function PlanDetailView({ detail }: { detail: PlanDetail }) {
                 ))}
               </ul>
             )}
-          </div>
+          </Card>
 
           {/* Version history */}
           {detail.versionSnapshots.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5">
+            <Card className="rounded-xl border border-slate-200 bg-white p-5 shadow-none">
               <Button type="button" variant="ghost" onClick={() => setShowSnaps((v) => !v)} className="h-auto w-full justify-between p-0 text-sm font-semibold text-slate-900">
                 <span className="inline-flex items-center gap-1.5"><History size={14} /> Version history ({detail.versionSnapshots.length})</span>
                 <span className="text-xs text-slate-400">{showSnaps ? "Hide" : "Show"}</span>
@@ -215,7 +218,7 @@ export function PlanDetailView({ detail }: { detail: PlanDetail }) {
                   ))}
                 </ul>
               )}
-            </div>
+            </Card>
           )}
         </div>
       </div>
@@ -293,101 +296,101 @@ function EditPlanModal({ detail, onClose, onSaved }: { detail: PlanDetail; onClo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-[2px]">
-      <div className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
+      <Card className="max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-xl border border-slate-200 bg-white p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Edit plan {detail.status === "APPROVED" && <span className="text-xs font-normal text-amber-600">(saving forks a new draft)</span>}</h2>
           <Button type="button" variant="ghost" size="icon" onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={18} /></Button>
         </div>
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Plan title</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Plan title</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Type</label>
-              <Select value={planType} onChange={(e) => setPlanType(e.target.value)}>
-                {PLAN_TYPES.map((t) => <option key={t} value={t}>{PLAN_TYPE_LABEL[t] ?? t}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Type</Label>
+              <SelectField value={planType} onChange={setPlanType}
+                options={PLAN_TYPES.map((t) => ({ value: t, label: PLAN_TYPE_LABEL[t] ?? t }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Site</label>
-              <Select value={siteId} onChange={(e) => setSiteId(e.target.value)}>
-                <option value="">Corporate</option>
-                {plants.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </Select>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Site</Label>
+              <SelectField value={siteId} onChange={setSiteId}
+                placeholder="Corporate"
+                options={plants.map((p) => ({ value: p.id, label: p.name }))}
+              />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">Owner</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">Owner</Label>
               <UserPicker value={ownerId} onChange={(id) => setOwnerId(id)} placeholder="Owner" />
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Covered processes</label>
-            <div className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2">
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Covered processes</Label>
+            <Card className="max-h-36 space-y-1 overflow-y-auto rounded-md border border-slate-200 p-2 shadow-none">
               {procs.map((p) => (
-                <label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
+                <Label key={p.id} className="flex cursor-pointer items-center gap-2 rounded px-1.5 py-1 text-xs hover:bg-slate-50">
                   <Checkbox checked={coveredProcessIds.includes(p.id)} onChange={() => toggleProc(p.id)} />
                   <span className="font-medium text-primary-700">{p.processCode}</span>
                   <span className="truncate text-slate-600">{p.name}</span>
-                </label>
+                </Label>
               ))}
-            </div>
+            </Card>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Scope statement</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Scope statement</Label>
             <Textarea value={scopeStatement} onChange={(e) => setScopeStatement(e.target.value)} rows={2} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Activation criteria (one per line)</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Activation criteria (one per line)</Label>
             <Textarea value={criteriaText} onChange={(e) => setCriteriaText(e.target.value)} rows={3} />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">Strategy summary</label>
+            <Label className="mb-1 block text-xs font-medium text-slate-600">Strategy summary</Label>
             <Textarea value={strategySummary} onChange={(e) => setStrategySummary(e.target.value)} rows={2} />
           </div>
           {planType === "EMERGENCY_RESPONSE_LINK" && (
             <div>
-              <label className="mb-1 block text-xs font-medium text-slate-600">FSER plan reference</label>
+              <Label className="mb-1 block text-xs font-medium text-slate-600">FSER plan reference</Label>
               <Input value={fserPlanRef} onChange={(e) => setFserPlanRef(e.target.value)} />
             </div>
           )}
           {/* Sections */}
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-600">Plan sections</label>
+              <Label className="text-xs font-medium text-slate-600">Plan sections</Label>
               <Button type="button" variant="ghost" onClick={() => setSections((s) => [...s, { heading: "", contentRichText: "" }])} className="h-auto p-0 text-xs font-medium text-primary-700 hover:underline">+ Section</Button>
             </div>
             <div className="space-y-2">
               {sections.map((s, i) => (
-                <div key={i} className="rounded-md border border-slate-200 p-2">
+                <Card key={i} className="rounded-md border border-slate-200 p-2 shadow-none">
                   <div className="flex items-center gap-2">
                     <Input value={s.heading} onChange={(e) => setSections((arr) => arr.map((x, j) => (j === i ? { ...x, heading: e.target.value } : x)))} placeholder="Heading" className="flex-1" />
                     {sections.length > 1 && <Button type="button" variant="ghost" size="icon" onClick={() => setSections((arr) => arr.filter((_, j) => j !== i))} className="text-slate-300 hover:text-rose-600"><Trash2 size={14} /></Button>}
                   </div>
                   <Textarea value={s.contentRichText} onChange={(e) => setSections((arr) => arr.map((x, j) => (j === i ? { ...x, contentRichText: e.target.value } : x)))} rows={2} placeholder="Content" className="mt-1" />
-                </div>
+                </Card>
               ))}
             </div>
           </div>
           {/* Recovery tasks */}
           <div>
             <div className="mb-1 flex items-center justify-between">
-              <label className="text-xs font-medium text-slate-600">Recovery tasks</label>
+              <Label className="text-xs font-medium text-slate-600">Recovery tasks</Label>
               <Button type="button" variant="ghost" onClick={() => setTasks((t) => [...t, { title: "", responsibleRoleName: "", targetHoursFromActivation: "", detail: "" }])} className="h-auto p-0 text-xs font-medium text-primary-700 hover:underline">+ Task</Button>
             </div>
             <div className="space-y-2">
               {tasks.map((t, i) => (
-                <div key={i} className="flex items-center gap-2 rounded-md border border-slate-200 p-2">
+                <Card key={i} className="flex items-center gap-2 rounded-md border border-slate-200 p-2 shadow-none">
                   <Input value={t.title} onChange={(e) => setTasks((arr) => arr.map((x, j) => (j === i ? { ...x, title: e.target.value } : x)))} placeholder="Task" className="flex-[2]" />
                   <Input value={t.responsibleRoleName} onChange={(e) => setTasks((arr) => arr.map((x, j) => (j === i ? { ...x, responsibleRoleName: e.target.value } : x)))} placeholder="Responsible role" className="flex-[2]" />
                   <Input type="number" min={0} value={t.targetHoursFromActivation} onChange={(e) => setTasks((arr) => arr.map((x, j) => (j === i ? { ...x, targetHoursFromActivation: e.target.value } : x)))} placeholder="h" className="w-16" />
                   {tasks.length > 1 && <Button type="button" variant="ghost" size="icon" onClick={() => setTasks((arr) => arr.filter((_, j) => j !== i))} className="text-slate-300 hover:text-rose-600"><Trash2 size={14} /></Button>}
-                </div>
+                </Card>
               ))}
             </div>
           </div>
-          {error && <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</div>}
+          {error && <Alert variant="destructive" className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</Alert>}
         </div>
         <div className="mt-5 flex justify-end gap-2">
           <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
@@ -395,7 +398,7 @@ function EditPlanModal({ detail, onClose, onSaved }: { detail: PlanDetail; onClo
             {busy ? "Saving…" : "Save changes"}
           </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
